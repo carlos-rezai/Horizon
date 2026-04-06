@@ -2,6 +2,11 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { Account } from "../models/Account.js";
 import { Transaction } from "../models/Transaction.js";
+import {
+  calcNetCashflow,
+  calcFreeCashflow,
+  calcTotalLiquid,
+} from "../lib/cashflow.js";
 
 const router = Router();
 
@@ -38,6 +43,50 @@ router.get("/", async (_req, res) => {
     })
   );
   res.json(result);
+});
+
+router.get("/liquid", async (_req, res) => {
+  const accounts = await Account.find();
+  const entries = await Promise.all(
+    accounts.map(async (a) => {
+      const txs = await Transaction.find({ accountId: a._id });
+      const balance =
+        a.openingBalance + txs.reduce((sum, tx) => sum + tx.amount, 0);
+      return { _id: String(a._id), kind: a.kind, balance };
+    })
+  );
+  res.json({ totalLiquid: calcTotalLiquid(entries) });
+});
+
+router.get("/:id/cashflow", async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(404).json({ error: "Account not found" });
+    return;
+  }
+
+  const account = await Account.findById(req.params.id);
+  if (!account) {
+    res.status(404).json({ error: "Account not found" });
+    return;
+  }
+
+  const { month } = req.query;
+  const allTxs = await Transaction.find({ accountId: account._id });
+
+  const txs = (
+    typeof month === "string"
+      ? allTxs.filter((tx) => tx.date.startsWith(month))
+      : allTxs
+  ).map((tx) => ({
+    amount: tx.amount,
+    accountId: String(tx.accountId),
+    transferId: tx.transferId,
+  }));
+
+  res.json({
+    netCashflow: calcNetCashflow(txs),
+    freeCashflow: calcFreeCashflow(txs, String(account._id)),
+  });
 });
 
 router.get("/:id", async (req, res) => {
