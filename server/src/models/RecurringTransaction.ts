@@ -4,6 +4,7 @@ export type Frequency = "monthly" | "quarterly" | "annual";
 
 const recurringTransactionSchema = new mongoose.Schema(
   {
+    accountId: { type: String, required: true },
     amount: { type: Number, required: true },
     description: { type: String, required: true },
     category: { type: String, required: true },

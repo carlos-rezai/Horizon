@@ -6,6 +6,7 @@ const router = Router();
 
 router.post("/", async (req, res) => {
   const {
+    accountId,
     amount,
     description,
     category,
@@ -15,6 +16,7 @@ router.post("/", async (req, res) => {
   } = req.body;
 
   if (
+    !accountId ||
     amount === undefined ||
     !description ||
     !category ||
@@ -23,12 +25,13 @@ router.post("/", async (req, res) => {
   ) {
     res.status(400).json({
       error:
-        "amount, description, category, frequency, and dayOfMonth are required",
+        "accountId, amount, description, category, frequency, and dayOfMonth are required",
     });
     return;
   }
 
   const recurring = await RecurringTransaction.create({
+    accountId,
     amount,
     description,
     category,
