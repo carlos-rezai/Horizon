@@ -1,6 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { Account } from "../models/Account.js";
+import { Transaction } from "../models/Transaction.js";
 
 const router = Router();
 
@@ -9,11 +10,9 @@ router.post("/", async (req, res) => {
     req.body;
 
   if (!kind || !name || openingBalance === undefined || !openingDate) {
-    res
-      .status(400)
-      .json({
-        error: "kind, name, openingBalance, and openingDate are required",
-      });
+    res.status(400).json({
+      error: "kind, name, openingBalance, and openingDate are required",
+    });
     return;
   }
 
@@ -30,12 +29,15 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (_req, res) => {
   const accounts = await Account.find();
-  res.json(
-    accounts.map((a) => ({
-      ...a.toJSON(),
-      balance: a.openingBalance,
-    }))
+  const result = await Promise.all(
+    accounts.map(async (a) => {
+      const txs = await Transaction.find({ accountId: a._id });
+      const balance =
+        a.openingBalance + txs.reduce((sum, tx) => sum + tx.amount, 0);
+      return { ...a.toJSON(), balance };
+    })
   );
+  res.json(result);
 });
 
 router.get("/:id", async (req, res) => {
@@ -50,7 +52,10 @@ router.get("/:id", async (req, res) => {
     return;
   }
 
-  res.json({ ...account.toJSON(), balance: account.openingBalance });
+  const txs = await Transaction.find({ accountId: account._id });
+  const balance =
+    account.openingBalance + txs.reduce((sum, tx) => sum + tx.amount, 0);
+  res.json({ ...account.toJSON(), balance });
 });
 
 router.patch("/:id", async (req, res) => {
@@ -70,7 +75,10 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  res.json({ ...account.toJSON(), balance: account.openingBalance });
+  const txs = await Transaction.find({ accountId: account._id });
+  const balance =
+    account.openingBalance + txs.reduce((sum, tx) => sum + tx.amount, 0);
+  res.json({ ...account.toJSON(), balance });
 });
 
 router.delete("/:id", async (req, res) => {
@@ -79,10 +87,15 @@ router.delete("/:id", async (req, res) => {
     return;
   }
 
-  // Guard: block deletion if account has transactions (enforced in Phase 2)
   const account = await Account.findById(req.params.id);
   if (!account) {
     res.status(404).json({ error: "Account not found" });
+    return;
+  }
+
+  const hasTransactions = await Transaction.exists({ accountId: account._id });
+  if (hasTransactions) {
+    res.status(409).json({ error: "Cannot delete account with transactions" });
     return;
   }
 
