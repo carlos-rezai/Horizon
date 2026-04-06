@@ -38,13 +38,22 @@
 
 ## Projections
 
-| Term                  | Definition                                                                                                  | Aliases to avoid               |
-| --------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Projection Engine** | The system that calculates 10-year forward balances from RecurringTransactions and current account balances | Forecast engine, planner       |
-| **MonthlySnapshot**   | The projected state of all account balances for a given future month                                        | Projection row, forecast entry |
-| **Plan**              | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store   | Financial plan, budget plan    |
-| **Actual**            | The real account balance derived from recorded Transactions                                                 | Real balance                   |
-| **Variance**          | The difference between a projected balance and the actual balance for a given account and month             | Delta, difference              |
+| Term                                 | Definition                                                                                                  | Aliases to avoid               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **Projection Engine**                | The system that calculates 10-year forward balances from RecurringTransactions and current account balances | Forecast engine, planner       |
+| **MonthlySnapshot**                  | The projected state of all account balances for a given future month                                        | Projection row, forecast entry |
+| **Plan**                             | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store   | Financial plan, budget plan    |
+| **Actual**                           | The real account balance derived from recorded Transactions                                                 | Real balance                   |
+| **Variance**                         | The difference between a projected balance and the actual balance for a given account and month             | Delta, difference              |
+| **Payoff Month** (new)               | The first projected month in which a Mortgage account's balance reaches zero                                | Payoff date, payoff year       |
+| **Estimated Completion Month** (new) | The first projected month in which a Milestone's target balance is reached                                  | Target date, goal date         |
+
+## Dashboard
+
+| Term                         | Definition                                                                                  | Aliases to avoid          |
+| ---------------------------- | ------------------------------------------------------------------------------------------- | ------------------------- |
+| **Milestone** (new)          | A user-defined named target: a specific account must reach a specific balance               | Goal, target, checkpoint  |
+| **Mortgage Countdown** (new) | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account | Payoff tracker, countdown |
 
 ## Derived Metrics
 
@@ -64,6 +73,10 @@
 - A **Sondertilgung** is a **Transfer** from a **Tagesgeld** account to a **Mortgage** account — it reduces the **Restschuld**
 - The **Plan** is always the output of the **Projection Engine** — it is never entered or stored manually
 - **Total Liquid** includes only **Girokonto** and **Tagesgeld** accounts — determined by **AccountKind**
+- A **Milestone** targets exactly one **Account** and has exactly one **target balance**
+- The **Estimated Completion Month** of a **Milestone** is derived from the **Plan** — never stored
+- The **Payoff Month** of a **Mortgage** account is derived from the **Plan** — never stored
+- The **Mortgage Countdown** displays one entry per **Mortgage** account
 
 ## Example dialogue
 
@@ -92,6 +105,15 @@
 > **Domain expert:** "Never. Total Liquid is Girokonto plus Tagesgeld only.
 > The Investment account tracks Cost Basis — it's illiquid and excluded
 > by AccountKind."
+>
+> **Dev:** "On the dashboard, what's the difference between the Mortgage
+> Countdown and a Milestone targeting the Mortgage account?"
+>
+> **Domain expert:** "The Mortgage Countdown is always there — it's the
+> Payoff Month derived from the Plan, shown automatically for every Mortgage
+> account. A Milestone is something the user creates explicitly — they name
+> it, pick any account, and set a target balance. The Estimated Completion
+> Month comes from the same Plan, but the user decides what to track."
 
 ## Flagged ambiguities
 
