@@ -95,6 +95,15 @@ router.delete("/transactions/:id", async (req, res) => {
     return;
   }
 
+  if (transaction.transferId) {
+    res
+      .status(409)
+      .json({
+        error: "Use DELETE /transfers/:transferId to remove a transfer",
+      });
+    return;
+  }
+
   await transaction.deleteOne();
   res.status(204).send();
 });

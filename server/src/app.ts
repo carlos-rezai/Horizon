@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import accountsRouter from "./routes/accounts.js";
 import transactionsRouter from "./routes/transactions.js";
 import categoriesRouter from "./routes/categories.js";
+import transfersRouter from "./routes/transfers.js";
 import { seedCategories } from "./models/Category.js";
 
 export async function createApp(mongoUri: string) {
@@ -14,6 +15,7 @@ export async function createApp(mongoUri: string) {
   app.use("/accounts", accountsRouter);
   app.use("/", transactionsRouter);
   app.use("/categories", categoriesRouter);
+  app.use("/transfers", transfersRouter);
 
   return app;
 }
