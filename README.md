@@ -156,7 +156,7 @@ Then open http://localhost:5173 in your browser.
 
 | Feature                                    | Status         |
 | ------------------------------------------ | -------------- |
-| Account + transaction core (manual entry)  | 🔲 In progress |
+| Account + transaction core (manual entry)  | ✅ Complete    |
 | Dashboard + milestone tracker              | 🔲 In progress |
 | Meridian design system                     | 🔲 In progress |
 | Monthly digest (AI)                        | 🔲 In progress |
