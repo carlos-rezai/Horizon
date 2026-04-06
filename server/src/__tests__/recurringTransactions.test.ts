@@ -7,6 +7,9 @@ import type { Express } from 'express'
 let mongod: MongoMemoryServer
 let app: Express
 
+// A valid ObjectId that doesn't need to exist in the DB for CRUD tests
+const FAKE_ACCOUNT_ID = '000000000000000000000001'
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create()
   app = await createApp(mongod.getUri())
@@ -31,8 +34,9 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('POST /recurring-transactions', () => {
-  it('creates a standing order and returns 201 with all fields', async () => {
+  it('creates a standing order and returns 201 with all fields including accountId', async () => {
     const res = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
       category: 'Housing',
@@ -42,6 +46,7 @@ describe('POST /recurring-transactions', () => {
 
     expect(res.status).toBe(201)
     expect(res.body._id).toBeDefined()
+    expect(res.body.accountId).toBe(FAKE_ACCOUNT_ID)
     expect(res.body.amount).toBe(95000)
     expect(res.body.description).toBe('Rent')
     expect(res.body.category).toBe('Housing')
@@ -51,29 +56,37 @@ describe('POST /recurring-transactions', () => {
   })
 
   it('stores and returns linkedAccountId for a recurring transfer', async () => {
-    const accountRes = await request(app).post('/accounts').send({
+    const sourceRes = await request(app).post('/accounts').send({
+      kind: 'Girokonto',
+      name: 'Main',
+      openingBalance: 0,
+      openingDate: '2026-01-01',
+    })
+    const destRes = await request(app).post('/accounts').send({
       kind: 'Tagesgeld',
       name: 'Savings',
       openingBalance: 0,
       openingDate: '2026-01-01',
     })
-    const accountId = accountRes.body._id
 
     const res = await request(app).post('/recurring-transactions').send({
+      accountId: sourceRes.body._id,
       amount: 50000,
       description: 'Monthly savings transfer',
       category: 'Transfer',
       frequency: 'monthly',
       dayOfMonth: 5,
-      linkedAccountId: accountId,
+      linkedAccountId: destRes.body._id,
     })
 
     expect(res.status).toBe(201)
-    expect(res.body.linkedAccountId).toBe(accountId)
+    expect(res.body.accountId).toBe(sourceRes.body._id)
+    expect(res.body.linkedAccountId).toBe(destRes.body._id)
   })
 
   it('accepts quarterly frequency', async () => {
     const res = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 30000,
       description: 'Insurance',
       category: 'Miscellaneous',
@@ -87,6 +100,7 @@ describe('POST /recurring-transactions', () => {
 
   it('accepts annual frequency', async () => {
     const res = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 120000,
       description: 'Annual subscription',
       category: 'Subscriptions',
@@ -98,8 +112,21 @@ describe('POST /recurring-transactions', () => {
     expect(res.body.frequency).toBe('annual')
   })
 
-  it('returns 400 when required fields are missing', async () => {
+  it('returns 400 when accountId is missing', async () => {
     const res = await request(app).post('/recurring-transactions').send({
+      amount: 95000,
+      description: 'Rent',
+      category: 'Housing',
+      frequency: 'monthly',
+      dayOfMonth: 1,
+    })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 when other required fields are missing', async () => {
+    const res = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
     })
@@ -115,6 +142,7 @@ describe('POST /recurring-transactions', () => {
 describe('GET /recurring-transactions', () => {
   it('returns all recurring transactions including inactive ones', async () => {
     await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
       category: 'Housing',
@@ -123,6 +151,7 @@ describe('GET /recurring-transactions', () => {
     })
 
     const createRes = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 20000,
       description: 'Gym',
       category: 'Subscriptions',
@@ -160,6 +189,7 @@ describe('GET /recurring-transactions', () => {
 describe('PATCH /recurring-transactions/:id', () => {
   it('updates amount, description, and category', async () => {
     const createRes = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
       category: 'Housing',
@@ -179,6 +209,7 @@ describe('PATCH /recurring-transactions/:id', () => {
 
   it('deactivates a standing order with isActive: false', async () => {
     const createRes = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
       category: 'Housing',
@@ -197,6 +228,7 @@ describe('PATCH /recurring-transactions/:id', () => {
 
   it('reactivates a standing order with isActive: true', async () => {
     const createRes = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
       category: 'Housing',
@@ -233,6 +265,7 @@ describe('PATCH /recurring-transactions/:id', () => {
 describe('DELETE /recurring-transactions/:id', () => {
   it('removes the standing order permanently', async () => {
     const createRes = await request(app).post('/recurring-transactions').send({
+      accountId: FAKE_ACCOUNT_ID,
       amount: 95000,
       description: 'Rent',
       category: 'Housing',
