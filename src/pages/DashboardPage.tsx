@@ -1,7 +1,9 @@
 import { useAccounts } from "../hooks/useAccounts";
 import { useProjection } from "../hooks/useProjection";
+import { useMilestones } from "../hooks/useMilestones";
 import AccountOverview from "../features/accounts/AccountOverview";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown";
+import MilestoneTracker from "../features/milestones/MilestoneTracker";
 import { computeTotalLiquid } from "../utils/accounts";
 
 function formatBalance(cents: number): string {
@@ -22,6 +24,7 @@ export default function DashboardPage() {
     isLoading: projectionLoading,
     error: projectionError,
   } = useProjection();
+  const { milestones, addMilestone, deleteMilestone } = useMilestones();
 
   if (accountsLoading || projectionLoading) return <p>Loading…</p>;
   if (accountsError) return <p>Error: {accountsError}</p>;
@@ -38,6 +41,13 @@ export default function DashboardPage() {
         <AccountOverview accounts={accounts} />
       </section>
       <MortgageCountdown accounts={accounts} snapshots={snapshots} />
+      <MilestoneTracker
+        milestones={milestones}
+        accounts={accounts}
+        snapshots={snapshots}
+        onAdd={addMilestone}
+        onDelete={deleteMilestone}
+      />
     </main>
   );
 }
