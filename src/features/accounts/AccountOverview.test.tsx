@@ -1,5 +1,10 @@
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+// @vitest-environment jsdom
+import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+
+afterEach(() => {
+  cleanup();
+});
 import AccountOverview from "./AccountOverview";
 
 type AccountKind =
