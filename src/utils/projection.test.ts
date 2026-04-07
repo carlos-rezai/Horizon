@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findMortgagePayoffMonth } from './projection'
+import { findMortgagePayoffMonth, findMilestoneMonth } from './projection'
 
 interface AccountSnapshot {
   projected: number
@@ -58,5 +58,53 @@ describe('findMortgagePayoffMonth', () => {
 
   it('returns null when snapshots array is empty', () => {
     expect(findMortgagePayoffMonth([], 'mortgage-1')).toBeNull()
+  })
+})
+
+describe('findMilestoneMonth', () => {
+  it('returns the first month where an asset account projected balance meets or exceeds the target', () => {
+    const id = 'tagesgeld-1'
+    const snapshots: MonthlySnapshot[] = [
+      snapshot('2026-04', id, 50000),
+      snapshot('2026-05', id, 80000),
+      snapshot('2026-06', id, 100000),
+      snapshot('2026-07', id, 120000),
+    ]
+
+    expect(findMilestoneMonth(snapshots, id, 100000, 'Tagesgeld')).toBe('2026-06')
+  })
+
+  it('returns null when an asset account never reaches the target', () => {
+    const id = 'tagesgeld-1'
+    const snapshots: MonthlySnapshot[] = [
+      snapshot('2026-04', id, 50000),
+      snapshot('2026-05', id, 60000),
+      snapshot('2026-06', id, 70000),
+    ]
+
+    expect(findMilestoneMonth(snapshots, id, 100000, 'Tagesgeld')).toBeNull()
+  })
+
+  it('returns the first month where a Mortgage projected balance falls to or below the target', () => {
+    const id = 'mortgage-1'
+    const snapshots: MonthlySnapshot[] = [
+      snapshot('2026-04', id, 4000000),
+      snapshot('2026-05', id, 3500000),
+      snapshot('2026-06', id, 3000000),
+      snapshot('2026-07', id, 2500000),
+    ]
+
+    expect(findMilestoneMonth(snapshots, id, 3000000, 'Mortgage')).toBe('2026-06')
+  })
+
+  it('returns null when a Mortgage balance never falls to the target', () => {
+    const id = 'mortgage-1'
+    const snapshots: MonthlySnapshot[] = [
+      snapshot('2026-04', id, 4000000),
+      snapshot('2026-05', id, 3800000),
+      snapshot('2026-06', id, 3600000),
+    ]
+
+    expect(findMilestoneMonth(snapshots, id, 3000000, 'Mortgage')).toBeNull()
   })
 })

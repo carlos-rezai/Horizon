@@ -1,0 +1,190 @@
+// @vitest-environment jsdom
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import MilestoneTracker from './MilestoneTracker'
+
+afterEach(() => {
+  cleanup()
+})
+
+interface AccountSnapshot {
+  projected: number
+  actual?: number
+}
+
+interface MonthlySnapshot {
+  month: string
+  accounts: Record<string, AccountSnapshot>
+  netCashflow: number
+  totalLiquid: number
+}
+
+type AccountKind = 'Girokonto' | 'Tagesgeld' | 'Mortgage' | 'CreditCard' | 'Investment'
+
+interface AccountWithBalance {
+  _id: string
+  kind: AccountKind
+  name: string
+  openingBalance: number
+  openingDate: string
+  balance: number
+  sondertilgungAllowance?: number
+}
+
+interface Milestone {
+  _id: string
+  name: string
+  accountId: string
+  targetBalance: number
+}
+
+const tagesgeldAccount: AccountWithBalance = {
+  _id: 'acc-1',
+  kind: 'Tagesgeld',
+  name: 'DKB Reserve',
+  openingBalance: 0,
+  openingDate: '2026-01-01',
+  balance: 50000,
+}
+
+const milestone: Milestone = {
+  _id: 'ms-1',
+  name: 'Emergency fund',
+  accountId: 'acc-1',
+  targetBalance: 100000,
+}
+
+// Snapshots where acc-1 reaches 100000 at 2028-06
+const reachingSnapshots: MonthlySnapshot[] = Array.from({ length: 120 }, (_, i) => {
+  const year = 2026 + Math.floor(i / 12)
+  const month = String((i % 12) + 1).padStart(2, '0')
+  return {
+    month: `${year}-${month}`,
+    accounts: { 'acc-1': { projected: 50000 + i * 1000 } },
+    netCashflow: 0,
+    totalLiquid: 0,
+  }
+})
+
+// Snapshots where acc-1 never reaches 100000
+const nonReachingSnapshots: MonthlySnapshot[] = Array.from({ length: 120 }, (_, i) => {
+  const year = 2026 + Math.floor(i / 12)
+  const month = String((i % 12) + 1).padStart(2, '0')
+  return {
+    month: `${year}-${month}`,
+    accounts: { 'acc-1': { projected: 60000 } },
+    netCashflow: 0,
+    totalLiquid: 0,
+  }
+})
+
+describe('MilestoneTracker', () => {
+  it('shows empty state when no milestones exist', () => {
+    render(
+      <MilestoneTracker
+        milestones={[]}
+        accounts={[tagesgeldAccount]}
+        snapshots={[]}
+        onAdd={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText(/no milestones/i)).toBeInTheDocument()
+  })
+
+  it('renders each milestone card with name, target account name, and target balance', () => {
+    render(
+      <MilestoneTracker
+        milestones={[milestone]}
+        accounts={[tagesgeldAccount]}
+        snapshots={nonReachingSnapshots}
+        onAdd={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('Emergency fund')).toBeInTheDocument()
+    expect(screen.getByText('DKB Reserve')).toBeInTheDocument()
+    // targetBalance 100000 cents = 1.000,00 €
+    expect(screen.getByText(/1[.,]000/)).toBeInTheDocument()
+  })
+
+  it('shows "Not reached within 10-year horizon." when completion month is null', () => {
+    render(
+      <MilestoneTracker
+        milestones={[milestone]}
+        accounts={[tagesgeldAccount]}
+        snapshots={nonReachingSnapshots}
+        onAdd={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('Not reached within 10-year horizon.')).toBeInTheDocument()
+  })
+
+  it('shows the estimated completion month when the target is reached', () => {
+    render(
+      <MilestoneTracker
+        milestones={[milestone]}
+        accounts={[tagesgeldAccount]}
+        snapshots={reachingSnapshots}
+        onAdd={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    )
+
+    // Should display a YYYY-MM month string
+    expect(screen.getByText(/\d{4}-\d{2}/)).toBeInTheDocument()
+  })
+
+  it('calls onAdd with name, accountId, and targetBalance when the form is submitted', () => {
+    const onAdd = vi.fn()
+
+    render(
+      <MilestoneTracker
+        milestones={[]}
+        accounts={[tagesgeldAccount]}
+        snapshots={[]}
+        onAdd={onAdd}
+        onDelete={vi.fn()}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: 'New goal' },
+    })
+    fireEvent.change(screen.getByLabelText(/account/i), {
+      target: { value: 'acc-1' },
+    })
+    fireEvent.change(screen.getByLabelText(/target balance/i), {
+      target: { value: '200000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /add/i }))
+
+    expect(onAdd).toHaveBeenCalledWith({
+      name: 'New goal',
+      accountId: 'acc-1',
+      targetBalance: 200000,
+    })
+  })
+
+  it('calls onDelete with the milestone id when the delete button is clicked', () => {
+    const onDelete = vi.fn()
+
+    render(
+      <MilestoneTracker
+        milestones={[milestone]}
+        accounts={[tagesgeldAccount]}
+        snapshots={nonReachingSnapshots}
+        onAdd={vi.fn()}
+        onDelete={onDelete}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+    expect(onDelete).toHaveBeenCalledWith('ms-1')
+  })
+})
