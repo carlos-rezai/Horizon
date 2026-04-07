@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import mongoose from "mongoose";
 import accountsRouter from "./routes/accounts.js";
 import transactionsRouter from "./routes/transactions.js";
@@ -14,6 +15,7 @@ export async function createApp(mongoUri: string) {
   await seedCategories();
 
   const app = express();
+  app.use(cors({ origin: process.env.CORS_ORIGIN ?? "http://localhost:5173" }));
   app.use(express.json());
   app.use("/accounts", accountsRouter);
   app.use("/", transactionsRouter);

@@ -1,126 +1,146 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from '@testing-library/react'
-import { describe, it, expect, afterEach } from 'vitest'
-import MortgageCountdown from './MortgageCountdown'
+import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import MortgageCountdown from "./MortgageCountdown";
 
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 interface AccountSnapshot {
-  projected: number
-  actual?: number
+  projected: number;
+  actual?: number;
 }
 
 interface MonthlySnapshot {
-  month: string
-  accounts: Record<string, AccountSnapshot>
-  netCashflow: number
-  totalLiquid: number
+  month: string;
+  accounts: Record<string, AccountSnapshot>;
+  netCashflow: number;
+  totalLiquid: number;
 }
 
-type AccountKind = 'Girokonto' | 'Tagesgeld' | 'Mortgage' | 'CreditCard' | 'Investment'
+type AccountKind =
+  | "Girokonto"
+  | "Tagesgeld"
+  | "Mortgage"
+  | "CreditCard"
+  | "Investment";
 interface AccountWithBalance {
-  _id: string
-  kind: AccountKind
-  name: string
-  openingBalance: number
-  openingDate: string
-  balance: number
-  sondertilgungAllowance?: number
+  _id: string;
+  kind: AccountKind;
+  name: string;
+  openingBalance: number;
+  openingDate: string;
+  balance: number;
+  sondertilgungAllowance?: number;
 }
 
 const mortgageAccount: AccountWithBalance = {
-  _id: 'mortgage-1',
-  kind: 'Mortgage',
-  name: 'Berliner Darlehen',
+  _id: "mortgage-1",
+  kind: "Mortgage",
+  name: "Berliner Darlehen",
   openingBalance: 4000000,
-  openingDate: '2026-01-01',
+  openingDate: "2026-01-01",
   balance: 3800000,
-}
+};
 
 const assetAccount: AccountWithBalance = {
-  _id: 'giro-1',
-  kind: 'Girokonto',
-  name: 'Main',
+  _id: "giro-1",
+  kind: "Girokonto",
+  name: "Main",
   openingBalance: 100000,
-  openingDate: '2026-01-01',
+  openingDate: "2026-01-01",
   balance: 150000,
-}
+};
 
-function makeSnapshots(accountId: string, finalProjected: number): MonthlySnapshot[] {
+function makeSnapshots(
+  accountId: string,
+  finalProjected: number
+): MonthlySnapshot[] {
   return Array.from({ length: 120 }, (_, i) => {
-    const year = 2026 + Math.floor(i / 12)
-    const month = String((i % 12) + 1).padStart(2, '0')
-    const projected = i < 119 ? 4000000 - i * 50000 : finalProjected
+    const year = 2026 + Math.floor(i / 12);
+    const month = String((i % 12) + 1).padStart(2, "0");
+    const projected = i < 119 ? 4000000 - i * 10000 : finalProjected;
     return {
       month: `${year}-${month}`,
       accounts: { [accountId]: { projected } },
       netCashflow: 0,
       totalLiquid: 0,
-    }
-  })
+    };
+  });
 }
 
-describe('MortgageCountdown', () => {
-  it('renders nothing when no Mortgage accounts exist', () => {
+describe("MortgageCountdown", () => {
+  it("renders nothing when no Mortgage accounts exist", () => {
     const { container } = render(
       <MortgageCountdown accounts={[assetAccount]} snapshots={[]} />
-    )
-    expect(container.firstChild).toBeNull()
-  })
+    );
+    expect(container.firstChild).toBeNull();
+  });
 
-  it('renders one card per Mortgage account labelled by account name', () => {
+  it("renders one card per Mortgage account labelled by account name", () => {
     const secondMortgage: AccountWithBalance = {
       ...mortgageAccount,
-      _id: 'mortgage-2',
-      name: 'Zweites Darlehen',
-    }
-    const snapshots = makeSnapshots('mortgage-1', 100000)
+      _id: "mortgage-2",
+      name: "Zweites Darlehen",
+    };
+    const snapshots = makeSnapshots("mortgage-1", 100000);
 
     render(
       <MortgageCountdown
         accounts={[mortgageAccount, secondMortgage]}
         snapshots={snapshots}
       />
-    )
+    );
 
-    expect(screen.getByText('Berliner Darlehen')).toBeInTheDocument()
-    expect(screen.getByText('Zweites Darlehen')).toBeInTheDocument()
-  })
+    expect(screen.getByText("Berliner Darlehen")).toBeInTheDocument();
+    expect(screen.getByText("Zweites Darlehen")).toBeInTheDocument();
+  });
 
-  it('shows the current Restschuld for each Mortgage account', () => {
-    const snapshots = makeSnapshots('mortgage-1', 100000)
+  it("shows the current Restschuld for each Mortgage account", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
 
-    render(<MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />)
+    render(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
 
     // balance 3800000 cents = 38,000.00 € — some formatted form containing 38.000 or 38,000
-    expect(screen.getByText(/38[.,]000/)).toBeInTheDocument()
-  })
+    expect(screen.getByText(/38[.,]000/)).toBeInTheDocument();
+  });
 
   it('shows "Not paid off within 10-year horizon." when payoff month is null', () => {
-    const snapshots = makeSnapshots('mortgage-1', 100000) // never reaches 0
+    const snapshots = makeSnapshots("mortgage-1", 100000); // never reaches 0
 
-    render(<MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />)
+    render(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
 
-    expect(screen.getByText('Not paid off within 10-year horizon.')).toBeInTheDocument()
-  })
+    expect(
+      screen.getByText("Not paid off within 10-year horizon.")
+    ).toBeInTheDocument();
+  });
 
-  it('shows time remaining when payoff month is found', () => {
+  it("shows time remaining when payoff month is found", () => {
     // Build snapshots where balance reaches 0 partway through
     const snapshots: MonthlySnapshot[] = Array.from({ length: 120 }, (_, i) => {
-      const year = 2026 + Math.floor(i / 12)
-      const month = String((i % 12) + 1).padStart(2, '0')
+      const year = 2026 + Math.floor(i / 12);
+      const month = String((i % 12) + 1).padStart(2, "0");
       return {
         month: `${year}-${month}`,
-        accounts: { 'mortgage-1': { projected: i < 60 ? 4000000 - i * 70000 : -1 } },
+        accounts: {
+          "mortgage-1": { projected: i < 60 ? 4000000 - i * 70000 : -1 },
+        },
         netCashflow: 0,
         totalLiquid: 0,
-      }
-    })
+      };
+    });
 
-    render(<MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />)
+    render(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
 
-    expect(screen.getByText(/\d+ years?.*\d+ months?.*remaining/i)).toBeInTheDocument()
-  })
-})
+    expect(
+      screen.getByText(/\d+ years?.*\d+ months?.*remaining/i)
+    ).toBeInTheDocument();
+  });
+});

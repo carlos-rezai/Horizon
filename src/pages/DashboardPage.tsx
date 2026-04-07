@@ -1,5 +1,7 @@
 import { useAccounts } from "../hooks/useAccounts";
+import { useProjection } from "../hooks/useProjection";
 import AccountOverview from "../features/accounts/AccountOverview";
+import MortgageCountdown from "../features/mortgage/MortgageCountdown";
 import { computeTotalLiquid } from "../utils/accounts";
 
 function formatBalance(cents: number): string {
@@ -10,10 +12,20 @@ function formatBalance(cents: number): string {
 }
 
 export default function DashboardPage() {
-  const { accounts, isLoading, error } = useAccounts();
+  const {
+    accounts,
+    isLoading: accountsLoading,
+    error: accountsError,
+  } = useAccounts();
+  const {
+    snapshots,
+    isLoading: projectionLoading,
+    error: projectionError,
+  } = useProjection();
 
-  if (isLoading) return <p>Loading…</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (accountsLoading || projectionLoading) return <p>Loading…</p>;
+  if (accountsError) return <p>Error: {accountsError}</p>;
+  if (projectionError) return <p>Error: {projectionError}</p>;
 
   const totalLiquid = computeTotalLiquid(accounts);
 
@@ -25,6 +37,7 @@ export default function DashboardPage() {
         <p>Total Liquid: {formatBalance(totalLiquid)}</p>
         <AccountOverview accounts={accounts} />
       </section>
+      <MortgageCountdown accounts={accounts} snapshots={snapshots} />
     </main>
   );
 }
