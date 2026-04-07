@@ -6,6 +6,7 @@ import categoriesRouter from "./routes/categories.js";
 import transfersRouter from "./routes/transfers.js";
 import recurringTransactionsRouter from "./routes/recurringTransactions.js";
 import projectionRouter from "./routes/projection.js";
+import milestonesRouter from "./routes/milestones.js";
 import { seedCategories } from "./models/Category.js";
 
 export async function createApp(mongoUri: string) {
@@ -20,6 +21,7 @@ export async function createApp(mongoUri: string) {
   app.use("/transfers", transfersRouter);
   app.use("/recurring-transactions", recurringTransactionsRouter);
   app.use("/projection", projectionRouter);
+  app.use("/milestones", milestonesRouter);
 
   return app;
 }
