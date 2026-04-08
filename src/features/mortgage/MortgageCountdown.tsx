@@ -1,17 +1,11 @@
 import type { AccountWithBalance } from "../../types/account";
 import type { MonthlySnapshot } from "../../types/projection";
 import { findMortgagePayoffMonth } from "../../utils/projection";
+import { formatBalance } from "../../utils/format";
 
 interface Props {
   accounts: AccountWithBalance[];
   snapshots: MonthlySnapshot[];
-}
-
-function formatBalance(cents: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
 }
 
 function computeTimeRemaining(fromMonth: string, toMonth: string): string {

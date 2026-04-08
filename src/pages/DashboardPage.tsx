@@ -5,13 +5,7 @@ import AccountOverview from "../features/accounts/AccountOverview";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown";
 import MilestoneTracker from "../features/milestones/MilestoneTracker";
 import { computeTotalLiquid } from "../utils/accounts";
-
-function formatBalance(cents: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
-}
+import { formatBalance } from "../utils/format";
 
 export default function DashboardPage() {
   const {

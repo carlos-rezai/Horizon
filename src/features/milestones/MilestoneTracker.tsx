@@ -3,6 +3,7 @@ import type { Milestone, NewMilestone } from "../../types/milestone";
 import type { AccountWithBalance } from "../../types/account";
 import type { MonthlySnapshot } from "../../types/projection";
 import { findMilestoneMonth } from "../../utils/projection";
+import { formatBalance } from "../../utils/format";
 
 interface Props {
   milestones: Milestone[];
@@ -10,13 +11,6 @@ interface Props {
   snapshots: MonthlySnapshot[];
   onAdd: (data: NewMilestone) => void;
   onDelete: (id: string) => void;
-}
-
-function formatBalance(cents: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
 }
 
 export default function MilestoneTracker({
