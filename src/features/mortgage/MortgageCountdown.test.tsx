@@ -2,38 +2,12 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import MortgageCountdown from "./MortgageCountdown";
+import type { MonthlySnapshot } from "../../types/projection";
+import type { AccountWithBalance } from "../../types/account";
 
 afterEach(() => {
   cleanup();
 });
-
-interface AccountSnapshot {
-  projected: number;
-  actual?: number;
-}
-
-interface MonthlySnapshot {
-  month: string;
-  accounts: Record<string, AccountSnapshot>;
-  netCashflow: number;
-  totalLiquid: number;
-}
-
-type AccountKind =
-  | "Girokonto"
-  | "Tagesgeld"
-  | "Mortgage"
-  | "CreditCard"
-  | "Investment";
-interface AccountWithBalance {
-  _id: string;
-  kind: AccountKind;
-  name: string;
-  openingBalance: number;
-  openingDate: string;
-  balance: number;
-  sondertilgungAllowance?: number;
-}
 
 const mortgageAccount: AccountWithBalance = {
   _id: "mortgage-1",
