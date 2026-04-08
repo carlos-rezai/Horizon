@@ -34,27 +34,28 @@ router.post("/", async (req, res) => {
 
 router.get("/", async (_req, res) => {
   const accounts = await Account.find();
-  const result = await Promise.all(
-    accounts.map(async (a) => {
-      const txs = await Transaction.find({ accountId: a._id });
-      const balance =
-        a.openingBalance + txs.reduce((sum, tx) => sum + tx.amount, 0);
-      return { ...a.toJSON(), balance };
-    })
-  );
+  const sums = await Transaction.aggregate<{ _id: string; total: number }>([
+    { $group: { _id: "$accountId", total: { $sum: "$amount" } } },
+  ]);
+  const sumById = new Map(sums.map((s) => [String(s._id), s.total]));
+  const result = accounts.map((a) => ({
+    ...a.toJSON(),
+    balance: a.openingBalance + (sumById.get(String(a._id)) ?? 0),
+  }));
   res.json(result);
 });
 
 router.get("/liquid", async (_req, res) => {
   const accounts = await Account.find();
-  const entries = await Promise.all(
-    accounts.map(async (a) => {
-      const txs = await Transaction.find({ accountId: a._id });
-      const balance =
-        a.openingBalance + txs.reduce((sum, tx) => sum + tx.amount, 0);
-      return { _id: String(a._id), kind: a.kind, balance };
-    })
-  );
+  const sums = await Transaction.aggregate<{ _id: string; total: number }>([
+    { $group: { _id: "$accountId", total: { $sum: "$amount" } } },
+  ]);
+  const sumById = new Map(sums.map((s) => [String(s._id), s.total]));
+  const entries = accounts.map((a) => ({
+    _id: String(a._id),
+    kind: a.kind,
+    balance: a.openingBalance + (sumById.get(String(a._id)) ?? 0),
+  }));
   res.json({ totalLiquid: calcTotalLiquid(entries) });
 });
 
