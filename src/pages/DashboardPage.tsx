@@ -1,4 +1,4 @@
-import { useAccounts } from "../hooks/useAccounts";
+import { useAccounts } from "../features/accounts/useAccounts";
 import { useProjection } from "../features/projection/useProjection";
 import { useMilestones } from "../hooks/useMilestones";
 import AccountOverview from "../features/accounts/AccountOverview";
