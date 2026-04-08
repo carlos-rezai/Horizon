@@ -1,5 +1,5 @@
 import { useAccounts } from "../hooks/useAccounts";
-import { useProjection } from "../hooks/useProjection";
+import { useProjection } from "../features/projection/useProjection";
 import { useMilestones } from "../hooks/useMilestones";
 import AccountOverview from "../features/accounts/AccountOverview";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown";
