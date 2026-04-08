@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import type { Milestone, NewMilestone } from "../types/milestone";
-import { API_BASE } from "../utils/api";
+import type { Milestone, NewMilestone } from "../../types/milestone";
+import { API_BASE } from "../../utils/api";
 
 interface UseMilestonesResult {
   milestones: Milestone[];
