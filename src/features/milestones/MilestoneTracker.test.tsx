@@ -157,6 +157,48 @@ describe("MilestoneTracker", () => {
     });
   });
 
+  it("does not call onAdd when the name field is empty", () => {
+    const onAdd = vi.fn();
+
+    render(
+      <MilestoneTracker
+        milestones={[]}
+        accounts={[tagesgeldAccount]}
+        snapshots={[]}
+        onAdd={onAdd}
+        onDelete={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/target balance/i), {
+      target: { value: "100000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add/i }));
+
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("does not call onAdd when the target balance field is empty", () => {
+    const onAdd = vi.fn();
+
+    render(
+      <MilestoneTracker
+        milestones={[]}
+        accounts={[tagesgeldAccount]}
+        snapshots={[]}
+        onAdd={onAdd}
+        onDelete={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Emergency fund" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add/i }));
+
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
   it("calls onDelete with the milestone id when the delete button is clicked", () => {
     const onDelete = vi.fn();
 

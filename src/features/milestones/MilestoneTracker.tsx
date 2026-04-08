@@ -24,6 +24,8 @@ export default function MilestoneTracker({
   const [accountId, setAccountId] = useState(accounts[0]?._id ?? "");
   const [targetBalance, setTargetBalance] = useState("");
 
+  const isValid = name.trim() !== "" && targetBalance !== "";
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onAdd({ name, accountId, targetBalance: Number(targetBalance) });
@@ -64,7 +66,9 @@ export default function MilestoneTracker({
           onChange={(e) => setTargetBalance(e.target.value)}
         />
 
-        <button type="submit">Add milestone</button>
+        <button type="submit" disabled={!isValid}>
+          Add milestone
+        </button>
       </form>
 
       {milestones.length === 0 ? (
