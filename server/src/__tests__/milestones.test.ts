@@ -101,6 +101,30 @@ describe("POST /milestones", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("returns 400 when targetBalance is a string", async () => {
+    const account = await createAccount();
+
+    const res = await request(app).post("/milestones").send({
+      name: "Emergency fund",
+      accountId: account._id,
+      targetBalance: "600000",
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when targetBalance is negative", async () => {
+    const account = await createAccount();
+
+    const res = await request(app).post("/milestones").send({
+      name: "Emergency fund",
+      accountId: account._id,
+      targetBalance: -1,
+    });
+
+    expect(res.status).toBe(400);
+  });
 });
 
 // ---------------------------------------------------------------------------

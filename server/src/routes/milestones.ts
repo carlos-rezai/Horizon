@@ -15,6 +15,13 @@ router.post("/", async (req, res) => {
     return;
   }
 
+  if (typeof targetBalance !== "number" || targetBalance < 0) {
+    res
+      .status(400)
+      .json({ error: "targetBalance must be a non-negative number" });
+    return;
+  }
+
   if (
     !mongoose.isValidObjectId(accountId) ||
     !(await Account.exists({ _id: accountId }))
