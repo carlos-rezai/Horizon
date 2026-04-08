@@ -34,6 +34,8 @@ export interface MonthlySnapshot {
   totalLiquid: number;
 }
 
+const PROJECTION_MONTHS = 120;
+
 function addMonths(yyyyMM: string, n: number): string {
   const [yearStr, monthStr] = yyyyMM.split("-");
   const totalMonths =
@@ -72,7 +74,7 @@ export function projectBalances(
 
   const snapshots: MonthlySnapshot[] = [];
 
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < PROJECTION_MONTHS; i++) {
     const month = addMonths(fromDate, i);
 
     let netCashflow = 0;
