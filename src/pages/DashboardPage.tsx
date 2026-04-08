@@ -18,11 +18,19 @@ export default function DashboardPage() {
     isLoading: projectionLoading,
     error: projectionError,
   } = useProjection();
-  const { milestones, addMilestone, deleteMilestone } = useMilestones();
+  const {
+    milestones,
+    isLoading: milestonesLoading,
+    error: milestonesError,
+    addMilestone,
+    deleteMilestone,
+  } = useMilestones();
 
-  if (accountsLoading || projectionLoading) return <p>Loading…</p>;
+  if (accountsLoading || projectionLoading || milestonesLoading)
+    return <p>Loading…</p>;
   if (accountsError) return <p>Error: {accountsError}</p>;
   if (projectionError) return <p>Error: {projectionError}</p>;
+  if (milestonesError) return <p>Error: {milestonesError}</p>;
 
   const totalLiquid = computeTotalLiquid(accounts);
 
