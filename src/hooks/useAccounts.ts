@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import type { AccountWithBalance } from "../types/account";
+import { API_BASE } from "../utils/api";
 
 interface UseAccountsResult {
   accounts: AccountWithBalance[];
   isLoading: boolean;
   error: string | null;
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001";
 
 export function useAccounts(): UseAccountsResult {
   const [accounts, setAccounts] = useState<AccountWithBalance[]>([]);

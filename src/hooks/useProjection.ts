@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import type { MonthlySnapshot } from "../types/projection";
+import { API_BASE } from "../utils/api";
 
 interface UseProjectionResult {
   snapshots: MonthlySnapshot[];
   isLoading: boolean;
   error: string | null;
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001";
 
 export function useProjection(): UseProjectionResult {
   const [snapshots, setSnapshots] = useState<MonthlySnapshot[]>([]);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Milestone, NewMilestone } from "../types/milestone";
+import { API_BASE } from "../utils/api";
 
 interface UseMilestonesResult {
   milestones: Milestone[];
@@ -8,8 +9,6 @@ interface UseMilestonesResult {
   addMilestone: (data: NewMilestone) => Promise<void>;
   deleteMilestone: (id: string) => Promise<void>;
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001";
 
 export function useMilestones(): UseMilestonesResult {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
