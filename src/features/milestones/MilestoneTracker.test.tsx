@@ -127,7 +127,7 @@ describe("MilestoneTracker", () => {
   });
 
   it("calls onAdd with name, accountId, and targetBalance when the form is submitted", () => {
-    const onAdd = vi.fn();
+    const onAdd = vi.fn().mockResolvedValue(undefined);
 
     render(
       <MilestoneTracker
@@ -215,5 +215,56 @@ describe("MilestoneTracker", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
 
     expect(onDelete).toHaveBeenCalledWith("ms-1");
+  });
+
+  it("retains form values when onAdd rejects", async () => {
+    const onAdd = vi.fn().mockRejectedValue(new Error("Server error"));
+
+    render(
+      <MilestoneTracker
+        milestones={[]}
+        accounts={[tagesgeldAccount]}
+        snapshots={[]}
+        onAdd={onAdd}
+        onDelete={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Emergency fund" },
+    });
+    fireEvent.change(screen.getByLabelText(/target balance/i), {
+      target: { value: "100000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add/i }));
+
+    expect(
+      await screen.findByDisplayValue("Emergency fund")
+    ).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("100000")).toBeInTheDocument();
+  });
+
+  it("renders an error message when onAdd rejects", async () => {
+    const onAdd = vi.fn().mockRejectedValue(new Error("Server error"));
+
+    render(
+      <MilestoneTracker
+        milestones={[]}
+        accounts={[tagesgeldAccount]}
+        snapshots={[]}
+        onAdd={onAdd}
+        onDelete={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Emergency fund" },
+    });
+    fireEvent.change(screen.getByLabelText(/target balance/i), {
+      target: { value: "100000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add/i }));
+
+    expect(await screen.findByText("Server error")).toBeInTheDocument();
   });
 });

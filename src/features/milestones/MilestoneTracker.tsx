@@ -9,7 +9,7 @@ interface Props {
   milestones: Milestone[];
   accounts: AccountWithBalance[];
   snapshots: MonthlySnapshot[];
-  onAdd: (data: NewMilestone) => void;
+  onAdd: (data: NewMilestone) => Promise<void>;
   onDelete: (id: string) => void;
 }
 
@@ -24,13 +24,21 @@ export default function MilestoneTracker({
   const [accountId, setAccountId] = useState(accounts[0]?._id ?? "");
   const [targetBalance, setTargetBalance] = useState("");
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const isValid = name.trim() !== "" && targetBalance !== "";
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onAdd({ name, accountId, targetBalance: Number(targetBalance) });
-    setName("");
-    setTargetBalance("");
+    setSubmitError(null);
+    try {
+      await onAdd({ name, accountId, targetBalance: Number(targetBalance) });
+      setName("");
+      setTargetBalance("");
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to add milestone"
+      );
+    }
   }
 
   return (
@@ -69,6 +77,7 @@ export default function MilestoneTracker({
         <button type="submit" disabled={!isValid}>
           Add milestone
         </button>
+        {submitError !== null && <p>{submitError}</p>}
       </form>
 
       {milestones.length === 0 ? (
