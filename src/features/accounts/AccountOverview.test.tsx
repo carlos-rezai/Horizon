@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, afterEach } from "vitest";
 
 afterEach(() => {
@@ -44,7 +45,11 @@ const mockAccounts: AccountWithBalance[] = [
 
 describe("AccountOverview", () => {
   it("renders each account name and AccountKind", () => {
-    render(<AccountOverview accounts={mockAccounts} />);
+    render(
+      <MemoryRouter>
+        <AccountOverview accounts={mockAccounts} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText("Main Checking")).toBeInTheDocument();
     expect(screen.getByText("Girokonto")).toBeInTheDocument();
@@ -53,7 +58,11 @@ describe("AccountOverview", () => {
   });
 
   it("renders the current balance for each account", () => {
-    render(<AccountOverview accounts={mockAccounts} />);
+    render(
+      <MemoryRouter>
+        <AccountOverview accounts={mockAccounts} />
+      </MemoryRouter>
+    );
 
     // 150000 cents — rendered in some formatted form containing 1,500 or 1.500
     expect(screen.getByText(/1[.,]500/)).toBeInTheDocument();
@@ -62,8 +71,26 @@ describe("AccountOverview", () => {
   });
 
   it("shows an empty state when no accounts exist", () => {
-    render(<AccountOverview accounts={[]} />);
+    render(
+      <MemoryRouter>
+        <AccountOverview accounts={[]} />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText(/no accounts/i)).toBeInTheDocument();
+  });
+
+  it("renders each account as a link to its detail page", () => {
+    render(
+      <MemoryRouter>
+        <AccountOverview accounts={mockAccounts} />
+      </MemoryRouter>
+    );
+
+    const links = screen.getAllByRole("link");
+    const hrefs = links.map((l) => l.getAttribute("href"));
+
+    expect(hrefs).toContain("/accounts/1");
+    expect(hrefs).toContain("/accounts/2");
   });
 });
