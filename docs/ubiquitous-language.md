@@ -16,13 +16,17 @@
 
 ## Transactions
 
-| Term                     | Definition                                                                            | Aliases to avoid                                |
-| ------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **Transaction**          | A single financial movement recorded against an account                               | Entry, record, payment                          |
-| **Transfer**             | A movement of money between two Horizon accounts, modelled as two linked Transactions | Internal transaction, move                      |
-| **TransferId**           | The shared identifier that links the two legs of a Transfer                           | —                                               |
-| **RecurringTransaction** | A standing order that fires on a defined schedule and drives the Projection Engine    | Standing order, Dauerauftrag, scheduled payment |
-| **Category**             | A user-managed label applied to a Transaction for reporting and AI analysis           | Tag, type, label                                |
+| Term                                    | Definition                                                                                                                  | Aliases to avoid                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Transaction**                         | A single financial movement recorded against an account                                                                     | Entry, record, payment                          |
+| **Transfer**                            | A movement of money between two Horizon accounts, modelled as two linked Transactions                                       | Internal transaction, move                      |
+| **TransferId**                          | The shared identifier that links the two legs of a Transfer                                                                 | —                                               |
+| **RecurringTransaction**                | A standing order that fires on a defined schedule and drives the Projection Engine                                          | Standing order, Dauerauftrag, scheduled payment |
+| **Active RecurringTransaction** (new)   | A RecurringTransaction with `isActive: true` — included in all Projection Engine calculations                               | Enabled, on                                     |
+| **Inactive RecurringTransaction** (new) | A RecurringTransaction with `isActive: false` — paused but retained; excluded from projections                              | Disabled, deleted, off                          |
+| **Recurring Transfer** (new)            | A RecurringTransaction with a `linkedAccountId` — models a scheduled movement between two accounts in the Projection Engine | Scheduled transfer                              |
+| **One-off Transfer** (new)              | A single, non-recurring Transfer between two accounts recorded directly as two linked Transactions                          | Ad-hoc transfer, manual transfer                |
+| **Category**                            | A user-managed label applied to a Transaction for reporting and AI analysis                                                 | Tag, type, label                                |
 
 ## Mortgage
 
@@ -70,6 +74,9 @@
 - A **Current Balance** is always derived from an **Opening Balance** + all **Transactions** — never stored directly
 - A **Transfer** is always composed of exactly two **Transactions** sharing a **TransferId**
 - A **RecurringTransaction** may produce a **Transaction** on each occurrence date
+- Only **Active RecurringTransactions** are applied by the **Projection Engine** — **Inactive RecurringTransactions** are skipped
+- A **Recurring Transfer** is a **RecurringTransaction** with a `linkedAccountId` — the Projection Engine credits the linked account and (if it is a Mortgage) reduces **Restschuld**
+- A **One-off Transfer** is always composed of exactly two **Transactions** sharing a **TransferId** — it has no schedule
 - A **Sondertilgung** is a **Transfer** from a **Tagesgeld** account to a **Mortgage** account — it reduces the **Restschuld**
 - The **Plan** is always the output of the **Projection Engine** — it is never entered or stored manually
 - **Total Liquid** includes only **Girokonto** and **Tagesgeld** accounts — determined by **AccountKind**
@@ -115,6 +122,27 @@
 > it, pick any account, and set a target balance. The Estimated Completion
 > Month comes from the same Plan, but the user decides what to track."
 
+> **Dev:** "If the user wants to pause their monthly savings transfer temporarily,
+> do they delete the RecurringTransaction?"
+>
+> **Domain expert:** "No — they set it to Inactive. The RecurringTransaction is
+> retained so they can reactivate it later. The Projection Engine skips Inactive
+> RecurringTransactions, so the Plan updates immediately."
+>
+> **Dev:** "What about a one-off lump-sum transfer — say, moving a bonus into
+> Tagesgeld?"
+>
+> **Domain expert:** "That's a One-off Transfer — two linked Transactions sharing
+> a TransferId. It has no schedule and no linkedAccountId. It affects the Current
+> Balance immediately but doesn't change any RecurringTransaction."
+>
+> **Dev:** "And the annual Sondertilgung — is that a Recurring Transfer?"
+>
+> **Domain expert:** "Yes. It's a RecurringTransaction on the Tagesgeld account
+> with a linkedAccountId pointing to the Mortgage. When the Projection Engine
+> hits it in October, it debits Tagesgeld and reduces the Restschuld. That's
+> what makes the Payoff Month move earlier."
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
@@ -129,3 +157,7 @@
   **Sondertilgung reserve** (its purpose) instead.
 - **"AccountType"** — rejected in favour of **AccountKind** (DDD convention
   to avoid collision with framework-level type concepts).
+- **"Transfer"** is now two distinct concepts — always qualify: **One-off Transfer**
+  (two Transactions sharing a TransferId, recorded directly) vs **Recurring Transfer**
+  (a RecurringTransaction with a linkedAccountId, applied by the Projection Engine).
+  Never use "Transfer" alone when the distinction matters.
