@@ -2,8 +2,8 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import MortgageCountdown from "./MortgageCountdown";
-import type { MonthlySnapshot } from "../../types/projection";
-import type { AccountWithBalance } from "../../types/account";
+import type { MonthlySnapshot } from "../../../types/projection";
+import type { AccountWithBalance } from "../../../types/account";
 
 afterEach(() => {
   cleanup();

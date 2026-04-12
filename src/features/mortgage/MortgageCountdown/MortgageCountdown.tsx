@@ -1,7 +1,7 @@
-import type { AccountWithBalance } from "../../types/account";
-import type { MonthlySnapshot } from "../../types/projection";
-import { findMortgagePayoffMonth } from "../../utils/projection";
-import { formatBalance } from "../../utils/format";
+import type { AccountWithBalance } from "../../../types/account";
+import type { MonthlySnapshot } from "../../../types/projection";
+import { findMortgagePayoffMonth } from "../../../utils/projection";
+import { formatBalance } from "../../../utils/format";
 
 interface Props {
   accounts: AccountWithBalance[];

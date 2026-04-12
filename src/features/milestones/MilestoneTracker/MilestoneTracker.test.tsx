@@ -8,9 +8,9 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import MilestoneTracker from "./MilestoneTracker";
-import type { MonthlySnapshot } from "../../types/projection";
-import type { AccountWithBalance } from "../../types/account";
-import type { Milestone } from "../../types/milestone";
+import type { MonthlySnapshot } from "../../../types/projection";
+import type { AccountWithBalance } from "../../../types/account";
+import type { Milestone } from "../../../types/milestone";
 
 afterEach(() => {
   cleanup();

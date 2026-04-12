@@ -1,9 +1,9 @@
 import { useState } from "react";
-import type { Milestone, NewMilestone } from "../../types/milestone";
-import type { AccountWithBalance } from "../../types/account";
-import type { MonthlySnapshot } from "../../types/projection";
-import { findMilestoneMonth } from "../../utils/projection";
-import { formatBalance } from "../../utils/format";
+import type { Milestone, NewMilestone } from "../../../types/milestone";
+import type { AccountWithBalance } from "../../../types/account";
+import type { MonthlySnapshot } from "../../../types/projection";
+import { findMilestoneMonth } from "../../../utils/projection";
+import { formatBalance } from "../../../utils/format";
 
 interface Props {
   milestones: Milestone[];

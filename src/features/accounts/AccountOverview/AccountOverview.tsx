@@ -1,4 +1,5 @@
-import type { AccountWithBalance, AccountKind } from "../../types/account";
+import { Link } from "react-router-dom";
+import type { AccountWithBalance, AccountKind } from "../../../types/account";
 
 interface Props {
   accounts: AccountWithBalance[];
@@ -25,9 +26,11 @@ export default function AccountOverview({ accounts }: Props) {
           key={account._id}
           data-liability={LIABILITY_KINDS.has(account.kind)}
         >
-          <span>{account.name}</span>
-          <span>{account.kind}</span>
-          <span>{formatBalance(account.balance)}</span>
+          <Link to={`/accounts/${account._id}`}>
+            <span>{account.name}</span>
+            <span>{account.kind}</span>
+            <span>{formatBalance(account.balance)}</span>
+          </Link>
         </li>
       ))}
     </ul>

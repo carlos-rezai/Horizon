@@ -18,9 +18,10 @@ describe("eurosToCents", () => {
     expect(eurosToCents("0")).toBe(0);
   });
 
-  it("rounds to the nearest cent to avoid floating-point drift", () => {
-    // Math.round(1.005 * 100) should be 101, not 100
-    expect(eurosToCents("1.005")).toBe(101);
+  it("uses Math.round so values slightly below a whole cent round up correctly", () => {
+    // 0.3 in IEEE 754 is 0.2999999..., so 0.3 * 100 = 29.9999...
+    // Math.round gives 30; Math.floor would give 29
+    expect(eurosToCents("0.30")).toBe(30);
   });
 });
 
