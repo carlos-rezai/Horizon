@@ -23,6 +23,11 @@ describe("eurosToCents", () => {
     // Math.round gives 30; Math.floor would give 29
     expect(eurosToCents("0.30")).toBe(30);
   });
+
+  it("rounds a half-cent input to the nearest cent", () => {
+    // 1.005 * 100 = 100.5 — Math.round gives 101
+    expect(eurosToCents("1.005")).toBe(101);
+  });
 });
 
 describe("centsToEuros", () => {
