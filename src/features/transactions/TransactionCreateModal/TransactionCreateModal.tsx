@@ -1,26 +1,54 @@
 import { useState } from "react";
-import type { Category } from "../../../types/category";
+import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
 
+const ADD_CATEGORY_VALUE = "__add__";
+
 interface Props {
   accountId: string;
-  categories: Category[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function TransactionCreateModal({
   accountId,
-  categories,
   onClose,
   onSuccess,
 }: Props) {
+  const {
+    categories,
+    selectedCategoryId,
+    setSelectedCategoryId,
+    isAdding,
+    addCategory,
+    addError,
+  } = useCategoriesWithInlineAdd();
+
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(categories[0]?._id ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [showInlineAdd, setShowInlineAdd] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  const handleCategoryChange = (value: string) => {
+    if (value === ADD_CATEGORY_VALUE) {
+      setShowInlineAdd(true);
+    } else {
+      setSelectedCategoryId(value);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    try {
+      await addCategory(newCategoryName);
+      setShowInlineAdd(false);
+      setNewCategoryName("");
+    } catch {
+      setShowInlineAdd(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +61,7 @@ export default function TransactionCreateModal({
         date,
         amount: eurosToCents(amount),
         description,
-        category,
+        category: selectedCategoryId,
       }),
     });
 
@@ -78,20 +106,44 @@ export default function TransactionCreateModal({
           />
         </label>
 
-        <label>
-          Category
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {categories.map((cat) => (
-              <option key={cat._id} value={cat._id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {showInlineAdd ? (
+          <>
+            <label>
+              New category name
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                disabled={isAdding}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={handleAddCategory}
+              disabled={isAdding}
+            >
+              Add category
+            </button>
+          </>
+        ) : (
+          <label>
+            Category
+            <select
+              value={selectedCategoryId}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              disabled={isAdding}
+            >
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+              <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
+            </select>
+          </label>
+        )}
 
+        {addError && <p>{addError}</p>}
         {error && <p role="alert">{error}</p>}
 
         <button type="submit">Add transaction</button>
