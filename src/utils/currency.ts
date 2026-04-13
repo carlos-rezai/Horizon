@@ -1,5 +1,5 @@
 export function eurosToCents(euros: string): number {
-  return Math.round(parseFloat(euros) * 100);
+  return Math.round((parseFloat(euros) + Number.EPSILON) * 100);
 }
 
 export function centsToEuros(cents: number): string {
