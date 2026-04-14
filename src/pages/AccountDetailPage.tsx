@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAccounts } from "../features/accounts/useAccounts";
 import AccountDetailHeader from "../features/accounts/AccountDetailHeader/AccountDetailHeader";
+import TransactionCreateModal from "../features/transactions/TransactionCreateModal/TransactionCreateModal";
+import TransferCreateModal from "../features/transactions/TransferCreateModal/TransferCreateModal";
 import { API_BASE } from "../utils/api";
 import type { Transaction } from "../types/transaction";
 
@@ -10,6 +12,8 @@ export default function AccountDetailPage() {
   const { accounts, isLoading, error } = useAccounts();
   const navigate = useNavigate();
   const [hasTransactions, setHasTransactions] = useState(false);
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showAddTransfer, setShowAddTransfer] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -58,7 +62,27 @@ export default function AccountDetailPage() {
       />
       <section>
         <h2>Transactions</h2>
-        {/* Implemented in issue #16 */}
+        <button type="button" onClick={() => setShowAddTransaction(true)}>
+          Add transaction
+        </button>
+        <button type="button" onClick={() => setShowAddTransfer(true)}>
+          Add transfer
+        </button>
+        {showAddTransaction && (
+          <TransactionCreateModal
+            accountId={account._id}
+            onClose={() => setShowAddTransaction(false)}
+            onSuccess={() => setShowAddTransaction(false)}
+          />
+        )}
+        {showAddTransfer && (
+          <TransferCreateModal
+            fromAccountId={account._id}
+            accounts={accounts}
+            onClose={() => setShowAddTransfer(false)}
+            onSuccess={() => setShowAddTransfer(false)}
+          />
+        )}
       </section>
       <section>
         <h2>Recurring Transactions</h2>
