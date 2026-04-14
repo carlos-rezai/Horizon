@@ -48,6 +48,10 @@ describe("AccountDetailPage — transfer button", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => [],
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        json: async () => [],
       } as Response);
   });
 
@@ -60,6 +64,32 @@ describe("AccountDetailPage — transfer button", () => {
 
     expect(
       screen.getByRole("button", { name: /add transfer/i })
+    ).toBeInTheDocument();
+  });
+});
+
+describe("AccountDetailPage — recurring transactions button", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => accounts,
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      } as Response);
+  });
+
+  it("shows the Add recurring transaction button in the recurring transactions section", async () => {
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: /add recurring transaction/i })
     ).toBeInTheDocument();
   });
 });

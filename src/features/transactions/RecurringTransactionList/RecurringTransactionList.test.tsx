@@ -1,0 +1,183 @@
+// @vitest-environment jsdom
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import RecurringTransactionList from "./RecurringTransactionList";
+import type { RecurringTransaction } from "../../../types/recurring";
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+const activeRt: RecurringTransaction = {
+  _id: "rt-1",
+  accountId: "acc-1",
+  amount: -120000,
+  description: "Rent",
+  category: "Housing",
+  frequency: "monthly",
+  dayOfMonth: 1,
+  isActive: true,
+};
+
+const inactiveRt: RecurringTransaction = {
+  _id: "rt-2",
+  accountId: "acc-1",
+  amount: -2000,
+  description: "Spotify",
+  category: "Entertainment",
+  frequency: "monthly",
+  dayOfMonth: 15,
+  isActive: false,
+};
+
+const linkedRt: RecurringTransaction = {
+  _id: "rt-3",
+  accountId: "acc-1",
+  amount: -50000,
+  description: "Savings deposit",
+  category: "Transfer",
+  frequency: "monthly",
+  dayOfMonth: 25,
+  isActive: true,
+  linkedAccountId: "acc-2",
+};
+
+describe("RecurringTransactionList — row content", () => {
+  it("renders description, frequency, and day of month for each entry", () => {
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt]}
+        onToggle={vi.fn()}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Rent")).toBeInTheDocument();
+    expect(screen.getByText(/monthly/i)).toBeInTheDocument();
+    expect(screen.getByText(/1/)).toBeInTheDocument();
+  });
+
+  it("renders the amount in euros", () => {
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt]}
+        onToggle={vi.fn()}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    // -120000 cents = -1200.00 euros
+    expect(screen.getByText(/-1[.,]200/)).toBeInTheDocument();
+  });
+
+  it("renders a linked account indicator when linkedAccountId is set", () => {
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[linkedRt]}
+        onToggle={vi.fn()}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByTestId("linked-account-indicator")
+    ).toBeInTheDocument();
+  });
+});
+
+describe("RecurringTransactionList — inactive state", () => {
+  it("marks inactive entries with a data-inactive attribute", () => {
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt, inactiveRt]}
+        onToggle={vi.fn()}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    const rows = screen.getAllByRole("listitem");
+    const inactiveRow = rows.find((r) =>
+      r.textContent?.includes("Spotify")
+    );
+    expect(inactiveRow).toHaveAttribute("data-inactive", "true");
+  });
+
+  it("does not mark active entries as inactive", () => {
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt]}
+        onToggle={vi.fn()}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    const rows = screen.getAllByRole("listitem");
+    rows.forEach((row) => {
+      expect(row).not.toHaveAttribute("data-inactive", "true");
+    });
+  });
+});
+
+describe("RecurringTransactionList — interactions", () => {
+  it("calls onToggle with the recurring transaction when the toggle is clicked", () => {
+    const onToggle = vi.fn();
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt]}
+        onToggle={onToggle}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    expect(onToggle).toHaveBeenCalledWith(activeRt);
+  });
+
+  it("calls onRowClick with the recurring transaction when the row is clicked", () => {
+    const onRowClick = vi.fn();
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt]}
+        onToggle={vi.fn()}
+        onRowClick={onRowClick}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Rent"));
+
+    expect(onRowClick).toHaveBeenCalledWith(activeRt);
+  });
+
+  it("does not fire onRowClick when the toggle is clicked", () => {
+    const onRowClick = vi.fn();
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[activeRt]}
+        onToggle={vi.fn()}
+        onRowClick={onRowClick}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+});
+
+describe("RecurringTransactionList — empty state", () => {
+  it("renders an empty state message when the list is empty", () => {
+    render(
+      <RecurringTransactionList
+        recurringTransactions={[]}
+        onToggle={vi.fn()}
+        onRowClick={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText(/no recurring transactions/i)
+    ).toBeInTheDocument();
+  });
+});
