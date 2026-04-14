@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import TransactionList from "./TransactionList";
 import type { Transaction } from "../../../types/transaction";
 
@@ -77,5 +77,21 @@ describe("TransactionList — row content", () => {
     expect(screen.getByText("Groceries")).toBeInTheDocument();
     // -5000 cents = -50.00 €
     expect(screen.getByText(/-50[.,]00/)).toBeInTheDocument();
+  });
+});
+
+describe("TransactionList — row click", () => {
+  it("calls onTransactionClick with the transaction when a row is clicked", () => {
+    const onTransactionClick = vi.fn();
+    render(
+      <TransactionList
+        transactions={[regularTransaction]}
+        onTransactionClick={onTransactionClick}
+      />
+    );
+
+    fireEvent.click(screen.getByText("Groceries"));
+
+    expect(onTransactionClick).toHaveBeenCalledWith(regularTransaction);
   });
 });
