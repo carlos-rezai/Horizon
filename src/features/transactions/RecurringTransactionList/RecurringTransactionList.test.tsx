@@ -16,7 +16,7 @@ const activeRt: RecurringTransaction = {
   description: "Rent",
   category: "Housing",
   frequency: "monthly",
-  dayOfMonth: 1,
+  dayOfMonth: 5,
   isActive: true,
 };
 
@@ -55,7 +55,7 @@ describe("RecurringTransactionList — row content", () => {
 
     expect(screen.getByText("Rent")).toBeInTheDocument();
     expect(screen.getByText(/monthly/i)).toBeInTheDocument();
-    expect(screen.getByText(/1/)).toBeInTheDocument();
+    expect(screen.getByText(/5/)).toBeInTheDocument();
   });
 
   it("renders the amount in euros", () => {
@@ -80,9 +80,7 @@ describe("RecurringTransactionList — row content", () => {
       />
     );
 
-    expect(
-      screen.getByTestId("linked-account-indicator")
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("linked-account-indicator")).toBeInTheDocument();
   });
 });
 
@@ -97,9 +95,7 @@ describe("RecurringTransactionList — inactive state", () => {
     );
 
     const rows = screen.getAllByRole("listitem");
-    const inactiveRow = rows.find((r) =>
-      r.textContent?.includes("Spotify")
-    );
+    const inactiveRow = rows.find((r) => r.textContent?.includes("Spotify"));
     expect(inactiveRow).toHaveAttribute("data-inactive", "true");
   });
 
@@ -176,8 +172,6 @@ describe("RecurringTransactionList — empty state", () => {
       />
     );
 
-    expect(
-      screen.getByText(/no recurring transactions/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no recurring transactions/i)).toBeInTheDocument();
   });
 });

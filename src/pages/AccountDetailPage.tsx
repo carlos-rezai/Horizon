@@ -4,16 +4,30 @@ import { useAccounts } from "../features/accounts/useAccounts";
 import AccountDetailHeader from "../features/accounts/AccountDetailHeader/AccountDetailHeader";
 import TransactionCreateModal from "../features/transactions/TransactionCreateModal/TransactionCreateModal";
 import TransferCreateModal from "../features/transactions/TransferCreateModal/TransferCreateModal";
+import RecurringTransactionList from "../features/transactions/RecurringTransactionList/RecurringTransactionList";
+import RecurringTransactionModal from "../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
+import { useRecurringTransactions } from "../features/transactions/useRecurringTransactions";
 import { API_BASE } from "../utils/api";
 import type { Transaction } from "../types/transaction";
+import type { RecurringTransaction } from "../types/recurring";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accounts, isLoading, error } = useAccounts();
+  const {
+    recurringTransactions,
+    toggleIsActive,
+    remove: removeRecurring,
+    update: updateRecurring,
+    create: createRecurring,
+  } = useRecurringTransactions(id ?? "");
   const navigate = useNavigate();
   const [hasTransactions, setHasTransactions] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddTransfer, setShowAddTransfer] = useState(false);
+  const [showAddRecurring, setShowAddRecurring] = useState(false);
+  const [editingRecurring, setEditingRecurring] =
+    useState<RecurringTransaction | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -86,7 +100,56 @@ export default function AccountDetailPage() {
       </section>
       <section>
         <h2>Recurring Transactions</h2>
-        {/* Implemented in issue #20 */}
+        <button type="button" onClick={() => setShowAddRecurring(true)}>
+          Add recurring transaction
+        </button>
+        <RecurringTransactionList
+          recurringTransactions={recurringTransactions}
+          onToggle={(rt) => toggleIsActive(rt._id, rt.isActive)}
+          onRowClick={(rt) => setEditingRecurring(rt)}
+        />
+        {showAddRecurring && (
+          <RecurringTransactionModal
+            accountId={account._id}
+            otherAccounts={accounts.filter((a) => a._id !== account._id)}
+            onClose={() => setShowAddRecurring(false)}
+            onSaved={(rt) => {
+              void createRecurring({
+                amount: rt.amount,
+                description: rt.description,
+                category: rt.category,
+                frequency: rt.frequency,
+                dayOfMonth: rt.dayOfMonth,
+                linkedAccountId: rt.linkedAccountId,
+              });
+              setShowAddRecurring(false);
+            }}
+            onDeleted={() => setShowAddRecurring(false)}
+          />
+        )}
+        {editingRecurring && (
+          <RecurringTransactionModal
+            accountId={account._id}
+            transaction={editingRecurring}
+            otherAccounts={accounts.filter((a) => a._id !== account._id)}
+            onClose={() => setEditingRecurring(null)}
+            onSaved={(rt) => {
+              void updateRecurring(rt._id, {
+                amount: rt.amount,
+                description: rt.description,
+                category: rt.category,
+                frequency: rt.frequency,
+                dayOfMonth: rt.dayOfMonth,
+                linkedAccountId: rt.linkedAccountId,
+              });
+              setEditingRecurring(null);
+            }}
+            onDeleted={(id) => {
+              void removeRecurring(id);
+              setEditingRecurring(null);
+            }}
+          />
+        )}
       </section>
     </main>
   );
