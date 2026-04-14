@@ -94,12 +94,14 @@ describe("TransactionEditModal — save", () => {
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
     await waitFor(() => {
-      const patchCall = vi.mocked(fetch).mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/transactions/txn-1") &&
-          (init as RequestInit)?.method === "PATCH"
-      );
+      const patchCall = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            typeof url === "string" &&
+            url.includes("/transactions/txn-1") &&
+            (init as RequestInit)?.method === "PATCH"
+        );
       expect(patchCall).toBeDefined();
     });
   });
@@ -158,10 +160,7 @@ describe("TransactionEditModal — server error on save", () => {
 
 describe("TransactionEditModal — delete (non-transfer)", () => {
   beforeEach(() => {
-    vi.spyOn(globalThis, "window", "get").mockReturnValue({
-      ...window,
-      confirm: vi.fn().mockReturnValue(true),
-    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -198,12 +197,14 @@ describe("TransactionEditModal — delete (non-transfer)", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
 
     await waitFor(() => {
-      const deleteCall = vi.mocked(fetch).mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/transactions/txn-1") &&
-          (init as RequestInit)?.method === "DELETE"
-      );
+      const deleteCall = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            typeof url === "string" &&
+            url.includes("/transactions/txn-1") &&
+            (init as RequestInit)?.method === "DELETE"
+        );
       expect(deleteCall).toBeDefined();
     });
   });
@@ -298,12 +299,14 @@ describe("TransactionEditModal — transfer branch", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
 
     await waitFor(() => {
-      const deleteCall = vi.mocked(fetch).mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/transfers/transfer-abc") &&
-          (init as RequestInit)?.method === "DELETE"
-      );
+      const deleteCall = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            typeof url === "string" &&
+            url.includes("/transfers/transfer-abc") &&
+            (init as RequestInit)?.method === "DELETE"
+        );
       expect(deleteCall).toBeDefined();
     });
   });

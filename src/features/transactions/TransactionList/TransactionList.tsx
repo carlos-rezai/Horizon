@@ -3,9 +3,13 @@ import { centsToEuros } from "../../../utils/currency";
 
 interface Props {
   transactions: Transaction[];
+  onTransactionClick?: (tx: Transaction) => void;
 }
 
-export default function TransactionList({ transactions }: Props) {
+export default function TransactionList({
+  transactions,
+  onTransactionClick,
+}: Props) {
   if (transactions.length === 0) {
     return <p>No transactions</p>;
   }
@@ -13,7 +17,11 @@ export default function TransactionList({ transactions }: Props) {
   return (
     <ul>
       {transactions.map((tx) => (
-        <li key={tx._id}>
+        <li
+          key={tx._id}
+          onClick={() => onTransactionClick?.(tx)}
+          style={onTransactionClick ? { cursor: "pointer" } : undefined}
+        >
           <span>{tx.date}</span>
           <span>{centsToEuros(tx.amount)}</span>
           <span>{tx.description}</span>

@@ -9,11 +9,21 @@ interface CreatePayload {
   category: string;
 }
 
+interface UpdatePayload {
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+}
+
 interface UseTransactionsResult {
   transactions: Transaction[];
   isLoading: boolean;
   error: string | null;
   create: (payload: CreatePayload) => Promise<void>;
+  update: (id: string, payload: UpdatePayload) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  removeTransfer: (transferId: string) => Promise<void>;
 }
 
 export function useTransactions(accountId: string): UseTransactionsResult {
@@ -64,5 +74,57 @@ export function useTransactions(accountId: string): UseTransactionsResult {
     setTransactions((prev) => [...prev, created]);
   }
 
-  return { transactions, isLoading, error, create };
+  async function update(id: string, payload: UpdatePayload): Promise<void> {
+    const res = await fetch(`${API_BASE}/transactions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      throw new Error(data.error ?? "Failed to update transaction");
+    }
+
+    const updated = (await res.json()) as Transaction;
+    setTransactions((prev) => prev.map((tx) => (tx._id === id ? updated : tx)));
+  }
+
+  async function remove(id: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/transactions/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      throw new Error(data.error ?? "Failed to delete transaction");
+    }
+
+    setTransactions((prev) => prev.filter((tx) => tx._id !== id));
+  }
+
+  async function removeTransfer(transferId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/transfers/${transferId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      throw new Error(data.error ?? "Failed to delete transfer");
+    }
+
+    setTransactions((prev) =>
+      prev.filter((tx) => tx.transferId !== transferId)
+    );
+  }
+
+  return {
+    transactions,
+    isLoading,
+    error,
+    create,
+    update,
+    remove,
+    removeTransfer,
+  };
 }
