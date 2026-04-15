@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Transaction } from "../../../types/transaction";
+import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
 
 interface Props {
@@ -29,7 +30,7 @@ export default function TransactionEditModal({
       body: JSON.stringify({
         date,
         description,
-        amount: Math.round(parseFloat(amount) * 100),
+        amount: eurosToCents(amount),
         category: transaction.category,
       }),
     });
