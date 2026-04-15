@@ -143,6 +143,12 @@
 > hits it in October, it debits Tagesgeld and reduces the Restschuld. That's
 > what makes the Payoff Month move earlier."
 
+## Design System (new)
+
+| Term         | Definition                                                                               | Aliases to avoid             |
+| ------------ | ---------------------------------------------------------------------------------------- | ---------------------------- |
+| **Meridian** | The custom design system for Horizon — defines visual tokens, primitives, and components | "the design system", "theme" |
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
