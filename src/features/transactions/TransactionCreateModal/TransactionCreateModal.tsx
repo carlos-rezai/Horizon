@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd";
+import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
 
