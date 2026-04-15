@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../tokens";
 import Select from "./Select";
+
+function renderWithTheme(ui: React.ReactElement) {
+  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+}
 
 afterEach(() => {
   cleanup();
@@ -9,7 +15,7 @@ afterEach(() => {
 
 describe("Select — unit", () => {
   it("renders as a native select element", () => {
-    render(
+    renderWithTheme(
       <Select aria-label="Account kind">
         <option value="Girokonto">Girokonto</option>
       </Select>
@@ -19,7 +25,7 @@ describe("Select — unit", () => {
   });
 
   it("forwards the aria-label attribute", () => {
-    render(
+    renderWithTheme(
       <Select aria-label="Account kind">
         <option value="Girokonto">Girokonto</option>
       </Select>
@@ -30,7 +36,7 @@ describe("Select — unit", () => {
   });
 
   it("forwards the disabled attribute", () => {
-    render(
+    renderWithTheme(
       <Select aria-label="Account kind" disabled>
         <option value="Girokonto">Girokonto</option>
       </Select>
@@ -41,7 +47,7 @@ describe("Select — unit", () => {
   });
 
   it("renders as a focusable element", () => {
-    render(
+    renderWithTheme(
       <Select aria-label="Account kind">
         <option value="Girokonto">Girokonto</option>
       </Select>
@@ -54,7 +60,7 @@ describe("Select — unit", () => {
 describe("Select — interaction", () => {
   it("calls onChange when the selection changes", () => {
     const onChange = vi.fn();
-    render(
+    renderWithTheme(
       <Select aria-label="Account kind" onChange={onChange}>
         <option value="Girokonto">Girokonto</option>
         <option value="Tagesgeld">Tagesgeld</option>
