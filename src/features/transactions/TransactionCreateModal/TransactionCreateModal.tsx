@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd";
+import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
-
-const ADD_CATEGORY_VALUE = "__add__";
 
 interface Props {
   accountId: string;
@@ -16,39 +14,11 @@ export default function TransactionCreateModal({
   onClose,
   onSuccess,
 }: Props) {
-  const {
-    categories,
-    selectedCategoryId,
-    setSelectedCategoryId,
-    isAdding,
-    addCategory,
-    addError,
-  } = useCategoriesWithInlineAdd();
-
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [showInlineAdd, setShowInlineAdd] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-
-  const handleCategoryChange = (value: string) => {
-    if (value === ADD_CATEGORY_VALUE) {
-      setShowInlineAdd(true);
-    } else {
-      setSelectedCategoryId(value);
-    }
-  };
-
-  const handleAddCategory = async () => {
-    try {
-      await addCategory(newCategoryName);
-      setShowInlineAdd(false);
-      setNewCategoryName("");
-    } catch {
-      setShowInlineAdd(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +31,7 @@ export default function TransactionCreateModal({
         date,
         amount: eurosToCents(amount),
         description,
-        category: selectedCategoryId,
+        category: categoryId,
       }),
     });
 
@@ -83,6 +53,7 @@ export default function TransactionCreateModal({
           Date
           <input
             type="date"
+            aria-label="Date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -92,6 +63,7 @@ export default function TransactionCreateModal({
           Amount
           <input
             type="text"
+            aria-label="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
@@ -101,49 +73,14 @@ export default function TransactionCreateModal({
           Description
           <input
             type="text"
+            aria-label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
 
-        {showInlineAdd ? (
-          <>
-            <label>
-              New category name
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                disabled={isAdding}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={handleAddCategory}
-              disabled={isAdding}
-            >
-              Add category
-            </button>
-          </>
-        ) : (
-          <label>
-            Category
-            <select
-              value={selectedCategoryId}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              disabled={isAdding}
-            >
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-              <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
-            </select>
-          </label>
-        )}
+        <CategorySelect onChange={setCategoryId} />
 
-        {addError && <p>{addError}</p>}
         {error && <p role="alert">{error}</p>}
 
         <button type="submit">Add transaction</button>
