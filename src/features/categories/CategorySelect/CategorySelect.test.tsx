@@ -1,9 +1,4 @@
 // @vitest-environment jsdom
-// These tests target the post-#17 interface where TransactionCreateModal
-// fetches categories internally via useCategoriesWithInlineAdd.
-// The `categories` prop is removed in the build phase.
-// NOTE: existing TransactionCreateModal.test.tsx will need its fetch mock
-// updated in build to also handle GET /categories.
 import {
   render,
   screen,
@@ -13,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
-import TransactionCreateModal from "./TransactionCreateModal";
+import CategorySelect from "./CategorySelect";
 import type { Category } from "../../../types/category";
 
 afterEach(() => {
@@ -32,21 +27,12 @@ const newCategory: Category = {
   isDefault: false,
 };
 
-// Renders the modal using the new interface (no categories prop)
-const renderModal = (
-  overrides: Partial<{ onClose: () => void; onSuccess: () => void }> = {}
-) => {
-  const props = {
-    accountId: "acc-1",
-    onClose: vi.fn(),
-    onSuccess: vi.fn(),
-    ...overrides,
-  };
-  render(<TransactionCreateModal {...props} />);
-  return props;
+const renderSelect = (onChange = vi.fn()) => {
+  render(<CategorySelect onChange={onChange} />);
+  return { onChange };
 };
 
-describe("TransactionCreateModal — category dropdown population", () => {
+describe("CategorySelect — dropdown population", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -55,14 +41,24 @@ describe("TransactionCreateModal — category dropdown population", () => {
   });
 
   it("populates the dropdown with categories fetched from GET /categories", async () => {
-    renderModal();
+    renderSelect();
 
-    expect(await screen.findByRole("option", { name: "Food" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("option", { name: "Food" })
+    ).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Income" })).toBeInTheDocument();
+  });
+
+  it("calls onChange with the first category id on initial load", async () => {
+    const { onChange } = renderSelect();
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith(existingCategories[0]._id);
+    });
   });
 });
 
-describe("TransactionCreateModal — inline category add", () => {
+describe("CategorySelect — inline category add", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -71,7 +67,7 @@ describe("TransactionCreateModal — inline category add", () => {
   });
 
   it("includes a '+ Add category' option in the dropdown", async () => {
-    renderModal();
+    renderSelect();
 
     await screen.findByRole("option", { name: "Food" });
 
@@ -81,10 +77,12 @@ describe("TransactionCreateModal — inline category add", () => {
   });
 
   it("reveals a text input when '+ Add category' is selected", async () => {
-    renderModal();
+    renderSelect();
 
     const select = await screen.findByLabelText(/category/i);
-    const addOption = screen.getByRole("option", { name: /\+\s*add category/i });
+    const addOption = screen.getByRole("option", {
+      name: /\+\s*add category/i,
+    });
     fireEvent.change(select, {
       target: { value: addOption.getAttribute("value") },
     });
@@ -94,7 +92,7 @@ describe("TransactionCreateModal — inline category add", () => {
     ).toBeInTheDocument();
   });
 
-  it("appends the new category and auto-selects it after submitting the inline input", async () => {
+  it("appends the new category, auto-selects it, and calls onChange with its id", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
@@ -105,10 +103,12 @@ describe("TransactionCreateModal — inline category add", () => {
         json: async () => newCategory,
       } as Response);
 
-    renderModal();
+    const { onChange } = renderSelect();
 
     const select = await screen.findByLabelText(/category/i);
-    const addOption = screen.getByRole("option", { name: /\+\s*add category/i });
+    const addOption = screen.getByRole("option", {
+      name: /\+\s*add category/i,
+    });
     fireEvent.change(select, {
       target: { value: addOption.getAttribute("value") },
     });
@@ -122,6 +122,7 @@ describe("TransactionCreateModal — inline category add", () => {
       await screen.findByRole("option", { name: "Transport" })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/category/i)).toHaveValue(newCategory._id);
+    expect(onChange).toHaveBeenCalledWith(newCategory._id);
   });
 
   it("disables form controls while category creation is in flight", async () => {
@@ -132,10 +133,12 @@ describe("TransactionCreateModal — inline category add", () => {
       } as Response)
       .mockImplementationOnce(() => new Promise(() => {})); // never resolves
 
-    renderModal();
+    renderSelect();
 
     const select = await screen.findByLabelText(/category/i);
-    const addOption = screen.getByRole("option", { name: /\+\s*add category/i });
+    const addOption = screen.getByRole("option", {
+      name: /\+\s*add category/i,
+    });
     fireEvent.change(select, {
       target: { value: addOption.getAttribute("value") },
     });
@@ -148,7 +151,9 @@ describe("TransactionCreateModal — inline category add", () => {
       fireEvent.click(screen.getByRole("button", { name: /add category/i }));
     });
 
-    expect(screen.getByLabelText(/category/i)).toBeDisabled();
+    expect(
+      screen.getByRole("textbox", { name: /new category/i })
+    ).toBeDisabled();
   });
 
   it("shows an error and restores the dropdown when category creation fails", async () => {
@@ -162,10 +167,12 @@ describe("TransactionCreateModal — inline category add", () => {
         json: async () => ({ error: "Category already exists" }),
       } as Response);
 
-    renderModal();
+    renderSelect();
 
     const select = await screen.findByLabelText(/category/i);
-    const addOption = screen.getByRole("option", { name: /\+\s*add category/i });
+    const addOption = screen.getByRole("option", {
+      name: /\+\s*add category/i,
+    });
     fireEvent.change(select, {
       target: { value: addOption.getAttribute("value") },
     });
@@ -179,7 +186,6 @@ describe("TransactionCreateModal — inline category add", () => {
       await screen.findByText(/category already exists/i)
     ).toBeInTheDocument();
 
-    // Dropdown is still present (form not stuck in text-input mode)
     await waitFor(() => {
       expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
     });
