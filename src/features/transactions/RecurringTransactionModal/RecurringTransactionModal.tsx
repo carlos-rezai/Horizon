@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd";
+import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
 import type {
@@ -7,8 +7,6 @@ import type {
   RecurringFrequency,
 } from "../../../types/recurring";
 import type { AccountWithBalance } from "../../../types/account";
-
-const ADD_CATEGORY_VALUE = "__add__";
 
 interface Props {
   accountId: string;
@@ -44,36 +42,8 @@ export default function RecurringTransactionModal({
   const [linkedAccountId, setLinkedAccountId] = useState(
     transaction?.linkedAccountId ?? ""
   );
+  const [categoryId, setCategoryId] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [showInlineAdd, setShowInlineAdd] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-
-  const {
-    categories,
-    selectedCategoryId,
-    setSelectedCategoryId,
-    isAdding,
-    addCategory,
-    addError,
-  } = useCategoriesWithInlineAdd();
-
-  const handleCategoryChange = (value: string) => {
-    if (value === ADD_CATEGORY_VALUE) {
-      setShowInlineAdd(true);
-    } else {
-      setSelectedCategoryId(value);
-    }
-  };
-
-  const handleAddCategory = async () => {
-    try {
-      await addCategory(newCategoryName);
-      setShowInlineAdd(false);
-      setNewCategoryName("");
-    } catch {
-      setShowInlineAdd(false);
-    }
-  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +57,7 @@ export default function RecurringTransactionModal({
       accountId,
       amount: eurosToCents(amount),
       description,
-      category: selectedCategoryId,
+      category: categoryId,
       frequency,
       dayOfMonth: parseInt(dayOfMonth, 10),
       ...(linkedAccountId ? { linkedAccountId } : {}),
@@ -191,42 +161,7 @@ export default function RecurringTransactionModal({
           />
         </label>
 
-        {showInlineAdd ? (
-          <>
-            <label>
-              New category name
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                disabled={isAdding}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={handleAddCategory}
-              disabled={isAdding}
-            >
-              Add category
-            </button>
-          </>
-        ) : (
-          <label>
-            Category
-            <select
-              value={selectedCategoryId}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              disabled={isAdding}
-            >
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-              <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
-            </select>
-          </label>
-        )}
+        <CategorySelect onChange={setCategoryId} />
 
         <label>
           Transfer to account (optional)
@@ -244,7 +179,6 @@ export default function RecurringTransactionModal({
           </select>
         </label>
 
-        {addError && <p>{addError}</p>}
         {error && <p role="alert">{error}</p>}
 
         <button type="submit">Save</button>
