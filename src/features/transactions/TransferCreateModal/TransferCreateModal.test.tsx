@@ -7,6 +7,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import TransferCreateModal from "./TransferCreateModal";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
@@ -63,7 +65,11 @@ const renderModal = (
     onSuccess: vi.fn(),
     ...overrides,
   };
-  render(<TransferCreateModal {...props} />);
+  render(
+    <ThemeProvider theme={theme}>
+      <TransferCreateModal {...props} />
+    </ThemeProvider>
+  );
   return props;
 };
 
@@ -114,7 +120,9 @@ describe("TransferCreateModal — validation", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
@@ -128,7 +136,9 @@ describe("TransferCreateModal — validation", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     const postCalls = vi
       .mocked(fetch)
@@ -147,7 +157,9 @@ describe("TransferCreateModal — validation", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
@@ -161,7 +173,9 @@ describe("TransferCreateModal — validation", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     const postCalls = vi
       .mocked(fetch)
@@ -216,20 +230,22 @@ describe("TransferCreateModal — successful submit", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer to DKB" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     await waitFor(() => {
-      const postCall = vi.mocked(fetch).mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/transfers") &&
-          (init as RequestInit)?.method === "POST"
-      );
+      const postCall = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            typeof url === "string" &&
+            url.includes("/transfers") &&
+            (init as RequestInit)?.method === "POST"
+        );
       expect(postCall).toBeDefined();
 
-      const body = JSON.parse(
-        (postCall![1] as RequestInit).body as string
-      );
+      const body = JSON.parse((postCall![1] as RequestInit).body as string);
       expect(body.fromAccountId).toBe("acc-1");
       expect(body.toAccountId).toBeDefined();
       expect(body.amount).toBe(10000);
@@ -251,7 +267,9 @@ describe("TransferCreateModal — successful submit", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer to DKB" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
@@ -271,7 +289,9 @@ describe("TransferCreateModal — successful submit", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer to DKB" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     await waitFor(() => {
       expect(onClose).toHaveBeenCalled();
@@ -304,7 +324,9 @@ describe("TransferCreateModal — server error", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer to DKB" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     expect(
       await screen.findByText(/transfer creation failed/i)
@@ -324,7 +346,9 @@ describe("TransferCreateModal — server error", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Transfer to DKB" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /submit|send|transfer/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /submit|send|transfer/i })
+    );
 
     await screen.findByText(/transfer creation failed/i);
     expect(onClose).not.toHaveBeenCalled();

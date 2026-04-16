@@ -2,6 +2,15 @@ import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
+import Modal from "../../../components/Modal/Modal";
+import FormField from "../../../components/FormField/FormField";
+import Input from "../../../primitives/Input/Input";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledForm,
+  StyledActions,
+  StyledErrorText,
+} from "./TransactionCreateModal.styles";
 
 interface Props {
   accountId: string;
@@ -47,47 +56,49 @@ export default function TransactionCreateModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true">
-      <form onSubmit={handleSubmit}>
-        <label>
-          Date
-          <input
+    <Modal onClose={onClose}>
+      <StyledForm onSubmit={handleSubmit}>
+        <FormField label="Date" htmlFor="txn-date">
+          <Input
+            id="txn-date"
             type="date"
             aria-label="Date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-        </label>
+        </FormField>
 
-        <label>
-          Amount
-          <input
+        <FormField label="Amount" htmlFor="txn-amount">
+          <Input
+            id="txn-amount"
             type="text"
             aria-label="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
-        </label>
+        </FormField>
 
-        <label>
-          Description
-          <input
+        <FormField label="Description" htmlFor="txn-description">
+          <Input
+            id="txn-description"
             type="text"
             aria-label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-        </label>
+        </FormField>
 
         <CategorySelect onChange={setCategoryId} />
 
-        {error && <p role="alert">{error}</p>}
+        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
-        <button type="submit">Add transaction</button>
-        <button type="button" onClick={onClose}>
-          Cancel
-        </button>
-      </form>
-    </div>
+        <StyledActions>
+          <Button type="submit">Add transaction</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </StyledActions>
+      </StyledForm>
+    </Modal>
   );
 }

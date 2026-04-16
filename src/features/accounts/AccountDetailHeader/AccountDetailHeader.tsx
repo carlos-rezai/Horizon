@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import { formatBalance } from "../../../utils/format";
+import Input from "../../../primitives/Input/Input";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledHeader,
+  StyledAccountName,
+  StyledBalance,
+  StyledActions,
+  StyledErrorText,
+  StyledConfirmRow,
+} from "./AccountDetailHeader.styles";
 
 interface Props {
   account: AccountWithBalance;
@@ -44,29 +55,37 @@ export default function AccountDetailHeader({
   };
 
   return (
-    <header>
+    <StyledHeader>
       <Link to="/">Back to dashboard</Link>
 
       {isEditing ? (
-        <>
-          <input
+        <StyledActions>
+          <Input
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
           />
-          <button onClick={handleSave}>Save</button>
-        </>
+          <Button onClick={handleSave}>Save</Button>
+        </StyledActions>
       ) : (
-        <>
-          <span>{displayName}</span>
-          <button onClick={() => setIsEditing(true)}>Rename</button>
-        </>
+        <StyledActions>
+          <StyledAccountName>{displayName}</StyledAccountName>
+          <Button
+            aria-label="Edit account name"
+            onClick={() => setIsEditing(true)}
+          >
+            <Pencil size={16} />
+          </Button>
+        </StyledActions>
       )}
 
-      {renameError && <p role="alert">{renameError}</p>}
+      {renameError && (
+        <StyledErrorText role="alert">{renameError}</StyledErrorText>
+      )}
 
-      <span>{formatBalance(account.balance)}</span>
+      <StyledBalance>{formatBalance(account.balance)}</StyledBalance>
 
-      <button
+      <Button
+        variant="danger"
         onClick={() => !hasTransactions && setShowDeleteConfirm(true)}
         disabled={hasTransactions}
         title={
@@ -74,18 +93,26 @@ export default function AccountDetailHeader({
             ? "Cannot delete an account that has transactions"
             : undefined
         }
+        aria-label="Delete account"
       >
-        Delete
-      </button>
+        <Trash2 size={16} />
+      </Button>
 
       {showDeleteConfirm && (
-        <>
-          <button onClick={handleDelete}>Confirm</button>
-          <button onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
-        </>
+        <StyledConfirmRow>
+          <Button onClick={handleDelete}>Confirm</Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            Cancel
+          </Button>
+        </StyledConfirmRow>
       )}
 
-      {deleteError && <p role="alert">{deleteError}</p>}
-    </header>
+      {deleteError && (
+        <StyledErrorText role="alert">{deleteError}</StyledErrorText>
+      )}
+    </StyledHeader>
   );
 }

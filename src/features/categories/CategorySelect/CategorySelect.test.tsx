@@ -8,6 +8,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import CategorySelect from "./CategorySelect";
 import type { Category } from "../../../types/category";
 
@@ -28,7 +30,11 @@ const newCategory: Category = {
 };
 
 const renderSelect = (onChange = vi.fn()) => {
-  render(<CategorySelect onChange={onChange} />);
+  render(
+    <ThemeProvider theme={theme}>
+      <CategorySelect onChange={onChange} />
+    </ThemeProvider>
+  );
   return { onChange };
 };
 

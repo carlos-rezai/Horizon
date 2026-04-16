@@ -3,6 +3,16 @@ import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
 import type { AccountWithBalance } from "../../../types/account";
+import Modal from "../../../components/Modal/Modal";
+import FormField from "../../../components/FormField/FormField";
+import Input from "../../../primitives/Input/Input";
+import Select from "../../../primitives/Select/Select";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledForm,
+  StyledActions,
+  StyledErrorText,
+} from "./TransferCreateModal.styles";
 
 interface Props {
   fromAccountId: string;
@@ -61,11 +71,11 @@ export default function TransferCreateModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true">
-      <form onSubmit={handleSubmit}>
-        <label>
-          Destination account
-          <select
+    <Modal onClose={onClose}>
+      <StyledForm onSubmit={handleSubmit}>
+        <FormField label="Destination account" htmlFor="transfer-to">
+          <Select
+            id="transfer-to"
             value={toAccountId}
             onChange={(e) => setToAccountId(e.target.value)}
           >
@@ -74,49 +84,51 @@ export default function TransferCreateModal({
                 {a.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
 
-        <label>
-          Date
-          <input
+        <FormField label="Date" htmlFor="transfer-date">
+          <Input
+            id="transfer-date"
             type="date"
             aria-label="Date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-        </label>
+        </FormField>
 
-        <label>
-          Amount
-          <input
+        <FormField label="Amount" htmlFor="transfer-amount">
+          <Input
+            id="transfer-amount"
             type="number"
             aria-label="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             step="0.01"
           />
-        </label>
+        </FormField>
 
-        <label>
-          Description
-          <input
+        <FormField label="Description" htmlFor="transfer-description">
+          <Input
+            id="transfer-description"
             type="text"
             aria-label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-        </label>
+        </FormField>
 
         <CategorySelect onChange={setCategoryId} />
 
-        {error && <p role="alert">{error}</p>}
+        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
-        <button type="submit">Transfer</button>
-        <button type="button" onClick={onClose}>
-          Cancel
-        </button>
-      </form>
-    </div>
+        <StyledActions>
+          <Button type="submit">Transfer</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </StyledActions>
+      </StyledForm>
+    </Modal>
   );
 }

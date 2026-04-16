@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
 import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd";
+import Select from "../../../primitives/Select/Select";
+import Input from "../../../primitives/Input/Input";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledWrapper,
+  StyledLabel,
+  StyledInlineAddRow,
+  StyledErrorText,
+} from "./CategorySelect.styles";
 
 const ADD_CATEGORY_VALUE = "__add__";
 
@@ -48,29 +57,35 @@ export default function CategorySelect({ onChange }: Props) {
 
   if (showInlineAdd) {
     return (
-      <>
-        <label>
+      <StyledWrapper>
+        <StyledLabel htmlFor="new-category-input">
           New category name
-          <input
+          <Input
+            id="new-category-input"
             type="text"
+            aria-label="New category name"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             disabled={isAdding}
           />
-        </label>
-        <button type="button" onClick={handleAddCategory} disabled={isAdding}>
-          Add category
-        </button>
-        {addError && <p>{addError}</p>}
-      </>
+        </StyledLabel>
+        <StyledInlineAddRow>
+          <Button type="button" onClick={handleAddCategory} disabled={isAdding}>
+            Add category
+          </Button>
+        </StyledInlineAddRow>
+        {addError && <StyledErrorText>{addError}</StyledErrorText>}
+      </StyledWrapper>
     );
   }
 
   return (
-    <>
-      <label>
+    <StyledWrapper>
+      <StyledLabel htmlFor="category-select">
         Category
-        <select
+        <Select
+          id="category-select"
+          aria-label="Category"
           value={selectedCategoryId}
           onChange={(e) => handleCategoryChange(e.target.value)}
           disabled={isAdding}
@@ -81,9 +96,9 @@ export default function CategorySelect({ onChange }: Props) {
             </option>
           ))}
           <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
-        </select>
-      </label>
-      {addError && <p>{addError}</p>}
-    </>
+        </Select>
+      </StyledLabel>
+      {addError && <StyledErrorText>{addError}</StyledErrorText>}
+    </StyledWrapper>
   );
 }

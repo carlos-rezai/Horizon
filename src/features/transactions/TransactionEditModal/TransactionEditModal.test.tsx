@@ -7,6 +7,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import TransactionEditModal from "./TransactionEditModal";
 import type { Transaction } from "../../../types/transaction";
 
@@ -49,7 +51,11 @@ const renderModal = (
     onDeleted: vi.fn(),
     ...overrides,
   };
-  render(<TransactionEditModal {...props} />);
+  render(
+    <ThemeProvider theme={theme}>
+      <TransactionEditModal {...props} />
+    </ThemeProvider>
+  );
   return props;
 };
 

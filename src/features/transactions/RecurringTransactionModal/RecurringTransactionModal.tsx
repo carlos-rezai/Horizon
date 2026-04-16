@@ -7,6 +7,16 @@ import type {
   RecurringFrequency,
 } from "../../../types/recurring";
 import type { AccountWithBalance } from "../../../types/account";
+import Modal from "../../../components/Modal/Modal";
+import FormField from "../../../components/FormField/FormField";
+import Input from "../../../primitives/Input/Input";
+import Select from "../../../primitives/Select/Select";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledForm,
+  StyledActions,
+  StyledErrorText,
+} from "./RecurringTransactionModal.styles";
 
 interface Props {
   accountId: string;
@@ -115,57 +125,60 @@ export default function RecurringTransactionModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true">
-      <form onSubmit={handleSave}>
-        <label>
-          Amount
-          <input
+    <Modal onClose={onClose}>
+      <StyledForm onSubmit={handleSave}>
+        <FormField label="Amount" htmlFor="rt-amount">
+          <Input
+            id="rt-amount"
             type="number"
             aria-label="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             step="0.01"
           />
-        </label>
+        </FormField>
 
-        <label>
-          Description
-          <input
+        <FormField label="Description" htmlFor="rt-description">
+          <Input
+            id="rt-description"
             type="text"
             aria-label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-        </label>
+        </FormField>
 
-        <label>
-          Frequency
-          <select
+        <FormField label="Frequency" htmlFor="rt-frequency">
+          <Select
+            id="rt-frequency"
             value={frequency}
             onChange={(e) => setFrequency(e.target.value as RecurringFrequency)}
           >
             <option value="monthly">Monthly</option>
             <option value="quarterly">Quarterly</option>
             <option value="annual">Annual</option>
-          </select>
-        </label>
+          </Select>
+        </FormField>
 
-        <label>
-          Day of month
-          <input
+        <FormField label="Day of month" htmlFor="rt-day">
+          <Input
+            id="rt-day"
             type="number"
             value={dayOfMonth}
             onChange={(e) => setDayOfMonth(e.target.value)}
             min="1"
             max="31"
           />
-        </label>
+        </FormField>
 
         <CategorySelect onChange={setCategoryId} />
 
-        <label>
-          Transfer to account (optional)
-          <select
+        <FormField
+          label="Transfer to account (optional)"
+          htmlFor="rt-linked-account"
+        >
+          <Select
+            id="rt-linked-account"
             aria-label="Transfer to account (optional)"
             value={linkedAccountId}
             onChange={(e) => setLinkedAccountId(e.target.value)}
@@ -176,23 +189,23 @@ export default function RecurringTransactionModal({
                 {a.name}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
 
-        {error && <p role="alert">{error}</p>}
+        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
-        <button type="submit">Save</button>
-
-        {isEdit && (
-          <button type="button" onClick={handleDelete}>
-            Delete
-          </button>
-        )}
-
-        <button type="button" onClick={onClose}>
-          Cancel
-        </button>
-      </form>
-    </div>
+        <StyledActions>
+          <Button type="submit">Save</Button>
+          {isEdit && (
+            <Button type="button" variant="danger" onClick={handleDelete}>
+              Delete
+            </Button>
+          )}
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </StyledActions>
+      </StyledForm>
+    </Modal>
   );
 }

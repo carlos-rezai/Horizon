@@ -1,5 +1,14 @@
 import type { Transaction } from "../../../types/transaction";
 import { centsToEuros } from "../../../utils/currency";
+import {
+  StyledList,
+  StyledRow,
+  StyledDate,
+  StyledAmount,
+  StyledDescription,
+  StyledTransferBadge,
+  StyledEmptyState,
+} from "./TransactionList.styles";
 
 interface Props {
   transactions: Transaction[];
@@ -11,26 +20,26 @@ export default function TransactionList({
   onTransactionClick,
 }: Props) {
   if (transactions.length === 0) {
-    return <p>No transactions</p>;
+    return <StyledEmptyState>No transactions</StyledEmptyState>;
   }
 
   return (
-    <ul>
+    <StyledList>
       {transactions.map((tx) => (
-        <li
-          key={tx._id}
-          onClick={() => onTransactionClick?.(tx)}
-          style={onTransactionClick ? { cursor: "pointer" } : undefined}
-        >
-          <span>{tx.date}</span>
-          <span>{centsToEuros(tx.amount)}</span>
-          <span>{tx.description}</span>
-          <span>{tx.category}</span>
+        <StyledRow key={tx._id} onClick={() => onTransactionClick?.(tx)}>
+          <StyledDate>{tx.date}</StyledDate>
+          <StyledDescription>{tx.description}</StyledDescription>
+          <StyledAmount>{centsToEuros(tx.amount)}</StyledAmount>
           {tx.transferId && (
-            <span data-testid="transfer-indicator" aria-label="transfer" />
+            <StyledTransferBadge
+              data-testid="transfer-indicator"
+              aria-label="transfer"
+            >
+              Transfer
+            </StyledTransferBadge>
           )}
-        </li>
+        </StyledRow>
       ))}
-    </ul>
+    </StyledList>
   );
 }

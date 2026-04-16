@@ -7,6 +7,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import TransactionCreateModal from "./TransactionCreateModal";
 import type { Category } from "../../../types/category";
 
@@ -32,7 +34,11 @@ const renderModal = (
     onSuccess: vi.fn(),
     ...overrides,
   };
-  render(<TransactionCreateModal {...props} />);
+  render(
+    <ThemeProvider theme={theme}>
+      <TransactionCreateModal {...props} />
+    </ThemeProvider>
+  );
   return props;
 };
 

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import TransactionList from "./TransactionList";
 import type { Transaction } from "../../../types/transaction";
 
@@ -27,15 +29,28 @@ const transferTransaction: Transaction = {
   transferId: "transfer-abc",
 };
 
+const renderList = (
+  transactions: Transaction[],
+  onTransactionClick?: (tx: Transaction) => void
+) =>
+  render(
+    <ThemeProvider theme={theme}>
+      <TransactionList
+        transactions={transactions}
+        onTransactionClick={onTransactionClick}
+      />
+    </ThemeProvider>
+  );
+
 describe("TransactionList — empty state", () => {
   it("renders an empty state message when there are no transactions", () => {
-    render(<TransactionList transactions={[]} />);
+    renderList([]);
 
     expect(screen.getByText(/no transactions/i)).toBeInTheDocument();
   });
 
   it("does not render a transaction row when the list is empty", () => {
-    render(<TransactionList transactions={[]} />);
+    renderList([]);
 
     expect(screen.queryByRole("row")).not.toBeInTheDocument();
   });
@@ -43,7 +58,7 @@ describe("TransactionList — empty state", () => {
 
 describe("TransactionList — transfer indicator", () => {
   it("renders a transfer indicator on entries that have a transferId", () => {
-    render(<TransactionList transactions={[transferTransaction]} />);
+    renderList([transferTransaction]);
 
     // The indicator can be an icon, badge, or text — match broadly
     const indicator = screen.getByText(/transfer/i);
@@ -51,7 +66,7 @@ describe("TransactionList — transfer indicator", () => {
   });
 
   it("does not render a transfer indicator on regular transactions", () => {
-    render(<TransactionList transactions={[regularTransaction]} />);
+    renderList([regularTransaction]);
 
     // Only description text "Groceries" present; no transfer badge/icon
     expect(screen.queryByTestId("transfer-indicator")).not.toBeInTheDocument();
@@ -59,11 +74,7 @@ describe("TransactionList — transfer indicator", () => {
   });
 
   it("renders both a transfer indicator row and a plain row when the list is mixed", () => {
-    render(
-      <TransactionList
-        transactions={[regularTransaction, transferTransaction]}
-      />
-    );
+    renderList([regularTransaction, transferTransaction]);
 
     expect(screen.getByText("Groceries")).toBeInTheDocument();
     expect(screen.getByText("Savings deposit")).toBeInTheDocument();
@@ -72,7 +83,7 @@ describe("TransactionList — transfer indicator", () => {
 
 describe("TransactionList — row content", () => {
   it("renders the description and formatted euro amount for each transaction", () => {
-    render(<TransactionList transactions={[regularTransaction]} />);
+    renderList([regularTransaction]);
 
     expect(screen.getByText("Groceries")).toBeInTheDocument();
     // -5000 cents = -50.00 €
@@ -83,12 +94,7 @@ describe("TransactionList — row content", () => {
 describe("TransactionList — row click", () => {
   it("calls onTransactionClick with the transaction when a row is clicked", () => {
     const onTransactionClick = vi.fn();
-    render(
-      <TransactionList
-        transactions={[regularTransaction]}
-        onTransactionClick={onTransactionClick}
-      />
-    );
+    renderList([regularTransaction], onTransactionClick);
 
     fireEvent.click(screen.getByText("Groceries"));
 

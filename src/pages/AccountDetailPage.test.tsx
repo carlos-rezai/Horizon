@@ -2,6 +2,8 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../tokens";
 import AccountDetailPage from "./AccountDetailPage";
 import type { AccountWithBalance } from "../types/account";
 
@@ -31,11 +33,13 @@ const accounts: AccountWithBalance[] = [
 
 const renderPage = () =>
   render(
-    <MemoryRouter initialEntries={["/accounts/acc-1"]}>
-      <Routes>
-        <Route path="/accounts/:id" element={<AccountDetailPage />} />
-      </Routes>
-    </MemoryRouter>
+    <ThemeProvider theme={theme}>
+      <MemoryRouter initialEntries={["/accounts/acc-1"]}>
+        <Routes>
+          <Route path="/accounts/:id" element={<AccountDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>
   );
 
 describe("AccountDetailPage — transfer button", () => {

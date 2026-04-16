@@ -2,6 +2,8 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, afterEach, vi } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import AccountDetailHeader from "./AccountDetailHeader";
 import type { AccountWithBalance } from "../../../types/account";
 
@@ -33,9 +35,11 @@ const renderHeader = (
     ...overrides,
   };
   render(
-    <MemoryRouter>
-      <AccountDetailHeader {...props} />
-    </MemoryRouter>
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <AccountDetailHeader {...props} />
+      </MemoryRouter>
+    </ThemeProvider>
   );
   return props;
 };

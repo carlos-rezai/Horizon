@@ -2,6 +2,16 @@ import { useState } from "react";
 import type { Transaction } from "../../../types/transaction";
 import { eurosToCents } from "../../../utils/currency";
 import { API_BASE } from "../../../utils/api";
+import Modal from "../../../components/Modal/Modal";
+import FormField from "../../../components/FormField/FormField";
+import Input from "../../../primitives/Input/Input";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledFields,
+  StyledActions,
+  StyledTransferNote,
+  StyledErrorText,
+} from "./TransactionEditModal.styles";
 
 interface Props {
   transaction: Transaction;
@@ -70,62 +80,64 @@ export default function TransactionEditModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true">
-      {isTransfer && (
-        <p>
-          This is one leg of a transfer — deleting it will remove both legs.
-        </p>
-      )}
+    <Modal onClose={onClose}>
+      <StyledFields>
+        {isTransfer && (
+          <StyledTransferNote>
+            This is one leg of a transfer — deleting it will remove both legs.
+          </StyledTransferNote>
+        )}
 
-      <label>
-        Date
-        <input
-          type="date"
-          aria-label="Date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          disabled={isTransfer}
-        />
-      </label>
+        <FormField label="Date" htmlFor="edit-date">
+          <Input
+            id="edit-date"
+            type="date"
+            aria-label="Date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            disabled={isTransfer}
+          />
+        </FormField>
 
-      <label>
-        Description
-        <input
-          type="text"
-          aria-label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          disabled={isTransfer}
-        />
-      </label>
+        <FormField label="Description" htmlFor="edit-description">
+          <Input
+            id="edit-description"
+            type="text"
+            aria-label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={isTransfer}
+          />
+        </FormField>
 
-      <label>
-        Amount
-        <input
-          type="number"
-          aria-label="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          disabled={isTransfer}
-          step="0.01"
-        />
-      </label>
+        <FormField label="Amount" htmlFor="edit-amount">
+          <Input
+            id="edit-amount"
+            type="number"
+            aria-label="Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            disabled={isTransfer}
+            step="0.01"
+          />
+        </FormField>
 
-      {error && <p role="alert">{error}</p>}
+        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
-      {!isTransfer && (
-        <button type="button" onClick={handleSave}>
-          Save
-        </button>
-      )}
-
-      <button type="button" onClick={handleDelete}>
-        Delete
-      </button>
-
-      <button type="button" onClick={onClose}>
-        Cancel
-      </button>
-    </div>
+        <StyledActions>
+          {!isTransfer && (
+            <Button type="button" onClick={handleSave}>
+              Save
+            </Button>
+          )}
+          <Button type="button" variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </StyledActions>
+      </StyledFields>
+    </Modal>
   );
 }

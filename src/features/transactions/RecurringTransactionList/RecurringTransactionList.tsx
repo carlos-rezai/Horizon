@@ -1,5 +1,14 @@
 import type { RecurringTransaction } from "../../../types/recurring";
 import { formatBalance } from "../../../utils/format";
+import {
+  StyledList,
+  StyledRow,
+  StyledDescription,
+  StyledAmount,
+  StyledMeta,
+  StyledLinkedIndicator,
+  StyledEmptyState,
+} from "./RecurringTransactionList.styles";
 
 interface Props {
   recurringTransactions: RecurringTransaction[];
@@ -13,17 +22,17 @@ export default function RecurringTransactionList({
   onRowClick,
 }: Props) {
   if (recurringTransactions.length === 0) {
-    return <p>No recurring transactions</p>;
+    return <StyledEmptyState>No recurring transactions</StyledEmptyState>;
   }
 
   return (
-    <ul>
+    <StyledList>
       {recurringTransactions.map((rt) => (
-        <li
+        <StyledRow
           key={rt._id}
+          $inactive={!rt.isActive}
           data-inactive={rt.isActive ? undefined : "true"}
           onClick={() => onRowClick(rt)}
-          style={{ cursor: "pointer" }}
         >
           <input
             type="checkbox"
@@ -35,15 +44,15 @@ export default function RecurringTransactionList({
             }}
             aria-label={`Toggle ${rt.description}`}
           />
-          <span>{rt.description}</span>
-          <span>{formatBalance(rt.amount)}</span>
-          <span>{rt.frequency}</span>
-          <span>{rt.dayOfMonth}</span>
+          <StyledDescription>{rt.description}</StyledDescription>
+          <StyledAmount>{formatBalance(rt.amount)}</StyledAmount>
+          <StyledMeta>{rt.frequency}</StyledMeta>
+          <StyledMeta>{rt.dayOfMonth}</StyledMeta>
           {rt.linkedAccountId && (
-            <span data-testid="linked-account-indicator" />
+            <StyledLinkedIndicator data-testid="linked-account-indicator" />
           )}
-        </li>
+        </StyledRow>
       ))}
-    </ul>
+    </StyledList>
   );
 }

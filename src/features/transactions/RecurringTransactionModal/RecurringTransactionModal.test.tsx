@@ -7,6 +7,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import RecurringTransactionModal from "./RecurringTransactionModal";
 import type { RecurringTransaction } from "../../../types/recurring";
 import type { AccountWithBalance } from "../../../types/account";
@@ -67,7 +69,11 @@ const renderCreateModal = (
     onDeleted: vi.fn(),
     ...overrides,
   };
-  render(<RecurringTransactionModal {...props} />);
+  render(
+    <ThemeProvider theme={theme}>
+      <RecurringTransactionModal {...props} />
+    </ThemeProvider>
+  );
   return props;
 };
 
@@ -88,7 +94,11 @@ const renderEditModal = (
     onDeleted: vi.fn(),
     ...overrides,
   };
-  render(<RecurringTransactionModal {...props} />);
+  render(
+    <ThemeProvider theme={theme}>
+      <RecurringTransactionModal {...props} />
+    </ThemeProvider>
+  );
   return props;
 };
 
@@ -103,9 +113,7 @@ describe("RecurringTransactionModal — linked account field", () => {
   it("renders the optional Transfer to account dropdown", () => {
     renderCreateModal();
 
-    expect(
-      screen.getByLabelText(/transfer to account/i)
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/transfer to account/i)).toBeInTheDocument();
   });
 
   it("includes a blank / none option in the Transfer to account dropdown", () => {
@@ -204,17 +212,17 @@ describe("RecurringTransactionModal — successful create", () => {
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
     await waitFor(() => {
-      const postCall = vi.mocked(fetch).mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/recurring-transactions") &&
-          (init as RequestInit)?.method === "POST"
-      );
+      const postCall = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            typeof url === "string" &&
+            url.includes("/recurring-transactions") &&
+            (init as RequestInit)?.method === "POST"
+        );
       expect(postCall).toBeDefined();
 
-      const body = JSON.parse(
-        (postCall![1] as RequestInit).body as string
-      );
+      const body = JSON.parse((postCall![1] as RequestInit).body as string);
       expect(body.amount).toBe(-120000);
       expect(body.description).toBe("Rent");
       expect(body.accountId).toBe("acc-1");
@@ -358,12 +366,14 @@ describe("RecurringTransactionModal — delete", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
 
     await waitFor(() => {
-      const deleteCall = vi.mocked(fetch).mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/recurring-transactions/rt-1") &&
-          (init as RequestInit)?.method === "DELETE"
-      );
+      const deleteCall = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            typeof url === "string" &&
+            url.includes("/recurring-transactions/rt-1") &&
+            (init as RequestInit)?.method === "DELETE"
+        );
       expect(deleteCall).toBeDefined();
     });
   });
