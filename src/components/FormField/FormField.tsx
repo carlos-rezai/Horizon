@@ -7,14 +7,20 @@ import {
 
 interface FormFieldProps {
   label: string;
+  htmlFor?: string;
   error?: string;
   children: React.ReactNode;
 }
 
-export default function FormField({ label, error, children }: FormFieldProps) {
+export default function FormField({
+  label,
+  htmlFor,
+  error,
+  children,
+}: FormFieldProps) {
   return (
     <StyledFormField>
-      <StyledLabel>{label}</StyledLabel>
+      <StyledLabel htmlFor={htmlFor}>{label}</StyledLabel>
       {children}
       {error && <StyledErrorMessage role="alert">{error}</StyledErrorMessage>}
     </StyledFormField>

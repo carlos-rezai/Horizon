@@ -36,7 +36,9 @@ beforeEach(() => {
 
 describe("AccountCreateModal — Sondertilgung Allowance field visibility", () => {
   it("does not show the Sondertilgung Allowance field for the default account kind", () => {
-    render(<AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
 
     expect(
       screen.queryByLabelText(/sondertilgung allowance/i)
@@ -44,7 +46,9 @@ describe("AccountCreateModal — Sondertilgung Allowance field visibility", () =
   });
 
   it("shows the Sondertilgung Allowance field when kind is changed to Mortgage", () => {
-    render(<AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
 
     fireEvent.change(screen.getByLabelText(/kind/i), {
       target: { value: "Mortgage" },
@@ -56,7 +60,9 @@ describe("AccountCreateModal — Sondertilgung Allowance field visibility", () =
   });
 
   it("hides the Sondertilgung Allowance field when kind is changed away from Mortgage", () => {
-    render(<AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
 
     fireEvent.change(screen.getByLabelText(/kind/i), {
       target: { value: "Mortgage" },
@@ -73,7 +79,9 @@ describe("AccountCreateModal — Sondertilgung Allowance field visibility", () =
 
 describe("AccountCreateModal — validation", () => {
   it("does not call the API when name is empty", () => {
-    render(<AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
 
     fireEvent.change(screen.getByLabelText(/opening date/i), {
       target: { value: "2026-01-01" },
@@ -84,7 +92,9 @@ describe("AccountCreateModal — validation", () => {
   });
 
   it("does not call the API when opening date is empty", () => {
-    render(<AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
 
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "My Account" },
@@ -98,7 +108,9 @@ describe("AccountCreateModal — validation", () => {
 describe("AccountCreateModal — submission", () => {
   it("calls onSuccess with the new account id after a successful submission", async () => {
     const onSuccess = vi.fn();
-    render(<AccountCreateModal onClose={vi.fn()} onSuccess={onSuccess} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={onSuccess} />
+    );
 
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main Girokonto" },
@@ -123,7 +135,9 @@ describe("AccountCreateModal — submission", () => {
     } as Response);
 
     const onClose = vi.fn();
-    render(<AccountCreateModal onClose={onClose} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={onClose} onSuccess={vi.fn()} />
+    );
 
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main Girokonto" },
@@ -141,7 +155,9 @@ describe("AccountCreateModal — submission", () => {
 
   it("calls onClose when the cancel button is clicked without submitting", () => {
     const onClose = vi.fn();
-    render(<AccountCreateModal onClose={onClose} onSuccess={vi.fn()} />);
+    renderWithTheme(
+      <AccountCreateModal onClose={onClose} onSuccess={vi.fn()} />
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /cancel|close/i }));
 

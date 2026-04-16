@@ -2,11 +2,13 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, afterEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
+import AccountOverview from "./AccountOverview";
 
 afterEach(() => {
   cleanup();
 });
-import AccountOverview from "./AccountOverview";
 
 type AccountKind =
   | "Girokonto"
@@ -46,9 +48,11 @@ const mockAccounts: AccountWithBalance[] = [
 describe("AccountOverview", () => {
   it("renders each account name and AccountKind", () => {
     render(
-      <MemoryRouter>
-        <AccountOverview accounts={mockAccounts} />
-      </MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={mockAccounts} />
+        </MemoryRouter>
+      </ThemeProvider>
     );
 
     expect(screen.getByText("Main Checking")).toBeInTheDocument();
@@ -59,9 +63,11 @@ describe("AccountOverview", () => {
 
   it("renders the current balance for each account", () => {
     render(
-      <MemoryRouter>
-        <AccountOverview accounts={mockAccounts} />
-      </MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={mockAccounts} />
+        </MemoryRouter>
+      </ThemeProvider>
     );
 
     // 150000 cents — rendered in some formatted form containing 1,500 or 1.500
@@ -72,9 +78,11 @@ describe("AccountOverview", () => {
 
   it("shows an empty state when no accounts exist", () => {
     render(
-      <MemoryRouter>
-        <AccountOverview accounts={[]} />
-      </MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={[]} />
+        </MemoryRouter>
+      </ThemeProvider>
     );
 
     expect(screen.getByText(/no accounts/i)).toBeInTheDocument();
@@ -82,9 +90,11 @@ describe("AccountOverview", () => {
 
   it("renders each account as a link to its detail page", () => {
     render(
-      <MemoryRouter>
-        <AccountOverview accounts={mockAccounts} />
-      </MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={mockAccounts} />
+        </MemoryRouter>
+      </ThemeProvider>
     );
 
     const links = screen.getAllByRole("link");

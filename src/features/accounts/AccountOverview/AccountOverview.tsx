@@ -1,5 +1,13 @@
 import { Link } from "react-router-dom";
 import type { AccountWithBalance, AccountKind } from "../../../types/account";
+import Badge from "../../../primitives/Badge/Badge";
+import {
+  StyledList,
+  StyledAccountLink,
+  StyledAccountName,
+  StyledBalance,
+  StyledEmptyState,
+} from "./AccountOverview.styles";
 
 interface Props {
   accounts: AccountWithBalance[];
@@ -16,23 +24,25 @@ function formatBalance(cents: number): string {
 
 export default function AccountOverview({ accounts }: Props) {
   if (accounts.length === 0) {
-    return <p>No accounts yet.</p>;
+    return <StyledEmptyState>No accounts yet.</StyledEmptyState>;
   }
 
   return (
-    <ul>
-      {accounts.map((account) => (
-        <li
-          key={account._id}
-          data-liability={LIABILITY_KINDS.has(account.kind)}
-        >
-          <Link to={`/accounts/${account._id}`}>
-            <span>{account.name}</span>
-            <span>{account.kind}</span>
-            <span>{formatBalance(account.balance)}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <StyledList>
+      {accounts.map((account) => {
+        const isLiability = LIABILITY_KINDS.has(account.kind);
+        return (
+          <li key={account._id}>
+            <StyledAccountLink as={Link} to={`/accounts/${account._id}`}>
+              <StyledAccountName>{account.name}</StyledAccountName>
+              <Badge kind={account.kind} />
+              <StyledBalance $isLiability={isLiability}>
+                {formatBalance(account.balance)}
+              </StyledBalance>
+            </StyledAccountLink>
+          </li>
+        );
+      })}
+    </StyledList>
   );
 }

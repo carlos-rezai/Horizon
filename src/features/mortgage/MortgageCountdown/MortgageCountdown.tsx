@@ -2,6 +2,13 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import { findMortgagePayoffMonth } from "../../../utils/projection";
 import { formatBalance } from "../../../utils/format";
+import Heading from "../../../primitives/Heading/Heading";
+import {
+  StyledSection,
+  StyledCard,
+  StyledRestschuld,
+  StyledCountdownText,
+} from "./MortgageCountdown.styles";
 
 interface Props {
   accounts: AccountWithBalance[];
@@ -34,22 +41,28 @@ export default function MortgageCountdown({ accounts, snapshots }: Props) {
   const now = currentMonth();
 
   return (
-    <section>
-      <h2>Mortgage Countdown</h2>
+    <StyledSection>
+      <Heading level={2}>Mortgage Countdown</Heading>
       {mortgageAccounts.map((account) => {
         const payoffMonth = findMortgagePayoffMonth(snapshots, account._id);
         return (
-          <div key={account._id}>
-            <h3>{account.name}</h3>
-            <p>{formatBalance(account.balance)}</p>
+          <StyledCard key={account._id}>
+            <Heading level={3}>{account.name}</Heading>
+            <StyledRestschuld>
+              {formatBalance(account.balance)}
+            </StyledRestschuld>
             {payoffMonth === null ? (
-              <p>Not paid off within 10-year horizon.</p>
+              <StyledCountdownText>
+                Not paid off within 10-year horizon.
+              </StyledCountdownText>
             ) : (
-              <p>{computeTimeRemaining(now, payoffMonth)}</p>
+              <StyledCountdownText>
+                {computeTimeRemaining(now, payoffMonth)}
+              </StyledCountdownText>
             )}
-          </div>
+          </StyledCard>
         );
       })}
-    </section>
+    </StyledSection>
   );
 }

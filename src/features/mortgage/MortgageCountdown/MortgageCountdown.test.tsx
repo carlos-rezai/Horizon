@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import MortgageCountdown from "./MortgageCountdown";
+
+function renderWithTheme(ui: React.ReactElement) {
+  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+}
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 
@@ -46,7 +52,7 @@ function makeSnapshots(
 
 describe("MortgageCountdown", () => {
   it("renders nothing when no Mortgage accounts exist", () => {
-    const { container } = render(
+    const { container } = renderWithTheme(
       <MortgageCountdown accounts={[assetAccount]} snapshots={[]} />
     );
     expect(container.firstChild).toBeNull();
@@ -60,7 +66,7 @@ describe("MortgageCountdown", () => {
     };
     const snapshots = makeSnapshots("mortgage-1", 100000);
 
-    render(
+    renderWithTheme(
       <MortgageCountdown
         accounts={[mortgageAccount, secondMortgage]}
         snapshots={snapshots}
@@ -74,7 +80,7 @@ describe("MortgageCountdown", () => {
   it("shows the current Restschuld for each Mortgage account", () => {
     const snapshots = makeSnapshots("mortgage-1", 100000);
 
-    render(
+    renderWithTheme(
       <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
     );
 
@@ -85,7 +91,7 @@ describe("MortgageCountdown", () => {
   it('shows "Not paid off within 10-year horizon." when payoff month is null', () => {
     const snapshots = makeSnapshots("mortgage-1", 100000); // never reaches 0
 
-    render(
+    renderWithTheme(
       <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
     );
 
@@ -109,7 +115,7 @@ describe("MortgageCountdown", () => {
       };
     });
 
-    render(
+    renderWithTheme(
       <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
     );
 

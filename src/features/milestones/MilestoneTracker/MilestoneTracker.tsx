@@ -4,6 +4,22 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import { findMilestoneMonth } from "../../../utils/projection";
 import { formatBalance } from "../../../utils/format";
+import Heading from "../../../primitives/Heading/Heading";
+import FormField from "../../../components/FormField/FormField";
+import Input from "../../../primitives/Input/Input";
+import Select from "../../../primitives/Select/Select";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledSection,
+  StyledForm,
+  StyledFormRow,
+  StyledMilestoneList,
+  StyledMilestoneCard,
+  StyledMilestoneName,
+  StyledMilestoneDetail,
+  StyledEmptyState,
+  StyledErrorText,
+} from "./MilestoneTracker.styles";
 
 interface Props {
   milestones: Milestone[];
@@ -42,48 +58,55 @@ export default function MilestoneTracker({
   }
 
   return (
-    <section>
-      <h2>Milestones</h2>
+    <StyledSection>
+      <Heading level={2}>Milestones</Heading>
 
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="milestone-name">Name</label>
-        <input
-          id="milestone-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+      <StyledForm onSubmit={handleSubmit}>
+        <StyledFormRow>
+          <FormField label="Name" htmlFor="milestone-name">
+            <Input
+              id="milestone-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </FormField>
 
-        <label htmlFor="milestone-account">Account</label>
-        <select
-          id="milestone-account"
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-        >
-          {accounts.map((a) => (
-            <option key={a._id} value={a._id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
+          <FormField label="Account" htmlFor="milestone-account">
+            <Select
+              id="milestone-account"
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+            >
+              {accounts.map((a) => (
+                <option key={a._id} value={a._id}>
+                  {a.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
 
-        <label htmlFor="milestone-target">Target Balance</label>
-        <input
-          id="milestone-target"
-          type="number"
-          value={targetBalance}
-          onChange={(e) => setTargetBalance(e.target.value)}
-        />
+          <FormField label="Target Balance" htmlFor="milestone-target">
+            <Input
+              id="milestone-target"
+              type="number"
+              value={targetBalance}
+              onChange={(e) => setTargetBalance(e.target.value)}
+            />
+          </FormField>
+        </StyledFormRow>
 
-        <button type="submit" disabled={!isValid}>
+        <Button type="submit" disabled={!isValid}>
           Add milestone
-        </button>
-        {submitError !== null && <p>{submitError}</p>}
-      </form>
+        </Button>
+        {submitError !== null && (
+          <StyledErrorText>{submitError}</StyledErrorText>
+        )}
+      </StyledForm>
 
       {milestones.length === 0 ? (
-        <p>No milestones yet.</p>
+        <StyledEmptyState>No milestones yet.</StyledEmptyState>
       ) : (
-        <ul>
+        <StyledMilestoneList>
           {milestones.map((milestone) => {
             const account = accounts.find((a) => a._id === milestone.accountId);
             const completionMonth = account
@@ -96,21 +119,34 @@ export default function MilestoneTracker({
               : null;
 
             return (
-              <li key={milestone._id}>
-                <span>{milestone.name}</span>
-                <span>{account?.name ?? "Unknown account"}</span>
-                <span>{formatBalance(milestone.targetBalance)}</span>
+              <StyledMilestoneCard key={milestone._id}>
+                <StyledMilestoneName>{milestone.name}</StyledMilestoneName>
+                <StyledMilestoneDetail>
+                  {account?.name ?? "Unknown account"}
+                </StyledMilestoneDetail>
+                <StyledMilestoneDetail>
+                  {formatBalance(milestone.targetBalance)}
+                </StyledMilestoneDetail>
                 {completionMonth === null ? (
-                  <span>Not reached within 10-year horizon.</span>
+                  <StyledMilestoneDetail>
+                    Not reached within 10-year horizon.
+                  </StyledMilestoneDetail>
                 ) : (
-                  <span>{completionMonth}</span>
+                  <StyledMilestoneDetail>
+                    {completionMonth}
+                  </StyledMilestoneDetail>
                 )}
-                <button onClick={() => onDelete(milestone._id)}>Delete</button>
-              </li>
+                <Button
+                  variant="danger"
+                  onClick={() => onDelete(milestone._id)}
+                >
+                  Delete
+                </Button>
+              </StyledMilestoneCard>
             );
           })}
-        </ul>
+        </StyledMilestoneList>
       )}
-    </section>
+    </StyledSection>
   );
 }
