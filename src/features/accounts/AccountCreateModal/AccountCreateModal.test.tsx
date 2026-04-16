@@ -7,7 +7,13 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import AccountCreateModal from "./AccountCreateModal";
+
+function renderWithTheme(ui: React.ReactElement) {
+  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+}
 
 afterEach(() => {
   cleanup();
@@ -141,5 +147,18 @@ describe("AccountCreateModal — submission", () => {
 
     expect(onClose).toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("AccountCreateModal — overlay", () => {
+  it("calls onClose when the overlay backdrop is clicked", () => {
+    const onClose = vi.fn();
+    renderWithTheme(
+      <AccountCreateModal onClose={onClose} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByTestId("modal-overlay"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
