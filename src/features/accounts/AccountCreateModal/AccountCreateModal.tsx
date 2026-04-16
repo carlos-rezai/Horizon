@@ -2,6 +2,16 @@ import { useState } from "react";
 import type { AccountKind } from "../../../types/account";
 import { API_BASE } from "../../../utils/api";
 import { eurosToCents } from "../../../utils/currency";
+import Modal from "../../../components/Modal/Modal";
+import FormField from "../../../components/FormField/FormField";
+import Input from "../../../primitives/Input/Input";
+import Select from "../../../primitives/Select/Select";
+import Button from "../../../primitives/Button/Button";
+import {
+  StyledForm,
+  StyledActions,
+  StyledErrorText,
+} from "./AccountCreateModal.styles";
 
 interface Props {
   onClose: () => void;
@@ -56,11 +66,11 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
   };
 
   return (
-    <div role="dialog" aria-modal="true">
-      <form onSubmit={handleSubmit}>
-        <label>
-          Kind
-          <select
+    <Modal onClose={onClose}>
+      <StyledForm onSubmit={handleSubmit}>
+        <FormField label="Kind" htmlFor="account-kind">
+          <Select
+            id="account-kind"
             value={kind}
             onChange={(e) => setKind(e.target.value as AccountKind)}
           >
@@ -69,52 +79,60 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
                 {k}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </FormField>
 
-        <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
+        <FormField label="Name" htmlFor="account-name">
+          <Input
+            id="account-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </FormField>
 
-        <label>
-          Opening Balance
-          <input
+        <FormField label="Opening Balance" htmlFor="opening-balance">
+          <Input
+            id="opening-balance"
             type="number"
             step="0.01"
             value={openingBalance}
             onChange={(e) => setOpeningBalance(e.target.value)}
           />
-        </label>
+        </FormField>
 
-        <label>
-          Opening Date
-          <input
+        <FormField label="Opening Date" htmlFor="opening-date">
+          <Input
+            id="opening-date"
             type="date"
             value={openingDate}
             onChange={(e) => setOpeningDate(e.target.value)}
           />
-        </label>
+        </FormField>
 
         {kind === "Mortgage" && (
-          <label>
-            Sondertilgung Allowance
-            <input
+          <FormField
+            label="Sondertilgung Allowance"
+            htmlFor="sondertilgung-allowance"
+          >
+            <Input
+              id="sondertilgung-allowance"
               type="number"
               step="0.01"
               value={sondertilgungAllowance}
               onChange={(e) => setSondertilgungAllowance(e.target.value)}
             />
-          </label>
+          </FormField>
         )}
 
-        {error && <p role="alert">{error}</p>}
+        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
-        <button type="submit">Create account</button>
-        <button type="button" onClick={onClose}>
-          Cancel
-        </button>
-      </form>
-    </div>
+        <StyledActions>
+          <Button type="submit">Create account</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </StyledActions>
+      </StyledForm>
+    </Modal>
   );
 }

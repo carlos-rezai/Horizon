@@ -7,7 +7,13 @@ import {
   within,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
 import MilestoneTracker from "./MilestoneTracker";
+
+function renderWithTheme(ui: React.ReactElement) {
+  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+}
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Milestone } from "../../../types/milestone";
@@ -64,7 +70,7 @@ const nonReachingSnapshots: MonthlySnapshot[] = Array.from(
 
 describe("MilestoneTracker", () => {
   it("shows empty state when no milestones exist", () => {
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[]}
         accounts={[tagesgeldAccount]}
@@ -78,7 +84,7 @@ describe("MilestoneTracker", () => {
   });
 
   it("renders each milestone card with name, target account name, and target balance", () => {
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[milestone]}
         accounts={[tagesgeldAccount]}
@@ -96,7 +102,7 @@ describe("MilestoneTracker", () => {
   });
 
   it('shows "Not reached within 10-year horizon." when completion month is null', () => {
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[milestone]}
         accounts={[tagesgeldAccount]}
@@ -112,7 +118,7 @@ describe("MilestoneTracker", () => {
   });
 
   it("shows the estimated completion month when the target is reached", () => {
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[milestone]}
         accounts={[tagesgeldAccount]}
@@ -129,7 +135,7 @@ describe("MilestoneTracker", () => {
   it("calls onAdd with name, accountId, and targetBalance when the form is submitted", () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
 
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[]}
         accounts={[tagesgeldAccount]}
@@ -160,7 +166,7 @@ describe("MilestoneTracker", () => {
   it("does not call onAdd when the name field is empty", () => {
     const onAdd = vi.fn();
 
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[]}
         accounts={[tagesgeldAccount]}
@@ -181,7 +187,7 @@ describe("MilestoneTracker", () => {
   it("does not call onAdd when the target balance field is empty", () => {
     const onAdd = vi.fn();
 
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[]}
         accounts={[tagesgeldAccount]}
@@ -202,7 +208,7 @@ describe("MilestoneTracker", () => {
   it("calls onDelete with the milestone id when the delete button is clicked", () => {
     const onDelete = vi.fn();
 
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[milestone]}
         accounts={[tagesgeldAccount]}
@@ -220,7 +226,7 @@ describe("MilestoneTracker", () => {
   it("retains form values when onAdd rejects", async () => {
     const onAdd = vi.fn().mockRejectedValue(new Error("Server error"));
 
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[]}
         accounts={[tagesgeldAccount]}
@@ -247,7 +253,7 @@ describe("MilestoneTracker", () => {
   it("renders an error message when onAdd rejects", async () => {
     const onAdd = vi.fn().mockRejectedValue(new Error("Server error"));
 
-    render(
+    renderWithTheme(
       <MilestoneTracker
         milestones={[]}
         accounts={[tagesgeldAccount]}

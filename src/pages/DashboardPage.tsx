@@ -7,6 +7,10 @@ import AccountOverview from "../features/accounts/AccountOverview/AccountOvervie
 import AccountCreateModal from "../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown/MortgageCountdown";
 import MilestoneTracker from "../features/milestones/MilestoneTracker/MilestoneTracker";
+import Spinner from "../primitives/Spinner/Spinner";
+import Heading from "../primitives/Heading/Heading";
+import Text from "../primitives/Text/Text";
+import Button from "../primitives/Button/Button";
 import { computeTotalLiquid } from "../utils/accounts";
 import { formatBalance } from "../utils/format";
 
@@ -33,20 +37,20 @@ export default function DashboardPage() {
   } = useMilestones();
 
   if (accountsLoading || projectionLoading || milestonesLoading)
-    return <p>Loading…</p>;
-  if (accountsError) return <p>Error: {accountsError}</p>;
-  if (projectionError) return <p>Error: {projectionError}</p>;
-  if (milestonesError) return <p>Error: {milestonesError}</p>;
+    return <Spinner />;
+  if (accountsError) return <Text>{`Error: ${accountsError}`}</Text>;
+  if (projectionError) return <Text>{`Error: ${projectionError}`}</Text>;
+  if (milestonesError) return <Text>{`Error: ${milestonesError}`}</Text>;
 
   const totalLiquid = computeTotalLiquid(accounts);
 
   return (
-    <main>
-      <h1>Dashboard</h1>
+    <div>
+      <Heading level={1}>Dashboard</Heading>
       <section>
-        <h2>Accounts</h2>
-        <button onClick={() => setShowCreateModal(true)}>Add account</button>
-        <p>Total Liquid: {formatBalance(totalLiquid)}</p>
+        <Heading level={2}>Accounts</Heading>
+        <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
+        <Text>Total Liquid: {formatBalance(totalLiquid)}</Text>
         <AccountOverview accounts={accounts} />
       </section>
       {showCreateModal && (
@@ -63,6 +67,6 @@ export default function DashboardPage() {
         onAdd={addMilestone}
         onDelete={deleteMilestone}
       />
-    </main>
+    </div>
   );
 }
