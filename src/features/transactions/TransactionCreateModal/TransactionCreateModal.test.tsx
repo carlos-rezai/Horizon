@@ -226,3 +226,14 @@ describe("TransactionCreateModal — server error", () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe("TransactionCreateModal — overlay", () => {
+  it("calls onClose when the overlay backdrop is clicked", () => {
+    const onClose = vi.fn();
+    renderModal({ onClose });
+
+    fireEvent.click(screen.getByTestId("modal-overlay"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

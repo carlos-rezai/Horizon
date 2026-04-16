@@ -328,3 +328,14 @@ describe("TransactionEditModal — transfer branch", () => {
     });
   });
 });
+
+describe("TransactionEditModal — overlay", () => {
+  it("calls onClose when the overlay backdrop is clicked", () => {
+    const onClose = vi.fn();
+    renderModal(regularTransaction, { onClose });
+
+    fireEvent.click(screen.getByTestId("modal-overlay"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

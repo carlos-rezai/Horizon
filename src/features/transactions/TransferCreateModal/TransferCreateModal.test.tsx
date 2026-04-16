@@ -330,3 +330,14 @@ describe("TransferCreateModal — server error", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe("TransferCreateModal — overlay", () => {
+  it("calls onClose when the overlay backdrop is clicked", () => {
+    const onClose = vi.fn();
+    renderModal({ onClose });
+
+    fireEvent.click(screen.getByTestId("modal-overlay"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

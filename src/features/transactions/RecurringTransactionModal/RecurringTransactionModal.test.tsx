@@ -409,3 +409,14 @@ describe("RecurringTransactionModal — delete", () => {
     expect(await screen.findByText(/delete failed/i)).toBeInTheDocument();
   });
 });
+
+describe("RecurringTransactionModal — overlay", () => {
+  it("calls onClose when the overlay backdrop is clicked", () => {
+    const onClose = vi.fn();
+    renderEditModal({ onClose });
+
+    fireEvent.click(screen.getByTestId("modal-overlay"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
