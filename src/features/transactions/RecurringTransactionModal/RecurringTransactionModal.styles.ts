@@ -4,7 +4,7 @@ export const StyledForm = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space4}px;
-  min-width: 400px;
+  min-width: ${({ theme }) => theme.layout.modalWidth}px;
 `;
 
 export const StyledActions = styled.div`

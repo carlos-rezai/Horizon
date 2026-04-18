@@ -4,7 +4,7 @@ export const StyledFields = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space4}px;
-  min-width: 360px;
+  min-width: ${({ theme }) => theme.layout.narrowModalWidth}px;
 `;
 
 export const StyledActions = styled.div`
