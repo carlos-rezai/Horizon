@@ -4,6 +4,7 @@ import {
   findMilestoneMonth,
   buildAccountColumns,
   deriveSTMonths,
+  deriveYearSummaries,
 } from "./projection";
 import type { MonthlySnapshot } from "../types/projection";
 import type { AccountWithBalance } from "../types/account";
@@ -288,5 +289,114 @@ describe("deriveSTMonths", () => {
     const result = deriveSTMonths(recurring, [], "2026-01", 12);
 
     expect(result.size).toBe(0);
+  });
+});
+
+const snap = (
+  month: string,
+  totalLiquid: number,
+  accountBalances: Record<string, number> = {}
+): MonthlySnapshot => ({
+  month,
+  totalLiquid,
+  netCashflow: 0,
+  accounts: Object.fromEntries(
+    Object.entries(accountBalances).map(([id, projected]) => [
+      id,
+      { projected },
+    ])
+  ),
+});
+
+describe("deriveYearSummaries", () => {
+  it("returns one row per projected year using the December snapshot", () => {
+    const snapshots = [
+      snap("2026-10", 10000),
+      snap("2026-11", 11000),
+      snap("2026-12", 12000),
+      snap("2027-10", 20000),
+      snap("2027-11", 21000),
+      snap("2027-12", 22000),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0].year).toBe(2026);
+    expect(rows[0].totalLiquid).toBe(12000);
+    expect(rows[1].year).toBe(2027);
+    expect(rows[1].totalLiquid).toBe(22000);
+  });
+
+  it("uses the last available snapshot when December is not in the window", () => {
+    const snapshots = [
+      snap("2026-10", 10000),
+      snap("2026-11", 11000),
+      snap("2026-12", 12000),
+      snap("2027-10", 20000),
+      snap("2027-11", 21000),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows).toHaveLength(2);
+    expect(rows[1].year).toBe(2027);
+    expect(rows[1].totalLiquid).toBe(21000);
+  });
+
+  it("returns stAmount equal to the ST fired in that year from the stMonths map", () => {
+    const snapshots = [
+      snap("2026-10", 10000),
+      snap("2026-11", 11000),
+      snap("2026-12", 12000),
+    ];
+    const stMonths = new Map([["2026-10", 500000]]);
+
+    const rows = deriveYearSummaries(snapshots, [], stMonths);
+
+    expect(rows[0].stAmount).toBe(500000);
+  });
+
+  it("returns stAmount null for years with no ST events", () => {
+    const snapshots = [
+      snap("2026-10", 10000),
+      snap("2026-11", 11000),
+      snap("2026-12", 12000),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows[0].stAmount).toBeNull();
+  });
+
+  it("returns restschuld as the sum of all mortgage account projected balances in the year-end snapshot", () => {
+    const snapshots = [
+      snap("2026-12", 12000, {
+        "mortgage-1": 3000000,
+        "mortgage-2": 1500000,
+      }),
+    ];
+
+    const rows = deriveYearSummaries(
+      snapshots,
+      ["mortgage-1", "mortgage-2"],
+      new Map()
+    );
+
+    expect(rows[0].restschuld).toBe(4500000);
+  });
+
+  it("returns restschuld null when no mortgageAccountIds are provided", () => {
+    const snapshots = [snap("2026-12", 12000)];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows[0].restschuld).toBeNull();
+  });
+
+  it("returns an empty array when snapshots is empty", () => {
+    const rows = deriveYearSummaries([], [], new Map());
+
+    expect(rows).toEqual([]);
   });
 });
