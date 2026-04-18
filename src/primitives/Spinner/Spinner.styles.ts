@@ -27,5 +27,6 @@ export const StyledSpinner = styled.span<{ $size: SpinnerSize }>`
     ${({ theme }) => theme.colors.border};
   border-top-color: ${({ theme }) => theme.colors.accent};
   border-radius: 50%;
-  animation: ${spin} 0.7s linear infinite;
+  animation: ${spin} ${({ theme }) => theme.transitions.spinDuration} linear
+    infinite;
 `;
