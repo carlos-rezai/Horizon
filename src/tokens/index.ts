@@ -3,6 +3,7 @@ import { spacing } from "./spacing";
 import { typography } from "./typography";
 import { breakpoints } from "./breakpoints";
 import { radius } from "./radius";
+import { layout } from "./layout";
 
 export const theme = {
   colors,
@@ -10,8 +11,9 @@ export const theme = {
   typography,
   breakpoints,
   radius,
+  layout,
 };
 
 export type MeridianTheme = typeof theme;
 
-export { colors, spacing, typography, breakpoints, radius };
+export { colors, spacing, typography, breakpoints, radius, layout };
