@@ -42,22 +42,28 @@
 
 ## Projections
 
-| Term                                 | Definition                                                                                                  | Aliases to avoid               |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Projection Engine**                | The system that calculates 10-year forward balances from RecurringTransactions and current account balances | Forecast engine, planner       |
-| **MonthlySnapshot**                  | The projected state of all account balances for a given future month                                        | Projection row, forecast entry |
-| **Plan**                             | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store   | Financial plan, budget plan    |
-| **Actual**                           | The real account balance derived from recorded Transactions                                                 | Real balance                   |
-| **Variance**                         | The difference between a projected balance and the actual balance for a given account and month             | Delta, difference              |
-| **Payoff Month** (new)               | The first projected month in which a Mortgage account's balance reaches zero                                | Payoff date, payoff year       |
-| **Estimated Completion Month** (new) | The first projected month in which a Milestone's target balance is reached                                  | Target date, goal date         |
+| Term                           | Definition                                                                                                                            | Aliases to avoid               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **Projection Engine**          | The system that calculates 10-year forward balances from RecurringTransactions and current account balances                           | Forecast engine, planner       |
+| **MonthlySnapshot**            | The projected state of all account balances for a given future month                                                                  | Projection row, forecast entry |
+| **Plan**                       | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                             | Financial plan, budget plan    |
+| **Actual**                     | The real account balance derived from recorded Transactions                                                                           | Real balance                   |
+| **Variance**                   | The difference between a projected balance and the actual balance for a given account and month                                       | Delta, difference              |
+| **Payoff Month**               | The first projected month in which a Mortgage account's balance reaches zero                                                          | Payoff date, payoff year       |
+| **Payoff Year** (new)          | The calendar year that contains the Payoff Month                                                                                      | Payoff year, final year        |
+| **ST Month** (new)             | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded | ST date, October payment       |
+| **Estimated Completion Month** | The first projected month in which a Milestone's target balance is reached                                                            | Target date, goal date         |
 
 ## Dashboard
 
-| Term                         | Definition                                                                                  | Aliases to avoid          |
-| ---------------------------- | ------------------------------------------------------------------------------------------- | ------------------------- |
-| **Milestone** (new)          | A user-defined named target: a specific account must reach a specific balance               | Goal, target, checkpoint  |
-| **Mortgage Countdown** (new) | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account | Payoff tracker, countdown |
+| Term                           | Definition                                                                                                               | Aliases to avoid             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| **Milestone**                  | A user-defined named target: a specific account must reach a specific balance                                            | Goal, target, checkpoint     |
+| **Mortgage Countdown**         | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account                              | Payoff tracker, countdown    |
+| **Plan Summary** (new)         | The compact dashboard widget showing one clickable Year Summary Row per projected year-end, linking to the Plan Page     | Plan widget, plan preview    |
+| **Year Summary Row** (new)     | A single row in the Plan Summary showing end-of-year Total Liquid, Restschuld, and ST amount for one projected year      | Annual row, year row         |
+| **Plan Page** (new)            | The dedicated `/plan` route that displays the full Projection Accordion                                                  | Plan view, projection page   |
+| **Projection Accordion** (new) | The year-grouped, expandable UI on the Plan Page — collapsed shows Year Summary Row data, expanded shows 12 monthly rows | Plan table, projection table |
 
 ## Derived Metrics
 
@@ -83,7 +89,11 @@
 - A **Milestone** targets exactly one **Account** and has exactly one **target balance**
 - The **Estimated Completion Month** of a **Milestone** is derived from the **Plan** — never stored
 - The **Payoff Month** of a **Mortgage** account is derived from the **Plan** — never stored
+- The **Payoff Year** is the calendar year that contains the **Payoff Month** — used to visually distinguish the payoff year in the **Projection Accordion**
 - The **Mortgage Countdown** displays one entry per **Mortgage** account
+- The **Plan Summary** displays one **Year Summary Row** per projected year-end, derived from the December **MonthlySnapshot** of each year
+- The **Projection Accordion** on the **Plan Page** contains one expandable section per projected year — each section's expanded state shows 12 **MonthlySnapshot** rows
+- An **ST Month** is identified by the presence of an annual **Recurring Transfer** whose `linkedAccountId` points to a **Mortgage** account — never hardcoded to a calendar month
 
 ## Example dialogue
 
@@ -148,6 +158,24 @@
 | Term         | Definition                                                                               | Aliases to avoid             |
 | ------------ | ---------------------------------------------------------------------------------------- | ---------------------------- |
 | **Meridian** | The custom design system for Horizon — defines visual tokens, primitives, and components | "the design system", "theme" |
+
+## Example dialogue (Financial Projection Dashboard)
+
+> **Dev:** "On the Plan Page, how does the app know which months to highlight as ST months?"
+>
+> **Domain expert:** "It's derived — not hardcoded. The app looks for any annual Recurring Transfer whose `linkedAccountId` points to a Mortgage account. Whatever month that fires in is the ST Month. It could be October, it could be March."
+>
+> **Dev:** "What if the user hasn't set up a Sondertilgung Recurring Transfer yet?"
+>
+> **Domain expert:** "Then there are no ST Months in the Plan and nothing is highlighted. Correct behaviour."
+>
+> **Dev:** "The Plan Summary on the dashboard — does it show per-account balances or just totals?"
+>
+> **Domain expert:** "Just totals. Each Year Summary Row shows Total Liquid, Restschuld, and ST amount fired. The per-account breakdown lives in the Projection Accordion on the Plan Page."
+>
+> **Dev:** "When does a year get the Payoff Year treatment in the accordion?"
+>
+> **Domain expert:** "When it contains the Payoff Month — the first month the Mortgage Restschuld reaches zero. The year header gets a badge, and that specific month row is highlighted."
 
 ## Flagged ambiguities
 
