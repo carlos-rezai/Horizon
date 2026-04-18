@@ -6,5 +6,5 @@ interface BadgeProps {
 }
 
 export default function Badge({ kind }: BadgeProps) {
-  return <StyledBadge data-kind={kind}>{kind}</StyledBadge>;
+  return <StyledBadge $kind={kind}>{kind}</StyledBadge>;
 }
