@@ -3,7 +3,7 @@ import styled from "styled-components";
 export const StyledOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: ${({ theme }) => theme.colors.overlay};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,8 +13,8 @@ export const StyledOverlay = styled.div`
 export const StyledDialog = styled.div`
   background-color: ${({ theme }) => theme.colors.bgSurface};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
+  border-radius: ${({ theme }) => theme.radius.lg}px;
   padding: ${({ theme }) => theme.spacing.space6}px;
-  min-width: 400px;
+  min-width: ${({ theme }) => theme.layout.modalWidth}px;
   max-width: 90vw;
 `;
