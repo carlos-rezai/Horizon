@@ -160,6 +160,7 @@ Then open http://localhost:5173 in your browser.
 | Dashboard + milestone tracker              | ✅ Complete    |
 | Account + transaction UI                   | ✅ Complete    |
 | Meridian design system                     | ✅ Complete    |
+| Financial Projection Dashboard             | 🔲 In progress |
 | Monthly digest (AI)                        | 🔲 In progress |
 | Anomaly detection + Q&A (AI)               | 🔲 In progress |
 | Sondertilgung advisor (AI)                 | 🔲 In progress |
