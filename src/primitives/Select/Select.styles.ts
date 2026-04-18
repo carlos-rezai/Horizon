@@ -7,7 +7,7 @@ export const StyledSelect = styled.select`
   background-color: ${({ theme }) => theme.colors.bgElevated};
   color: ${({ theme }) => theme.colors.textPrimary};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   line-height: ${({ theme }) => theme.typography.lineHeights.normal};
   cursor: pointer;

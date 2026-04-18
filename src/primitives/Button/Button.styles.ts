@@ -8,12 +8,12 @@ export const StyledButton = styled.button<{ $variant: Variant }>`
   justify-content: center;
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space4}px;
-  border-radius: 6px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-weight: ${({ theme }) => theme.typography.weights.medium};
   line-height: 1;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity ${({ theme }) => theme.transitions.fast};
   border: 1px solid transparent;
 
   ${({ $variant, theme }) =>
