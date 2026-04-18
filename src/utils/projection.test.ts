@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { findMortgagePayoffMonth, findMilestoneMonth } from "./projection";
+import {
+  findMortgagePayoffMonth,
+  findMilestoneMonth,
+  buildAccountColumns,
+} from "./projection";
 import type { MonthlySnapshot } from "../types/projection";
+import type { AccountWithBalance } from "../types/account";
 
 const snapshot = (
   month: string,
@@ -103,5 +108,81 @@ describe("findMilestoneMonth", () => {
     ];
 
     expect(findMilestoneMonth(snapshots, id, 3000000, "Mortgage")).toBeNull();
+  });
+});
+
+describe("buildAccountColumns", () => {
+  const account = (
+    id: string,
+    name: string,
+    kind: AccountWithBalance["kind"]
+  ): AccountWithBalance => ({
+    _id: id,
+    kind,
+    name,
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(buildAccountColumns([])).toEqual([]);
+  });
+
+  it("excludes Mortgage accounts", () => {
+    const accounts = [
+      account("m1", "DSL Mortgage", "Mortgage"),
+      account("g1", "Main", "Girokonto"),
+    ];
+    const columns = buildAccountColumns(accounts);
+    expect(columns.map((c) => c.id)).not.toContain("m1");
+    expect(columns.map((c) => c.id)).toContain("g1");
+  });
+
+  it("orders kinds: Girokonto before Tagesgeld before Investment before CreditCard", () => {
+    const accounts = [
+      account("cc1", "Amex", "CreditCard"),
+      account("i1", "ETF", "Investment"),
+      account("t1", "Tagesgeld", "Tagesgeld"),
+      account("g1", "Main", "Girokonto"),
+    ];
+    const columns = buildAccountColumns(accounts);
+    const kinds = columns.map((c) => c.kind);
+    expect(kinds.indexOf("Girokonto")).toBeLessThan(kinds.indexOf("Tagesgeld"));
+    expect(kinds.indexOf("Tagesgeld")).toBeLessThan(
+      kinds.indexOf("Investment")
+    );
+    expect(kinds.indexOf("Investment")).toBeLessThan(
+      kinds.indexOf("CreditCard")
+    );
+  });
+
+  it("preserves account id and name on each output column", () => {
+    const accounts = [account("g1", "My Girokonto", "Girokonto")];
+    const columns = buildAccountColumns(accounts);
+    expect(columns[0]).toEqual({
+      id: "g1",
+      name: "My Girokonto",
+      kind: "Girokonto",
+    });
+  });
+
+  it("includes multiple accounts of the same kind and preserves their relative order", () => {
+    const accounts = [
+      account("g1", "Main", "Girokonto"),
+      account("g2", "Sparkasse", "Girokonto"),
+    ];
+    const columns = buildAccountColumns(accounts);
+    expect(columns).toHaveLength(2);
+    expect(columns[0].id).toBe("g1");
+    expect(columns[1].id).toBe("g2");
+  });
+
+  it("returns empty array when all accounts are Mortgages", () => {
+    const accounts = [
+      account("m1", "DSL Mortgage", "Mortgage"),
+      account("m2", "Second Mortgage", "Mortgage"),
+    ];
+    expect(buildAccountColumns(accounts)).toEqual([]);
   });
 });
