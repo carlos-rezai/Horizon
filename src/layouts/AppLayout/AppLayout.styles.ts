@@ -5,7 +5,7 @@ export const StyledTopBar = styled.header`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space3}px;
   padding: 0 ${({ theme }) => theme.spacing.space6}px;
-  height: 56px;
+  height: ${({ theme }) => theme.layout.topBarHeight}px;
   background-color: ${({ theme }) => theme.colors.bgSurface};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
@@ -26,7 +26,7 @@ export const StyledBackButton = styled.button`
   padding: ${({ theme }) => theme.spacing.space1}px;
   color: ${({ theme }) => theme.colors.textMuted};
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: ${({ theme }) => theme.radius.sm}px;
 
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
@@ -48,5 +48,5 @@ export const StyledMain = styled.main`
 
 export const StyledContent = styled.div`
   width: 100%;
-  max-width: 960px;
+  max-width: ${({ theme }) => theme.layout.contentMaxWidth}px;
 `;
