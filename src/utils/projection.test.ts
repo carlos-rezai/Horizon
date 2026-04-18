@@ -3,9 +3,11 @@ import {
   findMortgagePayoffMonth,
   findMilestoneMonth,
   buildAccountColumns,
+  deriveSTMonths,
 } from "./projection";
 import type { MonthlySnapshot } from "../types/projection";
 import type { AccountWithBalance } from "../types/account";
+import type { RecurringTransaction } from "../types/recurring";
 
 const snapshot = (
   month: string,
@@ -184,5 +186,107 @@ describe("buildAccountColumns", () => {
       account("m2", "Second Mortgage", "Mortgage"),
     ];
     expect(buildAccountColumns(accounts)).toEqual([]);
+  });
+});
+
+const rt = (
+  overrides: Partial<RecurringTransaction> & Pick<RecurringTransaction, "_id">
+): RecurringTransaction => ({
+  accountId: "tagesgeld-1",
+  amount: 500000,
+  description: "Sondertilgung",
+  category: "Mortgage",
+  frequency: "annual",
+  dayOfMonth: 1,
+  isActive: true,
+  ...overrides,
+});
+
+const mortgageAccount = { _id: "mortgage-1", kind: "Mortgage" as const };
+const tagesgeldAccount = { _id: "tagesgeld-1", kind: "Tagesgeld" as const };
+
+describe("deriveSTMonths", () => {
+  it("returns the correct month and amount for an annual RT whose linkedAccountId is a Mortgage account", () => {
+    const recurring = [rt({ _id: "rt-1", linkedAccountId: "mortgage-1" })];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
+
+    expect(result.has("2026-01")).toBe(true);
+    expect(result.get("2026-01")).toBe(500000);
+  });
+
+  it("returns multiple ST months when the projection window spans multiple years", () => {
+    const recurring = [rt({ _id: "rt-1", linkedAccountId: "mortgage-1" })];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-01", 24);
+
+    expect(result.has("2026-01")).toBe(true);
+    expect(result.has("2027-01")).toBe(true);
+    expect(result.size).toBe(2);
+  });
+
+  it("never includes monthly recurring transactions", () => {
+    const recurring = [
+      rt({ _id: "rt-1", frequency: "monthly", linkedAccountId: "mortgage-1" }),
+    ];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
+
+    expect(result.size).toBe(0);
+  });
+
+  it("never includes quarterly recurring transactions", () => {
+    const recurring = [
+      rt({
+        _id: "rt-1",
+        frequency: "quarterly",
+        linkedAccountId: "mortgage-1",
+      }),
+    ];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
+
+    expect(result.size).toBe(0);
+  });
+
+  it("never includes annual RTs with no linkedAccountId", () => {
+    const recurring = [rt({ _id: "rt-1" })];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
+
+    expect(result.size).toBe(0);
+  });
+
+  it("never includes annual RTs whose linkedAccountId points to a non-Mortgage account", () => {
+    const investmentAccount = { _id: "invest-1", kind: "Investment" as const };
+    const recurring = [
+      rt({ _id: "rt-1", linkedAccountId: "invest-1" }),
+    ];
+    const accounts = [investmentAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
+
+    expect(result.size).toBe(0);
+  });
+
+  it("returns an empty map when recurringTransactions is empty", () => {
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths([], accounts, "2026-01", 12);
+
+    expect(result.size).toBe(0);
+  });
+
+  it("returns an empty map when accounts is empty", () => {
+    const recurring = [rt({ _id: "rt-1", linkedAccountId: "mortgage-1" })];
+
+    const result = deriveSTMonths(recurring, [], "2026-01", 12);
+
+    expect(result.size).toBe(0);
   });
 });
