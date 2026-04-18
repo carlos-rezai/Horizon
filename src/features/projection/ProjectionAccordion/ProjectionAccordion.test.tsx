@@ -1,0 +1,107 @@
+// @vitest-environment jsdom
+import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../../tokens";
+import ProjectionAccordion from "./ProjectionAccordion";
+import type { MonthlySnapshot } from "../../../types/projection";
+import type { AccountWithBalance } from "../../../types/account";
+
+afterEach(() => {
+  cleanup();
+});
+
+function renderWithTheme(ui: React.ReactElement) {
+  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+}
+
+const mortgageAccount: AccountWithBalance = {
+  _id: "m1",
+  kind: "Mortgage",
+  name: "DSL Mortgage",
+  openingBalance: 0,
+  openingDate: "2026-01-01",
+  balance: 0,
+};
+
+const giroAccount: AccountWithBalance = {
+  _id: "g1",
+  kind: "Girokonto",
+  name: "Main",
+  openingBalance: 0,
+  openingDate: "2026-01-01",
+  balance: 0,
+};
+
+// Mortgage reaches zero at 2027-01
+const snapshotsWithPayoff: MonthlySnapshot[] = [
+  {
+    month: "2026-10",
+    accounts: { m1: { projected: 50000 }, g1: { projected: 200000 } },
+    netCashflow: 0,
+    totalLiquid: 200000,
+  },
+  {
+    month: "2026-11",
+    accounts: { m1: { projected: 25000 }, g1: { projected: 200000 } },
+    netCashflow: 0,
+    totalLiquid: 200000,
+  },
+  {
+    month: "2026-12",
+    accounts: { m1: { projected: 10000 }, g1: { projected: 200000 } },
+    netCashflow: 0,
+    totalLiquid: 200000,
+  },
+  {
+    month: "2027-01",
+    accounts: { m1: { projected: 0 }, g1: { projected: 200000 } },
+    netCashflow: 0,
+    totalLiquid: 200000,
+  },
+  {
+    month: "2027-02",
+    accounts: { m1: { projected: 0 }, g1: { projected: 200000 } },
+    netCashflow: 0,
+    totalLiquid: 200000,
+  },
+  {
+    month: "2027-03",
+    accounts: { m1: { projected: 0 }, g1: { projected: 200000 } },
+    netCashflow: 0,
+    totalLiquid: 200000,
+  },
+];
+
+// Mortgage never reaches zero
+const snapshotsNoPayoff: MonthlySnapshot[] = snapshotsWithPayoff.map((s) => ({
+  ...s,
+  accounts: { ...s.accounts, m1: { projected: 50000 } },
+}));
+
+describe("ProjectionAccordion — payoff month row", () => {
+  it("marks the payoff month row with data-testid when the payoff year is expanded", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[mortgageAccount, giroAccount]}
+        initialYear={2027}
+      />
+    );
+
+    expect(screen.getByTestId("payoff-month-row")).toBeInTheDocument();
+  });
+
+  it("marks only the payoff month row — not subsequent zero-restschuld rows in the same year", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[mortgageAccount, giroAccount]}
+        initialYear={2027}
+      />
+    );
+
+    expect(screen.getAllByTestId("payoff-month-row")).toHaveLength(1);
+  });
+
+});
