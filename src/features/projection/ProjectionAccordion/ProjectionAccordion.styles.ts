@@ -78,18 +78,33 @@ export const StyledTh = styled.th`
   }
 `;
 
-export const StyledTr = styled.tr<{ $isSTMonth?: boolean }>`
+export const StyledTr = styled.tr<{
+  $isSTMonth?: boolean;
+  $isPayoffMonth?: boolean;
+}>`
   &:not(:last-child) {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
 
-  background-color: ${({ theme, $isSTMonth }) =>
-    $isSTMonth ? theme.colors.positiveTint : "transparent"};
+  background-color: ${({ theme, $isSTMonth, $isPayoffMonth }) => {
+    if ($isPayoffMonth) return theme.colors.warningTint;
+    if ($isSTMonth) return theme.colors.positiveTint;
+    return "transparent";
+  }};
 
   &:hover {
-    background-color: ${({ theme, $isSTMonth }) =>
-      $isSTMonth ? theme.colors.positiveTint : theme.colors.bgSurface};
+    background-color: ${({ theme, $isSTMonth, $isPayoffMonth }) => {
+      if ($isPayoffMonth) return theme.colors.warningTint;
+      if ($isSTMonth) return theme.colors.positiveTint;
+      return theme.colors.bgSurface;
+    }};
   }
+`;
+
+export const StyledPayoffBadge = styled.span`
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.warning};
+  font-variant-numeric: tabular-nums;
 `;
 
 export const StyledSTBadge = styled.span`

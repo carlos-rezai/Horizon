@@ -23,6 +23,7 @@ import {
   StyledTd,
   StyledEmptyState,
   StyledSTBadge,
+  StyledPayoffBadge,
 } from "./ProjectionAccordion.styles";
 
 interface Props {
@@ -133,9 +134,9 @@ export default function ProjectionAccordion({
             >
               <StyledYearLabel>{year}</StyledYearLabel>
               {isPayoffYear && payoffMonth && (
-                <StyledYearMeta>
+                <StyledPayoffBadge>
                   Paid off {formatMonth(payoffMonth)}
-                </StyledYearMeta>
+                </StyledPayoffBadge>
               )}
               <StyledYearMeta>
                 Liquid {formatBalance(lastSnapshot.totalLiquid)}
@@ -172,9 +173,17 @@ export default function ProjectionAccordion({
                       ).some((a) => a.actual !== undefined);
                       const stAmount = stMonths.get(snapshot.month);
                       const isSTMonth = stAmount !== undefined;
+                      const isPayoffMonth = snapshot.month === payoffMonth;
 
                       return (
-                        <StyledTr key={snapshot.month} $isSTMonth={isSTMonth}>
+                        <StyledTr
+                          key={snapshot.month}
+                          $isSTMonth={isSTMonth}
+                          $isPayoffMonth={isPayoffMonth}
+                          data-testid={
+                            isPayoffMonth ? "payoff-month-row" : undefined
+                          }
+                        >
                           <StyledTd>{formatMonth(snapshot.month)}</StyledTd>
                           {columns.map((col) => {
                             const { value, isActual } = getCellValue(

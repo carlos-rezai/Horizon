@@ -104,4 +104,27 @@ describe("ProjectionAccordion — payoff month row", () => {
     expect(screen.getAllByTestId("payoff-month-row")).toHaveLength(1);
   });
 
+  it("does not mark any row when no Mortgage account is provided", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount]}
+        initialYear={2027}
+      />
+    );
+
+    expect(screen.queryByTestId("payoff-month-row")).not.toBeInTheDocument();
+  });
+
+  it("does not mark any row when the mortgage never reaches zero", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsNoPayoff}
+        accounts={[mortgageAccount, giroAccount]}
+        initialYear={2027}
+      />
+    );
+
+    expect(screen.queryByTestId("payoff-month-row")).not.toBeInTheDocument();
+  });
 });
