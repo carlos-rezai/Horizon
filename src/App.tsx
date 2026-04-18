@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import AccountDetailPage from "./pages/AccountDetailPage";
+import PlanPage from "./pages/PlanPage";
 
 export default function App() {
   return (
@@ -20,6 +21,14 @@ export default function App() {
           element={
             <AppLayout>
               <AccountDetailPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/plan"
+          element={
+            <AppLayout>
+              <PlanPage />
             </AppLayout>
           }
         />
