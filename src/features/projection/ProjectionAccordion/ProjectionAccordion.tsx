@@ -2,9 +2,11 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
+import type { RecurringTransaction } from "../../../types/recurring";
 import {
   buildAccountColumns,
   findMortgagePayoffMonth,
+  deriveSTMonths,
 } from "../../../utils/projection";
 import { formatBalance, formatMonth } from "../../../utils/format";
 import {
@@ -20,11 +22,13 @@ import {
   StyledTr,
   StyledTd,
   StyledEmptyState,
+  StyledSTBadge,
 } from "./ProjectionAccordion.styles";
 
 interface Props {
   snapshots: MonthlySnapshot[];
   accounts: AccountWithBalance[];
+  recurringTransactions?: RecurringTransaction[];
   initialYear?: number;
 }
 
@@ -65,6 +69,7 @@ function getCellValue(
 export default function ProjectionAccordion({
   snapshots,
   accounts,
+  recurringTransactions = [],
   initialYear,
 }: Props) {
   const currentYear = new Date().getFullYear();
@@ -84,6 +89,12 @@ export default function ProjectionAccordion({
 
   const columns = buildAccountColumns(accounts);
   const mortgageAccounts = accounts.filter((a) => a.kind === "Mortgage");
+  const stMonths = deriveSTMonths(
+    recurringTransactions,
+    accounts,
+    snapshots[0].month,
+    snapshots.length
+  );
   const mortgageIds = mortgageAccounts.map((a) => a._id);
   const hasMortgage = mortgageIds.length > 0;
 
@@ -159,9 +170,11 @@ export default function ProjectionAccordion({
                       const monthHasActual = Object.values(
                         snapshot.accounts
                       ).some((a) => a.actual !== undefined);
+                      const stAmount = stMonths.get(snapshot.month);
+                      const isSTMonth = stAmount !== undefined;
 
                       return (
-                        <StyledTr key={snapshot.month}>
+                        <StyledTr key={snapshot.month} $isSTMonth={isSTMonth}>
                           <StyledTd>{formatMonth(snapshot.month)}</StyledTd>
                           {columns.map((col) => {
                             const { value, isActual } = getCellValue(
@@ -179,6 +192,11 @@ export default function ProjectionAccordion({
                               {restschuld !== null
                                 ? formatBalance(restschuld)
                                 : "—"}
+                              {isSTMonth && (
+                                <StyledSTBadge>
+                                  +{formatBalance(stAmount)}
+                                </StyledSTBadge>
+                              )}
                             </StyledTd>
                           )}
                           <StyledTd $isActual={monthHasActual}>

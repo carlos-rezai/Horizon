@@ -78,14 +78,24 @@ export const StyledTh = styled.th`
   }
 `;
 
-export const StyledTr = styled.tr`
+export const StyledTr = styled.tr<{ $isSTMonth?: boolean }>`
   &:not(:last-child) {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
 
+  background-color: ${({ theme, $isSTMonth }) =>
+    $isSTMonth ? theme.colors.positiveTint : "transparent"};
+
   &:hover {
-    background-color: ${({ theme }) => theme.colors.bgSurface};
+    background-color: ${({ theme, $isSTMonth }) =>
+      $isSTMonth ? theme.colors.positiveTint : theme.colors.bgSurface};
   }
+`;
+
+export const StyledSTBadge = styled.span`
+  color: ${({ theme }) => theme.colors.positive};
+  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
+  margin-left: ${({ theme }) => theme.spacing.space2}px;
 `;
 
 export const StyledTd = styled.td<{ $isActual?: boolean }>`
