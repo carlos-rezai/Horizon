@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccounts } from "../features/accounts/useAccounts";
 import { useProjection } from "../features/projection/useProjection";
+import { useAllRecurringTransactions } from "../features/projection/useAllRecurringTransactions";
+import PlanSummary from "../features/projection/PlanSummary/PlanSummary";
 import { useMilestones } from "../features/milestones/useMilestones";
 import AccountOverview from "../features/accounts/AccountOverview/AccountOverview";
 import AccountCreateModal from "../features/accounts/AccountCreateModal/AccountCreateModal";
@@ -28,6 +30,8 @@ export default function DashboardPage() {
     isLoading: projectionLoading,
     error: projectionError,
   } = useProjection();
+  const { recurringTransactions } = useAllRecurringTransactions();
+
   const {
     milestones,
     isLoading: milestonesLoading,
@@ -60,6 +64,11 @@ export default function DashboardPage() {
         />
       )}
       <MortgageCountdown accounts={accounts} snapshots={snapshots} />
+      <PlanSummary
+        snapshots={snapshots}
+        accounts={accounts}
+        recurringTransactions={recurringTransactions}
+      />
       <MilestoneTracker
         milestones={milestones}
         accounts={accounts}

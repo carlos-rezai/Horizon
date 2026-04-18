@@ -9,3 +9,10 @@ export interface MonthlySnapshot {
   netCashflow: number;
   totalLiquid: number;
 }
+
+export interface YearSummaryRow {
+  year: number;
+  totalLiquid: number;
+  restschuld: number | null;
+  stAmount: number | null;
+}
