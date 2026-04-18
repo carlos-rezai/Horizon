@@ -8,4 +8,11 @@ export const colors = {
   accent: "#4A9EFF",
   positive: "#4CAF7D",
   negative: "#E05C5C",
+  warning: "#FFC107",
+  overlay: "rgba(0, 0, 0, 0.6)",
+  accentTint: "rgba(74, 158, 255, 0.15)",
+  positiveTint: "rgba(76, 175, 125, 0.15)",
+  negativeTint: "rgba(224, 92, 92, 0.15)",
+  warningTint: "rgba(255, 193, 7, 0.15)",
+  mutedTint: "rgba(139, 144, 167, 0.15)",
 };
