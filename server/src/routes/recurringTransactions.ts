@@ -13,6 +13,7 @@ router.post("/", async (req, res) => {
     frequency,
     dayOfMonth,
     linkedAccountId,
+    monthOfYear,
   } = req.body;
 
   if (
@@ -38,6 +39,7 @@ router.post("/", async (req, res) => {
     frequency,
     dayOfMonth,
     ...(linkedAccountId !== undefined && { linkedAccountId }),
+    ...(monthOfYear !== undefined && { monthOfYear }),
   });
 
   res.status(201).json(recurring.toJSON());
@@ -62,6 +64,7 @@ router.patch("/:id", async (req, res) => {
     frequency,
     dayOfMonth,
     linkedAccountId,
+    monthOfYear,
   } = req.body;
   const update: Record<string, unknown> = {};
   if (amount !== undefined) update.amount = amount;
@@ -71,6 +74,7 @@ router.patch("/:id", async (req, res) => {
   if (frequency !== undefined) update.frequency = frequency;
   if (dayOfMonth !== undefined) update.dayOfMonth = dayOfMonth;
   if (linkedAccountId !== undefined) update.linkedAccountId = linkedAccountId;
+  if (monthOfYear !== undefined) update.monthOfYear = monthOfYear;
 
   const recurring = await RecurringTransaction.findByIdAndUpdate(
     req.params.id,
