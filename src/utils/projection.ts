@@ -71,11 +71,22 @@ export function deriveSTMonths(
 
   const result = new Map<string, number>();
 
-  for (let i = 0; i < monthCount; i++) {
-    if (i % 12 !== 0) continue;
-    const month = addMonths(fromMonth, i);
-    for (const rt of stRecurring) {
-      result.set(month, (result.get(month) ?? 0) + rt.amount);
+  for (const rt of stRecurring) {
+    for (let i = 0; i < monthCount; i++) {
+      const month = addMonths(fromMonth, i);
+      const [yearStr, monthStr] = month.split("-");
+      const monthNum = parseInt(monthStr, 10);
+
+      if (rt.monthOfYear !== undefined) {
+        if (monthNum !== rt.monthOfYear) continue;
+      } else {
+        // Legacy: fire at 12-month intervals from projection start
+        if (i % 12 !== 0) continue;
+      }
+
+      const year = parseInt(yearStr, 10);
+      const key = `${year}-${String(rt.monthOfYear ?? monthNum).padStart(2, "0")}`;
+      result.set(key, (result.get(key) ?? 0) + rt.amount);
     }
   }
 

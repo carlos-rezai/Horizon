@@ -265,9 +265,7 @@ describe("deriveSTMonths", () => {
 
   it("never includes annual RTs whose linkedAccountId points to a non-Mortgage account", () => {
     const investmentAccount = { _id: "invest-1", kind: "Investment" as const };
-    const recurring = [
-      rt({ _id: "rt-1", linkedAccountId: "invest-1" }),
-    ];
+    const recurring = [rt({ _id: "rt-1", linkedAccountId: "invest-1" })];
     const accounts = [investmentAccount, tagesgeldAccount];
 
     const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
@@ -289,6 +287,43 @@ describe("deriveSTMonths", () => {
     const result = deriveSTMonths(recurring, [], "2026-01", 12);
 
     expect(result.size).toBe(0);
+  });
+
+  it("fires in the monthOfYear month when monthOfYear is set, not in the projection-start month", () => {
+    // Projection starts in April, ST should fire in October
+    const recurring = [
+      rt({ _id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
+    ];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-04", 12);
+
+    expect(result.has("2026-10")).toBe(true);
+    expect(result.has("2026-04")).toBe(false);
+  });
+
+  it("fires in the correct monthOfYear month across multiple projected years", () => {
+    const recurring = [
+      rt({ _id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
+    ];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-04", 24);
+
+    expect(result.has("2026-10")).toBe(true);
+    expect(result.has("2027-10")).toBe(true);
+    expect(result.size).toBe(2);
+  });
+
+  it("does not fire in the projection-start month when monthOfYear is set to a different month", () => {
+    const recurring = [
+      rt({ _id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
+    ];
+    const accounts = [mortgageAccount, tagesgeldAccount];
+
+    const result = deriveSTMonths(recurring, accounts, "2026-04", 12);
+
+    expect(result.has("2026-04")).toBe(false);
   });
 });
 
