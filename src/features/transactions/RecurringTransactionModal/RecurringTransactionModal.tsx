@@ -59,6 +59,9 @@ export default function RecurringTransactionModal({
   const [linkedAccountId, setLinkedAccountId] = useState(
     transaction?.linkedAccountId ?? ""
   );
+  const [monthOfYear, setMonthOfYear] = useState<number>(
+    transaction?.monthOfYear ?? new Date().getMonth() + 1
+  );
   const [categoryId, setCategoryId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +87,7 @@ export default function RecurringTransactionModal({
       frequency,
       dayOfMonth: parseInt(dayOfMonth, 10),
       ...(linkedAccountId ? { linkedAccountId } : {}),
+      ...(frequency === "annual" ? { monthOfYear } : {}),
     };
 
     onSaved(payload);
@@ -149,6 +153,36 @@ export default function RecurringTransactionModal({
             max="31"
           />
         </FormField>
+
+        {frequency === "annual" && (
+          <FormField label="Month of year" htmlFor="rt-month-of-year">
+            <Select
+              id="rt-month-of-year"
+              aria-label="Month of year"
+              value={monthOfYear}
+              onChange={(e) => setMonthOfYear(parseInt(e.target.value, 10))}
+            >
+              {[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].map((name, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        )}
 
         <CategorySelect onChange={setCategoryId} />
 
