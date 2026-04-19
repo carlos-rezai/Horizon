@@ -15,6 +15,7 @@ import Text from "../primitives/Text/Text";
 import Button from "../primitives/Button/Button";
 import { computeTotalLiquid } from "../utils/accounts";
 import { formatBalance } from "../utils/format";
+import { StyledDashboard, StyledSection } from "./DashboardPage.styles";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -49,33 +50,39 @@ export default function DashboardPage() {
   const totalLiquid = computeTotalLiquid(accounts);
 
   return (
-    <div>
-      <Heading level={1}>Dashboard</Heading>
-      <section>
+    <StyledDashboard>
+      <StyledSection>
+        <Heading level={1}>Dashboard</Heading>
         <Heading level={2}>Accounts</Heading>
         <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
         <Text>Total Liquid: {formatBalance(totalLiquid)}</Text>
         <AccountOverview accounts={accounts} />
-      </section>
-      {showCreateModal && (
-        <AccountCreateModal
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+        {showCreateModal && (
+          <AccountCreateModal
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+          />
+        )}
+      </StyledSection>
+      <StyledSection>
+        <MortgageCountdown accounts={accounts} snapshots={snapshots} />
+      </StyledSection>
+      <StyledSection>
+        <PlanSummary
+          snapshots={snapshots}
+          accounts={accounts}
+          recurringTransactions={recurringTransactions}
         />
-      )}
-      <MortgageCountdown accounts={accounts} snapshots={snapshots} />
-      <PlanSummary
-        snapshots={snapshots}
-        accounts={accounts}
-        recurringTransactions={recurringTransactions}
-      />
-      <MilestoneTracker
-        milestones={milestones}
-        accounts={accounts}
-        snapshots={snapshots}
-        onAdd={addMilestone}
-        onDelete={deleteMilestone}
-      />
-    </div>
+      </StyledSection>
+      <StyledSection>
+        <MilestoneTracker
+          milestones={milestones}
+          accounts={accounts}
+          snapshots={snapshots}
+          onAdd={addMilestone}
+          onDelete={deleteMilestone}
+        />
+      </StyledSection>
+    </StyledDashboard>
   );
 }
