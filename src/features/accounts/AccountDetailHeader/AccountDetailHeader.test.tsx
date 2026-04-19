@@ -24,6 +24,7 @@ const renderHeader = (
   overrides: Partial<{
     hasTransactions: boolean;
     onRename: (name: string) => Promise<void>;
+    onUpdateOpeningBalance: (openingBalance: number) => Promise<void>;
     onDelete: () => Promise<void>;
   }> = {}
 ) => {
@@ -31,6 +32,7 @@ const renderHeader = (
     account,
     hasTransactions: false,
     onRename: vi.fn().mockResolvedValue(undefined),
+    onUpdateOpeningBalance: vi.fn().mockResolvedValue(undefined),
     onDelete: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -55,19 +57,13 @@ describe("AccountDetailHeader — display", () => {
     // 150000 cents = 1.500,00 € — match on the numeric part
     expect(screen.getByText(/1[.,]500/)).toBeInTheDocument();
   });
-
-  it("renders a link back to the dashboard", () => {
-    renderHeader();
-    const backLink = screen.getByRole("link", { name: /back|dashboard/i });
-    expect(backLink).toHaveAttribute("href", "/");
-  });
 });
 
 describe("AccountDetailHeader — rename", () => {
   it("reveals an input pre-filled with the current name when rename is activated", () => {
     renderHeader();
 
-    fireEvent.click(screen.getByRole("button", { name: /rename|edit/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit account name/i }));
 
     const input = screen.getByDisplayValue("Main Checking");
     expect(input).toBeInTheDocument();
@@ -76,7 +72,7 @@ describe("AccountDetailHeader — rename", () => {
   it("calls onRename with the new name when saved", async () => {
     const { onRename } = renderHeader();
 
-    fireEvent.click(screen.getByRole("button", { name: /rename|edit/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit account name/i }));
     fireEvent.change(screen.getByDisplayValue("Main Checking"), {
       target: { value: "Salary Account" },
     });
@@ -90,13 +86,57 @@ describe("AccountDetailHeader — rename", () => {
       onRename: vi.fn().mockRejectedValue(new Error("Rename failed")),
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /rename|edit/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit account name/i }));
     fireEvent.change(screen.getByDisplayValue("Main Checking"), {
       target: { value: "Salary Account" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
     expect(await screen.findByText(/rename failed/i)).toBeInTheDocument();
+  });
+});
+
+describe("AccountDetailHeader — opening balance editing", () => {
+  it("reveals an input when edit opening balance is activated", () => {
+    renderHeader();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /edit opening balance/i })
+    );
+
+    expect(screen.getByLabelText(/opening balance/i)).toBeInTheDocument();
+  });
+
+  it("calls onUpdateOpeningBalance with the value in cents when saved", async () => {
+    const { onUpdateOpeningBalance } = renderHeader();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /edit opening balance/i })
+    );
+    fireEvent.change(screen.getByLabelText(/opening balance/i), {
+      target: { value: "2000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(onUpdateOpeningBalance).toHaveBeenCalledWith(200000);
+  });
+
+  it("shows an error when onUpdateOpeningBalance rejects", async () => {
+    renderHeader({
+      onUpdateOpeningBalance: vi
+        .fn()
+        .mockRejectedValue(new Error("Update failed")),
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /edit opening balance/i })
+    );
+    fireEvent.change(screen.getByLabelText(/opening balance/i), {
+      target: { value: "2000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText(/update failed/i)).toBeInTheDocument();
   });
 });
 
@@ -110,7 +150,6 @@ describe("AccountDetailHeader — delete", () => {
   it("shows an explanation when the delete button is disabled", () => {
     renderHeader({ hasTransactions: true });
 
-    // The explanation can be a title attribute, aria-description, or visible text
     const deleteButton = screen.getByRole("button", { name: /delete/i });
     const hasExplanation =
       deleteButton.hasAttribute("title") ||

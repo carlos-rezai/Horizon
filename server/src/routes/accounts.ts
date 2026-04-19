@@ -114,11 +114,14 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  const account = await Account.findByIdAndUpdate(
-    req.params.id,
-    { name: req.body.name },
-    { returnDocument: "after" }
-  );
+  const { name, openingBalance } = req.body;
+  const update: Record<string, unknown> = {};
+  if (name !== undefined) update.name = name;
+  if (openingBalance !== undefined) update.openingBalance = openingBalance;
+
+  const account = await Account.findByIdAndUpdate(req.params.id, update, {
+    returnDocument: "after",
+  });
 
   if (!account) {
     res.status(404).json({ error: "Account not found" });

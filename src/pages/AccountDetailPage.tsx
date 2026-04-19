@@ -55,6 +55,18 @@ export default function AccountDetailPage() {
     }
   };
 
+  const handleUpdateOpeningBalance = async (openingBalance: number) => {
+    const res = await fetch(`${API_BASE}/accounts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ openingBalance }),
+    });
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      throw new Error(data.error ?? "Failed to update opening balance");
+    }
+  };
+
   const handleDelete = async () => {
     const res = await fetch(`${API_BASE}/accounts/${id}`, {
       method: "DELETE",
@@ -72,6 +84,7 @@ export default function AccountDetailPage() {
         account={account}
         hasTransactions={hasTransactions}
         onRename={handleRename}
+        onUpdateOpeningBalance={handleUpdateOpeningBalance}
         onDelete={handleDelete}
       />
       <section>
