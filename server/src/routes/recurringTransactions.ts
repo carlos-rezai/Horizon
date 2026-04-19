@@ -54,12 +54,23 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  const { amount, description, category, isActive } = req.body;
+  const {
+    amount,
+    description,
+    category,
+    isActive,
+    frequency,
+    dayOfMonth,
+    linkedAccountId,
+  } = req.body;
   const update: Record<string, unknown> = {};
   if (amount !== undefined) update.amount = amount;
   if (description !== undefined) update.description = description;
   if (category !== undefined) update.category = category;
   if (isActive !== undefined) update.isActive = isActive;
+  if (frequency !== undefined) update.frequency = frequency;
+  if (dayOfMonth !== undefined) update.dayOfMonth = dayOfMonth;
+  if (linkedAccountId !== undefined) update.linkedAccountId = linkedAccountId;
 
   const recurring = await RecurringTransaction.findByIdAndUpdate(
     req.params.id,
