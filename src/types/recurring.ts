@@ -10,4 +10,5 @@ export interface RecurringTransaction {
   dayOfMonth: number;
   isActive: boolean;
   linkedAccountId?: string;
+  monthOfYear?: number;
 }

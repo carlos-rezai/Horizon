@@ -12,6 +12,7 @@ interface CreatePayload {
   frequency: RecurringFrequency;
   dayOfMonth: number;
   linkedAccountId?: string;
+  monthOfYear?: number;
 }
 
 interface UpdatePayload {
@@ -21,6 +22,7 @@ interface UpdatePayload {
   frequency: RecurringFrequency;
   dayOfMonth: number;
   linkedAccountId?: string;
+  monthOfYear?: number;
 }
 
 interface UseRecurringTransactionsResult {
