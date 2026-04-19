@@ -168,9 +168,6 @@ export default function ProjectionAccordion({
                   <tbody>
                     {monthSnapshots.map((snapshot) => {
                       const restschuld = getRestschuld(snapshot, mortgageIds);
-                      const monthHasActual = Object.values(
-                        snapshot.accounts
-                      ).some((a) => a.actual !== undefined);
                       const stAmount = stMonths.get(snapshot.month);
                       const isSTMonth = stAmount !== undefined;
                       const isPayoffMonth = snapshot.month === payoffMonth;
@@ -208,10 +205,10 @@ export default function ProjectionAccordion({
                               )}
                             </StyledTd>
                           )}
-                          <StyledTd $isActual={monthHasActual}>
+                          <StyledTd>
                             {formatBalance(snapshot.netCashflow)}
                           </StyledTd>
-                          <StyledTd $isActual={monthHasActual}>
+                          <StyledTd>
                             {formatBalance(snapshot.totalLiquid)}
                           </StyledTd>
                         </StyledTr>
