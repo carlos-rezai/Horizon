@@ -16,6 +16,7 @@ const recurringTransactionSchema = new mongoose.Schema(
     dayOfMonth: { type: Number, required: true },
     isActive: { type: Boolean, required: true, default: true },
     linkedAccountId: { type: String },
+    monthOfYear: { type: Number },
   },
   {
     versionKey: false,
