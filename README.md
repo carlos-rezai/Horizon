@@ -154,19 +154,19 @@ Then open http://localhost:5173 in your browser.
 
 ## Build Status
 
-| Feature                                    | Status         |
-| ------------------------------------------ | -------------- |
-| Account + transaction core (manual entry)  | ✅ Complete    |
-| Dashboard + milestone tracker              | ✅ Complete    |
-| Account + transaction UI                   | ✅ Complete    |
-| Meridian design system                     | ✅ Complete    |
-| Financial Projection Dashboard             | 🔲 In progress |
-| Restschuld Trajectory Chart                | 🔲 Planned     |
-| Monthly digest (AI)                        | 🔲 In progress |
-| Anomaly detection + Q&A (AI)               | 🔲 In progress |
-| Sondertilgung advisor (AI)                 | 🔲 In progress |
-| Google Auth (production)                   | 🔲 In progress |
-| Deployed — Vercel + Render + MongoDB Atlas | 🔲 In progress |
+| Feature                                    | Status      |
+| ------------------------------------------ | ----------- |
+| Account + transaction core (manual entry)  | ✅ Complete |
+| Dashboard + milestone tracker              | ✅ Complete |
+| Account + transaction UI                   | ✅ Complete |
+| Meridian design system                     | ✅ Complete |
+| Financial Projection Dashboard             | ✅ Complete |
+| Restschuld Trajectory Chart                | 🔲 Planned  |
+| Monthly digest (AI)                        | 🔲 Planned  |
+| Anomaly detection + Q&A (AI)               | 🔲 Planned  |
+| Sondertilgung advisor (AI)                 | 🔲 Planned  |
+| Google Auth (production)                   | 🔲 Planned  |
+| Deployed — Vercel + Render + MongoDB Atlas | 🔲 Planned  |
 
 ---
 
