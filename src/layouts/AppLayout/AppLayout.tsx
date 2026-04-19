@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import {
@@ -26,7 +27,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <ArrowLeft size={20} />
           </StyledBackButton>
         )}
-        <StyledWordmark>Horizon</StyledWordmark>
+        <StyledWordmark as={Link} to="/">
+          Horizon
+        </StyledWordmark>
       </StyledTopBar>
       <StyledMain>
         <StyledContent>{children}</StyledContent>

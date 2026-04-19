@@ -10,11 +10,16 @@ export const StyledTopBar = styled.header`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
-export const StyledWordmark = styled.span`
+export const StyledWordmark = styled.a`
   font-size: ${({ theme }) => theme.typography.sizes.md}px;
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
   color: ${({ theme }) => theme.colors.textPrimary};
   letter-spacing: 0.02em;
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.accent};
+  }
 `;
 
 export const StyledBackButton = styled.button`
