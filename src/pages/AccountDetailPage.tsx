@@ -113,15 +113,8 @@ export default function AccountDetailPage() {
             accountId={account._id}
             otherAccounts={accounts.filter((a) => a._id !== account._id)}
             onClose={() => setShowAddRecurring(false)}
-            onSaved={(rt) => {
-              void createRecurring({
-                amount: rt.amount,
-                description: rt.description,
-                category: rt.category,
-                frequency: rt.frequency,
-                dayOfMonth: rt.dayOfMonth,
-                linkedAccountId: rt.linkedAccountId,
-              });
+            onSaved={(formData) => {
+              void createRecurring(formData);
               setShowAddRecurring(false);
             }}
             onDeleted={() => setShowAddRecurring(false)}
@@ -133,19 +126,12 @@ export default function AccountDetailPage() {
             transaction={editingRecurring}
             otherAccounts={accounts.filter((a) => a._id !== account._id)}
             onClose={() => setEditingRecurring(null)}
-            onSaved={(rt) => {
-              void updateRecurring(rt._id, {
-                amount: rt.amount,
-                description: rt.description,
-                category: rt.category,
-                frequency: rt.frequency,
-                dayOfMonth: rt.dayOfMonth,
-                linkedAccountId: rt.linkedAccountId,
-              });
+            onSaved={(formData) => {
+              void updateRecurring(editingRecurring._id, formData);
               setEditingRecurring(null);
             }}
-            onDeleted={(id) => {
-              void removeRecurring(id);
+            onDeleted={() => {
+              void removeRecurring(editingRecurring._id);
               setEditingRecurring(null);
             }}
           />

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency";
-import { API_BASE } from "../../../utils/api";
 import type {
   RecurringTransaction,
   RecurringFrequency,
@@ -18,25 +17,33 @@ import {
   StyledErrorText,
 } from "./RecurringTransactionModal.styles";
 
+export interface RecurringFormPayload {
+  amount: number;
+  description: string;
+  category: string;
+  frequency: RecurringFrequency;
+  dayOfMonth: number;
+  linkedAccountId?: string;
+  monthOfYear?: number;
+}
+
 interface Props {
   accountId: string;
   transaction?: RecurringTransaction;
   otherAccounts: AccountWithBalance[];
   onClose: () => void;
-  onSaved: (rt: RecurringTransaction) => void;
-  onDeleted: (id: string) => void;
+  onSaved: (data: RecurringFormPayload) => void;
+  onDeleted: () => void;
 }
 
 export default function RecurringTransactionModal({
-  accountId,
+  accountId: _accountId,
   transaction,
   otherAccounts,
   onClose,
   onSaved,
   onDeleted,
 }: Props) {
-  const isEdit = Boolean(transaction);
-
   const [amount, setAmount] = useState(
     transaction ? String(transaction.amount / 100) : ""
   );
@@ -55,7 +62,7 @@ export default function RecurringTransactionModal({
   const [categoryId, setCategoryId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!amount || !description) {
@@ -63,9 +70,15 @@ export default function RecurringTransactionModal({
       return;
     }
 
-    const payload = {
-      accountId,
-      amount: eurosToCents(amount),
+    const parsedAmount = eurosToCents(amount);
+
+    if (linkedAccountId && parsedAmount <= 0) {
+      setError("Transfer amount must be greater than zero.");
+      return;
+    }
+
+    const payload: RecurringFormPayload = {
+      amount: parsedAmount,
       description,
       category: categoryId,
       frequency,
@@ -73,34 +86,11 @@ export default function RecurringTransactionModal({
       ...(linkedAccountId ? { linkedAccountId } : {}),
     };
 
-    const url = isEdit
-      ? `${API_BASE}/recurring-transactions/${transaction!._id}`
-      : `${API_BASE}/recurring-transactions`;
-    const method = isEdit ? "PATCH" : "POST";
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = (await res.json()) as RecurringTransaction & {
-      error?: string;
-    };
-
-    if (!res.ok) {
-      setError(
-        (data as { error?: string }).error ??
-          "Failed to save recurring transaction"
-      );
-      return;
-    }
-
-    onSaved(data);
+    onSaved(payload);
     onClose();
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (
       !window.confirm(
         "Are you sure you want to delete this recurring transaction?"
@@ -109,18 +99,7 @@ export default function RecurringTransactionModal({
       return;
     }
 
-    const res = await fetch(
-      `${API_BASE}/recurring-transactions/${transaction!._id}`,
-      { method: "DELETE" }
-    );
-    const data = (await res.json()) as { error?: string };
-
-    if (!res.ok) {
-      setError(data.error ?? "Failed to delete recurring transaction");
-      return;
-    }
-
-    onDeleted(transaction!._id);
+    onDeleted();
     onClose();
   };
 
@@ -196,7 +175,7 @@ export default function RecurringTransactionModal({
 
         <StyledActions>
           <Button type="submit">Save</Button>
-          {isEdit && (
+          {transaction && (
             <Button type="button" variant="danger" onClick={handleDelete}>
               Delete
             </Button>

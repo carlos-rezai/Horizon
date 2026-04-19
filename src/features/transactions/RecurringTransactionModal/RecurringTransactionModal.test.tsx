@@ -1,11 +1,5 @@
 // @vitest-environment jsdom
-import {
-  render,
-  screen,
-  cleanup,
-  fireEvent,
-  waitFor,
-} from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
@@ -53,13 +47,10 @@ const existingRt: RecurringTransaction = {
   isActive: true,
 };
 
-// Create mode — no transaction prop
 const renderCreateModal = (
-  overrides: Partial<{
-    onClose: () => void;
-    onSaved: (rt: RecurringTransaction) => void;
-    onDeleted: (id: string) => void;
-  }> = {}
+  overrides: Partial<
+    React.ComponentProps<typeof RecurringTransactionModal>
+  > = {}
 ) => {
   const props = {
     accountId: "acc-1",
@@ -77,13 +68,10 @@ const renderCreateModal = (
   return props;
 };
 
-// Edit mode — transaction prop provided
 const renderEditModal = (
-  overrides: Partial<{
-    onClose: () => void;
-    onSaved: (rt: RecurringTransaction) => void;
-    onDeleted: (id: string) => void;
-  }> = {}
+  overrides: Partial<
+    React.ComponentProps<typeof RecurringTransactionModal>
+  > = {}
 ) => {
   const props = {
     accountId: "acc-1",
@@ -159,20 +147,16 @@ describe("RecurringTransactionModal — validation", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
-  it("does not call the API when amount is missing", () => {
-    renderCreateModal();
+  it("does not call onSaved when amount is missing", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
 
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Rent" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
-    const postCalls = vi
-      .mocked(fetch)
-      .mock.calls.filter(
-        ([, init]) => (init as RequestInit)?.method === "POST"
-      );
-    expect(postCalls).toHaveLength(0);
+    expect(onSaved).not.toHaveBeenCalled();
   });
 
   it("shows an inline validation message when description is missing", () => {
@@ -185,51 +169,52 @@ describe("RecurringTransactionModal — validation", () => {
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
-});
 
-describe("RecurringTransactionModal — successful create", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: true,
-        json: async () => existingRt,
-      } as Response);
-  });
-
-  it("calls POST /recurring-transactions with the correct payload", async () => {
+  it("shows a validation error when a transfer amount is zero or negative", () => {
     renderCreateModal();
 
     fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-1200" },
+      target: { value: "-6500" },
     });
     fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Rent" },
+      target: { value: "Sondertilgung" },
+    });
+    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
+      target: { value: "acc-3" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
-    await waitFor(() => {
-      const postCall = vi
-        .mocked(fetch)
-        .mock.calls.find(
-          ([url, init]) =>
-            typeof url === "string" &&
-            url.includes("/recurring-transactions") &&
-            (init as RequestInit)?.method === "POST"
-        );
-      expect(postCall).toBeDefined();
-
-      const body = JSON.parse((postCall![1] as RequestInit).body as string);
-      expect(body.amount).toBe(-120000);
-      expect(body.description).toBe("Rent");
-      expect(body.accountId).toBe("acc-1");
-    });
+    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
-  it("calls onSaved with the created entry after a successful create", async () => {
+  it("does not call onSaved when a transfer amount is zero or negative", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: "-6500" },
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Sondertilgung" },
+    });
+    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
+      target: { value: "acc-3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
+
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+});
+
+describe("RecurringTransactionModal — successful save", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("calls onSaved with the correct RecurringFormPayload on valid create", () => {
     const onSaved = vi.fn();
     renderCreateModal({ onSaved });
 
@@ -241,14 +226,17 @@ describe("RecurringTransactionModal — successful create", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
-    await waitFor(() => {
-      expect(onSaved).toHaveBeenCalledWith(
-        expect.objectContaining({ _id: "rt-1" })
-      );
-    });
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: -120000,
+        description: "Rent",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      })
+    );
   });
 
-  it("calls onClose after a successful create", async () => {
+  it("calls onClose after valid save", () => {
     const onClose = vi.fn();
     renderCreateModal({ onClose });
 
@@ -260,27 +248,32 @@ describe("RecurringTransactionModal — successful create", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
-    await waitFor(() => {
-      expect(onClose).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("includes linkedAccountId in payload when a transfer account is selected", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: "6500" },
     });
-  });
-});
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Sondertilgung" },
+    });
+    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
+      target: { value: "acc-3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
-describe("RecurringTransactionModal — server error on save", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: false,
-        json: async () => ({ error: "Save failed" }),
-      } as Response);
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ linkedAccountId: "acc-3" })
+    );
   });
 
-  it("shows an inline error when save fails", async () => {
-    renderCreateModal();
+  it("does not include linkedAccountId in payload when none is selected", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
 
     fireEvent.change(screen.getByLabelText(/amount/i), {
       target: { value: "-1200" },
@@ -290,23 +283,8 @@ describe("RecurringTransactionModal — server error on save", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
-    expect(await screen.findByText(/save failed/i)).toBeInTheDocument();
-  });
-
-  it("does not call onClose when save fails", async () => {
-    const onClose = vi.fn();
-    renderCreateModal({ onClose });
-
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-1200" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Rent" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
-
-    await screen.findByText(/save failed/i);
-    expect(onClose).not.toHaveBeenCalled();
+    const payload = onSaved.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).not.toHaveProperty("linkedAccountId");
   });
 });
 
@@ -349,79 +327,43 @@ describe("RecurringTransactionModal — delete", () => {
     expect(confirmSpy).toHaveBeenCalled();
   });
 
-  it("calls DELETE /recurring-transactions/:id after confirmed delete", async () => {
+  it("calls onDeleted after confirmed delete", () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({}),
-      } as Response);
-
-    renderEditModal();
-
-    fireEvent.click(screen.getByRole("button", { name: /delete/i }));
-
-    await waitFor(() => {
-      const deleteCall = vi
-        .mocked(fetch)
-        .mock.calls.find(
-          ([url, init]) =>
-            typeof url === "string" &&
-            url.includes("/recurring-transactions/rt-1") &&
-            (init as RequestInit)?.method === "DELETE"
-        );
-      expect(deleteCall).toBeDefined();
-    });
-  });
-
-  it("calls onDeleted with the id after a successful delete", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({}),
-      } as Response);
 
     const onDeleted = vi.fn();
     renderEditModal({ onDeleted });
 
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
 
-    await waitFor(() => {
-      expect(onDeleted).toHaveBeenCalledWith("rt-1");
-    });
+    expect(onDeleted).toHaveBeenCalled();
   });
 
-  it("shows an inline error when delete fails", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: false,
-        json: async () => ({ error: "Delete failed" }),
-      } as Response);
+  it("does not call onDeleted when delete is not confirmed", () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+    vi.spyOn(window, "confirm").mockReturnValue(false);
 
-    renderEditModal();
+    const onDeleted = vi.fn();
+    renderEditModal({ onDeleted });
 
     fireEvent.click(screen.getByRole("button", { name: /delete/i }));
 
-    expect(await screen.findByText(/delete failed/i)).toBeInTheDocument();
+    expect(onDeleted).not.toHaveBeenCalled();
   });
 });
 
 describe("RecurringTransactionModal — overlay", () => {
   it("calls onClose when the overlay backdrop is clicked", () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
     const onClose = vi.fn();
     renderEditModal({ onClose });
 
