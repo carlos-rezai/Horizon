@@ -184,7 +184,10 @@ export default function RecurringTransactionModal({
           </FormField>
         )}
 
-        <CategorySelect onChange={setCategoryId} />
+        <CategorySelect
+          onChange={setCategoryId}
+          initialCategoryId={transaction?.category}
+        />
 
         <FormField
           label="Transfer to account (optional)"

@@ -12,7 +12,9 @@ interface UseCategoriesWithInlineAddResult {
   addError: string | null;
 }
 
-export function useCategoriesWithInlineAdd(): UseCategoriesWithInlineAddResult {
+export function useCategoriesWithInlineAdd(
+  initialId?: string
+): UseCategoriesWithInlineAddResult {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -31,7 +33,11 @@ export function useCategoriesWithInlineAdd(): UseCategoriesWithInlineAddResult {
       .then((data) => {
         if (!cancelled) {
           setCategories(data);
-          setSelectedCategoryId(data[0]?._id ?? "");
+          const preferred =
+            initialId && data.some((c) => c._id === initialId)
+              ? initialId
+              : (data[0]?._id ?? "");
+          setSelectedCategoryId(preferred);
           setIsLoading(false);
         }
       })

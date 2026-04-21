@@ -14,9 +14,10 @@ const ADD_CATEGORY_VALUE = "__add__";
 
 interface Props {
   onChange: (id: string) => void;
+  initialCategoryId?: string;
 }
 
-export default function CategorySelect({ onChange }: Props) {
+export default function CategorySelect({ onChange, initialCategoryId }: Props) {
   const {
     categories,
     selectedCategoryId,
@@ -24,7 +25,7 @@ export default function CategorySelect({ onChange }: Props) {
     isAdding,
     addCategory,
     addError,
-  } = useCategoriesWithInlineAdd();
+  } = useCategoriesWithInlineAdd(initialCategoryId);
 
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
