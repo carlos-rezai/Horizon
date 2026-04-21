@@ -29,6 +29,10 @@ import {
   StyledLoadingState,
   StyledPayoffMarker,
   StyledTooltipBox,
+  StyledTooltipLabel,
+  StyledTooltipRowPositive,
+  StyledTooltipRowWarning,
+  StyledTooltipRowAccent,
 } from "./TrajectoryHorizon.styles";
 
 const MONTH_NAMES = [
@@ -59,28 +63,24 @@ interface Props {
 }
 
 function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
-  const theme = useTheme();
-
   if (!active || !payload || payload.length === 0) return null;
 
   const point = payload[0].payload as TrajectoryDataPoint;
 
   return (
     <StyledTooltipBox>
-      <div style={{ color: theme.colors.textMuted, marginBottom: 4 }}>
-        {point.label}
-      </div>
-      <div style={{ color: theme.colors.positive }}>
+      <StyledTooltipLabel>{point.label}</StyledTooltipLabel>
+      <StyledTooltipRowPositive>
         Liquid: {formatBalance(point.totalLiquid)}
-      </div>
+      </StyledTooltipRowPositive>
       {point.restschuld > 0 && (
-        <div style={{ color: theme.colors.warning }}>
+        <StyledTooltipRowWarning>
           Restschuld: {formatBalance(point.restschuld)}
-        </div>
+        </StyledTooltipRowWarning>
       )}
-      <div style={{ color: theme.colors.accent }}>
+      <StyledTooltipRowAccent>
         Cashflow: {formatBalance(point.netCashflow)}
-      </div>
+      </StyledTooltipRowAccent>
     </StyledTooltipBox>
   );
 }

@@ -37,3 +37,20 @@ export const StyledTooltipBox = styled.div`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
+
+export const StyledTooltipLabel = styled.div`
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: ${({ theme }) => theme.spacing.space1}px;
+`;
+
+export const StyledTooltipRowPositive = styled.div`
+  color: ${({ theme }) => theme.colors.positive};
+`;
+
+export const StyledTooltipRowWarning = styled.div`
+  color: ${({ theme }) => theme.colors.warning};
+`;
+
+export const StyledTooltipRowAccent = styled.div`
+  color: ${({ theme }) => theme.colors.accent};
+`;
