@@ -9,6 +9,7 @@ import AccountOverview from "../features/accounts/AccountOverview/AccountOvervie
 import AccountCreateModal from "../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown/MortgageCountdown";
 import MilestoneTracker from "../features/milestones/MilestoneTracker/MilestoneTracker";
+import TrajectoryHorizon from "../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import Spinner from "../primitives/Spinner/Spinner";
 import Heading from "../primitives/Heading/Heading";
 import Text from "../primitives/Text/Text";
@@ -81,6 +82,14 @@ export default function DashboardPage() {
           snapshots={snapshots}
           onAdd={addMilestone}
           onDelete={deleteMilestone}
+        />
+      </StyledSection>
+      <StyledSection>
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={accounts}
+          recurringTransactions={recurringTransactions}
+          isLoading={projectionLoading}
         />
       </StyledSection>
     </StyledDashboard>
