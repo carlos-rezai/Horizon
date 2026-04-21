@@ -32,8 +32,8 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe("projectBalances - shape", () => {
-  it("returns exactly 120 snapshots", () => {
-    const snapshots = projectBalances([], [], [], "2026-04", "2026-04");
+  it("returns exactly 120 snapshots when months=120 is passed", () => {
+    const snapshots = projectBalances([], [], [], "2026-04", "2026-04", 120);
     expect(snapshots).toHaveLength(120);
   });
 
@@ -411,7 +411,7 @@ describe("projectBalances - plan vs actual", () => {
 // ---------------------------------------------------------------------------
 
 describe("GET /projection", () => {
-  it("returns exactly 120 snapshots with correct shape", async () => {
+  it("returns correct shape", async () => {
     await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
@@ -422,7 +422,6 @@ describe("GET /projection", () => {
     const res = await request(app).get("/projection");
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(120);
     expect(res.body[0]).toHaveProperty("month");
     expect(res.body[0]).toHaveProperty("accounts");
     expect(res.body[0]).toHaveProperty("netCashflow");

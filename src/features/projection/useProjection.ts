@@ -16,7 +16,7 @@ export function useProjection(): UseProjectionResult {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_BASE}/projection`)
+    fetch(`${API_BASE}/projection?months=240`)
       .then((res) => {
         if (!res.ok)
           throw new Error(`Failed to fetch projection: ${res.status}`);

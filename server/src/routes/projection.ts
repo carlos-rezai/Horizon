@@ -11,7 +11,7 @@ function currentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   const [accounts, transactions, recurringTransactions] = await Promise.all([
     Account.find(),
     Transaction.find(),
@@ -40,12 +40,18 @@ router.get("/", async (_req, res) => {
   }));
 
   const from = currentMonth();
+  const monthsParam = req.query.months;
+  const months =
+    typeof monthsParam === "string" && /^\d+$/.test(monthsParam)
+      ? parseInt(monthsParam, 10)
+      : 240;
   const snapshots = projectBalances(
     accountEntries,
     transactionEntries,
     recurringEntries,
     from,
-    from
+    from,
+    months
   );
 
   res.json(snapshots);

@@ -34,7 +34,7 @@ export interface MonthlySnapshot {
   totalLiquid: number;
 }
 
-const PROJECTION_MONTHS = 120;
+const DEFAULT_PROJECTION_MONTHS = 240;
 
 function addMonths(yyyyMM: string, n: number): string {
   const [yearStr, monthStr] = yyyyMM.split("-");
@@ -56,7 +56,8 @@ export function projectBalances(
   transactions: ProjectionTxEntry[],
   recurringTransactions: ProjectionRecurringEntry[],
   fromDate: string,
-  currentDate: string
+  currentDate: string,
+  months: number = DEFAULT_PROJECTION_MONTHS
 ): MonthlySnapshot[] {
   const accountMap = new Map<string, ProjectionAccountEntry>();
   for (const a of accounts) accountMap.set(a._id, a);
@@ -74,7 +75,7 @@ export function projectBalances(
 
   const snapshots: MonthlySnapshot[] = [];
 
-  for (let i = 0; i < PROJECTION_MONTHS; i++) {
+  for (let i = 0; i < months; i++) {
     const month = addMonths(fromDate, i);
 
     let netCashflow = 0;
