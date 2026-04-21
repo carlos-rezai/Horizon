@@ -40,6 +40,53 @@ const snapshots: MonthlySnapshot[] = [
   },
 ];
 
+const mortgageAccount: AccountWithBalance = {
+  _id: "m1",
+  kind: "Mortgage",
+  name: "DSL Mortgage",
+  openingBalance: 0,
+  openingDate: "2026-01-01",
+  balance: 0,
+};
+
+// Mortgage reaches zero at 2026-05
+const snapshotsWithPayoff: MonthlySnapshot[] = [
+  {
+    month: "2026-04",
+    accounts: { g1: { projected: 100000 }, m1: { projected: 50000 } },
+    netCashflow: 5000,
+    totalLiquid: 100000,
+  },
+  {
+    month: "2026-05",
+    accounts: { g1: { projected: 105000 }, m1: { projected: 0 } },
+    netCashflow: 5000,
+    totalLiquid: 105000,
+  },
+  {
+    month: "2026-06",
+    accounts: { g1: { projected: 110000 }, m1: { projected: 0 } },
+    netCashflow: 5000,
+    totalLiquid: 110000,
+  },
+];
+
+// Mortgage never reaches zero
+const snapshotsNoPayoff: MonthlySnapshot[] = [
+  {
+    month: "2026-04",
+    accounts: { g1: { projected: 100000 }, m1: { projected: 50000 } },
+    netCashflow: 5000,
+    totalLiquid: 100000,
+  },
+  {
+    month: "2026-05",
+    accounts: { g1: { projected: 105000 }, m1: { projected: 30000 } },
+    netCashflow: 5000,
+    totalLiquid: 105000,
+  },
+];
+
 const noRecurring: RecurringTransaction[] = [];
 
 describe("TrajectoryHorizon", () => {
@@ -112,6 +159,45 @@ describe("TrajectoryHorizon", () => {
     expect(
       screen.queryByTestId("trajectory-horizon-chart")
     ).not.toBeInTheDocument();
+  });
+
+  it("renders the payoff marker when a mortgage is paid off within the snapshot window", () => {
+    renderWithTheme(
+      <TrajectoryHorizon
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount, mortgageAccount]}
+        recurringTransactions={noRecurring}
+        isLoading={false}
+      />
+    );
+
+    expect(screen.getByTestId("payoff-marker")).toBeInTheDocument();
+  });
+
+  it("does not render the payoff marker when no mortgage account is provided", () => {
+    renderWithTheme(
+      <TrajectoryHorizon
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount]}
+        recurringTransactions={noRecurring}
+        isLoading={false}
+      />
+    );
+
+    expect(screen.queryByTestId("payoff-marker")).not.toBeInTheDocument();
+  });
+
+  it("does not render the payoff marker when the mortgage is not paid off within the snapshot window", () => {
+    renderWithTheme(
+      <TrajectoryHorizon
+        snapshots={snapshotsNoPayoff}
+        accounts={[giroAccount, mortgageAccount]}
+        recurringTransactions={noRecurring}
+        isLoading={false}
+      />
+    );
+
+    expect(screen.queryByTestId("payoff-marker")).not.toBeInTheDocument();
   });
 
   it("renders the chart container when snapshots and accounts are present", () => {
