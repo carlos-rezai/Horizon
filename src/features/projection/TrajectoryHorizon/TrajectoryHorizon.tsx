@@ -178,7 +178,10 @@ export default function TrajectoryHorizon({
           )}
           <StyledChartWrapper data-testid="trajectory-horizon-chart">
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={data}>
+              <ComposedChart
+                data={data}
+                margin={{ top: 8, right: 70, left: 70, bottom: 8 }}
+              >
                 <XAxis
                   dataKey="monthIndex"
                   tick={
