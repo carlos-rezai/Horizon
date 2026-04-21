@@ -76,20 +76,20 @@ export default function DashboardPage() {
         />
       </StyledSection>
       <StyledSection>
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={accounts}
+          recurringTransactions={recurringTransactions}
+          isLoading={projectionLoading}
+        />
+      </StyledSection>
+      <StyledSection>
         <MilestoneTracker
           milestones={milestones}
           accounts={accounts}
           snapshots={snapshots}
           onAdd={addMilestone}
           onDelete={deleteMilestone}
-        />
-      </StyledSection>
-      <StyledSection>
-        <TrajectoryHorizon
-          snapshots={snapshots}
-          accounts={accounts}
-          recurringTransactions={recurringTransactions}
-          isLoading={projectionLoading}
         />
       </StyledSection>
     </StyledDashboard>
