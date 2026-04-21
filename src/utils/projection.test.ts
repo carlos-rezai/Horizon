@@ -5,6 +5,7 @@ import {
   buildAccountColumns,
   deriveSTMonths,
   deriveYearSummaries,
+  buildTrajectoryData,
 } from "./projection";
 import type { MonthlySnapshot } from "../types/projection";
 import type { AccountWithBalance } from "../types/account";
@@ -433,5 +434,176 @@ describe("deriveYearSummaries", () => {
     const rows = deriveYearSummaries([], [], new Map());
 
     expect(rows).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildTrajectoryData
+// ---------------------------------------------------------------------------
+
+const trajSnap = (
+  month: string,
+  totalLiquid: number,
+  netCashflow: number,
+  accountBalances: Record<string, number> = {}
+): MonthlySnapshot => ({
+  month,
+  totalLiquid,
+  netCashflow,
+  accounts: Object.fromEntries(
+    Object.entries(accountBalances).map(([id, projected]) => [
+      id,
+      { projected },
+    ])
+  ),
+});
+
+describe("buildTrajectoryData", () => {
+  it("returns an empty array when snapshots is empty", () => {
+    expect(buildTrajectoryData([], new Map(), null, [])).toEqual([]);
+  });
+
+  it("output length matches input snapshots length", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 5000),
+      trajSnap("2026-05", 105000, 5000),
+      trajSnap("2026-06", 110000, 5000),
+    ];
+
+    const result = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(result).toHaveLength(3);
+  });
+
+  it("each point has all required fields", () => {
+    const snapshots = [trajSnap("2026-04", 100000, 5000)];
+
+    const [point] = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(point).toHaveProperty("monthIndex");
+    expect(point).toHaveProperty("label");
+    expect(point).toHaveProperty("totalLiquid");
+    expect(point).toHaveProperty("restschuld");
+    expect(point).toHaveProperty("netCashflow");
+    expect(point).toHaveProperty("isSTMonth");
+    expect(point).toHaveProperty("isPayoffMonth");
+  });
+
+  it("monthIndex is the 0-based position in the array", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 5000),
+      trajSnap("2026-05", 105000, 5000),
+      trajSnap("2026-06", 110000, 5000),
+    ];
+
+    const result = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(result[0].monthIndex).toBe(0);
+    expect(result[1].monthIndex).toBe(1);
+    expect(result[2].monthIndex).toBe(2);
+  });
+
+  it("label matches the snapshot month string", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 5000),
+      trajSnap("2026-05", 105000, 5000),
+    ];
+
+    const result = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(result[0].label).toBe("2026-04");
+    expect(result[1].label).toBe("2026-05");
+  });
+
+  it("totalLiquid and netCashflow come from the snapshot", () => {
+    const snapshots = [trajSnap("2026-04", 123456, 7890)];
+
+    const [point] = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(point.totalLiquid).toBe(123456);
+    expect(point.netCashflow).toBe(7890);
+  });
+
+  it("restschuld is the sum of mortgage account projected balances", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0, {
+        "mortgage-1": 2000000,
+        "mortgage-2": 500000,
+        "giro-1": 100000,
+      }),
+    ];
+
+    const [point] = buildTrajectoryData(
+      snapshots,
+      new Map(),
+      null,
+      ["mortgage-1", "mortgage-2"]
+    );
+
+    expect(point.restschuld).toBe(2500000);
+  });
+
+  it("restschuld is 0 when no mortgageAccountIds are provided", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0, { "mortgage-1": 2000000 }),
+    ];
+
+    const [point] = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(point.restschuld).toBe(0);
+  });
+
+  it("isSTMonth is true for months present in the stMonths map", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0),
+      trajSnap("2026-10", 100000, 0),
+    ];
+    const stMonths = new Map([["2026-10", 500000]]);
+
+    const result = buildTrajectoryData(snapshots, stMonths, null, []);
+
+    expect(result[0].isSTMonth).toBe(false);
+    expect(result[1].isSTMonth).toBe(true);
+  });
+
+  it("all isSTMonth are false when stMonths map is empty", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0),
+      trajSnap("2026-05", 100000, 0),
+    ];
+
+    const result = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    result.forEach((p) => expect(p.isSTMonth).toBe(false));
+  });
+
+  it("isPayoffMonth is true for the payoff month only", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0),
+      trajSnap("2026-05", 100000, 0),
+      trajSnap("2026-06", 100000, 0),
+    ];
+
+    const result = buildTrajectoryData(
+      snapshots,
+      new Map(),
+      "2026-05",
+      []
+    );
+
+    expect(result[0].isPayoffMonth).toBe(false);
+    expect(result[1].isPayoffMonth).toBe(true);
+    expect(result[2].isPayoffMonth).toBe(false);
+  });
+
+  it("all isPayoffMonth are false when payoffMonth is null", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0),
+      trajSnap("2026-05", 100000, 0),
+    ];
+
+    const result = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    result.forEach((p) => expect(p.isPayoffMonth).toBe(false));
   });
 });
