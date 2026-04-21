@@ -329,6 +329,69 @@ describe("projectBalances - Sondertilgung", () => {
     expect(snapshots[11].accounts["mortgage"].projected).toBe(30000000);
     expect(snapshots[119].accounts["mortgage"].projected).toBe(30000000);
   });
+
+  it("clamps Mortgage to zero when ST amount exceeds remaining balance", () => {
+    const accounts = [
+      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
+      // Mortgage balance smaller than the annual ST amount
+      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: 700000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      24
+    );
+
+    // Month 0: ST fires — only 300000 remains, so debit is clamped to 300000
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(0);
+    // Tagesgeld debited by actual 300000, not full 700000
+    expect(snapshots[0].accounts["tagesgeld"].projected).toBe(700000);
+    // Month 12: Mortgage already at 0 — ST skipped, Tagesgeld unchanged
+    expect(snapshots[12].accounts["mortgage"].projected).toBe(0);
+    expect(snapshots[12].accounts["tagesgeld"].projected).toBe(700000);
+  });
+
+  it("Restschuld never goes below zero across all projected months", () => {
+    const accounts = [
+      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 5000000 },
+      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 1000000 },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: 700000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      240
+    );
+
+    snapshots.forEach((s) => {
+      expect(s.accounts["mortgage"].projected).toBeGreaterThanOrEqual(0);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

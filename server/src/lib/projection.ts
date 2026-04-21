@@ -92,11 +92,23 @@ export function projectBalances(
 
         const destKind = accountMap.get(r.linkedAccountId)?.kind;
         if (destKind === "Mortgage") {
-          // Sondertilgung: reduces outstanding debt
-          runningBalances.set(
-            r.linkedAccountId,
-            (runningBalances.get(r.linkedAccountId) ?? 0) - r.amount
-          );
+          // Sondertilgung: debit only what remains — never drive Restschuld negative
+          const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
+          const actualDebit = Math.min(r.amount, remaining);
+          if (actualDebit <= 0) {
+            // Mortgage already paid off — undo the source debit
+            runningBalances.set(
+              r.accountId,
+              (runningBalances.get(r.accountId) ?? 0) + r.amount
+            );
+          } else {
+            // Partial or full debit: correct source to actual amount used
+            runningBalances.set(
+              r.accountId,
+              (runningBalances.get(r.accountId) ?? 0) + r.amount - actualDebit
+            );
+            runningBalances.set(r.linkedAccountId, remaining - actualDebit);
+          }
         } else {
           // Regular transfer: credit destination
           runningBalances.set(
