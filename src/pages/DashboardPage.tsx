@@ -73,6 +73,7 @@ export default function DashboardPage() {
           snapshots={snapshots}
           accounts={accounts}
           recurringTransactions={recurringTransactions}
+          maxYears={10}
         />
       </StyledSection>
       <StyledSection>

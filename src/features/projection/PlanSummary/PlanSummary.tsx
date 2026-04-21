@@ -19,12 +19,14 @@ interface Props {
   snapshots: MonthlySnapshot[];
   accounts: AccountWithBalance[];
   recurringTransactions: RecurringTransaction[];
+  maxYears?: number;
 }
 
 export default function PlanSummary({
   snapshots,
   accounts,
   recurringTransactions,
+  maxYears,
 }: Props) {
   const navigate = useNavigate();
 
@@ -42,7 +44,8 @@ export default function PlanSummary({
         )
       : new Map<string, number>();
 
-  const rows = deriveYearSummaries(snapshots, mortgageIds, stMonths);
+  const allRows = deriveYearSummaries(snapshots, mortgageIds, stMonths);
+  const rows = maxYears !== undefined ? allRows.slice(0, maxYears) : allRows;
 
   function handleRowClick(year: number) {
     navigate(`/plan#${year}`, { state: { year } });
