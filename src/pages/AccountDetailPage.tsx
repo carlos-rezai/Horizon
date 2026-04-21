@@ -7,9 +7,16 @@ import TransferCreateModal from "../features/transactions/TransferCreateModal/Tr
 import RecurringTransactionList from "../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
 import { useRecurringTransactions } from "../features/transactions/useRecurringTransactions";
+import Heading from "../primitives/Heading/Heading";
+import Button from "../primitives/Button/Button";
 import { API_BASE } from "../utils/api";
 import type { Transaction } from "../types/transaction";
 import type { RecurringTransaction } from "../types/recurring";
+import {
+  StyledPage,
+  StyledSection,
+  StyledActions,
+} from "./AccountDetailPage.styles";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,7 +86,7 @@ export default function AccountDetailPage() {
   };
 
   return (
-    <main>
+    <StyledPage>
       <AccountDetailHeader
         account={account}
         hasTransactions={hasTransactions}
@@ -87,14 +94,16 @@ export default function AccountDetailPage() {
         onUpdateOpeningBalance={handleUpdateOpeningBalance}
         onDelete={handleDelete}
       />
-      <section>
-        <h2>Transactions</h2>
-        <button type="button" onClick={() => setShowAddTransaction(true)}>
-          Add transaction
-        </button>
-        <button type="button" onClick={() => setShowAddTransfer(true)}>
-          Add transfer
-        </button>
+      <StyledSection>
+        <Heading level={2}>Transactions</Heading>
+        <StyledActions>
+          <Button type="button" onClick={() => setShowAddTransaction(true)}>
+            Add transaction
+          </Button>
+          <Button type="button" onClick={() => setShowAddTransfer(true)}>
+            Add transfer
+          </Button>
+        </StyledActions>
         {showAddTransaction && (
           <TransactionCreateModal
             accountId={account._id}
@@ -110,12 +119,14 @@ export default function AccountDetailPage() {
             onSuccess={() => setShowAddTransfer(false)}
           />
         )}
-      </section>
-      <section>
-        <h2>Recurring Transactions</h2>
-        <button type="button" onClick={() => setShowAddRecurring(true)}>
-          Add recurring transaction
-        </button>
+      </StyledSection>
+      <StyledSection>
+        <Heading level={2}>Recurring Transactions</Heading>
+        <StyledActions>
+          <Button type="button" onClick={() => setShowAddRecurring(true)}>
+            Add recurring transaction
+          </Button>
+        </StyledActions>
         <RecurringTransactionList
           recurringTransactions={recurringTransactions}
           onToggle={(rt) => toggleIsActive(rt._id, rt.isActive)}
@@ -149,7 +160,7 @@ export default function AccountDetailPage() {
             }}
           />
         )}
-      </section>
-    </main>
+      </StyledSection>
+    </StyledPage>
   );
 }
