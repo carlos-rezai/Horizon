@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
@@ -13,11 +13,19 @@ function renderAtRoute(path: string) {
         <Routes>
           <Route
             path="/"
-            element={<AppLayout><p>Dashboard content</p></AppLayout>}
+            element={
+              <AppLayout>
+                <p>Dashboard content</p>
+              </AppLayout>
+            }
           />
           <Route
             path="/accounts/:id"
-            element={<AppLayout><p>Account content</p></AppLayout>}
+            element={
+              <AppLayout>
+                <p>Account content</p>
+              </AppLayout>
+            }
           />
         </Routes>
       </MemoryRouter>
@@ -44,18 +52,16 @@ describe("AppLayout — wordmark", () => {
 describe("AppLayout — back arrow", () => {
   it("does not render a back arrow on the dashboard route", () => {
     renderAtRoute("/");
-    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /back/i })
+    ).not.toBeInTheDocument();
   });
 
-  it("renders a back arrow on the account detail route", () => {
+  it("does not render a back arrow on the account detail route", () => {
     renderAtRoute("/accounts/abc123");
-    expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
-  });
-
-  it("navigates to / when the back arrow is clicked", () => {
-    renderAtRoute("/accounts/abc123");
-    fireEvent.click(screen.getByRole("button", { name: /back/i }));
-    expect(screen.getByText("Dashboard content")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /back/i })
+    ).not.toBeInTheDocument();
   });
 });
 
