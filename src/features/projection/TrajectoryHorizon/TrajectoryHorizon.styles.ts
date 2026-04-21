@@ -20,3 +20,20 @@ export const StyledLoadingState = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   margin-top: ${({ theme }) => theme.spacing.space3}px;
 `;
+
+export const StyledPayoffMarker = styled.span`
+  display: inline-block;
+  margin-top: ${({ theme }) => theme.spacing.space2}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.warning};
+`;
+
+export const StyledTooltipBox = styled.div`
+  background: ${({ theme }) => theme.colors.bgElevated};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space3}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
