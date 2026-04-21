@@ -1,4 +1,8 @@
-import type { MonthlySnapshot, YearSummaryRow } from "../types/projection";
+import type {
+  MonthlySnapshot,
+  TrajectoryDataPoint,
+  YearSummaryRow,
+} from "../types/projection";
 import type { AccountKind, AccountWithBalance } from "../types/account";
 import type { RecurringTransaction } from "../types/recurring";
 
@@ -131,6 +135,29 @@ export function deriveYearSummaries(
   }
 
   return rows;
+}
+
+export function buildTrajectoryData(
+  snapshots: MonthlySnapshot[],
+  stMonths: Map<string, number>,
+  payoffMonth: string | null,
+  mortgageAccountIds: string[]
+): TrajectoryDataPoint[] {
+  return snapshots.map((snapshot, index) => {
+    const restschuld = mortgageAccountIds.reduce(
+      (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
+      0
+    );
+    return {
+      monthIndex: index,
+      label: snapshot.month,
+      totalLiquid: snapshot.totalLiquid,
+      restschuld,
+      netCashflow: snapshot.netCashflow,
+      isSTMonth: stMonths.has(snapshot.month),
+      isPayoffMonth: snapshot.month === payoffMonth,
+    };
+  });
 }
 
 export function findMortgagePayoffMonth(

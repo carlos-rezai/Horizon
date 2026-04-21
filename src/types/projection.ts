@@ -16,3 +16,13 @@ export interface YearSummaryRow {
   restschuld: number | null;
   stAmount: number | null;
 }
+
+export interface TrajectoryDataPoint {
+  monthIndex: number;
+  label: string;
+  totalLiquid: number;
+  restschuld: number;
+  netCashflow: number;
+  isSTMonth: boolean;
+  isPayoffMonth: boolean;
+}
