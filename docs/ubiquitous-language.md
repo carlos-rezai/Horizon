@@ -2,17 +2,18 @@
 
 ## Accounts
 
-| Term                | Definition                                                                                | Aliases to avoid                    |
-| ------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------- |
-| **Account**         | A named financial account instance tracked in Horizon                                     | —                                   |
-| **AccountKind**     | The classification of an account that determines its behaviour and fields                 | AccountType, account category       |
-| **Girokonto**       | A current/checking account kind — used for income and day-to-day spending                 | Checking account, current account   |
-| **Tagesgeld**       | An overnight savings account kind — used as a Sondertilgung reserve                       | Savings account, high-yield account |
-| **Mortgage**        | A loan account kind that tracks outstanding Restschuld                                    | Home loan, Darlehen account         |
-| **CreditCard**      | A credit card account kind — tracks debt owed, paid in full monthly                       | Card account                        |
-| **Investment**      | An investment account kind — tracks ETF cost basis only, not market value                 | Brokerage, portfolio                |
-| **Opening Balance** | The user-entered balance at the moment an account is created in Horizon — no backtracking | Starting balance, initial balance   |
-| **Current Balance** | The derived balance of an account: Opening Balance + sum of all transactions              | Live balance                        |
+| Term                | Definition                                                                                                                                         | Aliases to avoid                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Account**         | A named financial account instance tracked in Horizon                                                                                              | —                                   |
+| **AccountKind**     | The classification of an account that determines its behaviour and fields                                                                          | AccountType, account category       |
+| **Girokonto**       | A current/checking account kind — used for income and day-to-day spending                                                                          | Checking account, current account   |
+| **Tagesgeld**       | An overnight savings account kind — used as a Sondertilgung reserve                                                                                | Savings account, high-yield account |
+| **Mortgage**        | A loan account kind that tracks outstanding Restschuld                                                                                             | Home loan, Darlehen account         |
+| **CreditCard**      | A credit card account kind — tracks debt owed, paid in full monthly                                                                                | Card account                        |
+| **Investment**      | An investment account kind — tracks ETF cost basis only, not market value                                                                          | Brokerage, portfolio                |
+| **Opening Balance** | The user-entered balance at the moment an account is created in Horizon — corresponds to its Opening Date — no backtracking (updated)              | Starting balance, initial balance   |
+| **Opening Date**    | The calendar date the user set up the account in Horizon — the engine replays recurring history from this date to derive the current balance (new) | Account start date, creation date   |
+| **Current Balance** | The derived balance of an account: Opening Balance + replayed Recurring History + Variable Spending actuals (updated)                              | Live balance                        |
 
 ## Transactions
 
@@ -42,18 +43,24 @@
 
 ## Projections
 
-| Term                           | Definition                                                                                                                                     | Aliases to avoid               |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Projection Engine**          | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months) | Forecast engine, planner       |
-| **MonthlySnapshot**            | The projected state of all account balances for a given future month                                                                           | Projection row, forecast entry |
-| **TrajectoryDataPoint** (new)  | A chart-ready data shape derived from a MonthlySnapshot — includes totalLiquid, restschuld, netCashflow, isSTMonth, isPayoffMonth              | Chart point, data point        |
-| **Plan**                       | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                                      | Financial plan, budget plan    |
-| **Actual**                     | The real account balance derived from recorded Transactions                                                                                    | Real balance                   |
-| **Variance**                   | The difference between a projected balance and the actual balance for a given account and month                                                | Delta, difference              |
-| **Payoff Month**               | The first projected month in which a Mortgage account's balance reaches zero                                                                   | Payoff date, payoff year       |
-| **Payoff Year** (new)          | The calendar year that contains the Payoff Month                                                                                               | Payoff year, final year        |
-| **ST Month** (new)             | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded          | ST date, October payment       |
-| **Estimated Completion Month** | The first projected month in which a Milestone's target balance is reached                                                                     | Target date, goal date         |
+| Term                                | Definition                                                                                                                                                                                    | Aliases to avoid                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **Projection Engine**               | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months)                                                | Forecast engine, planner             |
+| **Recurring-Only Projection Model** | The design constraint that recurring transactions own all regular financial flows; actual transactions exist only for variable one-off spending (new)                                         | —                                    |
+| **Recurring History**               | The set of recurring transactions that have already fired between an account's Opening Date and today — replayed by the engine to derive the correct starting balance (new)                   | Past recurring, historical recurring |
+| **Replay Loop**                     | The engine phase that simulates Recurring History from each account's Opening Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)   | Historical replay, backfill          |
+| **Forward Projection**              | The engine phase that applies recurring transactions from the current month into the future — runs after the Replay Loop has established the correct starting balance (new)                   | Projection loop, forecast            |
+| **monthOfYear**                     | The calendar month number (1–12) stored on a RecurringTransaction that anchors when annual or quarterly transactions fire — e.g. `monthOfYear: 10` fires in October every year (new)          | Month anchor, firing month           |
+| **Variable Spending**               | Irregular, one-off actual transactions that record real expenditure (food, dental, shopping, cat food) — the only category of actual transaction in the Recurring-Only Projection Model (new) | One-off spending, irregular expenses |
+| **MonthlySnapshot**                 | The projected state of all account balances for a given future month                                                                                                                          | Projection row, forecast entry       |
+| **TrajectoryDataPoint** (new)       | A chart-ready data shape derived from a MonthlySnapshot — includes totalLiquid, restschuld, netCashflow, isSTMonth, isPayoffMonth                                                             | Chart point, data point              |
+| **Plan**                            | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                                                                                     | Financial plan, budget plan          |
+| **Actual**                          | The real account balance derived from recorded Transactions                                                                                                                                   | Real balance                         |
+| **Variance**                        | The difference between a projected balance and the actual balance for a given account and month                                                                                               | Delta, difference                    |
+| **Payoff Month**                    | The first projected month in which a Mortgage account's balance reaches zero                                                                                                                  | Payoff date, payoff year             |
+| **Payoff Year** (new)               | The calendar year that contains the Payoff Month                                                                                                                                              | Payoff year, final year              |
+| **ST Month** (new)                  | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded                                                         | ST date, October payment             |
+| **Estimated Completion Month**      | The first projected month in which a Milestone's target balance is reached                                                                                                                    | Target date, goal date               |
 
 ## Dashboard
 
@@ -81,13 +88,18 @@
 ## Relationships
 
 - An **Account** has exactly one **AccountKind**
-- A **Current Balance** is always derived from an **Opening Balance** + all **Transactions** — never stored directly
+- An **Account** has exactly one **Opening Date** — the date its **Opening Balance** was captured in Horizon
+- A **Current Balance** is always derived, never stored: **Opening Balance** + **Recurring History** replayed from **Opening Date** + **Variable Spending** actuals — never stored directly (updated)
 - A **Transfer** is always composed of exactly two **Transactions** sharing a **TransferId**
 - A **RecurringTransaction** may produce a **Transaction** on each occurrence date
 - Only **Active RecurringTransactions** are applied by the **Projection Engine** — **Inactive RecurringTransactions** are skipped
 - A **Recurring Transfer** is a **RecurringTransaction** with a `linkedAccountId` — the Projection Engine credits the linked account and (if it is a Mortgage) reduces **Restschuld**
 - A **One-off Transfer** is always composed of exactly two **Transactions** sharing a **TransferId** — it has no schedule
 - A **Sondertilgung** is a **Transfer** from a **Tagesgeld** account to a **Mortgage** account — it reduces the **Restschuld**
+- The **Projection Engine** runs in two phases: the **Replay Loop** (Opening Date → today) followed by the **Forward Projection** (today → 20 years out)
+- The **Replay Loop** uses the same `monthOfYear` firing logic as the **Forward Projection** — they are never out of sync
+- A **RecurringTransaction** with `monthOfYear` set fires only when the current calendar month matches the anchor — annual fires once per year, quarterly fires every three months from that anchor
+- **Variable Spending** is the only category of actual transaction — salary, transfers, and regular expenses are never entered as actual transactions in the **Recurring-Only Projection Model**
 - The **Plan** is always the output of the **Projection Engine** — it is never entered or stored manually
 - **Total Liquid** includes only **Girokonto** and **Tagesgeld** accounts — determined by **AccountKind**
 - A **Milestone** targets exactly one **Account** and has exactly one **target balance**
@@ -199,6 +211,37 @@
 >
 > **Domain expert:** "No — it's a visual concept. It starts at the Payoff Month and runs to the end of the 240-month horizon. The Payoff Marker is the only annotation needed; the chart shape tells the rest of the story."
 
+## Example dialogue (Projection Engine Audit)
+
+> **Dev:** "When the Projection Engine starts, where does it get the Girokonto's
+> balance from?"
+>
+> **Domain expert:** "It replays Recurring History from the Opening Date. If the
+> account was set up six months ago, the engine runs six months of recurring
+> transactions — salary in, transfers out, expenses out — to arrive at today's
+> correct starting balance. That's the Replay Loop."
+>
+> **Dev:** "Does it also include food and shopping from those past months?"
+>
+> **Domain expert:** "Yes — Variable Spending actuals are added on top of the
+> replayed Recurring History. Together they give the true Current Balance at the
+> start of the Forward Projection."
+>
+> **Dev:** "Why doesn't the user just update the Opening Balance every month?"
+>
+> **Domain expert:** "Because that's error-prone and breaks the audit trail.
+> The Opening Balance is a one-time snapshot. The engine does the math from
+> there. The user should never have to touch it again."
+>
+> **Dev:** "And the Sondertilgung — how does the engine know to fire it in
+> October and not in the first month of the projection?"
+>
+> **Domain expert:** "The monthOfYear field. If it's set to 10, the engine only
+> fires that recurring transaction when the current calendar month is October —
+> in both the Replay Loop and the Forward Projection. Without monthOfYear the
+> engine falls back to index-based firing, which is only correct if the projection
+> happens to start in the right month."
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
@@ -217,3 +260,10 @@
   (two Transactions sharing a TransferId, recorded directly) vs **Recurring Transfer**
   (a RecurringTransaction with a linkedAccountId, applied by the Projection Engine).
   Never use "Transfer" alone when the distinction matters.
+- **"actual transaction"** is ambiguous — in general usage it means any recorded transaction.
+  In the **Recurring-Only Projection Model** it means specifically **Variable Spending**:
+  the irregular one-off entries for food, dental, shopping. Never use "actual transaction"
+  to describe salary or transfers — those are **RecurringTransactions** only.
+- **"current balance"** — never compute as Opening Balance + Transactions alone. In the
+  Recurring-Only Projection Model the correct derivation is Opening Balance + Recurring
+  History + Variable Spending. Using Transactions alone silently omits all recurring flows.
