@@ -22,6 +22,7 @@ router.get("/", async (req, res) => {
     _id: String(a._id),
     kind: a.kind,
     openingBalance: a.openingBalance,
+    openingDate: a.openingDate,
   }));
 
   const transactionEntries = transactions.map((tx) => ({

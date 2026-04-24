@@ -47,6 +47,12 @@ function addMonths(yyyyMM: string, n: number): string {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
+function monthsBetween(from: string, to: string): number {
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  return (ty - fy) * 12 + (tm - fm);
+}
+
 function firesInMonth(
   frequency: Frequency,
   index: number,
@@ -71,6 +77,49 @@ function firesInMonth(
   return index % 12 === 0; // annual
 }
 
+function applyRecurringToBalances(
+  r: ProjectionRecurringEntry,
+  accountMap: Map<string, ProjectionAccountEntry>,
+  runningBalances: Map<string, number>
+): void {
+  if (r.linkedAccountId) {
+    runningBalances.set(
+      r.accountId,
+      (runningBalances.get(r.accountId) ?? 0) - r.amount
+    );
+    const destKind = accountMap.get(r.linkedAccountId)?.kind;
+    if (destKind === "Mortgage") {
+      const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
+      const actualDebit = Math.min(r.amount, remaining);
+      if (actualDebit <= 0) {
+        runningBalances.set(
+          r.accountId,
+          (runningBalances.get(r.accountId) ?? 0) + r.amount
+        );
+      } else {
+        runningBalances.set(
+          r.accountId,
+          (runningBalances.get(r.accountId) ?? 0) + r.amount - actualDebit
+        );
+        runningBalances.set(r.linkedAccountId, remaining - actualDebit);
+      }
+    } else {
+      runningBalances.set(
+        r.linkedAccountId,
+        (runningBalances.get(r.linkedAccountId) ?? 0) + r.amount
+      );
+    }
+  } else {
+    const kind = accountMap.get(r.accountId)?.kind;
+    if (kind !== "Mortgage") {
+      runningBalances.set(
+        r.accountId,
+        (runningBalances.get(r.accountId) ?? 0) + r.amount
+      );
+    }
+  }
+}
+
 export function projectBalances(
   accounts: ProjectionAccountEntry[],
   transactions: ProjectionTxEntry[],
@@ -84,13 +133,53 @@ export function projectBalances(
 
   const activeRecurring = recurringTransactions.filter((r) => r.isActive);
 
-  // Projection starts from opening balance + any transactions before fromDate
+  // Initialise from opening balances
   const runningBalances = new Map<string, number>();
   for (const a of accounts) {
-    const priorSum = transactions
+    runningBalances.set(a._id, a.openingBalance);
+  }
+
+  // Replay Loop: replay each account's recurring history from its Opening Date
+  // up to (but not including) fromDate, using the same calendar-aware firing logic
+  const replayStart = accounts.reduce((earliest, a) => {
+    const od = a.openingDate ? a.openingDate.slice(0, 7) : fromDate;
+    return od < earliest ? od : earliest;
+  }, fromDate);
+
+  const replayLength = monthsBetween(replayStart, fromDate);
+  for (let j = 0; j < replayLength; j++) {
+    const replayMonth = addMonths(replayStart, j);
+    const replayCalendarMonth = parseInt(replayMonth.split("-")[1], 10);
+
+    for (const r of activeRecurring) {
+      const sourceOpened =
+        accountMap.get(r.accountId)?.openingDate?.slice(0, 7) ?? fromDate;
+      if (replayMonth < sourceOpened) continue;
+
+      const indexFromOpening = monthsBetween(sourceOpened, replayMonth);
+      if (
+        !firesInMonth(
+          r.frequency,
+          indexFromOpening,
+          replayCalendarMonth,
+          r.monthOfYear
+        )
+      )
+        continue;
+
+      applyRecurringToBalances(r, accountMap, runningBalances);
+    }
+  }
+
+  // Add Variable Spending actual transactions recorded before fromDate
+  for (const a of accounts) {
+    const variableSpending = transactions
       .filter((tx) => tx.accountId === a._id && tx.date.slice(0, 7) < fromDate)
       .reduce((sum, tx) => sum + tx.amount, 0);
-    runningBalances.set(a._id, a.openingBalance + priorSum);
+    runningBalances.set(
+      a._id,
+      (runningBalances.get(a._id) ?? 0) + variableSpending
+    );
   }
 
   const snapshots: MonthlySnapshot[] = [];
@@ -104,51 +193,15 @@ export function projectBalances(
     for (const r of activeRecurring) {
       if (!firesInMonth(r.frequency, i, calendarMonth, r.monthOfYear)) continue;
 
-      if (r.linkedAccountId) {
-        // Transfer: debit source
-        runningBalances.set(
-          r.accountId,
-          (runningBalances.get(r.accountId) ?? 0) - r.amount
-        );
+      applyRecurringToBalances(r, accountMap, runningBalances);
 
-        const destKind = accountMap.get(r.linkedAccountId)?.kind;
-        if (destKind === "Mortgage") {
-          // Sondertilgung: debit only what remains — never drive Restschuld negative
-          const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
-          const actualDebit = Math.min(r.amount, remaining);
-          if (actualDebit <= 0) {
-            // Mortgage already paid off — undo the source debit
-            runningBalances.set(
-              r.accountId,
-              (runningBalances.get(r.accountId) ?? 0) + r.amount
-            );
-          } else {
-            // Partial or full debit: correct source to actual amount used
-            runningBalances.set(
-              r.accountId,
-              (runningBalances.get(r.accountId) ?? 0) + r.amount - actualDebit
-            );
-            runningBalances.set(r.linkedAccountId, remaining - actualDebit);
-          }
-        } else {
-          // Regular transfer: credit destination
-          runningBalances.set(
-            r.linkedAccountId,
-            (runningBalances.get(r.linkedAccountId) ?? 0) + r.amount
-          );
-        }
-        // Transfers excluded from netCashflow
-      } else {
-        // Regular recurring: only affects its own account
-        // Mortgage accounts are never directly modified by a non-transfer RT
-        const kind = accountMap.get(r.accountId)?.kind;
-        if (kind !== "Mortgage") {
-          runningBalances.set(
-            r.accountId,
-            (runningBalances.get(r.accountId) ?? 0) + r.amount
-          );
-          netCashflow += r.amount;
-        }
+      // Transfers are excluded from netCashflow; Mortgage accounts are never
+      // directly credited by a non-transfer recurring
+      if (
+        !r.linkedAccountId &&
+        accountMap.get(r.accountId)?.kind !== "Mortgage"
+      ) {
+        netCashflow += r.amount;
       }
     }
 

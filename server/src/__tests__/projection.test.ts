@@ -506,11 +506,16 @@ describe("GET /projection", () => {
   });
 
   it("reflects an active recurring transaction in the projection", async () => {
+    // Opening date set to the current month so the replay covers 0 months —
+    // the test asserts only that the recurring is applied in the forward projection.
+    const now = new Date();
+    const openingDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
     const accountRes = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
       openingBalance: 500000,
-      openingDate: "2026-01-01",
+      openingDate,
     });
     const accountId = accountRes.body._id;
 
@@ -896,6 +901,8 @@ describe("projectBalances - ST with monthOfYear", () => {
     // May (index 1): only monthly income fires — 300000 + 200000 = 500000
     // Without monthOfYear the ST would have fired in April, leaving Tagesgeld at -200000
     expect(snapshots[1].accounts["tagesgeld"].projected).toBe(500000);
-    expect(snapshots[1].accounts["tagesgeld"].projected).toBeGreaterThanOrEqual(0);
+    expect(snapshots[1].accounts["tagesgeld"].projected).toBeGreaterThanOrEqual(
+      0
+    );
   });
 });
