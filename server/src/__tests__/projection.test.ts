@@ -906,3 +906,218 @@ describe("projectBalances - ST with monthOfYear", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function: correctness verification suite
+// ---------------------------------------------------------------------------
+//
+// Realistic multi-account configuration, manually verified:
+//   - giro  (Girokonto):  openingBalance 300000
+//   - savings (Tagesgeld): openingBalance 500000
+//   - mortgage (Mortgage): openingBalance 2000000
+//
+// Recurring transactions:
+//   1. Salary       giro  +350000  monthly
+//   2. Expenses     giro  -200000  monthly
+//   3. Transfer     giro  +100000  monthly  → savings
+//   4. Quarterly    giro   -30000  quarterly (no monthOfYear)
+//   5. ST         savings +500000  annual   → mortgage  monthOfYear: 10
+//
+// fromDate "2026-04", no openingDate → no replay.
+// Net giro per non-quarterly month: +350000 −200000 −100000 = +50000
+// Net giro per quarterly month:     +50000 −30000  = +20000
+// Net savings per month (excl. ST): +100000
+//
+// Key index → calendar-month mapping (fromDate "2026-04"):
+//   0 = Apr 2026, 1 = May, 3 = Jul, 5 = Sep, 6 = Oct, 7 = Nov
+//   8 = Dec, 9 = Jan 2027, 12 = Apr 2027, 18 = Oct 2027
+//   20 = Dec 2027, 30 = Oct 2028, 42 = Oct 2029
+
+describe("projectBalances - correctness verification suite", () => {
+  const accounts = [
+    { _id: "giro", kind: "Girokonto" as const, openingBalance: 300000 },
+    { _id: "savings", kind: "Tagesgeld" as const, openingBalance: 500000 },
+    { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 2000000 },
+  ];
+  const recurring = [
+    {
+      accountId: "giro",
+      amount: 350000,
+      frequency: "monthly" as const,
+      dayOfMonth: 1,
+      isActive: true,
+    },
+    {
+      accountId: "giro",
+      amount: -200000,
+      frequency: "monthly" as const,
+      dayOfMonth: 1,
+      isActive: true,
+    },
+    {
+      accountId: "giro",
+      amount: 100000,
+      frequency: "monthly" as const,
+      dayOfMonth: 1,
+      isActive: true,
+      linkedAccountId: "savings",
+    },
+    {
+      accountId: "giro",
+      amount: -30000,
+      frequency: "quarterly" as const,
+      dayOfMonth: 1,
+      isActive: true,
+    },
+    {
+      accountId: "savings",
+      amount: 500000,
+      frequency: "annual" as const,
+      dayOfMonth: 1,
+      isActive: true,
+      linkedAccountId: "mortgage",
+      monthOfYear: 10,
+    },
+  ];
+
+  it("Girokonto balance is correct after monthly net income and quarterly deductions", () => {
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      60
+    );
+
+    // i=0 Apr: quarterly fires → 300000 +350000 −200000 −100000 −30000 = 320000
+    expect(snapshots[0].accounts["giro"].projected).toBe(320000);
+    // i=1 May: no quarterly → 320000 +50000 = 370000
+    expect(snapshots[1].accounts["giro"].projected).toBe(370000);
+    // i=3 Jul: quarterly fires → 420000 +350000 −200000 −100000 −30000 = 440000
+    expect(snapshots[3].accounts["giro"].projected).toBe(440000);
+    // i=6 Oct: quarterly fires, ST (savings→mortgage) does not affect giro
+    //   540000 +350000 −200000 −100000 −30000 = 560000
+    expect(snapshots[6].accounts["giro"].projected).toBe(560000);
+    // i=12 Apr 2027: quarterly fires → 800000
+    expect(snapshots[12].accounts["giro"].projected).toBe(800000);
+  });
+
+  it("Tagesgeld balance tracks monthly transfer income and dips by ST each October", () => {
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      60
+    );
+
+    // i=0 Apr: +100000 transfer → 500000 +100000 = 600000
+    expect(snapshots[0].accounts["savings"].projected).toBe(600000);
+    // i=5 Sep: 5 months of +100000 → 600000 +5×100000 = 1100000
+    expect(snapshots[5].accounts["savings"].projected).toBe(1100000);
+    // i=6 Oct: transfer makes it 1200000, then ST fires → 1200000 −500000 = 700000
+    expect(snapshots[6].accounts["savings"].projected).toBe(700000);
+    // i=7 Nov: +100000 → 800000
+    expect(snapshots[7].accounts["savings"].projected).toBe(800000);
+  });
+
+  it("Mortgage balance decreases by exactly 500000 each October and never goes below zero", () => {
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      60
+    );
+
+    // No ST fires before the first October
+    expect(snapshots[5].accounts["mortgage"].projected).toBe(2000000);
+    // i=6  Oct 2026: first ST  → 2000000 −500000 = 1500000
+    expect(snapshots[6].accounts["mortgage"].projected).toBe(1500000);
+    // i=18 Oct 2027: second ST → 1500000 −500000 = 1000000
+    expect(snapshots[18].accounts["mortgage"].projected).toBe(1000000);
+    // i=30 Oct 2028: third ST  → 1000000 −500000 = 500000
+    expect(snapshots[30].accounts["mortgage"].projected).toBe(500000);
+    // i=42 Oct 2029: fourth ST → 500000 −500000 = 0
+    expect(snapshots[42].accounts["mortgage"].projected).toBe(0);
+    // All months from payoff onwards: Mortgage stays at 0
+    for (let i = 42; i < 60; i++) {
+      expect(snapshots[i].accounts["mortgage"].projected).toBe(0);
+    }
+  });
+
+  it("totalLiquid equals Girokonto + Tagesgeld only at key months", () => {
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      60
+    );
+
+    // i=8 Dec 2026: giro=660000, savings=900000 → 1560000
+    expect(snapshots[8].totalLiquid).toBe(1560000);
+    // i=20 Dec 2027: giro=1140000, savings=1600000 → 2740000
+    expect(snapshots[20].totalLiquid).toBe(2740000);
+  });
+
+  it("netCashflow is 150000 on non-quarterly months and 120000 on quarterly months (transfers and ST excluded)", () => {
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      60
+    );
+
+    // i=0 Apr: quarterly fires → 350000 −200000 −30000 = 120000
+    expect(snapshots[0].netCashflow).toBe(120000);
+    // i=1 May: no quarterly → 350000 −200000 = 150000
+    expect(snapshots[1].netCashflow).toBe(150000);
+    // i=6 Oct: quarterly fires; ST is a transfer → excluded → 120000
+    expect(snapshots[6].netCashflow).toBe(120000);
+    // i=7 Nov: no quarterly → 150000
+    expect(snapshots[7].netCashflow).toBe(150000);
+  });
+
+  it("Sondertilgung clamping: Tagesgeld is debited only by the remaining Mortgage balance when ST exceeds it", () => {
+    const clampAccounts = [
+      { _id: "savings", kind: "Tagesgeld" as const, openingBalance: 300000 },
+      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
+    ];
+    const clampRecurring = [
+      {
+        accountId: "savings",
+        amount: 500000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+        monthOfYear: 10,
+      },
+    ];
+    // fromDate Oct 2026 → index 0 is October → ST fires immediately
+    // ST amount 500000 > remaining mortgage 300000 → actualDebit = 300000
+    const snapshots = projectBalances(
+      clampAccounts,
+      [],
+      clampRecurring,
+      "2026-10",
+      "2026-10",
+      24
+    );
+
+    // i=0: savings debited by 300000 only → 300000 −300000 = 0
+    expect(snapshots[0].accounts["savings"].projected).toBe(0);
+    // i=0: mortgage clamped to 0
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(0);
+    // i=12 Oct 2027: mortgage already 0 → ST skipped entirely, savings unchanged at 0
+    expect(snapshots[12].accounts["savings"].projected).toBe(0);
+    expect(snapshots[12].accounts["mortgage"].projected).toBe(0);
+  });
+});
