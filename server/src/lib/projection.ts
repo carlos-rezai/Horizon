@@ -46,8 +46,26 @@ function addMonths(yyyyMM: string, n: number): string {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-function firesInMonth(frequency: Frequency, index: number): boolean {
+function firesInMonth(
+  frequency: Frequency,
+  index: number,
+  calendarMonth: number,
+  monthOfYear?: number
+): boolean {
   if (frequency === "monthly") return true;
+
+  if (monthOfYear != null) {
+    if (frequency === "annual") {
+      return calendarMonth === monthOfYear;
+    }
+    // Quarterly calendar-aware: fire when the calendar month is in the 3-month
+    // cycle anchored at monthOfYear. At index 0, only fire if this IS the anchor
+    // month — don't fire mid-cycle at the projection start.
+    const distance = (calendarMonth - monthOfYear + 12) % 12;
+    return distance % 3 === 0 && (distance === 0 || index > 0);
+  }
+
+  // Legacy offset-based firing when monthOfYear is not set
   if (frequency === "quarterly") return index % 3 === 0;
   return index % 12 === 0; // annual
 }
@@ -78,11 +96,12 @@ export function projectBalances(
 
   for (let i = 0; i < months; i++) {
     const month = addMonths(fromDate, i);
+    const calendarMonth = parseInt(month.split("-")[1], 10);
 
     let netCashflow = 0;
 
     for (const r of activeRecurring) {
-      if (!firesInMonth(r.frequency, i)) continue;
+      if (!firesInMonth(r.frequency, i, calendarMonth, r.monthOfYear)) continue;
 
       if (r.linkedAccountId) {
         // Transfer: debit source

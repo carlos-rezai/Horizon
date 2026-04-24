@@ -37,6 +37,7 @@ router.get("/", async (req, res) => {
     dayOfMonth: r.dayOfMonth,
     isActive: r.isActive,
     ...(r.linkedAccountId != null && { linkedAccountId: r.linkedAccountId }),
+    ...(r.monthOfYear != null && { monthOfYear: r.monthOfYear }),
   }));
 
   const from = currentMonth();
