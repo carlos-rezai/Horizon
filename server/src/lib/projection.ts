@@ -20,6 +20,7 @@ export interface ProjectionRecurringEntry {
   dayOfMonth: number;
   isActive: boolean;
   linkedAccountId?: string;
+  monthOfYear?: number;
 }
 
 interface AccountSnapshot {

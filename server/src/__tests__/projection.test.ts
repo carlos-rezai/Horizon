@@ -531,3 +531,157 @@ describe("GET /projection", () => {
     expect(res.body[1].accounts[accountId].projected).toBe(400000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function: annual recurrence with monthOfYear
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - annual recurrence with monthOfYear", () => {
+  it("annual with monthOfYear: 10 from April does not fire in April (index 0) and fires in October (index 6)", () => {
+    const accounts = [
+      { _id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
+    ];
+    const recurring = [
+      {
+        accountId: "a1",
+        amount: -70000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        monthOfYear: 10,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // April (index 0): monthOfYear is 10 — must not fire
+    expect(snapshots[0].accounts["a1"].projected).toBe(500000);
+    // September (index 5): still no fire
+    expect(snapshots[5].accounts["a1"].projected).toBe(500000);
+    // October (index 6): first fire → 500000 - 70000 = 430000
+    expect(snapshots[6].accounts["a1"].projected).toBe(430000);
+    // November (index 7): no change
+    expect(snapshots[7].accounts["a1"].projected).toBe(430000);
+  });
+
+  it("annual with monthOfYear: 10 fires at October the following year (index 18), not April (index 12)", () => {
+    const accounts = [
+      { _id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
+    ];
+    const recurring = [
+      {
+        accountId: "a1",
+        amount: -70000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        monthOfYear: 10,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // April 2027 (index 12): must not fire — not October
+    expect(snapshots[12].accounts["a1"].projected).toBe(430000);
+    // October 2027 (index 18): second fire → 430000 - 70000 = 360000
+    expect(snapshots[18].accounts["a1"].projected).toBe(360000);
+    // November 2027 (index 19): no change
+    expect(snapshots[19].accounts["a1"].projected).toBe(360000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pure function: quarterly recurrence with monthOfYear
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - quarterly recurrence with monthOfYear", () => {
+  it("quarterly with monthOfYear: 1 from April fires at July (index 3), October (index 6), January (index 9) — not April (index 0)", () => {
+    const accounts = [
+      { _id: "a1", kind: "Girokonto" as const, openingBalance: 200000 },
+    ];
+    const recurring = [
+      {
+        accountId: "a1",
+        amount: -30000,
+        frequency: "quarterly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        monthOfYear: 1,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // April (index 0): monthOfYear is 1 (January) — must not fire at start
+    expect(snapshots[0].accounts["a1"].projected).toBe(200000);
+    // May, June (indices 1–2): no fire
+    expect(snapshots[1].accounts["a1"].projected).toBe(200000);
+    expect(snapshots[2].accounts["a1"].projected).toBe(200000);
+    // July (index 3): first fire → 200000 - 30000 = 170000
+    expect(snapshots[3].accounts["a1"].projected).toBe(170000);
+    // October (index 6): second fire → 170000 - 30000 = 140000
+    expect(snapshots[6].accounts["a1"].projected).toBe(140000);
+    // January (index 9): third fire → 140000 - 30000 = 110000
+    expect(snapshots[9].accounts["a1"].projected).toBe(110000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pure function: ST with monthOfYear — no premature Tagesgeld drain
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - ST with monthOfYear", () => {
+  it("monthly Tagesgeld income combined with annual ST (monthOfYear: 10) does not produce a negative Tagesgeld balance in May", () => {
+    const accounts = [
+      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 100000 },
+      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 10000000 },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: 200000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+      {
+        accountId: "tagesgeld",
+        amount: 500000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+        monthOfYear: 10,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // April (index 0): only monthly income fires — 100000 + 200000 = 300000
+    expect(snapshots[0].accounts["tagesgeld"].projected).toBe(300000);
+    // May (index 1): only monthly income fires — 300000 + 200000 = 500000
+    // Without monthOfYear the ST would have fired in April, leaving Tagesgeld at -200000
+    expect(snapshots[1].accounts["tagesgeld"].projected).toBe(500000);
+    expect(snapshots[1].accounts["tagesgeld"].projected).toBeGreaterThanOrEqual(0);
+  });
+});
