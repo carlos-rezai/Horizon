@@ -642,6 +642,220 @@ describe("projectBalances - quarterly recurrence with monthOfYear", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Pure function: replay loop — recurring history from openingDate
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - replay loop", () => {
+  it("account opened 3 months ago with a monthly recurring starts the forward projection at Opening Balance + 3 months applied", () => {
+    const accounts = [
+      {
+        _id: "a1",
+        kind: "Girokonto" as const,
+        openingBalance: 1000000,
+        openingDate: "2026-01-01",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "a1",
+        amount: -50000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+    ];
+    // fromDate April 2026 — replay covers Jan, Feb, Mar (3 months)
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // Starting balance after replay: 1000000 − 3×50000 = 850000
+    // Forward index 0 (April): 850000 − 50000 = 800000
+    expect(snapshots[0].accounts["a1"].projected).toBe(800000);
+    // Forward index 1 (May): 800000 − 50000 = 750000
+    expect(snapshots[1].accounts["a1"].projected).toBe(750000);
+  });
+
+  it("account opened 13 months ago with annual ST (monthOfYear: 10) has the ST applied once when October is within the replay window", () => {
+    const accounts = [
+      {
+        _id: "tagesgeld",
+        kind: "Tagesgeld" as const,
+        openingBalance: 1000000,
+        openingDate: "2025-03-01",
+      },
+      {
+        _id: "mortgage",
+        kind: "Mortgage" as const,
+        openingBalance: 5000000,
+        openingDate: "2025-03-01",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: 500000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+        monthOfYear: 10,
+      },
+    ];
+    // fromDate April 2026 — replay covers Mar 2025 → Mar 2026 (13 months)
+    // October 2025 falls in the window → ST fires once
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // After replay: Tagesgeld 1000000 − 500000 = 500000
+    // Forward index 0 (April): no ST fires (monthOfYear: 10) → stays 500000
+    expect(snapshots[0].accounts["tagesgeld"].projected).toBe(500000);
+    // Mortgage reduced by one ST: 5000000 − 500000 = 4500000
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(4500000);
+  });
+
+  it("two accounts with different Opening Dates each initialise from their own start date independently", () => {
+    const accounts = [
+      {
+        _id: "giro",
+        kind: "Girokonto" as const,
+        openingBalance: 500000,
+        openingDate: "2026-01-01",
+      },
+      {
+        _id: "savings",
+        kind: "Tagesgeld" as const,
+        openingBalance: 1000000,
+        openingDate: "2026-03-01",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "giro",
+        amount: -100000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+      {
+        accountId: "savings",
+        amount: 200000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+    ];
+    // fromDate April 2026
+    // giro replay: Jan, Feb, Mar (3 months) → 500000 − 300000 = 200000
+    // savings replay: Mar only (1 month) → 1000000 + 200000 = 1200000
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // Forward index 0 (April):
+    // giro: 200000 − 100000 = 100000
+    expect(snapshots[0].accounts["giro"].projected).toBe(100000);
+    // savings: 1200000 + 200000 = 1400000
+    expect(snapshots[0].accounts["savings"].projected).toBe(1400000);
+  });
+
+  it("Variable Spending actual transactions before the current month are included alongside replayed recurring history", () => {
+    const accounts = [
+      {
+        _id: "a1",
+        kind: "Girokonto" as const,
+        openingBalance: 100000,
+        openingDate: "2026-01-01",
+      },
+    ];
+    const transactions = [
+      { accountId: "a1", date: "2026-01-15", amount: -50000 },
+      { accountId: "a1", date: "2026-02-10", amount: -30000 },
+    ];
+    const recurring = [
+      {
+        accountId: "a1",
+        amount: 300000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+    ];
+    // fromDate April 2026 — replay covers Jan, Feb, Mar (3 months of +300000)
+    // Variable Spending: −50000 (Jan) + −30000 (Feb) = −80000
+    // Starting: 100000 + 900000 − 80000 = 920000
+    // Forward index 0 (April): 920000 + 300000 = 1220000
+    const snapshots = projectBalances(
+      accounts,
+      transactions,
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    expect(snapshots[0].accounts["a1"].projected).toBe(1220000);
+  });
+
+  it("account opened in April 2025 with annual ST (monthOfYear: 10) fires ST in October during 13-month replay, not in April", () => {
+    const accounts = [
+      {
+        _id: "tagesgeld",
+        kind: "Tagesgeld" as const,
+        openingBalance: 1000000,
+        openingDate: "2025-04-01",
+      },
+      {
+        _id: "mortgage",
+        kind: "Mortgage" as const,
+        openingBalance: 5000000,
+        openingDate: "2025-04-01",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: 500000,
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+        monthOfYear: 10,
+      },
+    ];
+    // fromDate May 2026 — replay covers Apr 2025 → Apr 2026 (13 months)
+    // Correct: ST fires once in Oct 2025 (calendar month 10 = monthOfYear)
+    //   → Tagesgeld 1000000 − 500000 = 500000 starting balance
+    // Wrong (legacy): would fire at Apr 2025 (offset 0) AND Apr 2026 (offset 12)
+    //   → Tagesgeld 1000000 − 1000000 = 0 starting balance
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-05",
+      "2026-05"
+    );
+
+    // Forward index 0 (May 2026): no ST fires yet (monthOfYear: 10 → October)
+    expect(snapshots[0].accounts["tagesgeld"].projected).toBe(500000);
+    // Mortgage reduced once: 5000000 − 500000 = 4500000
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(4500000);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Pure function: ST with monthOfYear — no premature Tagesgeld drain
 // ---------------------------------------------------------------------------
 

@@ -5,6 +5,7 @@ export interface ProjectionAccountEntry {
   _id: string;
   kind: AccountKind;
   openingBalance: number;
+  openingDate?: string;
 }
 
 export interface ProjectionTxEntry {
