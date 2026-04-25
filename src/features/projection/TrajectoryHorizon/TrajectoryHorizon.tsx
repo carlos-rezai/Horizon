@@ -1,6 +1,8 @@
 import { useTheme } from "styled-components";
 import {
+  CartesianGrid,
   ComposedChart,
+  Legend,
   Line,
   XAxis,
   YAxis,
@@ -128,7 +130,7 @@ function STTick({
   const point = data[index];
   if (!point) return null;
 
-  const isYearTick = index % 24 === 0;
+  const isYearTick = index % 12 === 0;
   const isSTMonth = point.isSTMonth;
 
   if (!isYearTick && !isSTMonth) return null;
@@ -212,6 +214,11 @@ export default function TrajectoryHorizon({
                 data={data}
                 margin={{ top: 8, right: 70, left: 70, bottom: 8 }}
               >
+                <CartesianGrid
+                  stroke={theme.colors.border}
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="monthIndex"
                   tick={
@@ -236,6 +243,11 @@ export default function TrajectoryHorizon({
                     />
                   }
                 />
+                <Legend
+                  verticalAlign="bottom"
+                  wrapperStyle={{ paddingTop: 12 }}
+                  iconType="plainline"
+                />
                 {payoffMonth && (
                   <ReferenceLine
                     yAxisId="left"
@@ -250,6 +262,7 @@ export default function TrajectoryHorizon({
                     yAxisId="left"
                     type="monotone"
                     dataKey={a._id}
+                    name={a.name}
                     dot={false}
                     stroke={accountColours[i % accountColours.length]}
                   />
@@ -258,6 +271,7 @@ export default function TrajectoryHorizon({
                   yAxisId="left"
                   type="monotone"
                   dataKey="restschuld"
+                  name="Restschuld"
                   dot={false}
                   stroke={theme.colors.warning}
                   connectNulls={false}
