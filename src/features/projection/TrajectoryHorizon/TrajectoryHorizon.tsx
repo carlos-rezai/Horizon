@@ -32,6 +32,7 @@ import {
   StyledTooltipLabel,
   StyledTooltipRowPositive,
   StyledTooltipRowWarning,
+  StyledTooltipRowMuted,
 } from "./TrajectoryHorizon.styles";
 
 const MONTH_NAMES = [
@@ -61,7 +62,15 @@ interface Props {
   isLoading: boolean;
 }
 
-function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
+interface ChartTooltipProps extends TooltipProps<number, string> {
+  nonMortgageAccounts: AccountWithBalance[];
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  nonMortgageAccounts,
+}: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
   const point = payload[0].payload as TrajectoryDataPoint;
@@ -72,6 +81,15 @@ function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
       <StyledTooltipRowPositive>
         Liquid: {formatBalance(point.totalLiquid)}
       </StyledTooltipRowPositive>
+      {nonMortgageAccounts.map((a) => {
+        const value = point[a._id];
+        if (typeof value !== "number") return null;
+        return (
+          <StyledTooltipRowMuted key={a._id}>
+            {a.name}: {formatBalance(value)}
+          </StyledTooltipRowMuted>
+        );
+      })}
       {point.restschuld != null && point.restschuld > 0 && (
         <StyledTooltipRowWarning>
           Restschuld: {formatBalance(point.restschuld)}
@@ -149,6 +167,13 @@ export default function TrajectoryHorizon({
 
   const data = buildTrajectoryData(snapshots, stMonths, payoffMonth, accounts);
 
+  const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
+  const accountColours = [
+    theme.colors.accent,
+    theme.colors.negative,
+    theme.colors.textMuted,
+  ];
+
   return (
     <StyledSection>
       <Heading level={2}>Trajectory Horizon</Heading>
@@ -184,9 +209,16 @@ export default function TrajectoryHorizon({
                   }
                   interval={0}
                 />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip content={<ChartTooltip />} />
+                <YAxis
+                  yAxisId="left"
+                  tickFormatter={(v: number) => formatBalance(v)}
+                  width={90}
+                />
+                <Tooltip
+                  content={
+                    <ChartTooltip nonMortgageAccounts={nonMortgageAccounts} />
+                  }
+                />
                 {payoffMonth && (
                   <ReferenceLine
                     yAxisId="left"
@@ -201,7 +233,18 @@ export default function TrajectoryHorizon({
                   dataKey="totalLiquid"
                   dot={false}
                   stroke={theme.colors.positive}
+                  strokeWidth={2}
                 />
+                {nonMortgageAccounts.map((a, i) => (
+                  <Line
+                    key={a._id}
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey={a._id}
+                    dot={false}
+                    stroke={accountColours[i % accountColours.length]}
+                  />
+                ))}
                 <Line
                   yAxisId="left"
                   type="monotone"

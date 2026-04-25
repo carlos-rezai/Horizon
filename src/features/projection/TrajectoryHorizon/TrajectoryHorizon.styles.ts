@@ -54,3 +54,7 @@ export const StyledTooltipRowWarning = styled.div`
 export const StyledTooltipRowAccent = styled.div`
   color: ${({ theme }) => theme.colors.accent};
 `;
+
+export const StyledTooltipRowMuted = styled.div`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
