@@ -20,7 +20,7 @@ import {
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { accounts, isLoading, error } = useAccounts();
+  const { accounts, isLoading, error, refresh } = useAccounts();
   const {
     recurringTransactions,
     toggleIsActive,
@@ -72,6 +72,7 @@ export default function AccountDetailPage() {
       const data = (await res.json()) as { error?: string };
       throw new Error(data.error ?? "Failed to update opening balance");
     }
+    refresh();
   };
 
   const handleDelete = async () => {
