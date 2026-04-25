@@ -15,6 +15,7 @@ import {
   StyledForm,
   StyledActions,
   StyledErrorText,
+  StyledWarningText,
 } from "./RecurringTransactionModal.styles";
 
 export interface RecurringFormPayload {
@@ -207,6 +208,15 @@ export default function RecurringTransactionModal({
             ))}
           </Select>
         </FormField>
+
+        {otherAccounts.find((a) => a._id === linkedAccountId)?.kind ===
+          "Mortgage" && (
+          <StyledWarningText role="status">
+            Linking to a Mortgage account models a Recurring Transfer that
+            reduces the Restschuld each time it fires. Per the ST-only model,
+            only Sondertilgung payments should link to a Mortgage account.
+          </StyledWarningText>
+        )}
 
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 

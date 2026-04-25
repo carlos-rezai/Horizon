@@ -19,3 +19,9 @@ export const StyledErrorText = styled.p`
   color: ${({ theme }) => theme.colors.negative};
   margin: 0;
 `;
+
+export const StyledWarningText = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.warning};
+  margin: 0;
+`;

@@ -128,6 +128,41 @@ describe("RecurringTransactionModal — linked account field", () => {
   });
 });
 
+describe("RecurringTransactionModal — Mortgage link warning", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("does not show the Mortgage warning when no linked account is selected", () => {
+    renderCreateModal();
+
+    expect(screen.queryByText(/ST-only model/i)).not.toBeInTheDocument();
+  });
+
+  it("does not show the Mortgage warning when a non-Mortgage account is linked", () => {
+    renderCreateModal();
+
+    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
+      target: { value: "acc-2" },
+    });
+
+    expect(screen.queryByText(/ST-only model/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the Mortgage warning when a Mortgage account is selected as the linked account", () => {
+    renderCreateModal();
+
+    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
+      target: { value: "acc-3" },
+    });
+
+    expect(screen.getByText(/ST-only model/i)).toBeInTheDocument();
+  });
+});
+
 describe("RecurringTransactionModal — validation", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
