@@ -458,6 +458,19 @@ const trajSnap = (
   ),
 });
 
+const account = (
+  id: string,
+  kind: AccountWithBalance["kind"],
+  name = id
+): AccountWithBalance => ({
+  _id: id,
+  kind,
+  name,
+  openingBalance: 0,
+  openingDate: "2026-01-01",
+  balance: 0,
+});
+
 describe("buildTrajectoryData", () => {
   it("returns an empty array when snapshots is empty", () => {
     expect(buildTrajectoryData([], new Map(), null, [])).toEqual([]);
@@ -484,9 +497,16 @@ describe("buildTrajectoryData", () => {
     expect(point).toHaveProperty("label");
     expect(point).toHaveProperty("totalLiquid");
     expect(point).toHaveProperty("restschuld");
-    expect(point).toHaveProperty("netCashflow");
     expect(point).toHaveProperty("isSTMonth");
     expect(point).toHaveProperty("isPayoffMonth");
+  });
+
+  it("does not include netCashflow on the data point", () => {
+    const snapshots = [trajSnap("2026-04", 100000, 5000)];
+
+    const [point] = buildTrajectoryData(snapshots, new Map(), null, []);
+
+    expect(point).not.toHaveProperty("netCashflow");
   });
 
   it("monthIndex is the 0-based position in the array", () => {
@@ -515,13 +535,12 @@ describe("buildTrajectoryData", () => {
     expect(result[1].label).toBe("2026-05");
   });
 
-  it("totalLiquid and netCashflow come from the snapshot", () => {
+  it("totalLiquid comes from the snapshot", () => {
     const snapshots = [trajSnap("2026-04", 123456, 7890)];
 
     const [point] = buildTrajectoryData(snapshots, new Map(), null, []);
 
     expect(point.totalLiquid).toBe(123456);
-    expect(point.netCashflow).toBe(7890);
   });
 
   it("restschuld is the sum of mortgage account projected balances", () => {
@@ -533,17 +552,16 @@ describe("buildTrajectoryData", () => {
       }),
     ];
 
-    const [point] = buildTrajectoryData(
-      snapshots,
-      new Map(),
-      null,
-      ["mortgage-1", "mortgage-2"]
-    );
+    const [point] = buildTrajectoryData(snapshots, new Map(), null, [
+      account("mortgage-1", "Mortgage"),
+      account("mortgage-2", "Mortgage"),
+      account("giro-1", "Girokonto"),
+    ]);
 
     expect(point.restschuld).toBe(2500000);
   });
 
-  it("restschuld is 0 when no mortgageAccountIds are provided", () => {
+  it("restschuld is 0 when no Mortgage accounts are provided", () => {
     const snapshots = [
       trajSnap("2026-04", 100000, 0, { "mortgage-1": 2000000 }),
     ];
@@ -551,6 +569,44 @@ describe("buildTrajectoryData", () => {
     const [point] = buildTrajectoryData(snapshots, new Map(), null, []);
 
     expect(point.restschuld).toBe(0);
+  });
+
+  it("restschuld is null on and after the month the Mortgage balance reaches zero", () => {
+    const snapshots = [
+      trajSnap("2026-04", 100000, 0, { "mortgage-1": 200000 }),
+      trajSnap("2026-05", 100000, 0, { "mortgage-1": 100000 }),
+      trajSnap("2026-06", 100000, 0, { "mortgage-1": 0 }),
+      trajSnap("2026-07", 100000, 0, { "mortgage-1": 0 }),
+    ];
+
+    const result = buildTrajectoryData(snapshots, new Map(), null, [
+      account("mortgage-1", "Mortgage"),
+    ]);
+
+    expect(result[0].restschuld).toBe(200000);
+    expect(result[1].restschuld).toBe(100000);
+    expect(result[2].restschuld).toBeNull();
+    expect(result[3].restschuld).toBeNull();
+  });
+
+  it("includes per-account projected balance keyed by account _id for non-Mortgage accounts", () => {
+    const snapshots = [
+      trajSnap("2026-04", 0, 0, {
+        "giro-1": 500000,
+        "tagesgeld-1": 1500000,
+        "mortgage-1": 2000000,
+      }),
+    ];
+
+    const [point] = buildTrajectoryData(snapshots, new Map(), null, [
+      account("giro-1", "Girokonto"),
+      account("tagesgeld-1", "Tagesgeld"),
+      account("mortgage-1", "Mortgage"),
+    ]);
+
+    expect(point["giro-1"]).toBe(500000);
+    expect(point["tagesgeld-1"]).toBe(1500000);
+    expect(point["mortgage-1"]).toBeUndefined();
   });
 
   it("isSTMonth is true for months present in the stMonths map", () => {
@@ -584,12 +640,7 @@ describe("buildTrajectoryData", () => {
       trajSnap("2026-06", 100000, 0),
     ];
 
-    const result = buildTrajectoryData(
-      snapshots,
-      new Map(),
-      "2026-05",
-      []
-    );
+    const result = buildTrajectoryData(snapshots, new Map(), "2026-05", []);
 
     expect(result[0].isPayoffMonth).toBe(false);
     expect(result[1].isPayoffMonth).toBe(true);

@@ -21,8 +21,8 @@ export interface TrajectoryDataPoint {
   monthIndex: number;
   label: string;
   totalLiquid: number;
-  restschuld: number;
-  netCashflow: number;
+  restschuld: number | null;
   isSTMonth: boolean;
   isPayoffMonth: boolean;
+  [accountId: string]: number | null | string | boolean;
 }

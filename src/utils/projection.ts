@@ -141,21 +141,47 @@ export function buildTrajectoryData(
   snapshots: MonthlySnapshot[],
   stMonths: Map<string, number>,
   payoffMonth: string | null,
-  mortgageAccountIds: string[]
+  accounts: AccountWithBalance[]
 ): TrajectoryDataPoint[] {
+  const mortgageAccountIds = accounts
+    .filter((a) => a.kind === "Mortgage")
+    .map((a) => a._id);
+  const nonMortgageAccountIds = accounts
+    .filter((a) => a.kind !== "Mortgage")
+    .map((a) => a._id);
+
+  let payoffReached = false;
+
   return snapshots.map((snapshot, index) => {
-    const restschuld = mortgageAccountIds.reduce(
+    const restschuldRaw = mortgageAccountIds.reduce(
       (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
       0
     );
+    if (mortgageAccountIds.length > 0 && restschuldRaw <= 0) {
+      payoffReached = true;
+    }
+    const restschuld =
+      mortgageAccountIds.length === 0
+        ? 0
+        : payoffReached
+          ? null
+          : restschuldRaw;
+
+    const accountBalances = Object.fromEntries(
+      nonMortgageAccountIds.map((id) => [
+        id,
+        snapshot.accounts[id]?.projected ?? 0,
+      ])
+    );
+
     return {
       monthIndex: index,
       label: snapshot.month,
       totalLiquid: snapshot.totalLiquid,
       restschuld,
-      netCashflow: snapshot.netCashflow,
       isSTMonth: stMonths.has(snapshot.month),
       isPayoffMonth: snapshot.month === payoffMonth,
+      ...accountBalances,
     };
   });
 }

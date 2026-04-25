@@ -32,7 +32,6 @@ import {
   StyledTooltipLabel,
   StyledTooltipRowPositive,
   StyledTooltipRowWarning,
-  StyledTooltipRowAccent,
 } from "./TrajectoryHorizon.styles";
 
 const MONTH_NAMES = [
@@ -73,14 +72,11 @@ function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
       <StyledTooltipRowPositive>
         Liquid: {formatBalance(point.totalLiquid)}
       </StyledTooltipRowPositive>
-      {point.restschuld > 0 && (
+      {point.restschuld != null && point.restschuld > 0 && (
         <StyledTooltipRowWarning>
           Restschuld: {formatBalance(point.restschuld)}
         </StyledTooltipRowWarning>
       )}
-      <StyledTooltipRowAccent>
-        Cashflow: {formatBalance(point.netCashflow)}
-      </StyledTooltipRowAccent>
     </StyledTooltipBox>
   );
 }
@@ -151,12 +147,7 @@ export default function TrajectoryHorizon({
       ? findMortgagePayoffMonth(snapshots, mortgageIds[0])
       : null;
 
-  const data = buildTrajectoryData(
-    snapshots,
-    stMonths,
-    payoffMonth,
-    mortgageIds
-  );
+  const data = buildTrajectoryData(snapshots, stMonths, payoffMonth, accounts);
 
   return (
     <StyledSection>
@@ -217,13 +208,7 @@ export default function TrajectoryHorizon({
                   dataKey="restschuld"
                   dot={false}
                   stroke={theme.colors.warning}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="netCashflow"
-                  dot={false}
-                  stroke={theme.colors.accent}
+                  connectNulls={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>
