@@ -108,41 +108,27 @@ function ChartTooltip({
   );
 }
 
-interface STTickProps {
+interface YearTickProps {
   x?: number;
   y?: number;
   payload?: { value: number };
   data: TrajectoryDataPoint[];
-  labelColor: string;
   mutedColor: string;
 }
 
-function STTick({
-  x = 0,
-  y = 0,
-  payload,
-  data,
-  labelColor,
-  mutedColor,
-}: STTickProps) {
+function YearTick({ x = 0, y = 0, payload, data, mutedColor }: YearTickProps) {
   if (!payload) return null;
   const index = payload.value;
   const point = data[index];
   if (!point) return null;
 
-  const isYearTick = index % 12 === 0;
-  const isSTMonth = point.isSTMonth;
-
-  if (!isYearTick && !isSTMonth) return null;
+  if (index % 12 !== 0) return null;
 
   return (
     <g transform={`translate(${x},${y})`}>
-      {isSTMonth && <line y2={-6} stroke={labelColor} strokeWidth={2} />}
-      {isYearTick && (
-        <text x={0} y={16} textAnchor="middle" fill={mutedColor} fontSize={11}>
-          {point.label.slice(0, 4)}
-        </text>
-      )}
+      <text x={0} y={16} textAnchor="middle" fill={mutedColor} fontSize={11}>
+        {point.label.slice(0, 4)}
+      </text>
     </g>
   );
 }
@@ -190,6 +176,23 @@ export default function TrajectoryHorizon({
     theme.colors.textMuted,
   ];
 
+  const dataMax = data.reduce((max, p) => {
+    const candidates: number[] = [];
+    if (typeof p.restschuld === "number") candidates.push(p.restschuld);
+    for (const a of nonMortgageAccounts) {
+      const v = p[a._id];
+      if (typeof v === "number") candidates.push(v);
+    }
+    return Math.max(max, ...candidates);
+  }, 0);
+
+  const TICK_STEP_CENTS = 2_500_000;
+  const yMax =
+    Math.ceil(Math.max(dataMax, TICK_STEP_CENTS) / TICK_STEP_CENTS) *
+    TICK_STEP_CENTS;
+  const yTicks: number[] = [];
+  for (let v = 0; v <= yMax; v += TICK_STEP_CENTS) yTicks.push(v);
+
   return (
     <StyledSection>
       <Heading level={2}>Trajectory Horizon</Heading>
@@ -209,7 +212,7 @@ export default function TrajectoryHorizon({
             </StyledPayoffMarker>
           )}
           <StyledChartWrapper data-testid="trajectory-horizon-chart">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={360}>
               <ComposedChart
                 data={data}
                 margin={{ top: 8, right: 70, left: 70, bottom: 8 }}
@@ -222,17 +225,15 @@ export default function TrajectoryHorizon({
                 <XAxis
                   dataKey="monthIndex"
                   tick={
-                    <STTick
-                      data={data}
-                      labelColor={theme.colors.warning}
-                      mutedColor={theme.colors.textMuted}
-                    />
+                    <YearTick data={data} mutedColor={theme.colors.textMuted} />
                   }
                   interval={0}
                 />
                 <YAxis
                   yAxisId="left"
                   tickFormatter={(v: number) => formatBalance(v)}
+                  ticks={yTicks}
+                  domain={[0, yMax]}
                   width={90}
                 />
                 <Tooltip
@@ -252,8 +253,9 @@ export default function TrajectoryHorizon({
                   <ReferenceLine
                     yAxisId="left"
                     x={data.findIndex((p) => p.label === payoffMonth)}
-                    stroke={theme.colors.warning}
-                    strokeDasharray="4 4"
+                    stroke={theme.colors.textPrimary}
+                    strokeDasharray="2 6"
+                    strokeWidth={1}
                   />
                 )}
                 {nonMortgageAccounts.map((a, i) => (
