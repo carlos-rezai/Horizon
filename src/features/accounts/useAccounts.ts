@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { AccountWithBalance } from "../../types/account";
 import { API_BASE } from "../../utils/api";
 
@@ -6,12 +6,14 @@ interface UseAccountsResult {
   accounts: AccountWithBalance[];
   isLoading: boolean;
   error: string | null;
+  refresh: () => void;
 }
 
 export function useAccounts(): UseAccountsResult {
   const [accounts, setAccounts] = useState<AccountWithBalance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +39,11 @@ export function useAccounts(): UseAccountsResult {
     return () => {
       cancelled = true;
     };
+  }, [refreshKey]);
+
+  const refresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
   }, []);
 
-  return { accounts, isLoading, error };
+  return { accounts, isLoading, error, refresh };
 }
