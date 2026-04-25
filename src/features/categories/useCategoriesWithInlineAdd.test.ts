@@ -34,6 +34,12 @@ describe("useCategoriesWithInlineAdd — initial fetch", () => {
 
     expect(result.current.categories).toEqual(existingCategories);
   });
+
+  it("selectedCategoryId equals initialId synchronously on first render when initialId is provided", () => {
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("cat-2"));
+
+    expect(result.current.selectedCategoryId).toBe("cat-2");
+  });
 });
 
 describe("useCategoriesWithInlineAdd — addCategory", () => {
