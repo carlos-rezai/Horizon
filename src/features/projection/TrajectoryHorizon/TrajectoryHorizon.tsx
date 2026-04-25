@@ -62,14 +62,18 @@ interface Props {
   isLoading: boolean;
 }
 
+const HORIZON_MONTHS = 120;
+
 interface ChartTooltipProps extends TooltipProps<number, string> {
   nonMortgageAccounts: AccountWithBalance[];
+  accountColours: string[];
 }
 
 function ChartTooltip({
   active,
   payload,
   nonMortgageAccounts,
+  accountColours,
 }: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -81,11 +85,14 @@ function ChartTooltip({
       <StyledTooltipRowPositive>
         Liquid: {formatBalance(point.totalLiquid)}
       </StyledTooltipRowPositive>
-      {nonMortgageAccounts.map((a) => {
+      {nonMortgageAccounts.map((a, i) => {
         const value = point[a._id];
         if (typeof value !== "number") return null;
         return (
-          <StyledTooltipRowMuted key={a._id}>
+          <StyledTooltipRowMuted
+            key={a._id}
+            style={{ color: accountColours[i % accountColours.length] }}
+          >
             {a.name}: {formatBalance(value)}
           </StyledTooltipRowMuted>
         );
@@ -146,26 +153,33 @@ export default function TrajectoryHorizon({
 }: Props) {
   const theme = useTheme();
 
+  const horizonSnapshots = snapshots.slice(0, HORIZON_MONTHS);
+
   const mortgageIds = accounts
     .filter((a) => a.kind === "Mortgage")
     .map((a) => a._id);
 
   const stMonths =
-    snapshots.length > 0
+    horizonSnapshots.length > 0
       ? deriveSTMonths(
           recurringTransactions,
           accounts,
-          snapshots[0].month,
-          snapshots.length
+          horizonSnapshots[0].month,
+          horizonSnapshots.length
         )
       : new Map<string, number>();
 
   const payoffMonth =
-    mortgageIds.length > 0 && snapshots.length > 0
-      ? findMortgagePayoffMonth(snapshots, mortgageIds[0])
+    mortgageIds.length > 0 && horizonSnapshots.length > 0
+      ? findMortgagePayoffMonth(horizonSnapshots, mortgageIds[0])
       : null;
 
-  const data = buildTrajectoryData(snapshots, stMonths, payoffMonth, accounts);
+  const data = buildTrajectoryData(
+    horizonSnapshots,
+    stMonths,
+    payoffMonth,
+    accounts
+  );
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
   const accountColours = [
@@ -216,7 +230,10 @@ export default function TrajectoryHorizon({
                 />
                 <Tooltip
                   content={
-                    <ChartTooltip nonMortgageAccounts={nonMortgageAccounts} />
+                    <ChartTooltip
+                      nonMortgageAccounts={nonMortgageAccounts}
+                      accountColours={accountColours}
+                    />
                   }
                 />
                 {payoffMonth && (
@@ -227,14 +244,6 @@ export default function TrajectoryHorizon({
                     strokeDasharray="4 4"
                   />
                 )}
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="totalLiquid"
-                  dot={false}
-                  stroke={theme.colors.positive}
-                  strokeWidth={2}
-                />
                 {nonMortgageAccounts.map((a, i) => (
                   <Line
                     key={a._id}
