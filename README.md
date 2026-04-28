@@ -16,6 +16,17 @@ This project has two purposes:
 
 ---
 
+## Two Builds, One Codebase
+
+Horizon ships in two flavours from a single repository:
+
+- **Desktop (offline)** — an Electron app with a local SQLite database. No cloud, no auth, no network. This is the version Carlos actually runs day-to-day.
+- **Cloud (portfolio)** — the same code deployed to Vercel + Render with MongoDB Atlas, Google Auth, and the full AI feature set. This is the public demo.
+
+A `STORAGE_DRIVER=sqlite|mongo` env switch sits behind a repository abstraction in the Express layer, so both builds stay in lockstep without a fork.
+
+---
+
 ## AI Features
 
 Three distinct AI interaction patterns — each with a different shape and purpose.
@@ -67,7 +78,8 @@ The .claude/ folder contains all skill definitions. The docs/ folder contains th
 | Frontend | React + TypeScript + Vite     | Production-standard, full TypeScript coverage      |
 | UI       | styled-components + Meridian  | Custom design system, precision over convenience   |
 | Backend  | Node.js + Express             | Lightweight, consistent with JS ecosystem          |
-| Database | MongoDB Atlas                 | Flexible document model for financial records      |
+| Database | MongoDB Atlas / SQLite        | Mongo for cloud, `better-sqlite3` for desktop      |
+| Desktop  | Electron + electron-builder   | Wraps the existing app for offline personal use    |
 | AI       | Google Gemini API             | Multi-step reasoning, streaming, structured output |
 | Testing  | Vitest + Testing Library      | Fast, Vite-native, great DX                        |
 | Auth     | Google Auth (production only) | Demo runs without auth on mock data                |
@@ -163,6 +175,10 @@ Then open http://localhost:5173 in your browser.
 | Financial Projection Dashboard             | ✅ Complete |
 | Restschuld Trajectory Chart                | ✅ Complete |
 | Projection Engine Audit                    | ✅ Complete |
+| Repository abstraction (storage driver)    | 🔲 Planned  |
+| SQLite driver (offline storage)            | 🔲 Planned  |
+| Electron desktop shell                     | 🔲 Planned  |
+| Desktop packaging (Windows installer)      | 🔲 Planned  |
 | Monthly digest (AI)                        | 🔲 Planned  |
 | Anomaly detection + Q&A (AI)               | 🔲 Planned  |
 | Sondertilgung advisor (AI)                 | 🔲 Planned  |
