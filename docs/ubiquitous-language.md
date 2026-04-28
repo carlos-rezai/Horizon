@@ -242,6 +242,62 @@
 > engine falls back to index-based firing, which is only correct if the projection
 > happens to start in the right month."
 
+## Storage Architecture (new)
+
+| Term                   | Definition                                                                                                                                                                    | Aliases to avoid                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **Storage**            | The single facade interface that the Express app talks to for all persistence — exposes per-entity repositories as namespaces (`storage.accounts`, `storage.transactions`, …) | Database, persistence layer, data layer |
+| **Repository Facade**  | The architectural pattern Storage implements — Repository pattern (per-entity repos) + Facade pattern (one root object), equivalent in shape to EF Core's DbContext           | DAO, data context                       |
+| **Storage Driver**     | A concrete implementation of Storage targeting a specific backend — Horizon ships two: the **Mongo Driver** and the **SQLite Driver**                                         | Backend, adapter, provider              |
+| **Mongo Driver**       | The Storage Driver backed by MongoDB via Mongoose — used by the Cloud Build                                                                                                   | Mongo backend, mongo storage            |
+| **SQLite Driver**      | The Storage Driver backed by local SQLite via `better-sqlite3` — used by the Desktop Build                                                                                    | Local DB, sqlite backend                |
+| **AccountWithBalance** | A DTO returned by `accounts.findAllWithBalance` and `accounts.findByIdWithBalance` — an Account plus its derived `balance` (Opening Balance + sum of Transactions)            | Account-with-totals, enriched account   |
+| **Parity Spec**        | The shared test suite (`storage.parity.ts`) that every Storage Driver must satisfy — guarantees behavioural equivalence between the Mongo and SQLite drivers                  | Conformance suite, contract test        |
+| **Use-case Method**    | A repo method that hides multi-step or atomic logic behind a single call (e.g. `transfers.create`) — each Storage Driver implements atomicity with its own primitive          | Service method, domain method           |
+| **Migration**          | A numbered SQL file in `storage/sqlite/migrations/` applied in order against the SQLite database — versioned via `PRAGMA user_version`                                        | Schema change, DB upgrade               |
+
+## Build Targets (new)
+
+| Term              | Definition                                                                                                                                                                      | Aliases to avoid                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **Build Target**  | One of the two shipping shapes of Horizon — the **Cloud Build** or the **Desktop Build** — both run the same Express app against a different Storage Driver                     | Deployment, environment, version      |
+| **Cloud Build**   | The Vercel + Render + MongoDB Atlas deployment, gated by Google Auth — the portfolio-facing version of Horizon                                                                  | Production, web build, hosted version |
+| **Desktop Build** | The Electron app bundling the same Express server against a local SQLite database — single-user, offline, no auth, binds `127.0.0.1` only                                       | Offline build, local app, native app  |
+| **Owner**         | The single Google account authorized to access the Cloud Build — identified by the stable `sub` claim configured in `OWNER_GOOGLE_SUB`                                          | Admin, user, account holder           |
+| **Auth Gate**     | The global `requireOwner` Express middleware that verifies the Google ID token and matches the `sub` claim against the Owner allowlist of one — mounted only on the Cloud Build | Auth check, login guard               |
+
+## Relationships (additions)
+
+- **Storage** is implemented by exactly one **Storage Driver** at runtime — selected by the entrypoint via `STORAGE_DRIVER`
+- The **Cloud Build** uses the **Mongo Driver**; the **Desktop Build** uses the **SQLite Driver**
+- The **Auth Gate** runs only on the **Cloud Build** — the **Desktop Build** has no authentication
+- A single **Owner** is authorized for the **Cloud Build** — the model is single-tenant with auth-as-doorman, never multi-user
+- Every **Storage Driver** must pass the **Parity Spec** — drift between drivers is impossible to merge
+- An **AccountWithBalance** is derived inside the Storage layer — each driver computes it with its native primitive (Mongo aggregation pipeline, SQLite `LEFT JOIN ... GROUP BY`)
+- A **Use-case Method** owns its own atomicity — `transfers.create` is two-leg-or-nothing in both drivers
+
+## Example dialogue (Repository Abstraction)
+
+> **Dev:** "When a route handler asks for an account, what does it actually call?"
+>
+> **Domain expert:** "It calls `storage.accounts.findById(id)`. The route never sees Mongo, never sees SQLite — it sees the Storage facade. Whichever Storage Driver was wired up at startup answers the call."
+>
+> **Dev:** "And how is the driver decided?"
+>
+> **Domain expert:** "By the Build Target. The Cloud Build's entrypoint calls `createStorage('mongo')`; the Desktop Build's Electron main process calls `createStorage('sqlite')`. The Express app is identical in both cases."
+>
+> **Dev:** "What stops a malformed ID — like `{$ne: null}` — from reaching the Mongo driver?"
+>
+> **Domain expert:** "The repo handles it. Every method that takes an ID returns `null` for unparseable input rather than throwing or running a query. The Mongo driver checks `isValidObjectId` internally; the SQLite driver doesn't need to because parameterised queries are immune. From the route's perspective, the answer is just 'not found'."
+>
+> **Dev:** "And on the Cloud Build, who's allowed in?"
+>
+> **Domain expert:** "Just the Owner — one Google account, identified by `sub`, configured in `OWNER_GOOGLE_SUB`. The Auth Gate is global middleware, so a forgotten route can't accidentally leak. The Desktop Build skips the Auth Gate entirely because it's single-user and only listens on `127.0.0.1`."
+>
+> **Dev:** "How do we know the two drivers actually behave the same?"
+>
+> **Domain expert:** "The Parity Spec. One shared test suite, run twice — once against an in-memory Mongo, once against an in-memory SQLite. If a method behaves differently in either driver, a test fails."
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
@@ -267,3 +323,15 @@
 - **"current balance"** — never compute as Opening Balance + Transactions alone. In the
   Recurring-Only Projection Model the correct derivation is Opening Balance + Recurring
   History + Variable Spending. Using Transactions alone silently omits all recurring flows.
+- **"driver"** (new) — overloaded in software (DB driver, framework driver, hardware driver).
+  Always qualify as **Storage Driver** when referring to a Mongo or SQLite implementation
+  of the Storage facade.
+- **"build"** (new) — overloaded (compile output, CI build, deployment target). When the
+  meaning is "which shape of Horizon is running", use **Build Target**, **Cloud Build**, or
+  **Desktop Build** — never just "build".
+- **"user"** (new) — in the Cloud Build, the only authenticated identity is the **Owner**;
+  Horizon is single-tenant, so "user" should be reserved for UI/UX language ("the user
+  clicks…"). Never use "user" to imply multi-tenant data ownership in the data layer.
+- **"production"** (new) — historically used to mean "the deployed instance with real data".
+  Prefer **Cloud Build** when the contrast is with the Desktop Build, and reserve "production"
+  for environment-vs-development distinctions (production vs staging).
