@@ -162,7 +162,7 @@ Then open http://localhost:5173 in your browser.
 | Meridian design system                     | ✅ Complete |
 | Financial Projection Dashboard             | ✅ Complete |
 | Restschuld Trajectory Chart                | ✅ Complete |
-| Projection Engine Audit                    | 🔲 Planned  |
+| Projection Engine Audit                    | ✅ Complete |
 | Monthly digest (AI)                        | 🔲 Planned  |
 | Anomaly detection + Q&A (AI)               | 🔲 Planned  |
 | Sondertilgung advisor (AI)                 | 🔲 Planned  |
