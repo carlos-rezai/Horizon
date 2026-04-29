@@ -1,0 +1,35 @@
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { MongoMemoryServer } from "mongodb-memory-server";
+import { createStorage } from "../index.js";
+import type { Storage } from "../Storage.js";
+
+let mongod: MongoMemoryServer;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+});
+
+afterAll(async () => {
+  await mongod.stop();
+});
+
+describe("createStorage", () => {
+  it('returns a working Storage when called with "mongo"', async () => {
+    const storage: Storage = await createStorage("mongo", {
+      uri: mongod.getUri(),
+    });
+
+    expect(storage).toBeDefined();
+    expect(storage.accounts).toBeDefined();
+    expect(typeof storage.accounts.findAll).toBe("function");
+    expect(typeof storage.close).toBe("function");
+
+    await storage.close();
+  });
+
+  it('throws "not yet implemented" when called with "sqlite"', async () => {
+    await expect(createStorage("sqlite")).rejects.toThrow(
+      /not yet implemented/i
+    );
+  });
+});
