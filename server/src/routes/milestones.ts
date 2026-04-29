@@ -1,56 +1,50 @@
-import { Router } from "express";
-import mongoose from "mongoose";
-import { Milestone } from "../models/Milestone.js";
-import { Account } from "../models/Account.js";
+import { Router, type Request } from "express";
+import { MilestoneCreateSchema } from "../schemas/milestone.js";
+import type { Storage } from "../storage/Storage.js";
+import type { Milestone } from "../storage/types.js";
 
 const router = Router();
 
+function getStorage(req: Request): Storage {
+  return req.app.locals.storage;
+}
+
+function toWire(milestone: Milestone): Record<string, unknown> {
+  return {
+    _id: milestone.id,
+    name: milestone.name,
+    accountId: milestone.accountId,
+    targetBalance: milestone.targetBalance,
+  };
+}
+
 router.post("/", async (req, res) => {
-  const { name, accountId, targetBalance } = req.body;
-
-  if (!name || !accountId || targetBalance === undefined) {
-    res
-      .status(400)
-      .json({ error: "name, accountId, and targetBalance are required" });
+  const parsed = MilestoneCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
     return;
   }
 
-  if (typeof targetBalance !== "number" || targetBalance < 0) {
-    res
-      .status(400)
-      .json({ error: "targetBalance must be a non-negative number" });
-    return;
-  }
-
-  if (
-    !mongoose.isValidObjectId(accountId) ||
-    !(await Account.exists({ _id: accountId }))
-  ) {
+  const milestone = await getStorage(req).milestones.create(parsed.data);
+  if (!milestone) {
     res.status(404).json({ error: "Account not found" });
     return;
   }
 
-  const milestone = await Milestone.create({ name, accountId, targetBalance });
-  res.status(201).json(milestone.toJSON());
+  res.status(201).json(toWire(milestone));
 });
 
-router.get("/", async (_req, res) => {
-  const milestones = await Milestone.find();
-  res.json(milestones.map((m) => m.toJSON()));
+router.get("/", async (req, res) => {
+  const milestones = await getStorage(req).milestones.findAll();
+  res.json(milestones.map(toWire));
 });
 
 router.delete("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  const ok = await getStorage(req).milestones.delete(req.params.id);
+  if (!ok) {
     res.status(404).json({ error: "Milestone not found" });
     return;
   }
-
-  const milestone = await Milestone.findByIdAndDelete(req.params.id);
-  if (!milestone) {
-    res.status(404).json({ error: "Milestone not found" });
-    return;
-  }
-
   res.status(204).send();
 });
 

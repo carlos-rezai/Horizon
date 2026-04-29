@@ -1,108 +1,75 @@
-import { Router } from "express";
-import mongoose from "mongoose";
-import { RecurringTransaction } from "../models/RecurringTransaction.js";
+import { Router, type Request } from "express";
+import {
+  RecurringTransactionCreateSchema,
+  RecurringTransactionUpdateSchema,
+} from "../schemas/recurringTransaction.js";
+import type { Storage } from "../storage/Storage.js";
+import type { RecurringTransaction } from "../storage/types.js";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
-  const {
-    accountId,
-    amount,
-    description,
-    category,
-    frequency,
-    dayOfMonth,
-    linkedAccountId,
-    monthOfYear,
-  } = req.body;
+function getStorage(req: Request): Storage {
+  return req.app.locals.storage;
+}
 
-  if (
-    !accountId ||
-    amount === undefined ||
-    !description ||
-    !category ||
-    !frequency ||
-    dayOfMonth === undefined
-  ) {
-    res.status(400).json({
-      error:
-        "accountId, amount, description, category, frequency, and dayOfMonth are required",
-    });
+function toWire(r: RecurringTransaction): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    _id: r.id,
+    accountId: r.accountId,
+    amount: r.amount,
+    description: r.description,
+    category: r.category,
+    frequency: r.frequency,
+    dayOfMonth: r.dayOfMonth,
+    isActive: r.isActive,
+  };
+  if (r.linkedAccountId !== undefined) out.linkedAccountId = r.linkedAccountId;
+  if (r.monthOfYear !== undefined) out.monthOfYear = r.monthOfYear;
+  return out;
+}
+
+router.post("/", async (req, res) => {
+  const parsed = RecurringTransactionCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
     return;
   }
 
-  const recurring = await RecurringTransaction.create({
-    accountId,
-    amount,
-    description,
-    category,
-    frequency,
-    dayOfMonth,
-    ...(linkedAccountId !== undefined && { linkedAccountId }),
-    ...(monthOfYear !== undefined && { monthOfYear }),
-  });
-
-  res.status(201).json(recurring.toJSON());
+  const created = await getStorage(req).recurringTransactions.create(
+    parsed.data
+  );
+  res.status(201).json(toWire(created));
 });
 
-router.get("/", async (_req, res) => {
-  const recurrings = await RecurringTransaction.find();
-  res.json(recurrings.map((r) => r.toJSON()));
+router.get("/", async (req, res) => {
+  const all = await getStorage(req).recurringTransactions.findAll();
+  res.json(all.map(toWire));
 });
 
 router.patch("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    res.status(404).json({ error: "Recurring transaction not found" });
+  const parsed = RecurringTransactionUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
     return;
   }
 
-  const {
-    amount,
-    description,
-    category,
-    isActive,
-    frequency,
-    dayOfMonth,
-    linkedAccountId,
-    monthOfYear,
-  } = req.body;
-  const update: Record<string, unknown> = {};
-  if (amount !== undefined) update.amount = amount;
-  if (description !== undefined) update.description = description;
-  if (category !== undefined) update.category = category;
-  if (isActive !== undefined) update.isActive = isActive;
-  if (frequency !== undefined) update.frequency = frequency;
-  if (dayOfMonth !== undefined) update.dayOfMonth = dayOfMonth;
-  if (linkedAccountId !== undefined) update.linkedAccountId = linkedAccountId;
-  if (monthOfYear !== undefined) update.monthOfYear = monthOfYear;
-
-  const recurring = await RecurringTransaction.findByIdAndUpdate(
+  const updated = await getStorage(req).recurringTransactions.update(
     req.params.id,
-    update,
-    { returnDocument: "after" }
+    parsed.data
   );
-
-  if (!recurring) {
+  if (!updated) {
     res.status(404).json({ error: "Recurring transaction not found" });
     return;
   }
-
-  res.json(recurring.toJSON());
+  res.json(toWire(updated));
 });
 
 router.delete("/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  const ok = await getStorage(req).recurringTransactions.delete(req.params.id);
+  if (!ok) {
     res.status(404).json({ error: "Recurring transaction not found" });
     return;
   }
-
-  const recurring = await RecurringTransaction.findById(req.params.id);
-  if (!recurring) {
-    res.status(404).json({ error: "Recurring transaction not found" });
-    return;
-  }
-
-  await recurring.deleteOne();
   res.status(204).send();
 });
 

@@ -1,10 +1,12 @@
-import { Router } from "express";
-import { Account } from "../models/Account.js";
-import { Transaction } from "../models/Transaction.js";
-import { RecurringTransaction } from "../models/RecurringTransaction.js";
+import { Router, type Request } from "express";
 import { projectBalances } from "../lib/projection.js";
+import type { Storage } from "../storage/Storage.js";
 
 const router = Router();
+
+function getStorage(req: Request): Storage {
+  return req.app.locals.storage;
+}
 
 function currentMonth(): string {
   const now = new Date();
@@ -12,21 +14,22 @@ function currentMonth(): string {
 }
 
 router.get("/", async (req, res) => {
+  const storage = getStorage(req);
   const [accounts, transactions, recurringTransactions] = await Promise.all([
-    Account.find(),
-    Transaction.find(),
-    RecurringTransaction.find({ isActive: true }),
+    storage.accounts.findAll(),
+    storage.transactions.findAll(),
+    storage.recurringTransactions.findActive(),
   ]);
 
   const accountEntries = accounts.map((a) => ({
-    _id: String(a._id),
+    _id: a.id,
     kind: a.kind,
     openingBalance: a.openingBalance,
     openingDate: a.openingDate,
   }));
 
   const transactionEntries = transactions.map((tx) => ({
-    accountId: String(tx.accountId),
+    accountId: tx.accountId,
     date: tx.date,
     amount: tx.amount,
   }));
@@ -37,8 +40,10 @@ router.get("/", async (req, res) => {
     frequency: r.frequency,
     dayOfMonth: r.dayOfMonth,
     isActive: r.isActive,
-    ...(r.linkedAccountId != null && { linkedAccountId: r.linkedAccountId }),
-    ...(r.monthOfYear != null && { monthOfYear: r.monthOfYear }),
+    ...(r.linkedAccountId !== undefined && {
+      linkedAccountId: r.linkedAccountId,
+    }),
+    ...(r.monthOfYear !== undefined && { monthOfYear: r.monthOfYear }),
   }));
 
   const from = currentMonth();

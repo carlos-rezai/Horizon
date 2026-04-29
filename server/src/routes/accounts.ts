@@ -1,5 +1,4 @@
 import { Router, type Request } from "express";
-import { Transaction } from "../models/Transaction.js";
 import {
   AccountCreateSchema,
   AccountUpdateSchema,
@@ -55,22 +54,21 @@ router.get("/liquid", async (req, res) => {
 });
 
 router.get("/:id/cashflow", async (req, res) => {
-  const account = await getStorage(req).accounts.findById(req.params.id);
+  const storage = getStorage(req);
+  const account = await storage.accounts.findById(req.params.id);
   if (!account) {
     res.status(404).json({ error: "Account not found" });
     return;
   }
 
   const { month } = req.query;
-  const allTxs = await Transaction.find({ accountId: account.id });
-
-  const txs = (
-    typeof month === "string"
-      ? allTxs.filter((tx) => tx.date.startsWith(month))
-      : allTxs
-  ).map((tx) => ({
+  const allTxs = await storage.transactions.findByAccount(
+    account.id,
+    typeof month === "string" ? { month } : undefined
+  );
+  const txs = allTxs.map((tx) => ({
     amount: tx.amount,
-    accountId: String(tx.accountId),
+    accountId: tx.accountId,
     transferId: tx.transferId,
   }));
 
