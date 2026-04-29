@@ -1,0 +1,22 @@
+import type { Storage } from "./Storage.js";
+import { createMongoStorage } from "./mongo/MongoStorage.js";
+
+export interface CreateStorageOptions {
+  uri?: string;
+}
+
+export async function createStorage(
+  driver: "mongo" | "sqlite",
+  options?: CreateStorageOptions
+): Promise<Storage> {
+  if (driver === "mongo") {
+    if (!options?.uri) {
+      throw new Error("Mongo storage driver requires a 'uri' option");
+    }
+    return createMongoStorage(options.uri);
+  }
+  if (driver === "sqlite") {
+    throw new Error("SQLite storage driver: not yet implemented");
+  }
+  throw new Error(`Unknown storage driver: ${String(driver)}`);
+}
