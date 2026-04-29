@@ -3,7 +3,14 @@ import type {
   AccountCreateInput,
   AccountUpdateInput,
   AccountWithBalance,
+  Category,
+  CategoryCreateInput,
   DeleteResult,
+  Milestone,
+  MilestoneCreateInput,
+  RecurringTransaction,
+  RecurringTransactionCreateInput,
+  RecurringTransactionUpdateInput,
   Transaction,
   TransactionCreateInput,
   TransactionUpdateInput,
@@ -44,9 +51,35 @@ export interface TransfersRepo {
   delete(transferId: string): Promise<boolean>;
 }
 
+export interface CategoriesRepo {
+  findAll(): Promise<Category[]>;
+  create(input: CategoryCreateInput): Promise<Category>;
+  delete(id: string): Promise<DeleteResult | null>;
+}
+
+export interface MilestonesRepo {
+  findAll(): Promise<Milestone[]>;
+  create(input: MilestoneCreateInput): Promise<Milestone | null>;
+  delete(id: string): Promise<boolean>;
+}
+
+export interface RecurringTransactionsRepo {
+  findAll(): Promise<RecurringTransaction[]>;
+  findActive(): Promise<RecurringTransaction[]>;
+  create(input: RecurringTransactionCreateInput): Promise<RecurringTransaction>;
+  update(
+    id: string,
+    input: RecurringTransactionUpdateInput
+  ): Promise<RecurringTransaction | null>;
+  delete(id: string): Promise<boolean>;
+}
+
 export interface Storage {
   accounts: AccountsRepo;
   transactions: TransactionsRepo;
   transfers: TransfersRepo;
+  categories: CategoriesRepo;
+  milestones: MilestonesRepo;
+  recurringTransactions: RecurringTransactionsRepo;
   close(): Promise<void>;
 }
