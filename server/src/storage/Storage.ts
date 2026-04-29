@@ -4,6 +4,10 @@ import type {
   AccountUpdateInput,
   AccountWithBalance,
   DeleteResult,
+  Transaction,
+  TransactionCreateInput,
+  TransactionUpdateInput,
+  TransferCreateInput,
 } from "./types.js";
 
 export interface AccountsRepo {
@@ -17,7 +21,32 @@ export interface AccountsRepo {
   getTotalLiquid(): Promise<number>;
 }
 
+export interface TransactionsRepo {
+  findAll(): Promise<Transaction[]>;
+  findByAccount(
+    accountId: string,
+    opts?: { month?: string }
+  ): Promise<Transaction[]>;
+  findByTransferId(transferId: string): Promise<Transaction[]>;
+  create(
+    accountId: string,
+    input: TransactionCreateInput
+  ): Promise<Transaction | null>;
+  update(
+    id: string,
+    input: TransactionUpdateInput
+  ): Promise<Transaction | null>;
+  delete(id: string): Promise<DeleteResult | null>;
+}
+
+export interface TransfersRepo {
+  create(input: TransferCreateInput): Promise<{ transferId: string } | null>;
+  delete(transferId: string): Promise<boolean>;
+}
+
 export interface Storage {
   accounts: AccountsRepo;
+  transactions: TransactionsRepo;
+  transfers: TransfersRepo;
   close(): Promise<void>;
 }

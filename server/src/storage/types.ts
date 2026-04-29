@@ -34,4 +34,39 @@ export interface AccountUpdateInput {
 
 export type DeleteResult =
   | { ok: true }
-  | { ok: false; reason: "has_transactions" };
+  | { ok: false; reason: "has_transactions" }
+  | { ok: false; reason: "is_transfer_leg" };
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+  transferId?: string;
+  recurringTransactionId?: string;
+}
+
+export interface TransactionCreateInput {
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+}
+
+export interface TransactionUpdateInput {
+  date?: string;
+  amount?: number;
+  description?: string;
+  category?: string;
+}
+
+export interface TransferCreateInput {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  date: string;
+  description: string;
+  category: string;
+}

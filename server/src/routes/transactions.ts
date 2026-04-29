@@ -1,110 +1,94 @@
-import { Router } from "express";
-import mongoose from "mongoose";
-import { Account } from "../models/Account.js";
-import { Transaction } from "../models/Transaction.js";
+import { Router, type Request } from "express";
+import {
+  TransactionCreateSchema,
+  TransactionUpdateSchema,
+} from "../schemas/transaction.js";
+import type { Storage } from "../storage/Storage.js";
+import type { Transaction } from "../storage/types.js";
 
 const router = Router();
 
+function getStorage(req: Request): Storage {
+  return req.app.locals.storage;
+}
+
+function toWire(tx: Transaction): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    _id: tx.id,
+    accountId: tx.accountId,
+    date: tx.date,
+    amount: tx.amount,
+    description: tx.description,
+    category: tx.category,
+  };
+  if (tx.transferId !== undefined) out.transferId = tx.transferId;
+  if (tx.recurringTransactionId !== undefined) {
+    out.recurringTransactionId = tx.recurringTransactionId;
+  }
+  return out;
+}
+
 router.post("/accounts/:id/transactions", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  const parsed = TransactionCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
+    return;
+  }
+
+  const created = await getStorage(req).transactions.create(
+    req.params.id,
+    parsed.data
+  );
+  if (!created) {
     res.status(404).json({ error: "Account not found" });
     return;
   }
 
-  const account = await Account.findById(req.params.id);
-  if (!account) {
-    res.status(404).json({ error: "Account not found" });
-    return;
-  }
-
-  const { date, amount, description, category } = req.body;
-  if (!date || amount === undefined || !description || !category) {
-    res
-      .status(400)
-      .json({ error: "date, amount, description, and category are required" });
-    return;
-  }
-
-  const transaction = await Transaction.create({
-    accountId: account._id,
-    date,
-    amount,
-    description,
-    category,
-  });
-
-  res.status(201).json(transaction.toJSON());
+  res.status(201).json(toWire(created));
 });
 
 router.get("/accounts/:id/transactions", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    res.status(404).json({ error: "Account not found" });
-    return;
-  }
-
-  const account = await Account.findById(req.params.id);
+  const account = await getStorage(req).accounts.findById(req.params.id);
   if (!account) {
     res.status(404).json({ error: "Account not found" });
     return;
   }
 
-  const transactions = await Transaction.find({ accountId: account._id }).sort({
-    date: -1,
-  });
-  res.json(transactions.map((t) => t.toJSON()));
+  const txs = await getStorage(req).transactions.findByAccount(req.params.id);
+  res.json(txs.map(toWire));
 });
 
 router.patch("/transactions/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    res.status(404).json({ error: "Transaction not found" });
+  const parsed = TransactionUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
     return;
   }
 
-  const { amount, description, category, date } = req.body;
-  const update: Record<string, unknown> = {};
-  if (amount !== undefined) update.amount = amount;
-  if (description !== undefined) update.description = description;
-  if (category !== undefined) update.category = category;
-  if (date !== undefined) update.date = date;
-
-  const transaction = await Transaction.findByIdAndUpdate(
+  const updated = await getStorage(req).transactions.update(
     req.params.id,
-    update,
-    {
-      returnDocument: "after",
-    }
+    parsed.data
   );
-
-  if (!transaction) {
+  if (!updated) {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
 
-  res.json(transaction.toJSON());
+  res.json(toWire(updated));
 });
 
 router.delete("/transactions/:id", async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
+  const result = await getStorage(req).transactions.delete(req.params.id);
+  if (result === null) {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
-
-  const transaction = await Transaction.findById(req.params.id);
-  if (!transaction) {
-    res.status(404).json({ error: "Transaction not found" });
+  if (!result.ok) {
+    res.status(409).json({
+      error: "Use DELETE /transfers/:transferId to remove a transfer",
+    });
     return;
   }
-
-  if (transaction.transferId) {
-    res
-      .status(409)
-      .json({
-        error: "Use DELETE /transfers/:transferId to remove a transfer",
-      });
-    return;
-  }
-
-  await transaction.deleteOne();
   res.status(204).send();
 });
 

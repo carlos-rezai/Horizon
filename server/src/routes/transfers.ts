@@ -1,65 +1,49 @@
-import { Router } from "express";
-import { randomUUID } from "crypto";
-import mongoose from "mongoose";
-import { Account } from "../models/Account.js";
-import { Transaction } from "../models/Transaction.js";
+import { Router, type Request } from "express";
+import { TransferCreateSchema } from "../schemas/transfer.js";
+import type { Storage } from "../storage/Storage.js";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
-  const { fromAccountId, toAccountId, amount, date, description, category } =
-    req.body;
+function getStorage(req: Request): Storage {
+  return req.app.locals.storage;
+}
 
-  if (
-    !mongoose.isValidObjectId(fromAccountId) ||
-    !(await Account.findById(fromAccountId))
-  ) {
-    res.status(404).json({ error: "Source account not found" });
+router.post("/", async (req, res) => {
+  const parsed = TransferCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
     return;
   }
 
-  if (
-    !mongoose.isValidObjectId(toAccountId) ||
-    !(await Account.findById(toAccountId))
-  ) {
+  const storage = getStorage(req);
+  const fromAccount = await storage.accounts.findById(
+    parsed.data.fromAccountId
+  );
+  if (!fromAccount) {
+    res.status(404).json({ error: "Source account not found" });
+    return;
+  }
+  const toAccount = await storage.accounts.findById(parsed.data.toAccountId);
+  if (!toAccount) {
     res.status(404).json({ error: "Destination account not found" });
     return;
   }
 
-  const transferId = randomUUID();
-
-  await Transaction.create([
-    {
-      accountId: fromAccountId,
-      date,
-      amount: -amount,
-      description,
-      category,
-      transferId,
-    },
-    {
-      accountId: toAccountId,
-      date,
-      amount,
-      description,
-      category,
-      transferId,
-    },
-  ]);
-
-  res.status(201).json({ transferId });
-});
-
-router.delete("/:transferId", async (req, res) => {
-  const { transferId } = req.params;
-
-  const legs = await Transaction.find({ transferId });
-  if (legs.length === 0) {
-    res.status(404).json({ error: "Transfer not found" });
+  const result = await storage.transfers.create(parsed.data);
+  if (!result) {
+    res.status(404).json({ error: "Account not found" });
     return;
   }
 
-  await Transaction.deleteMany({ transferId });
+  res.status(201).json(result);
+});
+
+router.delete("/:transferId", async (req, res) => {
+  const ok = await getStorage(req).transfers.delete(req.params.transferId);
+  if (!ok) {
+    res.status(404).json({ error: "Transfer not found" });
+    return;
+  }
   res.status(204).send();
 });
 

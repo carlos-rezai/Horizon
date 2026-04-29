@@ -1,14 +1,14 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { createStorage } from "../index.js";
 import type { Storage } from "../Storage.js";
 import type { Account } from "../types.js";
 
-let mongod: MongoMemoryServer;
+let mongod: MongoMemoryReplSet;
 let storage: Storage;
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
+  mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   storage = await createStorage("mongo", { uri: mongod.getUri() });
 });
 

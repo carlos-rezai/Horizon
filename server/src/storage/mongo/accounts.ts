@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { Account as AccountModel } from "../../models/Account.js";
-import { Transaction } from "../../models/Transaction.js";
-import type { AccountsRepo } from "../Storage.js";
+import type { AccountsRepo, TransactionsRepo } from "../Storage.js";
 import type { Account, AccountKind, AccountWithBalance } from "../types.js";
 
 interface AccountDoc {
@@ -54,7 +53,9 @@ const balanceLookupStages: mongoose.PipelineStage[] = [
   { $project: { txs: 0 } },
 ];
 
-export function createMongoAccountsRepo(): AccountsRepo {
+export function createMongoAccountsRepo(
+  transactions: TransactionsRepo
+): AccountsRepo {
   return {
     async create(input) {
       const doc = await AccountModel.create({
@@ -100,8 +101,8 @@ export function createMongoAccountsRepo(): AccountsRepo {
       if (!mongoose.isValidObjectId(id)) return null;
       const doc = await AccountModel.findById(id);
       if (!doc) return null;
-      const hasTransactions = await Transaction.exists({ accountId: doc._id });
-      if (hasTransactions) return { ok: false, reason: "has_transactions" };
+      const txs = await transactions.findByAccount(id);
+      if (txs.length > 0) return { ok: false, reason: "has_transactions" };
       await doc.deleteOne();
       return { ok: true };
     },
