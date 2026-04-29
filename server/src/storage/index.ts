@@ -3,6 +3,7 @@ import { createMongoStorage } from "./mongo/MongoStorage.js";
 
 export interface CreateStorageOptions {
   uri?: string;
+  path?: string;
 }
 
 export async function createStorage(
