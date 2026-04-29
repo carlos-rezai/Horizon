@@ -1,30 +1,26 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
-import { MongoMemoryServer } from "mongodb-memory-server";
-import { createApp } from "../app.js";
-import { projectBalances } from "../lib/projection.js";
 import type { Express } from "express";
+import { projectBalances } from "../lib/projection.js";
+import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
 
-let mongod: MongoMemoryServer;
 let app: Express;
+let reset: () => Promise<void>;
+let cleanup: () => Promise<void>;
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  app = await createApp(mongod.getUri());
+  const handle = await createSqliteAppHandle();
+  app = handle.app;
+  reset = handle.reset;
+  cleanup = handle.cleanup;
 });
 
 afterAll(async () => {
-  await mongod.stop();
+  await cleanup();
 });
 
 afterEach(async () => {
-  const { connection } = await import("mongoose");
-  const collections = await connection.db?.collections();
-  if (collections) {
-    for (const collection of collections) {
-      await collection.deleteMany({});
-    }
-  }
+  await reset();
 });
 
 // ---------------------------------------------------------------------------

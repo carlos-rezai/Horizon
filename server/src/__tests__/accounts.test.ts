@@ -1,35 +1,25 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
-import { MongoMemoryServer } from "mongodb-memory-server";
-import { createApp } from "../app.js";
-import { createStorage } from "../storage/index.js";
-import type { Storage } from "../storage/Storage.js";
 import type { Express } from "express";
+import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
 
-let mongod: MongoMemoryServer;
-let storage: Storage;
 let app: Express;
+let reset: () => Promise<void>;
+let cleanup: () => Promise<void>;
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  storage = await createStorage("mongo", { uri: mongod.getUri() });
-  app = await createApp(storage);
+  const handle = await createSqliteAppHandle();
+  app = handle.app;
+  reset = handle.reset;
+  cleanup = handle.cleanup;
 });
 
 afterAll(async () => {
-  await storage.close();
-  await mongod.stop();
+  await cleanup();
 });
 
 afterEach(async () => {
-  // Each test gets a clean DB state — drop all collections between tests
-  const { connection } = await import("mongoose");
-  const collections = await connection.db?.collections();
-  if (collections) {
-    for (const collection of collections) {
-      await collection.deleteMany({});
-    }
-  }
+  await reset();
 });
 
 // ---------------------------------------------------------------------------
@@ -262,9 +252,7 @@ describe("DELETE /accounts/:id", () => {
       openingDate: "2026-03-01",
     });
 
-    const { Transaction } = await import("../models/Transaction.js");
-    await Transaction.create({
-      accountId: created.body._id,
+    await request(app).post(`/accounts/${created.body._id}/transactions`).send({
       date: "2026-03-15",
       amount: -1000,
       description: "Coffee",

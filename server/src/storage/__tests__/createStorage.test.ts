@@ -27,9 +27,16 @@ describe("createStorage", () => {
     await storage.close();
   });
 
-  it('throws "not yet implemented" when called with "sqlite"', async () => {
-    await expect(createStorage("sqlite")).rejects.toThrow(
-      /not yet implemented/i
-    );
+  it('returns a working Storage when called with "sqlite"', async () => {
+    const storage: Storage = await createStorage("sqlite", {
+      path: ":memory:",
+    });
+
+    expect(storage).toBeDefined();
+    expect(storage.accounts).toBeDefined();
+    expect(typeof storage.accounts.findAll).toBe("function");
+    expect(typeof storage.close).toBe("function");
+
+    await storage.close();
   });
 });

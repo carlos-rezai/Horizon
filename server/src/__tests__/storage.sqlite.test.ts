@@ -4,19 +4,41 @@ import type { Storage } from "../storage/Storage.js";
 import { runStorageSpec } from "./storage.parity.js";
 
 describe("SQLite Storage Driver — parity", () => {
-  let storage: Storage;
+  let inner: Storage;
+
+  const wrapped: Storage = {
+    get accounts() {
+      return inner.accounts;
+    },
+    get transactions() {
+      return inner.transactions;
+    },
+    get transfers() {
+      return inner.transfers;
+    },
+    get categories() {
+      return inner.categories;
+    },
+    get milestones() {
+      return inner.milestones;
+    },
+    get recurringTransactions() {
+      return inner.recurringTransactions;
+    },
+    close: () => inner.close(),
+  };
 
   runStorageSpec(async () => {
-    storage = await createStorage("sqlite", { path: ":memory:" });
+    inner = await createStorage("sqlite", { path: ":memory:" });
 
     return {
-      storage,
+      storage: wrapped,
       reset: async () => {
-        await storage.close();
-        storage = await createStorage("sqlite", { path: ":memory:" });
+        await inner.close();
+        inner = await createStorage("sqlite", { path: ":memory:" });
       },
       cleanup: async () => {
-        await storage.close();
+        await inner.close();
       },
     };
   });
