@@ -1,5 +1,38 @@
 # Dev Journal
 
+## 2026-05-01 — Repository Abstraction refactor close-out (issue #54)
+
+Six leaks left over from the Repository Abstraction shipping (issues #51–#53)
+are now closed before the Desktop Build slice begins.
+
+**Wire format.** Routes now `res.json` Storage DTOs directly. The `_id` shim
+is gone from every route and the SPA reads `id` end-to-end. There is no
+backwards-compatibility window — Horizon has one client and the rename was
+mechanical. `lib/projection.ts` accepts the same DTO shape (`id`, not `_id`).
+
+**SQLite foreign keys.** Migration `002_foreign_keys.sql` rebuilds
+`transactions`, `recurring_transactions`, and `milestones` with `REFERENCES
+accounts(id)` (no cascade — application-level guards fire first and produce
+409s). `migrate.ts` enables `PRAGMA foreign_keys = ON` for every connection
+before pending migrations run, since the pragma is per-connection in SQLite.
+
+**Account delete.** Both drivers' `accounts.delete` now reject deletion when
+recurring transactions (active _or_ inactive, on `accountId` _or_
+`linkedAccountId`) or milestones still reference the account. The route
+maps `{ ok: false, reason: "in_use" }` to a 409 with reason-specific copy.
+
+**Recurring create.** Both drivers' `recurringTransactions.create` validate
+`accountId` and (when provided) `linkedAccountId`, returning `null` for
+unparseable or unknown ids — same contract as `milestones.create`. The
+repo's return type is now `Promise<RecurringTransaction | null>`. The route
+surfaces `null` as 404.
+
+**What changed for callers.** Tests that previously POSTed against a fake
+account id now have to create a real one first. `FAKE_ACCOUNT_ID` is gone
+from `recurringTransactions.test.ts` and the storage-only Mongo recurring
+test. Wire format flipped from `_id` to `id` — anything reading the SPA's
+network responses externally would need to update.
+
 ## 2026-04-19 — `monthOfYear` schema migration (recurring transactions)
 
 Added optional `monthOfYear` (integer 1–12) to the `RecurringTransaction` Mongoose
