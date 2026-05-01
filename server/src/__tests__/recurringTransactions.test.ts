@@ -7,16 +7,22 @@ let app: Express;
 let reset: () => Promise<void>;
 let cleanup: () => Promise<void>;
 
-// A non-existent account id used for CRUD tests that don't depend on the
-// account actually existing in the DB.
-const FAKE_ACCOUNT_ID = "000000000000000000000001";
-
 beforeAll(async () => {
   const handle = await createSqliteAppHandle();
   app = handle.app;
   reset = handle.reset;
   cleanup = handle.cleanup;
 });
+
+async function createAccount(): Promise<string> {
+  const res = await request(app).post("/accounts").send({
+    kind: "Girokonto",
+    name: "Main",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+  });
+  return res.body.id as string;
+}
 
 afterAll(async () => {
   await cleanup();
@@ -32,8 +38,9 @@ afterEach(async () => {
 
 describe("POST /recurring-transactions", () => {
   it("creates a standing order and returns 201 with all fields including accountId", async () => {
+    const accountId = await createAccount();
     const res = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -43,7 +50,7 @@ describe("POST /recurring-transactions", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBeDefined();
-    expect(res.body.accountId).toBe(FAKE_ACCOUNT_ID);
+    expect(res.body.accountId).toBe(accountId);
     expect(res.body.amount).toBe(95000);
     expect(res.body.description).toBe("Rent");
     expect(res.body.category).toBe("Housing");
@@ -82,8 +89,9 @@ describe("POST /recurring-transactions", () => {
   });
 
   it("accepts quarterly frequency", async () => {
+    const accountId = await createAccount();
     const res = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 30000,
       description: "Insurance",
       category: "Miscellaneous",
@@ -96,8 +104,9 @@ describe("POST /recurring-transactions", () => {
   });
 
   it("accepts annual frequency", async () => {
+    const accountId = await createAccount();
     const res = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 120000,
       description: "Annual subscription",
       category: "Subscriptions",
@@ -122,8 +131,9 @@ describe("POST /recurring-transactions", () => {
   });
 
   it("returns 400 when other required fields are missing", async () => {
+    const accountId = await createAccount();
     const res = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
     });
@@ -138,8 +148,9 @@ describe("POST /recurring-transactions", () => {
 
 describe("GET /recurring-transactions", () => {
   it("returns all recurring transactions including inactive ones", async () => {
+    const accountId = await createAccount();
     await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -148,7 +159,7 @@ describe("GET /recurring-transactions", () => {
     });
 
     const createRes = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 20000,
       description: "Gym",
       category: "Subscriptions",
@@ -185,8 +196,9 @@ describe("GET /recurring-transactions", () => {
 
 describe("PATCH /recurring-transactions/:id", () => {
   it("updates amount, description, and category", async () => {
+    const accountId = await createAccount();
     const createRes = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -205,8 +217,9 @@ describe("PATCH /recurring-transactions/:id", () => {
   });
 
   it("deactivates a standing order with isActive: false", async () => {
+    const accountId = await createAccount();
     const createRes = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -224,8 +237,9 @@ describe("PATCH /recurring-transactions/:id", () => {
   });
 
   it("reactivates a standing order with isActive: true", async () => {
+    const accountId = await createAccount();
     const createRes = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -261,8 +275,9 @@ describe("PATCH /recurring-transactions/:id", () => {
 
 describe("DELETE /recurring-transactions/:id", () => {
   it("removes the standing order permanently", async () => {
+    const accountId = await createAccount();
     const createRes = await request(app).post("/recurring-transactions").send({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
