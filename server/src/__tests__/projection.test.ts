@@ -1117,3 +1117,42 @@ describe("projectBalances - correctness verification suite", () => {
     expect(snapshots[12].accounts["mortgage"].projected).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function: accepts DTO-shaped account input (`id`, not `_id`)
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - accepts DTO shape", () => {
+  it("uses `id` (Storage DTO shape) on account input, not the legacy `_id`", () => {
+    const accounts = [
+      {
+        id: "a1",
+        kind: "Girokonto" as const,
+        openingBalance: 100000,
+        openingDate: "2026-04-01",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "a1",
+        amount: -25000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // Month 0: 100000 - 25000 = 75000 — must be addressable by `id` "a1"
+    expect(snapshots[0].accounts["a1"]).toBeDefined();
+    expect(snapshots[0].accounts["a1"].projected).toBe(75000);
+    // Month 1: 75000 - 25000 = 50000
+    expect(snapshots[1].accounts["a1"].projected).toBe(50000);
+  });
+});
