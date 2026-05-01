@@ -87,7 +87,7 @@ export function useTransactions(accountId: string): UseTransactionsResult {
     }
 
     const updated = (await res.json()) as Transaction;
-    setTransactions((prev) => prev.map((tx) => (tx._id === id ? updated : tx)));
+    setTransactions((prev) => prev.map((tx) => (tx.id === id ? updated : tx)));
   }
 
   async function remove(id: string): Promise<void> {
@@ -100,7 +100,7 @@ export function useTransactions(accountId: string): UseTransactionsResult {
       throw new Error(data.error ?? "Failed to delete transaction");
     }
 
-    setTransactions((prev) => prev.filter((tx) => tx._id !== id));
+    setTransactions((prev) => prev.filter((tx) => tx.id !== id));
   }
 
   async function removeTransfer(transferId: string): Promise<void> {

@@ -92,7 +92,7 @@ export default function CategorySelect({ onChange, initialCategoryId }: Props) {
           disabled={isAdding}
         >
           {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
+            <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
           ))}

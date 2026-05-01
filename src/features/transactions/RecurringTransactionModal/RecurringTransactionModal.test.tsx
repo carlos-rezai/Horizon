@@ -14,12 +14,12 @@ afterEach(() => {
 });
 
 const categories: Category[] = [
-  { _id: "cat-1", name: "Housing", isDefault: true },
+  { id: "cat-1", name: "Housing", isDefault: true },
 ];
 
 const otherAccounts: AccountWithBalance[] = [
   {
-    _id: "acc-2",
+    id: "acc-2",
     kind: "Tagesgeld",
     name: "DKB Reserve",
     openingBalance: 200000,
@@ -27,7 +27,7 @@ const otherAccounts: AccountWithBalance[] = [
     balance: 220000,
   },
   {
-    _id: "acc-3",
+    id: "acc-3",
     kind: "Mortgage",
     name: "Home Loan",
     openingBalance: -30000000,
@@ -37,7 +37,7 @@ const otherAccounts: AccountWithBalance[] = [
 ];
 
 const existingRt: RecurringTransaction = {
-  _id: "rt-1",
+  id: "rt-1",
   accountId: "acc-1",
   amount: -120000,
   description: "Rent",

@@ -1,7 +1,7 @@
 export type RecurringFrequency = "monthly" | "quarterly" | "annual";
 
 export interface RecurringTransaction {
-  _id: string;
+  id: string;
   accountId: string;
   amount: number;
   description: string;

@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 const regularTransaction: Transaction = {
-  _id: "txn-1",
+  id: "txn-1",
   accountId: "acc-1",
   date: "2026-03-01",
   amount: -5000,
@@ -27,7 +27,7 @@ const regularTransaction: Transaction = {
 };
 
 const transferTransaction: Transaction = {
-  _id: "txn-2",
+  id: "txn-2",
   accountId: "acc-1",
   date: "2026-03-10",
   amount: -50000,
@@ -120,7 +120,7 @@ describe("TransactionEditModal — save", () => {
 
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalledWith(
-        expect.objectContaining({ _id: "txn-1" })
+        expect.objectContaining({ id: "txn-1" })
       );
     });
   });

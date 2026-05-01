@@ -37,7 +37,7 @@ export default function MilestoneTracker({
   onDelete,
 }: Props) {
   const [name, setName] = useState("");
-  const [accountId, setAccountId] = useState(accounts[0]?._id ?? "");
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const [targetBalance, setTargetBalance] = useState("");
 
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export default function MilestoneTracker({
               onChange={(e) => setAccountId(e.target.value)}
             >
               {accounts.map((a) => (
-                <option key={a._id} value={a._id}>
+                <option key={a.id} value={a.id}>
                   {a.name}
                 </option>
               ))}
@@ -108,7 +108,7 @@ export default function MilestoneTracker({
       ) : (
         <StyledMilestoneList>
           {milestones.map((milestone) => {
-            const account = accounts.find((a) => a._id === milestone.accountId);
+            const account = accounts.find((a) => a.id === milestone.accountId);
             const completionMonth = account
               ? findMilestoneMonth(
                   snapshots,
@@ -119,7 +119,7 @@ export default function MilestoneTracker({
               : null;
 
             return (
-              <StyledMilestoneCard key={milestone._id}>
+              <StyledMilestoneCard key={milestone.id}>
                 <StyledMilestoneName>{milestone.name}</StyledMilestoneName>
                 <StyledMilestoneDetail>
                   {account?.name ?? "Unknown account"}
@@ -136,10 +136,7 @@ export default function MilestoneTracker({
                     {completionMonth}
                   </StyledMilestoneDetail>
                 )}
-                <Button
-                  variant="danger"
-                  onClick={() => onDelete(milestone._id)}
-                >
+                <Button variant="danger" onClick={() => onDelete(milestone.id)}>
                   Delete
                 </Button>
               </StyledMilestoneCard>

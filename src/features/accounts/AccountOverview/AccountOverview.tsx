@@ -32,8 +32,8 @@ export default function AccountOverview({ accounts }: Props) {
       {accounts.map((account) => {
         const isLiability = LIABILITY_KINDS.has(account.kind);
         return (
-          <li key={account._id}>
-            <StyledAccountLink as={Link} to={`/accounts/${account._id}`}>
+          <li key={account.id}>
+            <StyledAccountLink as={Link} to={`/accounts/${account.id}`}>
               <StyledAccountName>{account.name}</StyledAccountName>
               <Badge kind={account.kind} />
               <StyledBalance $isLiability={isLiability}>

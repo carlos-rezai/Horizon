@@ -47,7 +47,7 @@ export default function AccountDetailPage() {
   if (isLoading) return <p>Loading…</p>;
   if (error) return <p>Error: {error}</p>;
 
-  const account = accounts.find((a) => a._id === id);
+  const account = accounts.find((a) => a.id === id);
   if (!account) return <p>Account not found.</p>;
 
   const handleRename = async (name: string) => {
@@ -107,14 +107,14 @@ export default function AccountDetailPage() {
         </StyledActions>
         {showAddTransaction && (
           <TransactionCreateModal
-            accountId={account._id}
+            accountId={account.id}
             onClose={() => setShowAddTransaction(false)}
             onSuccess={() => setShowAddTransaction(false)}
           />
         )}
         {showAddTransfer && (
           <TransferCreateModal
-            fromAccountId={account._id}
+            fromAccountId={account.id}
             accounts={accounts}
             onClose={() => setShowAddTransfer(false)}
             onSuccess={() => setShowAddTransfer(false)}
@@ -130,13 +130,13 @@ export default function AccountDetailPage() {
         </StyledActions>
         <RecurringTransactionList
           recurringTransactions={recurringTransactions}
-          onToggle={(rt) => toggleIsActive(rt._id, rt.isActive)}
+          onToggle={(rt) => toggleIsActive(rt.id, rt.isActive)}
           onRowClick={(rt) => setEditingRecurring(rt)}
         />
         {showAddRecurring && (
           <RecurringTransactionModal
-            accountId={account._id}
-            otherAccounts={accounts.filter((a) => a._id !== account._id)}
+            accountId={account.id}
+            otherAccounts={accounts.filter((a) => a.id !== account.id)}
             onClose={() => setShowAddRecurring(false)}
             onSaved={(formData) => {
               void createRecurring(formData);
@@ -147,16 +147,16 @@ export default function AccountDetailPage() {
         )}
         {editingRecurring && (
           <RecurringTransactionModal
-            accountId={account._id}
+            accountId={account.id}
             transaction={editingRecurring}
-            otherAccounts={accounts.filter((a) => a._id !== account._id)}
+            otherAccounts={accounts.filter((a) => a.id !== account.id)}
             onClose={() => setEditingRecurring(null)}
             onSaved={(formData) => {
-              void updateRecurring(editingRecurring._id, formData);
+              void updateRecurring(editingRecurring.id, formData);
               setEditingRecurring(null);
             }}
             onDeleted={() => {
-              void removeRecurring(editingRecurring._id);
+              void removeRecurring(editingRecurring.id);
               setEditingRecurring(null);
             }}
           />

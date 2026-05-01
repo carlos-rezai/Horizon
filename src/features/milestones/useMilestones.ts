@@ -58,7 +58,7 @@ export function useMilestones(): UseMilestonesResult {
       method: "DELETE",
     });
     if (!res.ok) throw new Error(`Failed to delete milestone: ${res.status}`);
-    setMilestones((prev) => prev.filter((m) => m._id !== id));
+    setMilestones((prev) => prev.filter((m) => m.id !== id));
   }
 
   return { milestones, isLoading, error, addMilestone, deleteMilestone };

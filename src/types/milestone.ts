@@ -1,5 +1,5 @@
 export interface Milestone {
-  _id: string;
+  id: string;
   name: string;
   accountId: string;
   targetBalance: number;

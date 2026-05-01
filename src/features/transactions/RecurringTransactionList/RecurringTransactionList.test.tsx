@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 const activeRt: RecurringTransaction = {
-  _id: "rt-1",
+  id: "rt-1",
   accountId: "acc-1",
   amount: -120000,
   description: "Rent",
@@ -23,7 +23,7 @@ const activeRt: RecurringTransaction = {
 };
 
 const inactiveRt: RecurringTransaction = {
-  _id: "rt-2",
+  id: "rt-2",
   accountId: "acc-1",
   amount: -2000,
   description: "Spotify",
@@ -34,7 +34,7 @@ const inactiveRt: RecurringTransaction = {
 };
 
 const linkedRt: RecurringTransaction = {
-  _id: "rt-3",
+  id: "rt-3",
   accountId: "acc-1",
   amount: -50000,
   description: "Savings deposit",

@@ -88,11 +88,11 @@ function ChartTooltip({
         Liquid: {formatBalance(point.totalLiquid)}
       </StyledTooltipRowPositive>
       {nonMortgageAccounts.map((a, i) => {
-        const value = point[a._id];
+        const value = point[a.id];
         if (typeof value !== "number") return null;
         return (
           <StyledTooltipRowMuted
-            key={a._id}
+            key={a.id}
             style={{ color: accountColours[i % accountColours.length] }}
           >
             {a.name}: {formatBalance(value)}
@@ -145,7 +145,7 @@ export default function TrajectoryHorizon({
 
   const mortgageIds = accounts
     .filter((a) => a.kind === "Mortgage")
-    .map((a) => a._id);
+    .map((a) => a.id);
 
   const stMonths =
     horizonSnapshots.length > 0
@@ -180,7 +180,7 @@ export default function TrajectoryHorizon({
     const candidates: number[] = [];
     if (typeof p.restschuld === "number") candidates.push(p.restschuld);
     for (const a of nonMortgageAccounts) {
-      const v = p[a._id];
+      const v = p[a.id];
       if (typeof v === "number") candidates.push(v);
     }
     return Math.max(max, ...candidates);
@@ -260,10 +260,10 @@ export default function TrajectoryHorizon({
                 )}
                 {nonMortgageAccounts.map((a, i) => (
                   <Line
-                    key={a._id}
+                    key={a.id}
                     yAxisId="left"
                     type="monotone"
-                    dataKey={a._id}
+                    dataKey={a.id}
                     name={a.name}
                     dot={false}
                     stroke={accountColours[i % accountColours.length]}

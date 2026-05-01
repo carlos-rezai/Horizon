@@ -7,7 +7,7 @@ import type { RecurringTransaction } from "../../types/recurring";
 const ACCOUNT_ID = "acc-1";
 
 const rt1: RecurringTransaction = {
-  _id: "rt-1",
+  id: "rt-1",
   accountId: "acc-1",
   amount: -120000,
   description: "Rent",
@@ -18,7 +18,7 @@ const rt1: RecurringTransaction = {
 };
 
 const rt2: RecurringTransaction = {
-  _id: "rt-2",
+  id: "rt-2",
   accountId: "acc-2",
   amount: -5000,
   description: "Gym",
@@ -52,7 +52,11 @@ describe("useRecurringTransactions — initial fetch", () => {
     await act(async () => {});
 
     expect(result.current.recurringTransactions).toEqual([rt1]);
-    expect(result.current.recurringTransactions.every((r) => r.accountId === ACCOUNT_ID)).toBe(true);
+    expect(
+      result.current.recurringTransactions.every(
+        (r) => r.accountId === ACCOUNT_ID
+      )
+    ).toBe(true);
   });
 
   it("starts in a loading state and resolves after fetch", async () => {
@@ -69,7 +73,7 @@ describe("useRecurringTransactions — initial fetch", () => {
 describe("useRecurringTransactions — create", () => {
   it("calls POST /recurring-transactions with the payload", async () => {
     const newRt: RecurringTransaction = {
-      _id: "rt-3",
+      id: "rt-3",
       accountId: ACCOUNT_ID,
       amount: -2000,
       description: "Spotify",
@@ -102,18 +106,20 @@ describe("useRecurringTransactions — create", () => {
       });
     });
 
-    const postCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/recurring-transactions") &&
-        (init as RequestInit)?.method === "POST"
-    );
+    const postCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/recurring-transactions") &&
+          (init as RequestInit)?.method === "POST"
+      );
     expect(postCall).toBeDefined();
   });
 
   it("appends the new entry to the list after a successful create", async () => {
     const newRt: RecurringTransaction = {
-      _id: "rt-3",
+      id: "rt-3",
       accountId: ACCOUNT_ID,
       amount: -2000,
       description: "Spotify",
@@ -196,12 +202,14 @@ describe("useRecurringTransactions — toggleIsActive", () => {
       await result.current.toggleIsActive("rt-1", true);
     });
 
-    const patchCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/recurring-transactions/rt-1") &&
-        (init as RequestInit)?.method === "PATCH"
-    );
+    const patchCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/recurring-transactions/rt-1") &&
+          (init as RequestInit)?.method === "PATCH"
+      );
     expect(patchCall).toBeDefined();
 
     const body = JSON.parse((patchCall![1] as RequestInit).body as string);
@@ -226,7 +234,9 @@ describe("useRecurringTransactions — toggleIsActive", () => {
       await result.current.toggleIsActive("rt-1", true);
     });
 
-    const updated = result.current.recurringTransactions.find((r) => r._id === "rt-1");
+    const updated = result.current.recurringTransactions.find(
+      (r) => r.id === "rt-1"
+    );
     expect(updated?.isActive).toBe(false);
   });
 
@@ -277,12 +287,14 @@ describe("useRecurringTransactions — update", () => {
       });
     });
 
-    const patchCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/recurring-transactions/rt-1") &&
-        (init as RequestInit)?.method === "PATCH"
-    );
+    const patchCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/recurring-transactions/rt-1") &&
+          (init as RequestInit)?.method === "PATCH"
+      );
     expect(patchCall).toBeDefined();
   });
 
@@ -334,12 +346,14 @@ describe("useRecurringTransactions — remove", () => {
       await result.current.remove("rt-1");
     });
 
-    const deleteCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/recurring-transactions/rt-1") &&
-        (init as RequestInit)?.method === "DELETE"
-    );
+    const deleteCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/recurring-transactions/rt-1") &&
+          (init as RequestInit)?.method === "DELETE"
+      );
     expect(deleteCall).toBeDefined();
   });
 

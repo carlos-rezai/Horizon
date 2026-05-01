@@ -55,14 +55,14 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
       body: JSON.stringify(body),
     });
 
-    const data = (await res.json()) as { _id?: string; error?: string };
+    const data = (await res.json()) as { id?: string; error?: string };
 
     if (!res.ok) {
       setError(data.error ?? "Failed to create account");
       return;
     }
 
-    onSuccess(data._id!);
+    onSuccess(data.id!);
   };
 
   return (

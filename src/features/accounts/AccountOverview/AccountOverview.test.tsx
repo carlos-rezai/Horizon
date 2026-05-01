@@ -17,7 +17,7 @@ type AccountKind =
   | "CreditCard"
   | "Investment";
 interface AccountWithBalance {
-  _id: string;
+  id: string;
   kind: AccountKind;
   name: string;
   openingBalance: number;
@@ -28,7 +28,7 @@ interface AccountWithBalance {
 
 const mockAccounts: AccountWithBalance[] = [
   {
-    _id: "1",
+    id: "1",
     kind: "Girokonto",
     name: "Main Checking",
     openingBalance: 100000,
@@ -36,7 +36,7 @@ const mockAccounts: AccountWithBalance[] = [
     balance: 150000,
   },
   {
-    _id: "2",
+    id: "2",
     kind: "Tagesgeld",
     name: "DKB Reserve",
     openingBalance: 200000,

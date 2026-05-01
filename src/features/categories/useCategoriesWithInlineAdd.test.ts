@@ -5,12 +5,12 @@ import { useCategoriesWithInlineAdd } from "./useCategoriesWithInlineAdd";
 import type { Category } from "../../types/category";
 
 const existingCategories: Category[] = [
-  { _id: "cat-1", name: "Food", isDefault: true },
-  { _id: "cat-2", name: "Income", isDefault: false },
+  { id: "cat-1", name: "Food", isDefault: true },
+  { id: "cat-2", name: "Income", isDefault: false },
 ];
 
 const newCategory: Category = {
-  _id: "cat-3",
+  id: "cat-3",
   name: "Transport",
   isDefault: false,
 };
@@ -113,7 +113,7 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
       await result.current.addCategory("Transport");
     });
 
-    expect(result.current.selectedCategoryId).toBe(newCategory._id);
+    expect(result.current.selectedCategoryId).toBe(newCategory.id);
   });
 
   it("throws when the server returns an error", async () => {

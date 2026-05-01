@@ -202,14 +202,14 @@ export default function RecurringTransactionModal({
           >
             <option value="">— None</option>
             {otherAccounts.map((a) => (
-              <option key={a._id} value={a._id}>
+              <option key={a.id} value={a.id}>
                 {a.name}
               </option>
             ))}
           </Select>
         </FormField>
 
-        {otherAccounts.find((a) => a._id === linkedAccountId)?.kind ===
+        {otherAccounts.find((a) => a.id === linkedAccountId)?.kind ===
           "Mortgage" && (
           <StyledWarningText role="status">
             Linking to a Mortgage account models a Recurring Transfer that

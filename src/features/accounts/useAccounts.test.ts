@@ -5,7 +5,7 @@ import { useAccounts } from "./useAccounts";
 import type { AccountWithBalance } from "../../types/account";
 
 const account1: AccountWithBalance = {
-  _id: "a1",
+  id: "a1",
   kind: "Girokonto",
   name: "Main",
   openingBalance: 100000,

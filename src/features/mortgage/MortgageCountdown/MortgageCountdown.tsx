@@ -44,9 +44,9 @@ export default function MortgageCountdown({ accounts, snapshots }: Props) {
     <StyledSection>
       <Heading level={2}>Mortgage Countdown</Heading>
       {mortgageAccounts.map((account) => {
-        const payoffMonth = findMortgagePayoffMonth(snapshots, account._id);
+        const payoffMonth = findMortgagePayoffMonth(snapshots, account.id);
         return (
-          <StyledCard key={account._id}>
+          <StyledCard key={account.id}>
             <Heading level={3}>{account.name}</Heading>
             <StyledRestschuld>
               {formatBalance(account.balance)}

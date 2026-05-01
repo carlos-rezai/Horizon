@@ -14,7 +14,7 @@ afterEach(() => {
 
 const accounts: AccountWithBalance[] = [
   {
-    _id: "acc-1",
+    id: "acc-1",
     kind: "Girokonto",
     name: "Main Checking",
     openingBalance: 100000,
@@ -22,7 +22,7 @@ const accounts: AccountWithBalance[] = [
     balance: 150000,
   },
   {
-    _id: "acc-2",
+    id: "acc-2",
     kind: "Tagesgeld",
     name: "DKB Reserve",
     openingBalance: 200000,

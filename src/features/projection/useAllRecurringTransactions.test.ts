@@ -5,7 +5,7 @@ import { useAllRecurringTransactions } from "./useAllRecurringTransactions";
 import type { RecurringTransaction } from "../../types/recurring";
 
 const rt1: RecurringTransaction = {
-  _id: "rt-1",
+  id: "rt-1",
   accountId: "acc-1",
   amount: -120000,
   description: "Rent",
@@ -16,7 +16,7 @@ const rt1: RecurringTransaction = {
 };
 
 const rt2: RecurringTransaction = {
-  _id: "rt-2",
+  id: "rt-2",
   accountId: "acc-2",
   amount: 500000,
   description: "Sondertilgung",

@@ -34,9 +34,9 @@ export function useCategoriesWithInlineAdd(
         if (!cancelled) {
           setCategories(data);
           const preferred =
-            initialId && data.some((c) => c._id === initialId)
+            initialId && data.some((c) => c.id === initialId)
               ? initialId
-              : (data[0]?._id ?? "");
+              : (data[0]?.id ?? "");
           setSelectedCategoryId(preferred);
           setIsLoading(false);
         }
@@ -73,7 +73,7 @@ export function useCategoriesWithInlineAdd(
 
       const created = (await res.json()) as Category;
       setCategories((prev) => [...prev, created]);
-      setSelectedCategoryId(created._id);
+      setSelectedCategoryId(created.id);
     } finally {
       setIsAdding(false);
     }

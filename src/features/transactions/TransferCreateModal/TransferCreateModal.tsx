@@ -27,10 +27,10 @@ export default function TransferCreateModal({
   onClose,
   onSuccess,
 }: Props) {
-  const destinationAccounts = accounts.filter((a) => a._id !== fromAccountId);
+  const destinationAccounts = accounts.filter((a) => a.id !== fromAccountId);
 
   const [toAccountId, setToAccountId] = useState(
-    destinationAccounts[0]?._id ?? ""
+    destinationAccounts[0]?.id ?? ""
   );
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
@@ -80,7 +80,7 @@ export default function TransferCreateModal({
             onChange={(e) => setToAccountId(e.target.value)}
           >
             {destinationAccounts.map((a) => (
-              <option key={a._id} value={a._id}>
+              <option key={a.id} value={a.id}>
                 {a.name}
               </option>
             ))}

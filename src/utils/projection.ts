@@ -26,7 +26,7 @@ export function buildAccountColumns(
   return accounts
     .filter((a) => a.kind !== "Mortgage")
     .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind])
-    .map((a) => ({ id: a._id, name: a.name, kind: a.kind }));
+    .map((a) => ({ id: a.id, name: a.name, kind: a.kind }));
 }
 
 export function findMilestoneMonth(
@@ -58,12 +58,12 @@ function addMonths(yyyyMM: string, n: number): string {
 
 export function deriveSTMonths(
   recurringTransactions: RecurringTransaction[],
-  accounts: { _id: string; kind: AccountKind }[],
+  accounts: { id: string; kind: AccountKind }[],
   fromMonth: string,
   monthCount: number
 ): Map<string, number> {
   const mortgageIds = new Set(
-    accounts.filter((a) => a.kind === "Mortgage").map((a) => a._id)
+    accounts.filter((a) => a.kind === "Mortgage").map((a) => a.id)
   );
 
   const stRecurring = recurringTransactions.filter(
@@ -145,10 +145,10 @@ export function buildTrajectoryData(
 ): TrajectoryDataPoint[] {
   const mortgageAccountIds = accounts
     .filter((a) => a.kind === "Mortgage")
-    .map((a) => a._id);
+    .map((a) => a.id);
   const nonMortgageAccountIds = accounts
     .filter((a) => a.kind !== "Mortgage")
-    .map((a) => a._id);
+    .map((a) => a.id);
 
   let payoffReached = false;
 

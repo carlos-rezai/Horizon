@@ -19,12 +19,12 @@ afterEach(() => {
 });
 
 const existingCategories: Category[] = [
-  { _id: "cat-1", name: "Food", isDefault: true },
-  { _id: "cat-2", name: "Income", isDefault: false },
+  { id: "cat-1", name: "Food", isDefault: true },
+  { id: "cat-2", name: "Income", isDefault: false },
 ];
 
 const newCategory: Category = {
-  _id: "cat-3",
+  id: "cat-3",
   name: "Transport",
   isDefault: false,
 };
@@ -59,7 +59,7 @@ describe("CategorySelect — dropdown population", () => {
     const { onChange } = renderSelect();
 
     await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(existingCategories[0]._id);
+      expect(onChange).toHaveBeenCalledWith(existingCategories[0].id);
     });
   });
 });
@@ -127,8 +127,8 @@ describe("CategorySelect — inline category add", () => {
     expect(
       await screen.findByRole("option", { name: "Transport" })
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/category/i)).toHaveValue(newCategory._id);
-    expect(onChange).toHaveBeenCalledWith(newCategory._id);
+    expect(screen.getByLabelText(/category/i)).toHaveValue(newCategory.id);
+    expect(onChange).toHaveBeenCalledWith(newCategory.id);
   });
 
   it("disables form controls while category creation is in flight", async () => {

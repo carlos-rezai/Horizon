@@ -121,7 +121,7 @@ describe("buildAccountColumns", () => {
     name: string,
     kind: AccountWithBalance["kind"]
   ): AccountWithBalance => ({
-    _id: id,
+    id: id,
     kind,
     name,
     openingBalance: 0,
@@ -192,7 +192,7 @@ describe("buildAccountColumns", () => {
 });
 
 const rt = (
-  overrides: Partial<RecurringTransaction> & Pick<RecurringTransaction, "_id">
+  overrides: Partial<RecurringTransaction> & Pick<RecurringTransaction, "id">
 ): RecurringTransaction => ({
   accountId: "tagesgeld-1",
   amount: 500000,
@@ -204,12 +204,12 @@ const rt = (
   ...overrides,
 });
 
-const mortgageAccount = { _id: "mortgage-1", kind: "Mortgage" as const };
-const tagesgeldAccount = { _id: "tagesgeld-1", kind: "Tagesgeld" as const };
+const mortgageAccount = { id: "mortgage-1", kind: "Mortgage" as const };
+const tagesgeldAccount = { id: "tagesgeld-1", kind: "Tagesgeld" as const };
 
 describe("deriveSTMonths", () => {
   it("returns the correct month and amount for an annual RT whose linkedAccountId is a Mortgage account", () => {
-    const recurring = [rt({ _id: "rt-1", linkedAccountId: "mortgage-1" })];
+    const recurring = [rt({ id: "rt-1", linkedAccountId: "mortgage-1" })];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
     const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
@@ -219,7 +219,7 @@ describe("deriveSTMonths", () => {
   });
 
   it("returns multiple ST months when the projection window spans multiple years", () => {
-    const recurring = [rt({ _id: "rt-1", linkedAccountId: "mortgage-1" })];
+    const recurring = [rt({ id: "rt-1", linkedAccountId: "mortgage-1" })];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
     const result = deriveSTMonths(recurring, accounts, "2026-01", 24);
@@ -231,7 +231,7 @@ describe("deriveSTMonths", () => {
 
   it("never includes monthly recurring transactions", () => {
     const recurring = [
-      rt({ _id: "rt-1", frequency: "monthly", linkedAccountId: "mortgage-1" }),
+      rt({ id: "rt-1", frequency: "monthly", linkedAccountId: "mortgage-1" }),
     ];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
@@ -243,7 +243,7 @@ describe("deriveSTMonths", () => {
   it("never includes quarterly recurring transactions", () => {
     const recurring = [
       rt({
-        _id: "rt-1",
+        id: "rt-1",
         frequency: "quarterly",
         linkedAccountId: "mortgage-1",
       }),
@@ -256,7 +256,7 @@ describe("deriveSTMonths", () => {
   });
 
   it("never includes annual RTs with no linkedAccountId", () => {
-    const recurring = [rt({ _id: "rt-1" })];
+    const recurring = [rt({ id: "rt-1" })];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
     const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
@@ -265,8 +265,8 @@ describe("deriveSTMonths", () => {
   });
 
   it("never includes annual RTs whose linkedAccountId points to a non-Mortgage account", () => {
-    const investmentAccount = { _id: "invest-1", kind: "Investment" as const };
-    const recurring = [rt({ _id: "rt-1", linkedAccountId: "invest-1" })];
+    const investmentAccount = { id: "invest-1", kind: "Investment" as const };
+    const recurring = [rt({ id: "rt-1", linkedAccountId: "invest-1" })];
     const accounts = [investmentAccount, tagesgeldAccount];
 
     const result = deriveSTMonths(recurring, accounts, "2026-01", 12);
@@ -283,7 +283,7 @@ describe("deriveSTMonths", () => {
   });
 
   it("returns an empty map when accounts is empty", () => {
-    const recurring = [rt({ _id: "rt-1", linkedAccountId: "mortgage-1" })];
+    const recurring = [rt({ id: "rt-1", linkedAccountId: "mortgage-1" })];
 
     const result = deriveSTMonths(recurring, [], "2026-01", 12);
 
@@ -293,7 +293,7 @@ describe("deriveSTMonths", () => {
   it("fires in the monthOfYear month when monthOfYear is set, not in the projection-start month", () => {
     // Projection starts in April, ST should fire in October
     const recurring = [
-      rt({ _id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
+      rt({ id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
     ];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
@@ -305,7 +305,7 @@ describe("deriveSTMonths", () => {
 
   it("fires in the correct monthOfYear month across multiple projected years", () => {
     const recurring = [
-      rt({ _id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
+      rt({ id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
     ];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
@@ -318,7 +318,7 @@ describe("deriveSTMonths", () => {
 
   it("does not fire in the projection-start month when monthOfYear is set to a different month", () => {
     const recurring = [
-      rt({ _id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
+      rt({ id: "rt-1", linkedAccountId: "mortgage-1", monthOfYear: 10 }),
     ];
     const accounts = [mortgageAccount, tagesgeldAccount];
 
@@ -463,7 +463,7 @@ const account = (
   kind: AccountWithBalance["kind"],
   name = id
 ): AccountWithBalance => ({
-  _id: id,
+  id: id,
   kind,
   name,
   openingBalance: 0,
@@ -589,7 +589,7 @@ describe("buildTrajectoryData", () => {
     expect(result[3].restschuld).toBeNull();
   });
 
-  it("includes per-account projected balance keyed by account _id for non-Mortgage accounts", () => {
+  it("includes per-account projected balance keyed by account id for non-Mortgage accounts", () => {
     const snapshots = [
       trajSnap("2026-04", 0, 0, {
         "giro-1": 500000,

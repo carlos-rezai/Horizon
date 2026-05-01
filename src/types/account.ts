@@ -6,7 +6,7 @@ export type AccountKind =
   | "Investment";
 
 export interface AccountWithBalance {
-  _id: string;
+  id: string;
   kind: AccountKind;
   name: string;
   openingBalance: number;

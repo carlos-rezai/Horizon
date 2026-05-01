@@ -105,7 +105,7 @@ export function useRecurringTransactions(
 
     const updated = (await res.json()) as RecurringTransaction;
     setRecurringTransactions((prev) =>
-      prev.map((rt) => (rt._id === id ? updated : rt))
+      prev.map((rt) => (rt.id === id ? updated : rt))
     );
   }
 
@@ -126,7 +126,7 @@ export function useRecurringTransactions(
 
     const updated = (await res.json()) as RecurringTransaction;
     setRecurringTransactions((prev) =>
-      prev.map((rt) => (rt._id === id ? updated : rt))
+      prev.map((rt) => (rt.id === id ? updated : rt))
     );
   }
 
@@ -140,7 +140,7 @@ export function useRecurringTransactions(
       throw new Error(data.error ?? "Failed to delete recurring transaction");
     }
 
-    setRecurringTransactions((prev) => prev.filter((rt) => rt._id !== id));
+    setRecurringTransactions((prev) => prev.filter((rt) => rt.id !== id));
   }
 
   return {

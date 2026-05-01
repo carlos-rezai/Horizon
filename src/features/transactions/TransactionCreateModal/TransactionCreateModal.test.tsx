@@ -18,8 +18,8 @@ afterEach(() => {
 });
 
 const categories: Category[] = [
-  { _id: "cat-1", name: "Food", isDefault: true },
-  { _id: "cat-2", name: "Income", isDefault: false },
+  { id: "cat-1", name: "Food", isDefault: true },
+  { id: "cat-2", name: "Income", isDefault: false },
 ];
 
 const renderModal = (
@@ -118,7 +118,7 @@ describe("TransactionCreateModal — successful submit", () => {
       .mockResolvedValue({
         ok: true,
         json: async () => ({
-          _id: "txn-new",
+          id: "txn-new",
           accountId: "acc-1",
           date: "2026-03-01",
           amount: -5000,

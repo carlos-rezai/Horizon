@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 const account: AccountWithBalance = {
-  _id: "acc-1",
+  id: "acc-1",
   kind: "Girokonto",
   name: "Main Checking",
   openingBalance: 100000,

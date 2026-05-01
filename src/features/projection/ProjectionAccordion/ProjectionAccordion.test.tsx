@@ -16,7 +16,7 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 const mortgageAccount: AccountWithBalance = {
-  _id: "m1",
+  id: "m1",
   kind: "Mortgage",
   name: "DSL Mortgage",
   openingBalance: 0,
@@ -25,7 +25,7 @@ const mortgageAccount: AccountWithBalance = {
 };
 
 const giroAccount: AccountWithBalance = {
-  _id: "g1",
+  id: "g1",
   kind: "Girokonto",
   name: "Main",
   openingBalance: 0,

@@ -34,7 +34,7 @@ export default function TransactionEditModal({
   const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
-    const res = await fetch(`${API_BASE}/transactions/${transaction._id}`, {
+    const res = await fetch(`${API_BASE}/transactions/${transaction.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -65,7 +65,7 @@ export default function TransactionEditModal({
 
     const url = isTransfer
       ? `${API_BASE}/transfers/${transaction.transferId}`
-      : `${API_BASE}/transactions/${transaction._id}`;
+      : `${API_BASE}/transactions/${transaction.id}`;
 
     const res = await fetch(url, { method: "DELETE" });
     const data = (await res.json()) as { error?: string };
@@ -75,7 +75,7 @@ export default function TransactionEditModal({
       return;
     }
 
-    onDeleted(transaction._id, transaction.transferId);
+    onDeleted(transaction.id, transaction.transferId);
     onClose();
   };
 

@@ -19,13 +19,13 @@ afterEach(() => {
 });
 
 const categories: Category[] = [
-  { _id: "cat-1", name: "Food", isDefault: true },
-  { _id: "cat-2", name: "Income", isDefault: false },
+  { id: "cat-1", name: "Food", isDefault: true },
+  { id: "cat-2", name: "Income", isDefault: false },
 ];
 
 const accounts: AccountWithBalance[] = [
   {
-    _id: "acc-1",
+    id: "acc-1",
     kind: "Girokonto",
     name: "Main Checking",
     openingBalance: 100000,
@@ -33,7 +33,7 @@ const accounts: AccountWithBalance[] = [
     balance: 150000,
   },
   {
-    _id: "acc-2",
+    id: "acc-2",
     kind: "Tagesgeld",
     name: "DKB Reserve",
     openingBalance: 200000,
@@ -41,7 +41,7 @@ const accounts: AccountWithBalance[] = [
     balance: 220000,
   },
   {
-    _id: "acc-3",
+    id: "acc-3",
     kind: "Mortgage",
     name: "Home Loan",
     openingBalance: -30000000,
@@ -197,7 +197,7 @@ describe("TransferCreateModal — successful submit", () => {
         ok: true,
         json: async () => ({
           fromTransaction: {
-            _id: "txn-1",
+            id: "txn-1",
             accountId: "acc-1",
             date: "2026-03-01",
             amount: -10000,
@@ -206,7 +206,7 @@ describe("TransferCreateModal — successful submit", () => {
             transferId: "transfer-xyz",
           },
           toTransaction: {
-            _id: "txn-2",
+            id: "txn-2",
             accountId: "acc-2",
             date: "2026-03-01",
             amount: 10000,

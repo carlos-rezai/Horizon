@@ -29,7 +29,7 @@ export default function RecurringTransactionList({
     <StyledList>
       {recurringTransactions.map((rt) => (
         <StyledRow
-          key={rt._id}
+          key={rt.id}
           $inactive={!rt.isActive}
           data-inactive={rt.isActive ? undefined : "true"}
           onClick={() => onRowClick(rt)}

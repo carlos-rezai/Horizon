@@ -17,7 +17,7 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 const giroAccount: AccountWithBalance = {
-  _id: "g1",
+  id: "g1",
   kind: "Girokonto",
   name: "Main",
   openingBalance: 0,
@@ -41,7 +41,7 @@ const snapshots: MonthlySnapshot[] = [
 ];
 
 const mortgageAccount: AccountWithBalance = {
-  _id: "m1",
+  id: "m1",
   kind: "Mortgage",
   name: "DSL Mortgage",
   openingBalance: 0,
@@ -115,7 +115,9 @@ describe("TrajectoryHorizon", () => {
       />
     );
 
-    expect(screen.getByTestId("trajectory-horizon-loading")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("trajectory-horizon-loading")
+    ).toBeInTheDocument();
   });
 
   it("does not render the chart container when isLoading is true", () => {
@@ -210,8 +212,6 @@ describe("TrajectoryHorizon", () => {
       />
     );
 
-    expect(
-      screen.getByTestId("trajectory-horizon-chart")
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("trajectory-horizon-chart")).toBeInTheDocument();
   });
 });

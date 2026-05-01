@@ -26,7 +26,7 @@ export default function TransactionList({
   return (
     <StyledList>
       {transactions.map((tx) => (
-        <StyledRow key={tx._id} onClick={() => onTransactionClick?.(tx)}>
+        <StyledRow key={tx.id} onClick={() => onTransactionClick?.(tx)}>
           <StyledDate>{tx.date}</StyledDate>
           <StyledDescription>{tx.description}</StyledDescription>
           <StyledAmount>{centsToEuros(tx.amount)}</StyledAmount>

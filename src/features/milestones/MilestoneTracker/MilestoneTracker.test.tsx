@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 const tagesgeldAccount: AccountWithBalance = {
-  _id: "acc-1",
+  id: "acc-1",
   kind: "Tagesgeld",
   name: "DKB Reserve",
   openingBalance: 0,
@@ -32,7 +32,7 @@ const tagesgeldAccount: AccountWithBalance = {
 };
 
 const milestone: Milestone = {
-  _id: "ms-1",
+  id: "ms-1",
   name: "Emergency fund",
   accountId: "acc-1",
   targetBalance: 100000,

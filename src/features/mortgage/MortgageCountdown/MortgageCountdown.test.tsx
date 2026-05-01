@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 const mortgageAccount: AccountWithBalance = {
-  _id: "mortgage-1",
+  id: "mortgage-1",
   kind: "Mortgage",
   name: "Berliner Darlehen",
   openingBalance: 4000000,
@@ -25,7 +25,7 @@ const mortgageAccount: AccountWithBalance = {
 };
 
 const assetAccount: AccountWithBalance = {
-  _id: "giro-1",
+  id: "giro-1",
   kind: "Girokonto",
   name: "Main",
   openingBalance: 100000,
@@ -61,7 +61,7 @@ describe("MortgageCountdown", () => {
   it("renders one card per Mortgage account labelled by account name", () => {
     const secondMortgage: AccountWithBalance = {
       ...mortgageAccount,
-      _id: "mortgage-2",
+      id: "mortgage-2",
       name: "Zweites Darlehen",
     };
     const snapshots = makeSnapshots("mortgage-1", 100000);

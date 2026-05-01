@@ -8,7 +8,7 @@ type AccountKind =
   | "CreditCard"
   | "Investment";
 interface AccountWithBalance {
-  _id: string;
+  id: string;
   kind: AccountKind;
   name: string;
   openingBalance: number;
@@ -18,7 +18,7 @@ interface AccountWithBalance {
 }
 
 const account = (kind: AccountKind, balance: number): AccountWithBalance => ({
-  _id: `id-${kind}`,
+  id: `id-${kind}`,
   kind,
   name: `${kind} account`,
   openingBalance: 0,

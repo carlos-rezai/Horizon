@@ -24,7 +24,7 @@ beforeEach(() => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue({
     ok: true,
     json: async () => ({
-      _id: "new-account-id",
+      id: "new-account-id",
       kind: "Girokonto",
       name: "Main",
       openingBalance: 0,

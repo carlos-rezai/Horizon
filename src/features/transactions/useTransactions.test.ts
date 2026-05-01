@@ -7,7 +7,7 @@ import type { Transaction } from "../../types/transaction";
 const ACCOUNT_ID = "acc-1";
 
 const existingTransaction: Transaction = {
-  _id: "txn-1",
+  id: "txn-1",
   accountId: ACCOUNT_ID,
   date: "2026-03-01",
   amount: -5000,
@@ -16,7 +16,7 @@ const existingTransaction: Transaction = {
 };
 
 const newTransaction: Transaction = {
-  _id: "txn-2",
+  id: "txn-2",
   accountId: ACCOUNT_ID,
   date: "2026-03-15",
   amount: 200000,
@@ -49,7 +49,7 @@ describe("useTransactions — initial fetch", () => {
 });
 
 const updatedTransaction: Transaction = {
-  _id: "txn-1",
+  id: "txn-1",
   accountId: ACCOUNT_ID,
   date: "2026-03-01",
   amount: -7500,
@@ -58,7 +58,7 @@ const updatedTransaction: Transaction = {
 };
 
 const transferTransactionA: Transaction = {
-  _id: "txn-3",
+  id: "txn-3",
   accountId: ACCOUNT_ID,
   date: "2026-03-05",
   amount: -50000,
@@ -68,7 +68,7 @@ const transferTransactionA: Transaction = {
 };
 
 const transferTransactionB: Transaction = {
-  _id: "txn-4",
+  id: "txn-4",
   accountId: "acc-2",
   date: "2026-03-05",
   amount: 50000,
@@ -189,12 +189,14 @@ describe("useTransactions — update", () => {
       });
     });
 
-    const patchCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/transactions/txn-1") &&
-        (init as RequestInit)?.method === "PATCH"
-    );
+    const patchCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/transactions/txn-1") &&
+          (init as RequestInit)?.method === "PATCH"
+      );
     expect(patchCall).toBeDefined();
   });
 
@@ -272,12 +274,14 @@ describe("useTransactions — remove", () => {
       await result.current.remove("txn-1");
     });
 
-    const deleteCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/transactions/txn-1") &&
-        (init as RequestInit)?.method === "DELETE"
-    );
+    const deleteCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/transactions/txn-1") &&
+          (init as RequestInit)?.method === "DELETE"
+      );
     expect(deleteCall).toBeDefined();
   });
 
@@ -344,12 +348,14 @@ describe("useTransactions — removeTransfer", () => {
       await result.current.removeTransfer("transfer-abc");
     });
 
-    const deleteCall = vi.mocked(fetch).mock.calls.find(
-      ([url, init]) =>
-        typeof url === "string" &&
-        url.includes("/transfers/transfer-abc") &&
-        (init as RequestInit)?.method === "DELETE"
-    );
+    const deleteCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/transfers/transfer-abc") &&
+          (init as RequestInit)?.method === "DELETE"
+      );
     expect(deleteCall).toBeDefined();
   });
 

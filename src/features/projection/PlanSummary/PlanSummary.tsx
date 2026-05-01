@@ -32,7 +32,7 @@ export default function PlanSummary({
 
   const mortgageIds = accounts
     .filter((a) => a.kind === "Mortgage")
-    .map((a) => a._id);
+    .map((a) => a.id);
 
   const stMonths =
     snapshots.length > 0

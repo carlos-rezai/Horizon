@@ -96,7 +96,7 @@ export default function ProjectionAccordion({
     snapshots[0].month,
     snapshots.length
   );
-  const mortgageIds = mortgageAccounts.map((a) => a._id);
+  const mortgageIds = mortgageAccounts.map((a) => a.id);
   const hasMortgage = mortgageIds.length > 0;
 
   const payoffMonth = hasMortgage
