@@ -14,7 +14,6 @@ import transfersRouter from "./routes/transfers.js";
 import recurringTransactionsRouter from "./routes/recurringTransactions.js";
 import projectionRouter from "./routes/projection.js";
 import milestonesRouter from "./routes/milestones.js";
-import { createStorage } from "./storage/index.js";
 import { requireOwner } from "./auth/requireOwner.js";
 import type { Storage } from "./storage/Storage.js";
 
@@ -49,12 +48,7 @@ function logUnhandledError(
   res.status(500).json({ error: "Internal server error" });
 }
 
-export async function createApp(storage: Storage): Promise<Express>;
-export async function createApp(mongoUri: string): Promise<Express>;
-export async function createApp(arg: Storage | string): Promise<Express> {
-  const storage: Storage =
-    typeof arg === "string" ? await createStorage("mongo", { uri: arg }) : arg;
-
+export async function createApp(storage: Storage): Promise<Express> {
   const app = express();
   app.locals.storage = storage;
 
