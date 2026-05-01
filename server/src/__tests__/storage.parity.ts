@@ -221,6 +221,73 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const result = await storage.accounts.delete("not-an-id");
       expect(result).toBeNull();
     });
+
+    it('returns { ok: false, reason: "in_use" } when an active recurring transaction references the account', async () => {
+      const account = await makeAccount();
+      await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: 95000,
+        description: "Rent",
+        category: "Housing",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      const result = await storage.accounts.delete(account.id);
+
+      expect(result).toEqual({ ok: false, reason: "in_use" });
+      expect(await storage.accounts.findById(account.id)).not.toBeNull();
+    });
+
+    it('returns { ok: false, reason: "in_use" } when an inactive recurring transaction references the account', async () => {
+      const account = await makeAccount();
+      const rt = await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: 95000,
+        description: "Rent",
+        category: "Housing",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+      // RecurringTransactionsRepo.create can return null after step 14 lands;
+      // at this commit it always succeeds, so the cast is safe here.
+      await storage.recurringTransactions.update(rt!.id, { isActive: false });
+
+      const result = await storage.accounts.delete(account.id);
+
+      expect(result).toEqual({ ok: false, reason: "in_use" });
+    });
+
+    it('returns { ok: false, reason: "in_use" } when a recurring transaction\'s linkedAccountId references the account', async () => {
+      const source = await makeAccount({ name: "Source" });
+      const linked = await makeAccount({ name: "Linked" });
+      await storage.recurringTransactions.create({
+        accountId: source.id,
+        amount: 50000,
+        description: "Sondertilgung",
+        category: "Transfer",
+        frequency: "annual",
+        dayOfMonth: 1,
+        linkedAccountId: linked.id,
+      });
+
+      const result = await storage.accounts.delete(linked.id);
+
+      expect(result).toEqual({ ok: false, reason: "in_use" });
+    });
+
+    it('returns { ok: false, reason: "in_use" } when a milestone references the account', async () => {
+      const account = await makeAccount();
+      await storage.milestones.create({
+        name: "Emergency fund",
+        accountId: account.id,
+        targetBalance: 600000,
+      });
+
+      const result = await storage.accounts.delete(account.id);
+
+      expect(result).toEqual({ ok: false, reason: "in_use" });
+    });
   });
 
   // -------------------------------------------------------------------------
