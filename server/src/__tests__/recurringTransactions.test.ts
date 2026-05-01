@@ -140,6 +140,34 @@ describe("POST /recurring-transactions", () => {
 
     expect(res.status).toBe(400);
   });
+
+  it("returns 404 when accountId references an unknown account", async () => {
+    const res = await request(app).post("/recurring-transactions").send({
+      accountId: "00000000-0000-4000-8000-999999999999",
+      amount: 95000,
+      description: "Rent",
+      category: "Housing",
+      frequency: "monthly",
+      dayOfMonth: 1,
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 when linkedAccountId references an unknown account", async () => {
+    const accountId = await createAccount();
+    const res = await request(app).post("/recurring-transactions").send({
+      accountId,
+      amount: 50000,
+      description: "Orphan transfer",
+      category: "Transfer",
+      frequency: "monthly",
+      dayOfMonth: 5,
+      linkedAccountId: "00000000-0000-4000-8000-999999999999",
+    });
+
+    expect(res.status).toBe(404);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, afterAll, describe, expect, it } from "vitest";
 import type { Storage } from "../storage/Storage.js";
-import type { Account } from "../storage/types.js";
+import type { Account, RecurringTransaction } from "../storage/types.js";
 import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
 
 export type MakeStorage = () => Promise<{
@@ -1227,6 +1227,89 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const all = await storage.recurringTransactions.findAll();
       const orphans = all.filter((rt) => rt.linkedAccountId === unknownId);
       expect(orphans).toEqual([]);
+    });
+
+    it("returns null when accountId is well-formed but unknown", async () => {
+      const unknownId = "00000000-0000-4000-8000-999999999999";
+
+      let result: RecurringTransaction | null = null;
+      try {
+        result = await storage.recurringTransactions.create({
+          accountId: unknownId,
+          amount: 95000,
+          description: "Rent",
+          category: "Housing",
+          frequency: "monthly",
+          dayOfMonth: 1,
+        });
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+      expect(await storage.recurringTransactions.findAll()).toEqual([]);
+    });
+
+    it("returns null when linkedAccountId is well-formed but unknown", async () => {
+      const source = await makeAccount();
+      const unknownId = "00000000-0000-4000-8000-999999999999";
+
+      let result: RecurringTransaction | null = null;
+      try {
+        result = await storage.recurringTransactions.create({
+          accountId: source.id,
+          amount: 50000,
+          description: "Orphan transfer",
+          category: "Transfer",
+          frequency: "monthly",
+          dayOfMonth: 5,
+          linkedAccountId: unknownId,
+        });
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+    });
+
+    it("returns null for an unparseable accountId", async () => {
+      let result: RecurringTransaction | null = null;
+      try {
+        result = await storage.recurringTransactions.create({
+          accountId: "not-an-id",
+          amount: 95000,
+          description: "Rent",
+          category: "Housing",
+          frequency: "monthly",
+          dayOfMonth: 1,
+        });
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+      expect(await storage.recurringTransactions.findAll()).toEqual([]);
+    });
+
+    it("returns null for an unparseable linkedAccountId", async () => {
+      const source = await makeAccount();
+
+      let result: RecurringTransaction | null = null;
+      try {
+        result = await storage.recurringTransactions.create({
+          accountId: source.id,
+          amount: 50000,
+          description: "Orphan transfer",
+          category: "Transfer",
+          frequency: "monthly",
+          dayOfMonth: 5,
+          linkedAccountId: "not-an-id",
+        });
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
     });
   });
 
