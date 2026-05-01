@@ -471,6 +471,30 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       });
       expect(tx?.transferId).toBeUndefined();
     });
+
+    it("does not insert an orphan when accountId is well-formed but unknown", async () => {
+      // A well-formed UUID that no Account row matches. Both drivers must
+      // refuse the insert: Mongo via its app-level existence check, SQLite
+      // via app-level existence check + FK constraint as defence in depth.
+      const unknownId = "00000000-0000-4000-8000-999999999999";
+
+      let result: Awaited<
+        ReturnType<typeof storage.transactions.create>
+      > | null = null;
+      try {
+        result = await storage.transactions.create(unknownId, {
+          date: "2026-03-15",
+          amount: -1000,
+          description: "Orphan",
+          category: "Food",
+        });
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+      expect(await storage.transactions.findAll()).toEqual([]);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -1109,6 +1133,33 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       expect(r.linkedAccountId).toBeUndefined();
       expect(r.monthOfYear).toBeUndefined();
+    });
+
+    it("does not insert an orphan when linkedAccountId is well-formed but unknown", async () => {
+      // The source accountId is real, but linkedAccountId points at no
+      // existing Account row. Today both drivers happily insert the orphan.
+      // After SQLite gains FKs (step 10), the SQLite INSERT will fail at the
+      // DB level. After step 14, both drivers reject the input cleanly.
+      const source = await makeAccount();
+      const unknownId = "00000000-0000-4000-8000-999999999999";
+
+      try {
+        await storage.recurringTransactions.create({
+          accountId: source.id,
+          amount: 50000,
+          description: "Orphan transfer",
+          category: "Transfer",
+          frequency: "monthly",
+          dayOfMonth: 5,
+          linkedAccountId: unknownId,
+        });
+      } catch {
+        // Acceptable: FK constraint may throw — defence in depth.
+      }
+
+      const all = await storage.recurringTransactions.findAll();
+      const orphans = all.filter((rt) => rt.linkedAccountId === unknownId);
+      expect(orphans).toEqual([]);
     });
   });
 
