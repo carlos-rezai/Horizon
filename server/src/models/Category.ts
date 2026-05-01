@@ -1,15 +1,5 @@
 import mongoose from "mongoose";
-
-export const DEFAULT_CATEGORY_NAMES = [
-  "Income",
-  "Housing",
-  "Food",
-  "Subscriptions",
-  "Entertainment",
-  "Investment",
-  "Transfer",
-  "Miscellaneous",
-] as const;
+import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
 
 const categorySchema = new mongoose.Schema(
   {

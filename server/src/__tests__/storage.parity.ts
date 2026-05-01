@@ -1,17 +1,7 @@
 import { afterEach, beforeAll, afterAll, describe, expect, it } from "vitest";
 import type { Storage } from "../storage/Storage.js";
 import type { Account } from "../storage/types.js";
-
-const DEFAULT_CATEGORY_NAMES = [
-  "Income",
-  "Housing",
-  "Food",
-  "Subscriptions",
-  "Entertainment",
-  "Investment",
-  "Transfer",
-  "Miscellaneous",
-];
+import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
 
 export type MakeStorage = () => Promise<{
   storage: Storage;

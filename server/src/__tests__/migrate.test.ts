@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
 import { migrate } from "../storage/sqlite/migrate.js";
+import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
 
 describe("migrate (SQLite)", () => {
   it("applies every migration to a fresh DB and bumps PRAGMA user_version", async () => {
@@ -38,7 +39,7 @@ describe("migrate (SQLite)", () => {
     db.close();
   });
 
-  it("seeds default categories", async () => {
+  it("seeds exactly the shared DEFAULT_CATEGORY_NAMES list (no drift)", async () => {
     const db = new Database(":memory:");
 
     await migrate(db);
@@ -46,20 +47,9 @@ describe("migrate (SQLite)", () => {
     const rows = db
       .prepare(`SELECT name FROM categories WHERE is_default = 1`)
       .all() as Array<{ name: string }>;
-    const names = rows.map((r) => r.name);
+    const names = rows.map((r) => r.name).sort();
 
-    for (const expected of [
-      "Income",
-      "Housing",
-      "Food",
-      "Subscriptions",
-      "Entertainment",
-      "Investment",
-      "Transfer",
-      "Miscellaneous",
-    ]) {
-      expect(names).toContain(expected);
-    }
+    expect(names).toEqual([...DEFAULT_CATEGORY_NAMES].sort());
 
     db.close();
   });
