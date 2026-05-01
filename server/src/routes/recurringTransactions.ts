@@ -21,6 +21,10 @@ router.post("/", async (req, res) => {
   const created = await getStorage(req).recurringTransactions.create(
     parsed.data
   );
+  if (!created) {
+    res.status(404).json({ error: "Account not found" });
+    return;
+  }
   res.status(201).json(created);
 });
 

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Account as AccountModel } from "../../models/Account.js";
 import { RecurringTransaction as RecurringTransactionModel } from "../../models/RecurringTransaction.js";
 import type { RecurringTransactionsRepo } from "../Storage.js";
 import type { Frequency, RecurringTransaction } from "../types.js";
@@ -56,6 +57,16 @@ export function createMongoRecurringTransactionsRepo(): RecurringTransactionsRep
     },
 
     async create(input) {
+      if (!mongoose.isValidObjectId(input.accountId)) return null;
+      const sourceAccount = await AccountModel.findById(input.accountId).lean();
+      if (!sourceAccount) return null;
+      if (input.linkedAccountId !== undefined) {
+        if (!mongoose.isValidObjectId(input.linkedAccountId)) return null;
+        const linkedAccount = await AccountModel.findById(
+          input.linkedAccountId
+        ).lean();
+        if (!linkedAccount) return null;
+      }
       const doc = await RecurringTransactionModel.create({
         accountId: input.accountId,
         amount: input.amount,

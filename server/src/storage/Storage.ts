@@ -66,7 +66,9 @@ export interface MilestonesRepo {
 export interface RecurringTransactionsRepo {
   findAll(): Promise<RecurringTransaction[]>;
   findActive(): Promise<RecurringTransaction[]>;
-  create(input: RecurringTransactionCreateInput): Promise<RecurringTransaction>;
+  create(
+    input: RecurringTransactionCreateInput
+  ): Promise<RecurringTransaction | null>;
   update(
     id: string,
     input: RecurringTransactionUpdateInput

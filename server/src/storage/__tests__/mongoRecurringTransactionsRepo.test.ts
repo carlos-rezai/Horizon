@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { createStorage } from "../index.js";
 import type { Storage } from "../Storage.js";
@@ -7,7 +15,10 @@ import type { Account } from "../types.js";
 let mongod: MongoMemoryServer;
 let storage: Storage;
 
-const FAKE_ACCOUNT_ID = "000000000000000000000001";
+// Recreated per test by beforeEach so the recurring-create existence checks
+// (added in the validates-references commit) always have a real account to
+// target when the test does not care about the specific id.
+let accountId: string;
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
@@ -28,6 +39,16 @@ afterEach(async () => {
       await collection.deleteMany({});
     }
   }
+});
+
+beforeEach(async () => {
+  const account = await storage.accounts.create({
+    kind: "Girokonto",
+    name: "Main",
+    openingBalance: 100000,
+    openingDate: "2026-01-01",
+  });
+  accountId = account.id;
 });
 
 async function makeAccount(
@@ -54,7 +75,7 @@ async function makeAccount(
 describe("RecurringTransactionsRepo DTO shape", () => {
   it("create returns a RecurringTransaction DTO with string id and accountId, no Mongoose internals", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -63,7 +84,7 @@ describe("RecurringTransactionsRepo DTO shape", () => {
     });
 
     expect(typeof r.id).toBe("string");
-    expect(r.accountId).toBe(FAKE_ACCOUNT_ID);
+    expect(r.accountId).toBe(accountId);
     expect(r.amount).toBe(95000);
     expect(r.description).toBe("Rent");
     expect(r.category).toBe("Housing");
@@ -79,7 +100,7 @@ describe("RecurringTransactionsRepo DTO shape", () => {
 
   it("findAll returns DTOs with string ids", async () => {
     await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -102,7 +123,7 @@ describe("RecurringTransactionsRepo DTO shape", () => {
 describe("RecurringTransactionsRepo.create", () => {
   it("defaults isActive to true", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -132,7 +153,7 @@ describe("RecurringTransactionsRepo.create", () => {
 
   it("preserves monthOfYear for an annual recurring transaction", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 500000,
       description: "Sondertilgung",
       category: "Transfer",
@@ -147,7 +168,7 @@ describe("RecurringTransactionsRepo.create", () => {
 
   it("does not set linkedAccountId or monthOfYear when not provided", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -167,7 +188,7 @@ describe("RecurringTransactionsRepo.create", () => {
 describe("RecurringTransactionsRepo.findAll", () => {
   it("returns both active and inactive rows", async () => {
     const a = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -175,7 +196,7 @@ describe("RecurringTransactionsRepo.findAll", () => {
       dayOfMonth: 1,
     });
     const b = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 20000,
       description: "Gym",
       category: "Subscriptions",
@@ -205,7 +226,7 @@ describe("RecurringTransactionsRepo.findAll", () => {
 describe("RecurringTransactionsRepo.findActive", () => {
   it("returns only rows with isActive: true", async () => {
     const active = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -213,7 +234,7 @@ describe("RecurringTransactionsRepo.findActive", () => {
       dayOfMonth: 1,
     });
     const inactive = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 20000,
       description: "Gym",
       category: "Subscriptions",
@@ -234,7 +255,7 @@ describe("RecurringTransactionsRepo.findActive", () => {
 
   it("returns an empty array when no active rows exist", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -255,7 +276,7 @@ describe("RecurringTransactionsRepo.findActive", () => {
 describe("RecurringTransactionsRepo.update", () => {
   it("patches amount, description, and category", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -276,7 +297,7 @@ describe("RecurringTransactionsRepo.update", () => {
 
   it("toggles isActive: true → false", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -293,7 +314,7 @@ describe("RecurringTransactionsRepo.update", () => {
 
   it("toggles isActive: false → true", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",
@@ -332,7 +353,7 @@ describe("RecurringTransactionsRepo.update", () => {
 describe("RecurringTransactionsRepo.delete", () => {
   it("returns true and removes the row", async () => {
     const r = await storage.recurringTransactions.create({
-      accountId: FAKE_ACCOUNT_ID,
+      accountId,
       amount: 95000,
       description: "Rent",
       category: "Housing",

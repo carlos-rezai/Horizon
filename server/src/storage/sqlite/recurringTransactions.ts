@@ -47,6 +47,9 @@ export function createSqliteRecurringTransactionsRepo(
   const selectByIdStmt = db.prepare(
     `SELECT * FROM recurring_transactions WHERE id = ?`
   );
+  const selectAccountByIdStmt = db.prepare(
+    `SELECT id FROM accounts WHERE id = ?`
+  );
   const insertStmt = db.prepare(
     `INSERT INTO recurring_transactions
        (id, account_id, amount, description, category, frequency,
@@ -81,6 +84,12 @@ export function createSqliteRecurringTransactionsRepo(
     },
 
     async create(input) {
+      if (!isValidUuid(input.accountId)) return null;
+      if (!selectAccountByIdStmt.get(input.accountId)) return null;
+      if (input.linkedAccountId !== undefined) {
+        if (!isValidUuid(input.linkedAccountId)) return null;
+        if (!selectAccountByIdStmt.get(input.linkedAccountId)) return null;
+      }
       const id = randomUUID();
       insertStmt.run(
         id,
