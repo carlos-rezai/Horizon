@@ -2,7 +2,7 @@ import type { AccountKind } from "../models/Account.js";
 import type { Frequency } from "../models/RecurringTransaction.js";
 
 export interface ProjectionAccountEntry {
-  _id: string;
+  id: string;
   kind: AccountKind;
   openingBalance: number;
   openingDate?: string;
@@ -129,14 +129,14 @@ export function projectBalances(
   months: number = DEFAULT_PROJECTION_MONTHS
 ): MonthlySnapshot[] {
   const accountMap = new Map<string, ProjectionAccountEntry>();
-  for (const a of accounts) accountMap.set(a._id, a);
+  for (const a of accounts) accountMap.set(a.id, a);
 
   const activeRecurring = recurringTransactions.filter((r) => r.isActive);
 
   // Initialise from opening balances
   const runningBalances = new Map<string, number>();
   for (const a of accounts) {
-    runningBalances.set(a._id, a.openingBalance);
+    runningBalances.set(a.id, a.openingBalance);
   }
 
   // Replay Loop: replay each account's recurring history from its Opening Date
@@ -174,11 +174,11 @@ export function projectBalances(
   // Add Variable Spending actual transactions recorded before fromDate
   for (const a of accounts) {
     const variableSpending = transactions
-      .filter((tx) => tx.accountId === a._id && tx.date.slice(0, 7) < fromDate)
+      .filter((tx) => tx.accountId === a.id && tx.date.slice(0, 7) < fromDate)
       .reduce((sum, tx) => sum + tx.amount, 0);
     runningBalances.set(
-      a._id,
-      (runningBalances.get(a._id) ?? 0) + variableSpending
+      a.id,
+      (runningBalances.get(a.id) ?? 0) + variableSpending
     );
   }
 
@@ -207,12 +207,12 @@ export function projectBalances(
 
     const totalLiquid = accounts
       .filter((a) => a.kind === "Girokonto" || a.kind === "Tagesgeld")
-      .reduce((sum, a) => sum + (runningBalances.get(a._id) ?? 0), 0);
+      .reduce((sum, a) => sum + (runningBalances.get(a.id) ?? 0), 0);
 
     const accountsSnapshot: Record<string, AccountSnapshot> = {};
     for (const a of accounts) {
       const snapshot: AccountSnapshot = {
-        projected: runningBalances.get(a._id) ?? 0,
+        projected: runningBalances.get(a.id) ?? 0,
       };
 
       if (month <= currentDate) {
@@ -220,12 +220,12 @@ export function projectBalances(
           a.openingBalance +
           transactions
             .filter(
-              (tx) => tx.accountId === a._id && tx.date.slice(0, 7) <= month
+              (tx) => tx.accountId === a.id && tx.date.slice(0, 7) <= month
             )
             .reduce((sum, tx) => sum + tx.amount, 0);
       }
 
-      accountsSnapshot[a._id] = snapshot;
+      accountsSnapshot[a.id] = snapshot;
     }
 
     snapshots.push({

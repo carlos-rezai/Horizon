@@ -45,7 +45,7 @@ describe("projectBalances - shape", () => {
 
   it("each snapshot has month, accounts map, netCashflow, and totalLiquid", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
     ];
     const snapshots = projectBalances(accounts, [], [], "2026-04", "2026-04");
 
@@ -66,7 +66,7 @@ describe("projectBalances - shape", () => {
 describe("projectBalances - monthly recurrence", () => {
   it("a monthly recurring transaction reduces the account balance every month", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
     ];
     const recurring = [
       {
@@ -95,7 +95,7 @@ describe("projectBalances - monthly recurrence", () => {
 
   it("netCashflow for each month reflects the monthly recurring amount", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
     ];
     const recurring = [
       {
@@ -120,8 +120,8 @@ describe("projectBalances - monthly recurrence", () => {
 
   it("totalLiquid reflects only Girokonto and Tagesgeld projected balances", () => {
     const accounts = [
-      { _id: "giro", kind: "Girokonto" as const, openingBalance: 100000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 5000000 },
+      { id: "giro", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 5000000 },
     ];
     const recurring = [
       {
@@ -153,7 +153,7 @@ describe("projectBalances - monthly recurrence", () => {
 describe("projectBalances - quarterly recurrence", () => {
   it("fires in months 0, 3, 6, 9 and not in between", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 200000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 200000 },
     ];
     const recurring = [
       {
@@ -194,7 +194,7 @@ describe("projectBalances - quarterly recurrence", () => {
 describe("projectBalances - annual recurrence", () => {
   it("fires in months 0, 12, 24 and not in between", () => {
     const accounts = [
-      { _id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
+      { id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
     ];
     const recurring = [
       {
@@ -234,8 +234,8 @@ describe("projectBalances - annual recurrence", () => {
 describe("projectBalances - Sondertilgung", () => {
   it("annual ST (linkedAccountId → Mortgage) reduces Mortgage balance when it fires", () => {
     const accounts = [
-      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
     ];
     const recurring = [
       {
@@ -270,8 +270,8 @@ describe("projectBalances - Sondertilgung", () => {
 
   it("a transfer to a Mortgage is excluded from netCashflow", () => {
     const accounts = [
-      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
     ];
     const recurring = [
       {
@@ -297,8 +297,8 @@ describe("projectBalances - Sondertilgung", () => {
 
   it("a regular Darlehen (monthly, from Girokonto) does NOT affect Mortgage balance", () => {
     const accounts = [
-      { _id: "giro", kind: "Girokonto" as const, openingBalance: 500000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
+      { id: "giro", kind: "Girokonto" as const, openingBalance: 500000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
     ];
     const recurring = [
       {
@@ -328,9 +328,9 @@ describe("projectBalances - Sondertilgung", () => {
 
   it("clamps Mortgage to zero when ST amount exceeds remaining balance", () => {
     const accounts = [
-      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
       // Mortgage balance smaller than the annual ST amount
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
     ];
     const recurring = [
       {
@@ -362,8 +362,8 @@ describe("projectBalances - Sondertilgung", () => {
 
   it("Restschuld never goes below zero across all projected months", () => {
     const accounts = [
-      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 5000000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 1000000 },
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 5000000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 1000000 },
     ];
     const recurring = [
       {
@@ -397,7 +397,7 @@ describe("projectBalances - Sondertilgung", () => {
 describe("projectBalances - deactivated recurring", () => {
   it("excludes deactivated recurring transactions from all snapshots", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
     ];
     const recurring = [
       {
@@ -430,7 +430,7 @@ describe("projectBalances - deactivated recurring", () => {
 describe("projectBalances - plan vs actual", () => {
   it("past month snapshots include actual balance derived from transactions", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
     ];
     const transactions = [
       { accountId: "a1", date: "2026-01-15", amount: 50000 },
@@ -453,7 +453,7 @@ describe("projectBalances - plan vs actual", () => {
 
   it("future month snapshots do not include actual balance", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 100000 },
     ];
     // fromDate = 2026-04, currentDate = 2026-04 → month 1+ (2026-05 onwards) are future
     const snapshots = projectBalances(accounts, [], [], "2026-04", "2026-04");
@@ -540,7 +540,7 @@ describe("GET /projection", () => {
 describe("projectBalances - annual recurrence with monthOfYear", () => {
   it("annual with monthOfYear: 10 from April does not fire in April (index 0) and fires in October (index 6)", () => {
     const accounts = [
-      { _id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
+      { id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
     ];
     const recurring = [
       {
@@ -572,7 +572,7 @@ describe("projectBalances - annual recurrence with monthOfYear", () => {
 
   it("annual with monthOfYear: 10 fires at October the following year (index 18), not April (index 12)", () => {
     const accounts = [
-      { _id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
+      { id: "a1", kind: "Tagesgeld" as const, openingBalance: 500000 },
     ];
     const recurring = [
       {
@@ -608,7 +608,7 @@ describe("projectBalances - annual recurrence with monthOfYear", () => {
 describe("projectBalances - quarterly recurrence with monthOfYear", () => {
   it("quarterly with monthOfYear: 1 from April fires at July (index 3), October (index 6), January (index 9) — not April (index 0)", () => {
     const accounts = [
-      { _id: "a1", kind: "Girokonto" as const, openingBalance: 200000 },
+      { id: "a1", kind: "Girokonto" as const, openingBalance: 200000 },
     ];
     const recurring = [
       {
@@ -650,7 +650,7 @@ describe("projectBalances - replay loop", () => {
   it("account opened 3 months ago with a monthly recurring starts the forward projection at Opening Balance + 3 months applied", () => {
     const accounts = [
       {
-        _id: "a1",
+        id: "a1",
         kind: "Girokonto" as const,
         openingBalance: 1000000,
         openingDate: "2026-01-01",
@@ -684,13 +684,13 @@ describe("projectBalances - replay loop", () => {
   it("account opened 13 months ago with annual ST (monthOfYear: 10) has the ST applied once when October is within the replay window", () => {
     const accounts = [
       {
-        _id: "tagesgeld",
+        id: "tagesgeld",
         kind: "Tagesgeld" as const,
         openingBalance: 1000000,
         openingDate: "2025-03-01",
       },
       {
-        _id: "mortgage",
+        id: "mortgage",
         kind: "Mortgage" as const,
         openingBalance: 5000000,
         openingDate: "2025-03-01",
@@ -727,13 +727,13 @@ describe("projectBalances - replay loop", () => {
   it("two accounts with different Opening Dates each initialise from their own start date independently", () => {
     const accounts = [
       {
-        _id: "giro",
+        id: "giro",
         kind: "Girokonto" as const,
         openingBalance: 500000,
         openingDate: "2026-01-01",
       },
       {
-        _id: "savings",
+        id: "savings",
         kind: "Tagesgeld" as const,
         openingBalance: 1000000,
         openingDate: "2026-03-01",
@@ -776,7 +776,7 @@ describe("projectBalances - replay loop", () => {
   it("Variable Spending actual transactions before the current month are included alongside replayed recurring history", () => {
     const accounts = [
       {
-        _id: "a1",
+        id: "a1",
         kind: "Girokonto" as const,
         openingBalance: 100000,
         openingDate: "2026-01-01",
@@ -813,13 +813,13 @@ describe("projectBalances - replay loop", () => {
   it("account opened in April 2025 with annual ST (monthOfYear: 10) fires ST in October during 13-month replay, not in April", () => {
     const accounts = [
       {
-        _id: "tagesgeld",
+        id: "tagesgeld",
         kind: "Tagesgeld" as const,
         openingBalance: 1000000,
         openingDate: "2025-04-01",
       },
       {
-        _id: "mortgage",
+        id: "mortgage",
         kind: "Mortgage" as const,
         openingBalance: 5000000,
         openingDate: "2025-04-01",
@@ -863,8 +863,8 @@ describe("projectBalances - replay loop", () => {
 describe("projectBalances - ST with monthOfYear", () => {
   it("monthly Tagesgeld income combined with annual ST (monthOfYear: 10) does not produce a negative Tagesgeld balance in May", () => {
     const accounts = [
-      { _id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 100000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 10000000 },
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 100000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 10000000 },
     ];
     const recurring = [
       {
@@ -931,9 +931,9 @@ describe("projectBalances - ST with monthOfYear", () => {
 
 describe("projectBalances - correctness verification suite", () => {
   const accounts = [
-    { _id: "giro", kind: "Girokonto" as const, openingBalance: 300000 },
-    { _id: "savings", kind: "Tagesgeld" as const, openingBalance: 500000 },
-    { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 2000000 },
+    { id: "giro", kind: "Girokonto" as const, openingBalance: 300000 },
+    { id: "savings", kind: "Tagesgeld" as const, openingBalance: 500000 },
+    { id: "mortgage", kind: "Mortgage" as const, openingBalance: 2000000 },
   ];
   const recurring = [
     {
@@ -1083,8 +1083,8 @@ describe("projectBalances - correctness verification suite", () => {
 
   it("Sondertilgung clamping: Tagesgeld is debited only by the remaining Mortgage balance when ST exceeds it", () => {
     const clampAccounts = [
-      { _id: "savings", kind: "Tagesgeld" as const, openingBalance: 300000 },
-      { _id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
+      { id: "savings", kind: "Tagesgeld" as const, openingBalance: 300000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
     ];
     const clampRecurring = [
       {

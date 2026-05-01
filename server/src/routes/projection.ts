@@ -22,7 +22,7 @@ router.get("/", async (req, res) => {
   ]);
 
   const accountEntries = accounts.map((a) => ({
-    _id: a.id,
+    id: a.id,
     kind: a.kind,
     openingBalance: a.openingBalance,
     openingDate: a.openingDate,
