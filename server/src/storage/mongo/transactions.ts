@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Account as AccountModel } from "../../models/Account.js";
 import { Transaction as TransactionModel } from "../../models/Transaction.js";
 import type { TransactionsRepo } from "../Storage.js";
 import type { Transaction } from "../types.js";
@@ -72,7 +73,6 @@ export function createMongoTransactionsRepo(): TransactionsRepo {
 
     async create(accountId, input) {
       if (!mongoose.isValidObjectId(accountId)) return null;
-      const { Account: AccountModel } = await import("../../models/Account.js");
       const account = await AccountModel.findById(accountId).lean();
       if (!account) return null;
       const doc = await TransactionModel.create({
