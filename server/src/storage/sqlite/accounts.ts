@@ -56,6 +56,13 @@ export function createSqliteAccountsRepo(
      WHERE id = ?`
   );
   const deleteStmt = db.prepare(`DELETE FROM accounts WHERE id = ?`);
+  const countRecurringByAccountStmt = db.prepare(
+    `SELECT COUNT(*) AS n FROM recurring_transactions
+       WHERE account_id = ? OR linked_account_id = ?`
+  );
+  const countMilestonesByAccountStmt = db.prepare(
+    `SELECT COUNT(*) AS n FROM milestones WHERE account_id = ?`
+  );
   const selectAllWithBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance,
@@ -138,6 +145,14 @@ export function createSqliteAccountsRepo(
       if (!existing) return null;
       const txs = await transactions.findByAccount(id);
       if (txs.length > 0) return { ok: false, reason: "has_transactions" };
+      const recurringCount = (
+        countRecurringByAccountStmt.get(id, id) as { n: number }
+      ).n;
+      if (recurringCount > 0) return { ok: false, reason: "in_use" };
+      const milestoneCount = (
+        countMilestonesByAccountStmt.get(id) as { n: number }
+      ).n;
+      if (milestoneCount > 0) return { ok: false, reason: "in_use" };
       deleteStmt.run(id);
       return { ok: true };
     },

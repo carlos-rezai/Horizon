@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { Account as AccountModel } from "../../models/Account.js";
+import { RecurringTransaction as RecurringTransactionModel } from "../../models/RecurringTransaction.js";
+import { Milestone as MilestoneModel } from "../../models/Milestone.js";
 import type { AccountsRepo, TransactionsRepo } from "../Storage.js";
 import type { Account, AccountKind, AccountWithBalance } from "../types.js";
 
@@ -103,6 +105,14 @@ export function createMongoAccountsRepo(
       if (!doc) return null;
       const txs = await transactions.findByAccount(id);
       if (txs.length > 0) return { ok: false, reason: "has_transactions" };
+      const recurringCount = await RecurringTransactionModel.countDocuments({
+        $or: [{ accountId: id }, { linkedAccountId: id }],
+      });
+      if (recurringCount > 0) return { ok: false, reason: "in_use" };
+      const milestoneCount = await MilestoneModel.countDocuments({
+        accountId: id,
+      });
+      if (milestoneCount > 0) return { ok: false, reason: "in_use" };
       await doc.deleteOne();
       return { ok: true };
     },
