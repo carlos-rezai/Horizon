@@ -1,21 +1,11 @@
 import { Router, type Request } from "express";
 import { MilestoneCreateSchema } from "../schemas/milestone.js";
 import type { Storage } from "../storage/Storage.js";
-import type { Milestone } from "../storage/types.js";
 
 const router = Router();
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
-}
-
-function toWire(milestone: Milestone): Record<string, unknown> {
-  return {
-    _id: milestone.id,
-    name: milestone.name,
-    accountId: milestone.accountId,
-    targetBalance: milestone.targetBalance,
-  };
 }
 
 router.post("/", async (req, res) => {
@@ -31,12 +21,12 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  res.status(201).json(toWire(milestone));
+  res.status(201).json(milestone);
 });
 
 router.get("/", async (req, res) => {
   const milestones = await getStorage(req).milestones.findAll();
-  res.json(milestones.map(toWire));
+  res.json(milestones);
 });
 
 router.delete("/:id", async (req, res) => {

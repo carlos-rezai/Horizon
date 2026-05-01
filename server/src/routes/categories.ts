@@ -1,7 +1,6 @@
 import { Router, type Request } from "express";
 import { CategoryCreateSchema } from "../schemas/category.js";
 import type { Storage } from "../storage/Storage.js";
-import type { Category } from "../storage/types.js";
 
 const router = Router();
 
@@ -9,17 +8,9 @@ function getStorage(req: Request): Storage {
   return req.app.locals.storage;
 }
 
-function toWire(category: Category): Record<string, unknown> {
-  return {
-    _id: category.id,
-    name: category.name,
-    isDefault: category.isDefault,
-  };
-}
-
 router.get("/", async (req, res) => {
   const categories = await getStorage(req).categories.findAll();
-  res.json(categories.map(toWire));
+  res.json(categories);
 });
 
 router.post("/", async (req, res) => {
@@ -29,7 +20,7 @@ router.post("/", async (req, res) => {
     return;
   }
   const category = await getStorage(req).categories.create(parsed.data);
-  res.status(201).json(toWire(category));
+  res.status(201).json(category);
 });
 
 router.delete("/:id", async (req, res) => {

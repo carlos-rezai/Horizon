@@ -5,32 +5,11 @@ import {
 } from "../schemas/account.js";
 import { calcNetCashflow, calcFreeCashflow } from "../lib/cashflow.js";
 import type { Storage } from "../storage/Storage.js";
-import type { Account, AccountWithBalance } from "../storage/types.js";
 
 const router = Router();
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
-}
-
-function toWire(account: Account): Record<string, unknown> {
-  const out: Record<string, unknown> = {
-    _id: account.id,
-    kind: account.kind,
-    name: account.name,
-    openingBalance: account.openingBalance,
-    openingDate: account.openingDate,
-  };
-  if (account.sondertilgungAllowance !== undefined) {
-    out.sondertilgungAllowance = account.sondertilgungAllowance;
-  }
-  return out;
-}
-
-function toWireWithBalance(
-  account: AccountWithBalance
-): Record<string, unknown> {
-  return { ...toWire(account), balance: account.balance };
 }
 
 router.post("/", async (req, res) => {
@@ -40,12 +19,12 @@ router.post("/", async (req, res) => {
     return;
   }
   const account = await getStorage(req).accounts.create(parsed.data);
-  res.status(201).json(toWire(account));
+  res.status(201).json(account);
 });
 
 router.get("/", async (req, res) => {
   const accounts = await getStorage(req).accounts.findAllWithBalance();
-  res.json(accounts.map(toWireWithBalance));
+  res.json(accounts);
 });
 
 router.get("/liquid", async (req, res) => {
@@ -86,7 +65,7 @@ router.get("/:id", async (req, res) => {
     res.status(404).json({ error: "Account not found" });
     return;
   }
-  res.json(toWireWithBalance(account));
+  res.json(account);
 });
 
 router.patch("/:id", async (req, res) => {
@@ -108,7 +87,7 @@ router.patch("/:id", async (req, res) => {
   const withBalance = await getStorage(req).accounts.findByIdWithBalance(
     updated.id
   );
-  res.json(withBalance ? toWireWithBalance(withBalance) : toWire(updated));
+  res.json(withBalance ?? updated);
 });
 
 router.delete("/:id", async (req, res) => {

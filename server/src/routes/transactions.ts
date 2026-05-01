@@ -4,28 +4,11 @@ import {
   TransactionUpdateSchema,
 } from "../schemas/transaction.js";
 import type { Storage } from "../storage/Storage.js";
-import type { Transaction } from "../storage/types.js";
 
 const router = Router();
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
-}
-
-function toWire(tx: Transaction): Record<string, unknown> {
-  const out: Record<string, unknown> = {
-    _id: tx.id,
-    accountId: tx.accountId,
-    date: tx.date,
-    amount: tx.amount,
-    description: tx.description,
-    category: tx.category,
-  };
-  if (tx.transferId !== undefined) out.transferId = tx.transferId;
-  if (tx.recurringTransactionId !== undefined) {
-    out.recurringTransactionId = tx.recurringTransactionId;
-  }
-  return out;
 }
 
 router.post("/accounts/:id/transactions", async (req, res) => {
@@ -44,7 +27,7 @@ router.post("/accounts/:id/transactions", async (req, res) => {
     return;
   }
 
-  res.status(201).json(toWire(created));
+  res.status(201).json(created);
 });
 
 router.get("/accounts/:id/transactions", async (req, res) => {
@@ -55,7 +38,7 @@ router.get("/accounts/:id/transactions", async (req, res) => {
   }
 
   const txs = await getStorage(req).transactions.findByAccount(req.params.id);
-  res.json(txs.map(toWire));
+  res.json(txs);
 });
 
 router.patch("/transactions/:id", async (req, res) => {
@@ -74,7 +57,7 @@ router.patch("/transactions/:id", async (req, res) => {
     return;
   }
 
-  res.json(toWire(updated));
+  res.json(updated);
 });
 
 router.delete("/transactions/:id", async (req, res) => {
