@@ -258,6 +258,20 @@
 | **DeleteResult**       | The discriminated-union return shape of every repo's `delete` method — either `{ ok: true }` or `{ ok: false, reason }` where `reason` is one of `has_transactions`, `is_transfer_leg`, `is_default`, or `in_use`      | Delete outcome, delete error            |
 | **`in_use`** reason    | The DeleteResult reason returned by `accounts.delete` when a recurring transaction (active or inactive, on `accountId` or `linkedAccountId`) or a milestone still references the account — surfaced by routes as a 409 | Referenced, has-references              |
 
+## SQLite Driver Operations (new)
+
+| Term                       | Definition                                                                                                                                                                                                                | Aliases to avoid                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Connection Pragma**      | A SQLite `PRAGMA` setting that applies to a single open connection (not the database file) — Horizon applies `journal_mode = WAL`, `synchronous = NORMAL`, `busy_timeout = 5000`, `foreign_keys = ON`, `mmap_size = 64MB` | DB setting, config flag             |
+| **WAL Mode**               | The Write-Ahead Logging `journal_mode` used by the **SQLite Driver** — enables crash-safe writes via `.db-wal` / `.db-shm` sidecar files                                                                                  | Journal mode, write-ahead log       |
+| **WAL Checkpoint**         | The `PRAGMA wal_checkpoint(TRUNCATE)` operation run by `Storage.close()` to fold the WAL back into the main `.db` file, leaving a clean canonical snapshot                                                                | Checkpoint, WAL flush               |
+| **Integrity Check**        | The `PRAGMA integrity_check` run on startup after `migrate()` — non-`ok` result throws **StorageIntegrityError** for the Electron shell to surface                                                                        | DB check, validation                |
+| **StorageIntegrityError**  | The typed error thrown by the **SQLite Driver** when **Integrity Check** fails — never auto-recovered, always surfaced to the user                                                                                        | Corruption error, DB error          |
+| **Forward-only Migration** | The migration policy: each schema change is a new numbered SQL file, never edited after shipping; no down-migrations exist — restore-from-backup is the only rollback path                                                | Append-only migration, irreversible |
+| **Online Backup**          | The `db.backup(destPath)` operation exposed via `Storage.backup()` (SQLite driver only) — uses better-sqlite3's online backup API, safe while the DB is open and aware of WAL                                             | Snapshot, backup copy               |
+| **Restore**                | The `Storage.restore(srcPath)` operation that closes storage, validates the source via **Integrity Check** and `user_version`, copies it into place, and reopens                                                          | Recover, import                     |
+| **`HORIZON_DB_PATH`**      | The env var the entrypoint reads to resolve the SQLite file path before calling `createSqliteStorage(path)` — Electron main sets it to `app.getPath('userData')/horizon.db`; local dev defaults to `./horizon.db`         | DB path env, sqlite path            |
+
 ## Build Targets (new)
 
 | Term              | Definition                                                                                                                                                                      | Aliases to avoid                      |
@@ -277,6 +291,12 @@
 - Every **Storage Driver** must pass the **Parity Spec** — drift between drivers is impossible to merge
 - An **AccountWithBalance** is derived inside the Storage layer — each driver computes it with its native primitive (Mongo aggregation pipeline, SQLite `LEFT JOIN ... GROUP BY`)
 - A **Use-case Method** owns its own atomicity — `transfers.create` is two-leg-or-nothing in both drivers
+- The **SQLite Driver** applies a fixed set of **Connection Pragmas** at construction — including **WAL Mode** for crash-safe writes
+- Every startup runs an **Integrity Check** after `migrate()` — failure throws **StorageIntegrityError** rather than attempting silent recovery
+- `Storage.close()` runs a **WAL Checkpoint** before closing the connection — guaranteeing the on-disk `.db` is the canonical snapshot at shutdown
+- The **SQLite Driver** exposes **Online Backup** and **Restore** on the **Storage** facade — the **Mongo Driver** throws `not supported`
+- Schema changes use **Forward-only Migration** — there is no down-migration; **Restore** from backup is the rollback path
+- The **SQLite Driver** never reads `process.env` — the file path enters via the `path` argument, sourced by the entrypoint from **`HORIZON_DB_PATH`**
 
 ## Example dialogue (Repository Abstraction)
 
@@ -299,6 +319,32 @@
 > **Dev:** "How do we know the two drivers actually behave the same?"
 >
 > **Domain expert:** "The Parity Spec. One shared test suite, run twice — once against an in-memory Mongo, once against an in-memory SQLite. If a method behaves differently in either driver, a test fails."
+
+## Example dialogue (SQLite Driver Operations)
+
+> **Dev:** "When the SQLite Driver opens the database, what's the first thing it does?"
+>
+> **Domain expert:** "It applies the Connection Pragmas — WAL Mode, synchronous = NORMAL, busy_timeout, foreign_keys, mmap_size. Then it runs migrate to bring the schema up to user_version. Then it runs an Integrity Check. If integrity_check returns anything other than 'ok', it throws a StorageIntegrityError and the Electron shell prompts the user to restore from backup."
+>
+> **Dev:** "Why throw instead of trying to repair?"
+>
+> **Domain expert:** "It's finance data. We never silently 'fix' anything. The user always sees the corruption and chooses what to do."
+>
+> **Dev:** "And on shutdown?"
+>
+> **Domain expert:** "Storage.close runs a WAL Checkpoint with TRUNCATE before closing the connection. That folds the .db-wal back into the .db file so the on-disk state is one clean snapshot — which makes Online Backup straightforward."
+>
+> **Dev:** "How does Online Backup actually work?"
+>
+> **Domain expert:** "Storage.backup(destPath) calls better-sqlite3's db.backup. It's safe while the DB is open, it handles WAL correctly, and it produces a single self-contained file. The Mongo Driver doesn't implement it — it throws 'not supported'."
+>
+> **Dev:** "What if I need to roll back a bad schema change?"
+>
+> **Domain expert:** "There's no down-migration. Migrations are Forward-only — once shipped, never edited. The rollback path is Restore from a previous Online Backup. That's the deal we made: schema mistakes are recoverable via backup, not via SQL."
+>
+> **Dev:** "And the file path — how does the driver know where to put horizon.db?"
+>
+> **Domain expert:** "It doesn't. The driver takes a path argument, full stop. The entrypoint reads HORIZON_DB_PATH from the environment and passes it in. On the Desktop Build, Electron main sets that env var to app.getPath('userData') + '/horizon.db' before spawning the Express child. The driver never imports anything from Electron."
 
 ## Flagged ambiguities
 
@@ -337,3 +383,14 @@
 - **"production"** (new) — historically used to mean "the deployed instance with real data".
   Prefer **Cloud Build** when the contrast is with the Desktop Build, and reserve "production"
   for environment-vs-development distinctions (production vs staging).
+- **"backup"** (new) — overloaded (file copy, OS-level snapshot, online backup). Always
+  qualify as **Online Backup** when referring to the `Storage.backup(destPath)` mechanism
+  using better-sqlite3's `db.backup` API. A plain file copy of `horizon.db` is **not** an
+  Online Backup — it misses `.db-wal`/`.db-shm` and risks a torn snapshot.
+- **"checkpoint"** (new) — in SQLite specifically, the operation that folds the WAL back
+  into the main database file. Always qualify as **WAL Checkpoint** to disambiguate from
+  generic "save point" or "checkpoint" usage in other domains.
+- **"pragma"** (new) — SQLite has both schema-affecting pragmas (`user_version`, used by
+  migrations) and connection-state pragmas (`journal_mode`, `synchronous`, `busy_timeout`).
+  Always qualify as **Connection Pragma** when discussing per-connection tuning, to keep
+  the boundary between connection state and schema state explicit.
