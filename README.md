@@ -175,7 +175,7 @@ Then open http://localhost:5173 in your browser.
 | Financial Projection Dashboard             | ✅ Complete |
 | Restschuld Trajectory Chart                | ✅ Complete |
 | Projection Engine Audit                    | ✅ Complete |
-| Repository abstraction (storage driver)    | 🔲 Planned  |
+| Repository abstraction (storage driver)    | ✅ Complete |
 | SQLite driver (offline storage)            | 🔲 Planned  |
 | Electron desktop shell                     | 🔲 Planned  |
 | Desktop packaging (Windows installer)      | 🔲 Planned  |
