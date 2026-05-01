@@ -42,7 +42,7 @@ async function createAccount(
     openingBalance,
     openingDate: "2026-01-01",
   });
-  return res.body as { _id: string };
+  return res.body as { id: string };
 }
 
 async function addTransaction(
@@ -145,13 +145,13 @@ describe("GET /accounts/:id/cashflow", () => {
   it("returns netCashflow and freeCashflow for the specified month", async () => {
     const account = await createAccount("Girokonto", "Main", 0);
 
-    await addTransaction(account._id, 323643, "2026-03-31");
-    await addTransaction(account._id, -95442, "2026-03-02");
+    await addTransaction(account.id, 323643, "2026-03-31");
+    await addTransaction(account.id, -95442, "2026-03-02");
     // different month — should not be included
-    await addTransaction(account._id, -50000, "2026-04-01");
+    await addTransaction(account.id, -50000, "2026-04-01");
 
     const res = await request(app).get(
-      `/accounts/${account._id}/cashflow?month=2026-03`
+      `/accounts/${account.id}/cashflow?month=2026-03`
     );
 
     expect(res.status).toBe(200);
@@ -163,11 +163,11 @@ describe("GET /accounts/:id/cashflow", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    await addTransaction(source._id, 323643, "2026-03-31");
+    await addTransaction(source.id, 323643, "2026-03-31");
 
     await request(app).post("/transfers").send({
-      fromAccountId: source._id,
-      toAccountId: dest._id,
+      fromAccountId: source.id,
+      toAccountId: dest.id,
       amount: 70000,
       date: "2026-03-01",
       description: "Savings transfer",
@@ -175,7 +175,7 @@ describe("GET /accounts/:id/cashflow", () => {
     });
 
     const res = await request(app).get(
-      `/accounts/${source._id}/cashflow?month=2026-03`
+      `/accounts/${source.id}/cashflow?month=2026-03`
     );
 
     expect(res.status).toBe(200);
@@ -193,7 +193,7 @@ describe("GET /accounts/liquid", () => {
     await createAccount("Tagesgeld", "Savings", 170300);
 
     // add a transaction to verify derived balance is used
-    await addTransaction(girokonto._id, 323643, "2026-03-01");
+    await addTransaction(girokonto.id, 323643, "2026-03-01");
 
     const res = await request(app).get("/accounts/liquid");
 

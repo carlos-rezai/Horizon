@@ -36,7 +36,7 @@ async function createAccount(overrides = {}) {
       openingDate: "2026-01-01",
       ...overrides,
     });
-  return res.body as { _id: string; balance: number };
+  return res.body as { id: string; balance: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -48,7 +48,7 @@ describe("POST /accounts/:id/transactions", () => {
     const account = await createAccount();
 
     const res = await request(app)
-      .post(`/accounts/${account._id}/transactions`)
+      .post(`/accounts/${account.id}/transactions`)
       .send({
         date: "2026-03-15",
         amount: -8500,
@@ -57,12 +57,12 @@ describe("POST /accounts/:id/transactions", () => {
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.accountId).toBe(account._id);
+    expect(res.body.accountId).toBe(account.id);
     expect(res.body.amount).toBe(-8500);
     expect(res.body.description).toBe("Supermarket");
     expect(res.body.category).toBe("Food");
     expect(res.body.date).toBeDefined();
-    expect(res.body._id).toBeDefined();
+    expect(res.body.id).toBeDefined();
   });
 
   it("returns 404 for an unknown account id", async () => {
@@ -82,7 +82,7 @@ describe("POST /accounts/:id/transactions", () => {
     const account = await createAccount();
 
     const res = await request(app)
-      .post(`/accounts/${account._id}/transactions`)
+      .post(`/accounts/${account.id}/transactions`)
       .send({ description: "Missing fields" });
 
     expect(res.status).toBe(400);
@@ -97,34 +97,28 @@ describe("GET /accounts/:id/transactions", () => {
   it("returns all transactions for an account sorted by date descending", async () => {
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-01",
-        amount: -5000,
-        description: "First",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -5000,
+      description: "First",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-20",
-        amount: -3000,
-        description: "Third",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-20",
+      amount: -3000,
+      description: "Third",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-10",
-        amount: -2000,
-        description: "Second",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-10",
+      amount: -2000,
+      description: "Second",
+      category: "Food",
+    });
 
-    const res = await request(app).get(`/accounts/${account._id}/transactions`);
+    const res = await request(app).get(`/accounts/${account.id}/transactions`);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(3);
@@ -136,7 +130,7 @@ describe("GET /accounts/:id/transactions", () => {
   it("returns empty array when account has no transactions", async () => {
     const account = await createAccount();
 
-    const res = await request(app).get(`/accounts/${account._id}/transactions`);
+    const res = await request(app).get(`/accounts/${account.id}/transactions`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
@@ -152,7 +146,7 @@ describe("PATCH /transactions/:id", () => {
     const account = await createAccount();
 
     const created = await request(app)
-      .post(`/accounts/${account._id}/transactions`)
+      .post(`/accounts/${account.id}/transactions`)
       .send({
         date: "2026-03-15",
         amount: -8500,
@@ -161,7 +155,7 @@ describe("PATCH /transactions/:id", () => {
       });
 
     const res = await request(app)
-      .patch(`/transactions/${created.body._id}`)
+      .patch(`/transactions/${created.body.id}`)
       .send({
         amount: -9000,
         description: "Updated",
@@ -192,7 +186,7 @@ describe("DELETE /transactions/:id", () => {
     const account = await createAccount();
 
     const created = await request(app)
-      .post(`/accounts/${account._id}/transactions`)
+      .post(`/accounts/${account.id}/transactions`)
       .send({
         date: "2026-03-15",
         amount: -8500,
@@ -200,13 +194,11 @@ describe("DELETE /transactions/:id", () => {
         category: "Food",
       });
 
-    const res = await request(app).delete(`/transactions/${created.body._id}`);
+    const res = await request(app).delete(`/transactions/${created.body.id}`);
 
     expect(res.status).toBe(204);
 
-    const list = await request(app).get(
-      `/accounts/${account._id}/transactions`
-    );
+    const list = await request(app).get(`/accounts/${account.id}/transactions`);
     expect(list.body).toHaveLength(0);
   });
 
@@ -227,34 +219,28 @@ describe("account balance derivation", () => {
   it("equals openingBalance + sum of transaction amounts", async () => {
     const account = await createAccount({ openingBalance: 100000 });
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-01",
-        amount: 323643,
-        description: "Salary",
-        category: "Income",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: 323643,
+      description: "Salary",
+      category: "Income",
+    });
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-02",
-        amount: -95442,
-        description: "Darlehen",
-        category: "Housing",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-02",
+      amount: -95442,
+      description: "Darlehen",
+      category: "Housing",
+    });
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-03",
-        amount: -70000,
-        description: "Tagesgeld",
-        category: "Transfer",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-03",
+      amount: -70000,
+      description: "Tagesgeld",
+      category: "Transfer",
+    });
 
-    const res = await request(app).get(`/accounts/${account._id}`);
+    const res = await request(app).get(`/accounts/${account.id}`);
 
     expect(res.body.balance).toBe(100000 + 323643 - 95442 - 70000);
   });
@@ -263,7 +249,7 @@ describe("account balance derivation", () => {
     const account = await createAccount({ openingBalance: 100000 });
 
     const tx = await request(app)
-      .post(`/accounts/${account._id}/transactions`)
+      .post(`/accounts/${account.id}/transactions`)
       .send({
         date: "2026-03-01",
         amount: -50000,
@@ -271,9 +257,9 @@ describe("account balance derivation", () => {
         category: "Housing",
       });
 
-    await request(app).delete(`/transactions/${tx.body._id}`);
+    await request(app).delete(`/transactions/${tx.body.id}`);
 
-    const res = await request(app).get(`/accounts/${account._id}`);
+    const res = await request(app).get(`/accounts/${account.id}`);
 
     expect(res.body.balance).toBe(100000);
   });
@@ -287,16 +273,14 @@ describe("DELETE /accounts/:id with transactions", () => {
   it("is blocked when the account has at least one transaction", async () => {
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-01",
-        amount: -5000,
-        description: "Coffee",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -5000,
+      description: "Coffee",
+      category: "Food",
+    });
 
-    const res = await request(app).delete(`/accounts/${account._id}`);
+    const res = await request(app).delete(`/accounts/${account.id}`);
 
     expect(res.status).toBe(409);
   });

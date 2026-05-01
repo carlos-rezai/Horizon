@@ -513,7 +513,7 @@ describe("GET /projection", () => {
       openingBalance: 500000,
       openingDate,
     });
-    const accountId = accountRes.body._id;
+    const accountId = accountRes.body.id;
 
     await request(app).post("/recurring-transactions").send({
       accountId,

@@ -42,7 +42,7 @@ describe("POST /recurring-transactions", () => {
     });
 
     expect(res.status).toBe(201);
-    expect(res.body._id).toBeDefined();
+    expect(res.body.id).toBeDefined();
     expect(res.body.accountId).toBe(FAKE_ACCOUNT_ID);
     expect(res.body.amount).toBe(95000);
     expect(res.body.description).toBe("Rent");
@@ -67,18 +67,18 @@ describe("POST /recurring-transactions", () => {
     });
 
     const res = await request(app).post("/recurring-transactions").send({
-      accountId: sourceRes.body._id,
+      accountId: sourceRes.body.id,
       amount: 50000,
       description: "Monthly savings transfer",
       category: "Transfer",
       frequency: "monthly",
       dayOfMonth: 5,
-      linkedAccountId: destRes.body._id,
+      linkedAccountId: destRes.body.id,
     });
 
     expect(res.status).toBe(201);
-    expect(res.body.accountId).toBe(sourceRes.body._id);
-    expect(res.body.linkedAccountId).toBe(destRes.body._id);
+    expect(res.body.accountId).toBe(sourceRes.body.id);
+    expect(res.body.linkedAccountId).toBe(destRes.body.id);
   });
 
   it("accepts quarterly frequency", async () => {
@@ -158,7 +158,7 @@ describe("GET /recurring-transactions", () => {
 
     // Deactivate the second one
     await request(app)
-      .patch(`/recurring-transactions/${createRes.body._id}`)
+      .patch(`/recurring-transactions/${createRes.body.id}`)
       .send({ isActive: false });
 
     const res = await request(app).get("/recurring-transactions");
@@ -193,7 +193,7 @@ describe("PATCH /recurring-transactions/:id", () => {
       frequency: "monthly",
       dayOfMonth: 1,
     });
-    const id = createRes.body._id;
+    const id = createRes.body.id;
 
     const res = await request(app)
       .patch(`/recurring-transactions/${id}`)
@@ -213,7 +213,7 @@ describe("PATCH /recurring-transactions/:id", () => {
       frequency: "monthly",
       dayOfMonth: 1,
     });
-    const id = createRes.body._id;
+    const id = createRes.body.id;
 
     const res = await request(app)
       .patch(`/recurring-transactions/${id}`)
@@ -232,7 +232,7 @@ describe("PATCH /recurring-transactions/:id", () => {
       frequency: "monthly",
       dayOfMonth: 1,
     });
-    const id = createRes.body._id;
+    const id = createRes.body.id;
 
     await request(app)
       .patch(`/recurring-transactions/${id}`)
@@ -269,7 +269,7 @@ describe("DELETE /recurring-transactions/:id", () => {
       frequency: "monthly",
       dayOfMonth: 1,
     });
-    const id = createRes.body._id;
+    const id = createRes.body.id;
 
     const deleteRes = await request(app).delete(
       `/recurring-transactions/${id}`

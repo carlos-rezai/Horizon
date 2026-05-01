@@ -33,7 +33,7 @@ async function createAccount() {
     openingBalance: 500000,
     openingDate: "2026-01-01",
   });
-  return res.body as { _id: string };
+  return res.body as { id: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -46,14 +46,14 @@ describe("POST /milestones", () => {
 
     const res = await request(app).post("/milestones").send({
       name: "Emergency fund",
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: 600000,
     });
 
     expect(res.status).toBe(201);
-    expect(res.body._id).toBeDefined();
+    expect(res.body.id).toBeDefined();
     expect(res.body.name).toBe("Emergency fund");
-    expect(res.body.accountId).toBe(account._id);
+    expect(res.body.accountId).toBe(account.id);
     expect(res.body.targetBalance).toBe(600000);
   });
 
@@ -61,7 +61,7 @@ describe("POST /milestones", () => {
     const account = await createAccount();
 
     const res = await request(app).post("/milestones").send({
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: 600000,
     });
 
@@ -82,7 +82,7 @@ describe("POST /milestones", () => {
 
     const res = await request(app).post("/milestones").send({
       name: "Emergency fund",
-      accountId: account._id,
+      accountId: account.id,
     });
 
     expect(res.status).toBe(400);
@@ -103,7 +103,7 @@ describe("POST /milestones", () => {
 
     const res = await request(app).post("/milestones").send({
       name: "Emergency fund",
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: "600000",
     });
 
@@ -115,7 +115,7 @@ describe("POST /milestones", () => {
 
     const res = await request(app).post("/milestones").send({
       name: "Emergency fund",
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: -1,
     });
 
@@ -140,12 +140,12 @@ describe("GET /milestones", () => {
 
     await request(app).post("/milestones").send({
       name: "Emergency fund",
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: 600000,
     });
     await request(app).post("/milestones").send({
       name: "House deposit",
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: 2000000,
     });
 
@@ -169,11 +169,11 @@ describe("DELETE /milestones/:id", () => {
 
     const created = await request(app).post("/milestones").send({
       name: "Emergency fund",
-      accountId: account._id,
+      accountId: account.id,
       targetBalance: 600000,
     });
 
-    const res = await request(app).delete(`/milestones/${created.body._id}`);
+    const res = await request(app).delete(`/milestones/${created.body.id}`);
     expect(res.status).toBe(204);
 
     const list = await request(app).get("/milestones");

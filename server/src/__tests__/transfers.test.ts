@@ -37,7 +37,7 @@ async function createAccount(
     openingBalance,
     openingDate: "2026-01-01",
   });
-  return res.body as { _id: string; balance: number };
+  return res.body as { id: string; balance: number };
 }
 
 async function postTransfer(
@@ -64,17 +64,15 @@ describe("POST /transfers", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    const res = await postTransfer(source._id, dest._id, 70000);
+    const res = await postTransfer(source.id, dest.id, 70000);
 
     expect(res.status).toBe(201);
     expect(res.body.transferId).toBeDefined();
 
     const sourceTxs = await request(app).get(
-      `/accounts/${source._id}/transactions`
+      `/accounts/${source.id}/transactions`
     );
-    const destTxs = await request(app).get(
-      `/accounts/${dest._id}/transactions`
-    );
+    const destTxs = await request(app).get(`/accounts/${dest.id}/transactions`);
 
     expect(sourceTxs.body).toHaveLength(1);
     expect(destTxs.body).toHaveLength(1);
@@ -86,14 +84,12 @@ describe("POST /transfers", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    await postTransfer(source._id, dest._id, 70000);
+    await postTransfer(source.id, dest.id, 70000);
 
     const sourceTxs = await request(app).get(
-      `/accounts/${source._id}/transactions`
+      `/accounts/${source.id}/transactions`
     );
-    const destTxs = await request(app).get(
-      `/accounts/${dest._id}/transactions`
-    );
+    const destTxs = await request(app).get(`/accounts/${dest.id}/transactions`);
 
     expect(sourceTxs.body[0].amount).toBe(-70000);
     expect(destTxs.body[0].amount).toBe(70000);
@@ -103,9 +99,9 @@ describe("POST /transfers", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    await postTransfer(source._id, dest._id, 70000);
+    await postTransfer(source.id, dest.id, 70000);
 
-    const res = await request(app).get(`/accounts/${source._id}`);
+    const res = await request(app).get(`/accounts/${source.id}`);
     expect(res.body.balance).toBe(430000);
   });
 
@@ -113,16 +109,16 @@ describe("POST /transfers", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    await postTransfer(source._id, dest._id, 70000);
+    await postTransfer(source.id, dest.id, 70000);
 
-    const res = await request(app).get(`/accounts/${dest._id}`);
+    const res = await request(app).get(`/accounts/${dest.id}`);
     expect(res.body.balance).toBe(70000);
   });
 
   it("returns 404 when the source account does not exist", async () => {
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    const res = await postTransfer("000000000000000000000000", dest._id, 70000);
+    const res = await postTransfer("000000000000000000000000", dest.id, 70000);
 
     expect(res.status).toBe(404);
   });
@@ -131,7 +127,7 @@ describe("POST /transfers", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
 
     const res = await postTransfer(
-      source._id,
+      source.id,
       "000000000000000000000000",
       70000
     );
@@ -149,14 +145,12 @@ describe("transferId on transaction legs", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    const transfer = await postTransfer(source._id, dest._id, 70000);
+    const transfer = await postTransfer(source.id, dest.id, 70000);
 
     const sourceTxs = await request(app).get(
-      `/accounts/${source._id}/transactions`
+      `/accounts/${source.id}/transactions`
     );
-    const destTxs = await request(app).get(
-      `/accounts/${dest._id}/transactions`
-    );
+    const destTxs = await request(app).get(`/accounts/${dest.id}/transactions`);
 
     expect(sourceTxs.body[0].transferId).toBe(transfer.body.transferId);
     expect(destTxs.body[0].transferId).toBe(transfer.body.transferId);
@@ -172,7 +166,7 @@ describe("DELETE /transfers/:transferId", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    const transfer = await postTransfer(source._id, dest._id, 70000);
+    const transfer = await postTransfer(source.id, dest.id, 70000);
 
     const res = await request(app).delete(
       `/transfers/${transfer.body.transferId}`
@@ -181,11 +175,9 @@ describe("DELETE /transfers/:transferId", () => {
     expect(res.status).toBe(204);
 
     const sourceTxs = await request(app).get(
-      `/accounts/${source._id}/transactions`
+      `/accounts/${source.id}/transactions`
     );
-    const destTxs = await request(app).get(
-      `/accounts/${dest._id}/transactions`
-    );
+    const destTxs = await request(app).get(`/accounts/${dest.id}/transactions`);
 
     expect(sourceTxs.body).toHaveLength(0);
     expect(destTxs.body).toHaveLength(0);
@@ -195,11 +187,11 @@ describe("DELETE /transfers/:transferId", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    const transfer = await postTransfer(source._id, dest._id, 70000);
+    const transfer = await postTransfer(source.id, dest.id, 70000);
     await request(app).delete(`/transfers/${transfer.body.transferId}`);
 
-    const sourceRes = await request(app).get(`/accounts/${source._id}`);
-    const destRes = await request(app).get(`/accounts/${dest._id}`);
+    const sourceRes = await request(app).get(`/accounts/${source.id}`);
+    const destRes = await request(app).get(`/accounts/${dest.id}`);
 
     expect(sourceRes.body.balance).toBe(500000);
     expect(destRes.body.balance).toBe(0);
@@ -221,12 +213,12 @@ describe("DELETE /transactions/:id on a transfer leg", () => {
     const source = await createAccount("Girokonto", "Main", 500000);
     const dest = await createAccount("Tagesgeld", "Savings", 0);
 
-    await postTransfer(source._id, dest._id, 70000);
+    await postTransfer(source.id, dest.id, 70000);
 
     const sourceTxs = await request(app).get(
-      `/accounts/${source._id}/transactions`
+      `/accounts/${source.id}/transactions`
     );
-    const legId = sourceTxs.body[0]._id;
+    const legId = sourceTxs.body[0].id;
 
     const res = await request(app).delete(`/transactions/${legId}`);
 

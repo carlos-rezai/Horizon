@@ -39,7 +39,7 @@ describe("POST /accounts", () => {
     expect(res.body.kind).toBe("Girokonto");
     expect(res.body.name).toBe("Main");
     expect(res.body.openingBalance).toBe(537685);
-    expect(res.body._id).toBeDefined();
+    expect(res.body.id).toBeDefined();
   });
 
   it("creates two Girokontos with different names", async () => {
@@ -167,10 +167,10 @@ describe("GET /accounts/:id", () => {
       openingDate: "2026-03-01",
     });
 
-    const res = await request(app).get(`/accounts/${created.body._id}`);
+    const res = await request(app).get(`/accounts/${created.body.id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body._id).toBe(created.body._id);
+    expect(res.body.id).toBe(created.body.id);
     expect(res.body.name).toBe("Visa");
   });
 
@@ -201,7 +201,7 @@ describe("PATCH /accounts/:id", () => {
     });
 
     const res = await request(app)
-      .patch(`/accounts/${created.body._id}`)
+      .patch(`/accounts/${created.body.id}`)
       .send({ name: "New Name" });
 
     expect(res.status).toBe(200);
@@ -230,11 +230,11 @@ describe("DELETE /accounts/:id", () => {
       openingDate: "2026-03-01",
     });
 
-    const res = await request(app).delete(`/accounts/${created.body._id}`);
+    const res = await request(app).delete(`/accounts/${created.body.id}`);
 
     expect(res.status).toBe(204);
 
-    const check = await request(app).get(`/accounts/${created.body._id}`);
+    const check = await request(app).get(`/accounts/${created.body.id}`);
     expect(check.status).toBe(404);
   });
 
@@ -252,14 +252,14 @@ describe("DELETE /accounts/:id", () => {
       openingDate: "2026-03-01",
     });
 
-    await request(app).post(`/accounts/${created.body._id}/transactions`).send({
+    await request(app).post(`/accounts/${created.body.id}/transactions`).send({
       date: "2026-03-15",
       amount: -1000,
       description: "Coffee",
       category: "Food",
     });
 
-    const res = await request(app).delete(`/accounts/${created.body._id}`);
+    const res = await request(app).delete(`/accounts/${created.body.id}`);
 
     expect(res.status).toBe(409);
   });

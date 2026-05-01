@@ -44,7 +44,7 @@ async function createAccount() {
     openingBalance: 100000,
     openingDate: "2026-01-01",
   });
-  return res.body as { _id: string };
+  return res.body as { id: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -75,32 +75,26 @@ describe("GET /categories", () => {
 
   it("returns the same list regardless of which account is used", async () => {
     const accountA = await createAccount();
-    const accountB = await request(app)
-      .post("/accounts")
-      .send({
-        kind: "Tagesgeld",
-        name: "Savings",
-        openingBalance: 0,
-        openingDate: "2026-01-01",
-      });
+    const accountB = await request(app).post("/accounts").send({
+      kind: "Tagesgeld",
+      name: "Savings",
+      openingBalance: 0,
+      openingDate: "2026-01-01",
+    });
 
-    await request(app)
-      .post(`/accounts/${accountA._id}/transactions`)
-      .send({
-        date: "2026-03-01",
-        amount: -5000,
-        description: "Food",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${accountA.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -5000,
+      description: "Food",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${accountB.body._id}/transactions`)
-      .send({
-        date: "2026-03-01",
-        amount: -3000,
-        description: "Rent",
-        category: "Housing",
-      });
+    await request(app).post(`/accounts/${accountB.body.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -3000,
+      description: "Rent",
+      category: "Housing",
+    });
 
     const res = await request(app).get("/categories");
 
@@ -121,7 +115,7 @@ describe("POST /categories", () => {
     expect(res.status).toBe(201);
     expect(res.body.name).toBe("Vet");
     expect(res.body.isDefault).toBe(false);
-    expect(res.body._id).toBeDefined();
+    expect(res.body.id).toBeDefined();
   });
 
   it("returns 400 when name is missing", async () => {
@@ -141,7 +135,7 @@ describe("DELETE /categories/:id", () => {
       .post("/categories")
       .send({ name: "Vet" });
 
-    const res = await request(app).delete(`/categories/${created.body._id}`);
+    const res = await request(app).delete(`/categories/${created.body.id}`);
 
     expect(res.status).toBe(204);
 
@@ -156,16 +150,14 @@ describe("DELETE /categories/:id", () => {
       .send({ name: "Vet" });
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account._id}/transactions`)
-      .send({
-        date: "2026-03-01",
-        amount: -6425,
-        description: "Lassie",
-        category: "Vet",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -6425,
+      description: "Lassie",
+      category: "Vet",
+    });
 
-    const res = await request(app).delete(`/categories/${created.body._id}`);
+    const res = await request(app).delete(`/categories/${created.body.id}`);
 
     expect(res.status).toBe(409);
   });
@@ -176,7 +168,7 @@ describe("DELETE /categories/:id", () => {
       (c: { name: string; isDefault: boolean }) => c.name === "Food"
     );
 
-    const res = await request(app).delete(`/categories/${food._id}`);
+    const res = await request(app).delete(`/categories/${food.id}`);
 
     expect(res.status).toBe(409);
   });
