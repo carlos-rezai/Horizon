@@ -8,6 +8,7 @@ import {
   closeConnection,
 } from "../storage/sqlite/connection.js";
 import { migrate } from "../storage/sqlite/migrate.js";
+import { StorageIntegrityError } from "../storage/sqlite/errors.js";
 import { createSqliteStorage } from "../storage/sqlite/SqliteStorage.js";
 
 function makeTempDbPath(): string {
@@ -116,6 +117,61 @@ describe("connection (SQLite)", () => {
       expect(row?.name).toBe("Pets");
 
       closeConnection(second);
+    });
+  });
+
+  describe("openConnection — integrity", () => {
+    it("StorageIntegrityError is exported and is an instance of Error", () => {
+      const err = new StorageIntegrityError("anything");
+      expect(err).toBeInstanceOf(Error);
+      expect(err).toBeInstanceOf(StorageIntegrityError);
+      expect(err.message).toBe("anything");
+    });
+
+    it("throws StorageIntegrityError on a corrupted tempfile, with detail in message", () => {
+      // Seed a real, healthy DB so the file has a valid SQLite header and at
+      // least a couple of pages of schema/data on disk.
+      const seed = openConnection(dbPath);
+      seed
+        .prepare(
+          `INSERT INTO categories (id, name, is_default) VALUES (?, ?, 0)`
+        )
+        .run("55555555-5555-4555-8555-555555555555", "Seed");
+      closeConnection(seed);
+
+      // Corrupt bytes inside the second page (pageSize defaults to 4096).
+      // Overwriting payload bytes well past the header reliably trips
+      // PRAGMA integrity_check without making the file unreadable.
+      const buf = fs.readFileSync(dbPath);
+      for (let i = 4200; i < 4300 && i < buf.length; i++) {
+        buf[i] = 0xff;
+      }
+      fs.writeFileSync(dbPath, buf);
+
+      let caught: unknown = null;
+      try {
+        openConnection(dbPath);
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught).toBeInstanceOf(StorageIntegrityError);
+      const message = (caught as Error).message;
+      expect(message.length).toBeGreaterThan(0);
+      // The integrity-check detail must be surfaced (not just "corrupted"),
+      // so the Electron shell can show the real SQLite message to the user.
+      expect(message).not.toBe("ok");
+    });
+
+    it("throws StorageIntegrityError on a future user_version", () => {
+      // A file whose user_version is higher than the latest known migration
+      // came from a newer build. Migrate cannot advance it; opening it would
+      // run on an unknown schema. Refuse loudly.
+      const db = new Database(dbPath);
+      db.pragma("user_version = 9999");
+      db.close();
+
+      expect(() => openConnection(dbPath)).toThrow(StorageIntegrityError);
     });
   });
 
