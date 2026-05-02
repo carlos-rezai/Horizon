@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { StorageIntegrityError } from "./errors.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,15 @@ export function migrate(db: Database.Database): void {
     simple: true,
   }) as number;
   const migrations = loadMigrations();
+  const latestVersion =
+    migrations.length > 0 ? migrations[migrations.length - 1].version : 0;
+
+  if (currentVersion > latestVersion) {
+    throw new StorageIntegrityError(
+      `Database user_version ${currentVersion} is ahead of the latest known migration ${latestVersion}. This database was written by a newer build of Horizon.`
+    );
+  }
+
   const pending = migrations.filter((m) => m.version > currentVersion);
   if (pending.length === 0) return;
 

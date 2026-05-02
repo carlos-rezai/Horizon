@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { migrate } from "./migrate.js";
+import { StorageIntegrityError } from "./errors.js";
 
 const PRAGMAS = [
   "journal_mode = WAL",
@@ -11,11 +12,33 @@ const PRAGMAS = [
 
 export function openConnection(path: string): Database.Database {
   const db = new Database(path);
-  for (const pragma of PRAGMAS) {
-    db.pragma(pragma);
+  try {
+    for (const pragma of PRAGMAS) {
+      db.pragma(pragma);
+    }
+    migrate(db);
+    assertIntegrity(db);
+  } catch (err) {
+    db.close();
+    if (err instanceof StorageIntegrityError) throw err;
+    // SQLite can throw "database disk image is malformed" from inside the
+    // pragma loop or PRAGMA integrity_check itself when the schema page is
+    // too corrupt to enumerate. Surface those as a StorageIntegrityError so
+    // callers see one error type for "this database is unusable".
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new StorageIntegrityError(`SQLite integrity_check failed: ${detail}`);
   }
-  migrate(db);
   return db;
+}
+
+function assertIntegrity(db: Database.Database): void {
+  const rows = db.pragma("integrity_check") as Array<{
+    integrity_check: string;
+  }>;
+  const detail = rows.map((r) => r.integrity_check).join("\n");
+  if (detail !== "ok") {
+    throw new StorageIntegrityError(`SQLite integrity_check failed: ${detail}`);
+  }
 }
 
 export function closeConnection(db: Database.Database): void {

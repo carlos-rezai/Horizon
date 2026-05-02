@@ -139,11 +139,11 @@ describe("connection (SQLite)", () => {
         .run("55555555-5555-4555-8555-555555555555", "Seed");
       closeConnection(seed);
 
-      // Corrupt bytes inside the second page (pageSize defaults to 4096).
-      // Overwriting payload bytes well past the header reliably trips
-      // PRAGMA integrity_check without making the file unreadable.
+      // Corrupt bytes inside the B-tree cell area of page 1 (well past the
+      // 100-byte SQLite header). This trips PRAGMA integrity_check while
+      // leaving the header intact enough to open the file.
       const buf = fs.readFileSync(dbPath);
-      for (let i = 4200; i < 4300 && i < buf.length; i++) {
+      for (let i = 2000; i < 3000 && i < buf.length; i++) {
         buf[i] = 0xff;
       }
       fs.writeFileSync(dbPath, buf);
