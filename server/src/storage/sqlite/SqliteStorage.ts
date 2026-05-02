@@ -1,6 +1,5 @@
-import Database from "better-sqlite3";
 import type { Storage } from "../Storage.js";
-import { migrate } from "./migrate.js";
+import { openConnection, closeConnection } from "./connection.js";
 import { createSqliteAccountsRepo } from "./accounts.js";
 import { createSqliteCategoriesRepo } from "./categories.js";
 import { createSqliteMilestonesRepo } from "./milestones.js";
@@ -9,8 +8,7 @@ import { createSqliteTransactionsRepo } from "./transactions.js";
 import { createSqliteTransfersRepo } from "./transfers.js";
 
 export async function createSqliteStorage(path: string): Promise<Storage> {
-  const db = new Database(path);
-  await migrate(db);
+  const db = openConnection(path);
 
   const transactions = createSqliteTransactionsRepo(db);
   const accounts = createSqliteAccountsRepo(db, transactions);
@@ -27,7 +25,7 @@ export async function createSqliteStorage(path: string): Promise<Storage> {
     milestones,
     recurringTransactions,
     async close() {
-      db.close();
+      closeConnection(db);
     },
   };
 }

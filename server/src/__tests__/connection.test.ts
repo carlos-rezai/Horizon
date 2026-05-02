@@ -56,29 +56,18 @@ describe("connection (SQLite)", () => {
   });
 
   describe("migrate (in isolation)", () => {
-    it("does NOT enable foreign_keys — that pragma now lives in connection.ts", async () => {
-      // A bare better-sqlite3 Database with only migrate() applied should not
-      // enforce FKs. Inserting a transactions row whose account_id points to a
-      // non-existent account must succeed when FKs are off.
+    it("does NOT touch the foreign_keys pragma — that lives in connection.ts now", () => {
+      // The "schema-only" guarantee: migrate must not alter connection-state
+      // pragmas. If we turn foreign_keys OFF before migrate runs, it must
+      // still be OFF after. Pragma introspection is the only way to observe
+      // the absence of a state change.
       const db = new Database(":memory:");
-      await migrate(db);
+      db.pragma("foreign_keys = OFF");
+      expect(db.pragma("foreign_keys", { simple: true })).toBe(0);
 
-      const insert = db.prepare(
-        `INSERT INTO transactions (id, account_id, date, amount, description, category)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      );
+      migrate(db);
 
-      expect(() =>
-        insert.run(
-          "22222222-2222-4222-8222-222222222222",
-          "00000000-0000-4000-8000-999999999999",
-          "2026-05-01",
-          -100,
-          "orphan",
-          "Food"
-        )
-      ).not.toThrow();
-
+      expect(db.pragma("foreign_keys", { simple: true })).toBe(0);
       db.close();
     });
   });

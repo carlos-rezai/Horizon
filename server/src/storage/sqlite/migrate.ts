@@ -28,12 +28,7 @@ function loadMigrations(): MigrationFile[] {
   return parsed.sort((a, b) => a.version - b.version);
 }
 
-export async function migrate(db: Database.Database): Promise<void> {
-  // SQLite's foreign_keys pragma is per-connection and off by default. Enable
-  // it once for the lifetime of this connection so every repo INSERT/UPDATE
-  // is checked against the FK constraints declared in migration 002.
-  db.pragma("foreign_keys = ON");
-
+export function migrate(db: Database.Database): void {
   const currentVersion = db.pragma("user_version", {
     simple: true,
   }) as number;

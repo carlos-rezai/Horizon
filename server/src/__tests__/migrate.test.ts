@@ -97,7 +97,7 @@ describe("migrate (SQLite)", () => {
       db.prepare(`SELECT COUNT(*) AS n FROM categories`).get() as { n: number }
     ).n;
 
-    await expect(migrate(db)).resolves.not.toThrow();
+    expect(() => migrate(db)).not.toThrow();
 
     const secondVersion = db.pragma("user_version", { simple: true }) as number;
     const secondCategoryCount = (
