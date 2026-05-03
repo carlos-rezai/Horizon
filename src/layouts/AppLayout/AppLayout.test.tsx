@@ -71,3 +71,11 @@ describe("AppLayout — content", () => {
     expect(screen.getByText("Dashboard content")).toBeInTheDocument();
   });
 });
+
+describe("AppLayout — settings navigation", () => {
+  it("exposes a Settings link that targets /settings/storage", () => {
+    renderAtRoute("/");
+    const link = screen.getByRole("link", { name: /settings/i });
+    expect(link).toHaveAttribute("href", "/settings/storage");
+  });
+});

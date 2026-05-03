@@ -1831,4 +1831,34 @@ export function runStorageSpec(
       });
     }
   });
+
+  // -------------------------------------------------------------------------
+  // Storage.status
+  // -------------------------------------------------------------------------
+
+  describe("Storage.status", () => {
+    if (driver === "mongo") {
+      it("returns the Mongo-shaped status payload with no path/sizeBytes", async () => {
+        const status = await storage.status();
+
+        expect(status.driver).toBe("mongo");
+        expect(status.schemaVersion).toBe(0);
+        expect(status.integrity).toBe("ok");
+        expect(status.path).toBeUndefined();
+        expect(status.sizeBytes).toBeUndefined();
+      });
+    } else {
+      it("returns the SQLite-shaped status payload with driver, schemaVersion, integrity, path, sizeBytes", async () => {
+        const status = await storage.status();
+
+        expect(status.driver).toBe("sqlite");
+        expect(typeof status.schemaVersion).toBe("number");
+        expect(status.schemaVersion).toBeGreaterThan(0);
+        expect(status.integrity).toBe("ok");
+        expect(status.path).toBe(":memory:");
+        expect(typeof status.sizeBytes).toBe("number");
+        expect(status.sizeBytes).toBeGreaterThanOrEqual(0);
+      });
+    }
+  });
 }
