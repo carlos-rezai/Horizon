@@ -3,6 +3,7 @@ import AppLayout from "./layouts/AppLayout/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import AccountDetailPage from "./pages/AccountDetailPage";
 import PlanPage from "./pages/PlanPage";
+import SettingsStoragePage from "./pages/SettingsStoragePage";
 
 export default function App() {
   return (
@@ -29,6 +30,14 @@ export default function App() {
           element={
             <AppLayout>
               <PlanPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/settings/storage"
+          element={
+            <AppLayout>
+              <SettingsStoragePage />
             </AppLayout>
           }
         />

@@ -14,6 +14,7 @@ import transfersRouter from "./routes/transfers.js";
 import recurringTransactionsRouter from "./routes/recurringTransactions.js";
 import projectionRouter from "./routes/projection.js";
 import milestonesRouter from "./routes/milestones.js";
+import storageStatusRouter from "./routes/storageStatus.js";
 import { requireOwner } from "./auth/requireOwner.js";
 import type { Storage } from "./storage/Storage.js";
 
@@ -87,6 +88,7 @@ export async function createApp(storage: Storage): Promise<Express> {
   app.use("/recurring-transactions", recurringTransactionsRouter);
   app.use("/projection", projectionRouter);
   app.use("/milestones", milestonesRouter);
+  app.use("/api/storage", storageStatusRouter);
 
   if (!authDisabled) {
     app.use(logUnhandledError);

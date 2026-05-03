@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   StyledTopBar,
   StyledWordmark,
+  StyledNavLink,
   StyledMain,
   StyledContent,
 } from "./AppLayout.styles";
@@ -18,6 +19,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <StyledWordmark as={Link} to="/">
           Horizon
         </StyledWordmark>
+        <StyledNavLink as={Link} to="/settings/storage">
+          Settings
+        </StyledNavLink>
       </StyledTopBar>
       <StyledMain>
         <StyledContent>{children}</StyledContent>

@@ -44,6 +44,17 @@ export const StyledBackButton = styled.button`
   }
 `;
 
+export const StyledNavLink = styled.a`
+  margin-left: auto;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
 export const StyledMain = styled.main`
   display: flex;
   justify-content: center;

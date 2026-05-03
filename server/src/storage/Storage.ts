@@ -76,6 +76,14 @@ export interface RecurringTransactionsRepo {
   delete(id: string): Promise<boolean>;
 }
 
+export interface StorageStatus {
+  driver: "mongo" | "sqlite";
+  schemaVersion: number;
+  integrity: string;
+  path?: string;
+  sizeBytes?: number;
+}
+
 export interface Storage {
   accounts: AccountsRepo;
   transactions: TransactionsRepo;
@@ -86,4 +94,5 @@ export interface Storage {
   close(): Promise<void>;
   backup(destPath: string): Promise<void>;
   restore(srcPath: string): Promise<void>;
+  status(): Promise<StorageStatus>;
 }

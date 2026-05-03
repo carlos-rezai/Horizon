@@ -1,6 +1,6 @@
 import fs from "fs";
 import Database from "better-sqlite3";
-import type { Storage } from "../Storage.js";
+import type { Storage, StorageStatus } from "../Storage.js";
 import {
   openConnection,
   closeConnection,
@@ -123,6 +123,23 @@ export async function createSqliteStorage(
       fs.copyFileSync(srcPath, path);
       db = openConnection(path, options);
       repos = buildRepos(db);
+    },
+    async status(): Promise<StorageStatus> {
+      const schemaVersion = db.pragma("user_version", {
+        simple: true,
+      }) as number;
+      const rows = db.pragma("integrity_check") as Array<{
+        integrity_check: string;
+      }>;
+      const integrity = rows.map((r) => r.integrity_check).join("\n");
+      const sizeBytes = path === ":memory:" ? 0 : fs.statSync(path).size;
+      return {
+        driver: "sqlite",
+        schemaVersion,
+        integrity,
+        path,
+        sizeBytes,
+      };
     },
   };
 }

@@ -35,5 +35,12 @@ export async function createMongoStorage(uri: string): Promise<Storage> {
     async restore() {
       throw new Error("not supported");
     },
+    async status() {
+      return {
+        driver: "mongo",
+        schemaVersion: 0,
+        integrity: "ok",
+      };
+    },
   };
 }
