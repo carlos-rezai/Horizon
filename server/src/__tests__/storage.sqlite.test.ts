@@ -26,9 +26,10 @@ describe("SQLite Storage Driver — parity", () => {
       return inner.recurringTransactions;
     },
     close: () => inner.close(),
+    backup: (destPath: string) => inner.backup(destPath),
   };
 
-  runStorageSpec(async () => {
+  runStorageSpec("sqlite", async () => {
     inner = await createStorage("sqlite", { path: ":memory:" });
 
     return {

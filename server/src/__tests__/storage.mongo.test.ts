@@ -8,7 +8,7 @@ describe("Mongo Storage Driver — parity", () => {
   let mongod: MongoMemoryReplSet;
   let storage: Storage;
 
-  runStorageSpec(async () => {
+  runStorageSpec("mongo", async () => {
     mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
     storage = await createStorage("mongo", { uri: mongod.getUri() });
 

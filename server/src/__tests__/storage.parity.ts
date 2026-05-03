@@ -1,4 +1,8 @@
 import { afterEach, beforeAll, afterAll, describe, expect, it } from "vitest";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { createStorage } from "../storage/index.js";
 import type { Storage } from "../storage/Storage.js";
 import type { Account, RecurringTransaction } from "../storage/types.js";
 import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
@@ -9,7 +13,10 @@ export type MakeStorage = () => Promise<{
   cleanup: () => Promise<void>;
 }>;
 
-export function runStorageSpec(makeStorage: MakeStorage): void {
+export function runStorageSpec(
+  driver: "sqlite" | "mongo",
+  makeStorage: MakeStorage
+): void {
   let storage: Storage;
   let reset: () => Promise<void>;
   let cleanup: () => Promise<void>;
@@ -1474,5 +1481,162 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const result = await storage.recurringTransactions.delete("not-an-id");
       expect(result).toBe(false);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // Storage.backup
+  // -------------------------------------------------------------------------
+
+  describe("Storage.backup", () => {
+    if (driver === "mongo") {
+      it("rejects with Error('not supported') — Mongo has no online backup", async () => {
+        // The Storage facade exposes backup uniformly. The Mongo driver is
+        // honest about not implementing it: callers see a typed throw rather
+        // than a silent no-op. This is the deliberate asymmetry the parent
+        // PRD calls out — mismatched capabilities surface, never hide.
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+        const destPath = path.join(dir, "snapshot.db");
+        try {
+          await expect(storage.backup(destPath)).rejects.toThrow(
+            "not supported"
+          );
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      });
+    } else {
+      it("writes a self-contained .db file at destPath", async () => {
+        const account = await storage.accounts.create({
+          kind: "Tagesgeld",
+          name: "Backup Source",
+          openingBalance: 12345,
+          openingDate: "2026-04-01",
+        });
+        await storage.transactions.create(account.id, {
+          date: "2026-04-15",
+          amount: -100,
+          description: "Coffee",
+          category: "Food",
+        });
+
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+        const destPath = path.join(dir, "snapshot.db");
+        try {
+          await storage.backup(destPath);
+
+          expect(fs.existsSync(destPath)).toBe(true);
+          // A real SQLite file: non-empty and starting with the SQLite magic
+          // string. Guards against a degenerate "touch the path" implementation.
+          const contents = fs.readFileSync(destPath);
+          expect(contents.length).toBeGreaterThan(0);
+          expect(contents.subarray(0, 16).toString("utf8")).toBe(
+            "SQLite format 3 "
+          );
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      });
+
+      it("produces a backup file that round-trips identical data when reopened", async () => {
+        const account = await storage.accounts.create({
+          kind: "Tagesgeld",
+          name: "Backup Source",
+          openingBalance: 12345,
+          openingDate: "2026-04-01",
+        });
+        const tx = await storage.transactions.create(account.id, {
+          date: "2026-04-15",
+          amount: -100,
+          description: "Coffee",
+          category: "Food",
+        });
+
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+        const destPath = path.join(dir, "snapshot.db");
+        try {
+          await storage.backup(destPath);
+
+          // Open the produced backup file with a fresh storage — exactly the
+          // shape the parent PRD specifies (createStorage("sqlite", { path })).
+          const restored = await createStorage("sqlite", { path: destPath });
+          try {
+            const accs = await restored.accounts.findAll();
+            expect(accs).toHaveLength(1);
+            expect(accs[0].id).toBe(account.id);
+            expect(accs[0].name).toBe("Backup Source");
+            expect(accs[0].kind).toBe("Tagesgeld");
+            expect(accs[0].openingBalance).toBe(12345);
+
+            const txs = await restored.transactions.findAll();
+            expect(txs).toHaveLength(1);
+            expect(txs[0].id).toBe(tx!.id);
+            expect(txs[0].accountId).toBe(account.id);
+            expect(txs[0].amount).toBe(-100);
+            expect(txs[0].description).toBe("Coffee");
+            expect(txs[0].category).toBe("Food");
+
+            // The backup must include seed data too — the restored DB is a
+            // full snapshot, not just user rows.
+            const cats = await restored.categories.findAll();
+            const names = cats.map((c) => c.name);
+            for (const name of DEFAULT_CATEGORY_NAMES) {
+              expect(names).toContain(name);
+            }
+          } finally {
+            await restored.close();
+          }
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      });
+
+      it("leaves the live storage usable for further reads and writes after backup", async () => {
+        // The PRD: "consistent across WAL, never a torn copy" — backup must
+        // not park the live DB in a state that blocks subsequent calls.
+        const before = await storage.accounts.create({
+          kind: "Girokonto",
+          name: "Before",
+          openingBalance: 100000,
+          openingDate: "2026-04-01",
+        });
+
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+        const destPath = path.join(dir, "snapshot.db");
+        try {
+          await storage.backup(destPath);
+
+          // Read works post-backup.
+          const beforeFound = await storage.accounts.findById(before.id);
+          expect(beforeFound?.id).toBe(before.id);
+
+          // Write works post-backup.
+          const after = await storage.accounts.create({
+            kind: "Tagesgeld",
+            name: "After",
+            openingBalance: 50000,
+            openingDate: "2026-04-02",
+          });
+
+          const all = await storage.accounts.findAll();
+          const ids = all.map((a) => a.id);
+          expect(ids).toContain(before.id);
+          expect(ids).toContain(after.id);
+
+          // The post-backup write must NOT appear in the prior snapshot —
+          // backup captured the state at-the-moment, not future writes.
+          const restored = await createStorage("sqlite", { path: destPath });
+          try {
+            const restoredAccs = await restored.accounts.findAll();
+            const restoredIds = restoredAccs.map((a) => a.id);
+            expect(restoredIds).toContain(before.id);
+            expect(restoredIds).not.toContain(after.id);
+          } finally {
+            await restored.close();
+          }
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      });
+    }
   });
 }
