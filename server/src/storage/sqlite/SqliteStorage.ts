@@ -36,5 +36,8 @@ export async function createSqliteStorage(
     async close() {
       closeConnection(db);
     },
+    async backup(destPath: string) {
+      await db.backup(destPath);
+    },
   };
 }

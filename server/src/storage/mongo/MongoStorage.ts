@@ -29,5 +29,8 @@ export async function createMongoStorage(uri: string): Promise<Storage> {
     async close() {
       await mongoose.disconnect();
     },
+    async backup() {
+      throw new Error("not supported");
+    },
   };
 }

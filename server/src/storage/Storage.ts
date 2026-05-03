@@ -84,4 +84,5 @@ export interface Storage {
   milestones: MilestonesRepo;
   recurringTransactions: RecurringTransactionsRepo;
   close(): Promise<void>;
+  backup(destPath: string): Promise<void>;
 }
