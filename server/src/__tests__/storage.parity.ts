@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, afterAll, describe, expect, it } from "vitest";
+import Database from "better-sqlite3";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -6,6 +7,7 @@ import { createStorage } from "../storage/index.js";
 import type { Storage } from "../storage/Storage.js";
 import type { Account, RecurringTransaction } from "../storage/types.js";
 import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
+import { StorageIntegrityError } from "../storage/sqlite/errors.js";
 
 export type MakeStorage = () => Promise<{
   storage: Storage;
@@ -1635,6 +1637,196 @@ export function runStorageSpec(
           }
         } finally {
           fs.rmSync(dir, { recursive: true, force: true });
+        }
+      });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Storage.restore
+  // -------------------------------------------------------------------------
+
+  describe("Storage.restore", () => {
+    if (driver === "mongo") {
+      it("rejects with Error('not supported') — Mongo has no online restore", async () => {
+        // Mirrors the existing Storage.backup mongo test. The Mongo driver
+        // implements restore as an honest throw so callers see one capability
+        // signal instead of a silent no-op.
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-"));
+        const srcPath = path.join(dir, "snapshot.db");
+        try {
+          // The path doesn't need to point at a real file — the throw must
+          // happen before any disk access.
+          await expect(storage.restore(srcPath)).rejects.toThrow(
+            "not supported"
+          );
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      });
+    } else {
+      // The SQLite restore tests need a file-backed live storage — "swap the
+      // file in and reopen" has no meaning against a :memory: DB. Each test
+      // owns its own tempfile lifecycle so the parity fixture (still :memory:)
+      // is untouched and remains green.
+      it("restores live data from a valid backup and the live handle keeps serving queries", async () => {
+        const liveDir = fs.mkdtempSync(
+          path.join(os.tmpdir(), "horizon-restore-live-")
+        );
+        const snapDir = fs.mkdtempSync(
+          path.join(os.tmpdir(), "horizon-restore-snap-")
+        );
+        const livePath = path.join(liveDir, "horizon.db");
+        const snapPath = path.join(snapDir, "snapshot.db");
+        const live = await createStorage("sqlite", { path: livePath });
+        try {
+          // Seed known state, snapshot it.
+          const seedAcc = await live.accounts.create({
+            kind: "Tagesgeld",
+            name: "Seed",
+            openingBalance: 200000,
+            openingDate: "2026-04-01",
+          });
+          const seedTx = await live.transactions.create(seedAcc.id, {
+            date: "2026-04-15",
+            amount: -1000,
+            description: "Coffee",
+            category: "Food",
+          });
+          await live.backup(snapPath);
+
+          // Diverge the live DB after the snapshot is taken.
+          const drift = await live.accounts.create({
+            kind: "Girokonto",
+            name: "Drift",
+            openingBalance: 50000,
+            openingDate: "2026-04-20",
+          });
+          const deleteResult = await live.transactions.delete(seedTx!.id);
+          expect(deleteResult).toEqual({ ok: true });
+
+          // Restore from the snapshot — live handle continues to be used.
+          await live.restore(snapPath);
+
+          // Live data after restore matches the snapshot exactly.
+          const accountsAfter = await live.accounts.findAll();
+          const accIds = accountsAfter.map((a) => a.id);
+          expect(accIds).toContain(seedAcc.id);
+          expect(accIds).not.toContain(drift.id);
+
+          const txsAfter = await live.transactions.findAll();
+          expect(txsAfter).toHaveLength(1);
+          expect(txsAfter[0].id).toBe(seedTx!.id);
+          expect(txsAfter[0].description).toBe("Coffee");
+
+          // Same handle still serves a follow-up write — the AC's "live
+          // Storage handle continues to serve queries via a freshly reopened
+          // connection".
+          const post = await live.accounts.create({
+            kind: "Girokonto",
+            name: "Post-restore",
+            openingBalance: 1,
+            openingDate: "2026-04-25",
+          });
+          const finalAccs = await live.accounts.findAll();
+          expect(finalAccs.map((a) => a.id)).toContain(post.id);
+        } finally {
+          await live.close();
+          fs.rmSync(liveDir, { recursive: true, force: true });
+          fs.rmSync(snapDir, { recursive: true, force: true });
+        }
+      });
+
+      it("rejects a corrupt source with StorageIntegrityError and leaves the live database untouched", async () => {
+        const liveDir = fs.mkdtempSync(
+          path.join(os.tmpdir(), "horizon-restore-live-")
+        );
+        const corruptDir = fs.mkdtempSync(
+          path.join(os.tmpdir(), "horizon-restore-corrupt-")
+        );
+        const livePath = path.join(liveDir, "horizon.db");
+        const corruptPath = path.join(corruptDir, "corrupt.db");
+        const live = await createStorage("sqlite", { path: livePath });
+        try {
+          const liveAcc = await live.accounts.create({
+            kind: "Girokonto",
+            name: "Untouched",
+            openingBalance: 999000,
+            openingDate: "2026-04-01",
+          });
+
+          // Build a corrupt source file: a real SQLite DB whose B-tree pages
+          // have been overwritten — the SQLite header still parses but
+          // PRAGMA integrity_check fails. Same trick as connection.test.ts.
+          const seed = await createStorage("sqlite", { path: corruptPath });
+          await seed.accounts.create({
+            kind: "Tagesgeld",
+            name: "Seed",
+            openingBalance: 1,
+            openingDate: "2026-04-01",
+          });
+          await seed.close();
+          const buf = fs.readFileSync(corruptPath);
+          for (let i = 2000; i < 3000 && i < buf.length; i++) {
+            buf[i] = 0xff;
+          }
+          fs.writeFileSync(corruptPath, buf);
+
+          await expect(live.restore(corruptPath)).rejects.toBeInstanceOf(
+            StorageIntegrityError
+          );
+
+          // The live DB must still serve its pre-restore data — the
+          // validation failure must happen before any file swap.
+          const stillThere = await live.accounts.findById(liveAcc.id);
+          expect(stillThere?.id).toBe(liveAcc.id);
+          expect(stillThere?.name).toBe("Untouched");
+        } finally {
+          await live.close();
+          fs.rmSync(liveDir, { recursive: true, force: true });
+          fs.rmSync(corruptDir, { recursive: true, force: true });
+        }
+      });
+
+      it("rejects a future-schema source with StorageIntegrityError and leaves the live database untouched", async () => {
+        const liveDir = fs.mkdtempSync(
+          path.join(os.tmpdir(), "horizon-restore-live-")
+        );
+        const futureDir = fs.mkdtempSync(
+          path.join(os.tmpdir(), "horizon-restore-future-")
+        );
+        const livePath = path.join(liveDir, "horizon.db");
+        const futurePath = path.join(futureDir, "future.db");
+        const live = await createStorage("sqlite", { path: livePath });
+        try {
+          const liveAcc = await live.accounts.create({
+            kind: "Girokonto",
+            name: "Untouched",
+            openingBalance: 999000,
+            openingDate: "2026-04-01",
+          });
+
+          // Build a source whose user_version is far ahead of the latest
+          // shipped migration. integrity_check returns ok, but user_version
+          // says "this DB was written by a newer build" — restore must
+          // refuse for the same reason openConnection refuses (see
+          // connection.test.ts "throws StorageIntegrityError on a future
+          // user_version").
+          const futureDb = new Database(futurePath);
+          futureDb.pragma("user_version = 9999");
+          futureDb.close();
+
+          await expect(live.restore(futurePath)).rejects.toBeInstanceOf(
+            StorageIntegrityError
+          );
+
+          const stillThere = await live.accounts.findById(liveAcc.id);
+          expect(stillThere?.id).toBe(liveAcc.id);
+          expect(stillThere?.name).toBe("Untouched");
+        } finally {
+          await live.close();
+          fs.rmSync(liveDir, { recursive: true, force: true });
+          fs.rmSync(futureDir, { recursive: true, force: true });
         }
       });
     }

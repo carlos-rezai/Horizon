@@ -85,4 +85,5 @@ export interface Storage {
   recurringTransactions: RecurringTransactionsRepo;
   close(): Promise<void>;
   backup(destPath: string): Promise<void>;
+  restore(srcPath: string): Promise<void>;
 }
