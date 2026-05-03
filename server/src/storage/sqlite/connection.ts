@@ -10,8 +10,18 @@ const PRAGMAS = [
   "mmap_size = 67108864",
 ] as const;
 
-export function openConnection(path: string): Database.Database {
-  const db = new Database(path);
+export interface OpenConnectionOptions {
+  verbose?: (sql: string) => void;
+}
+
+export function openConnection(
+  path: string,
+  options?: OpenConnectionOptions
+): Database.Database {
+  const db =
+    options?.verbose !== undefined
+      ? new Database(path, { verbose: options.verbose })
+      : new Database(path);
   try {
     for (const pragma of PRAGMAS) {
       db.pragma(pragma);

@@ -5,6 +5,7 @@ import { createSqliteStorage } from "./sqlite/SqliteStorage.js";
 export interface CreateStorageOptions {
   uri?: string;
   path?: string;
+  verbose?: (sql: string) => void;
 }
 
 export async function createStorage(
@@ -19,7 +20,7 @@ export async function createStorage(
   }
   if (driver === "sqlite") {
     const path = options?.path ?? ":memory:";
-    return createSqliteStorage(path);
+    return createSqliteStorage(path, { verbose: options?.verbose });
   }
   throw new Error(`Unknown storage driver: ${String(driver)}`);
 }
