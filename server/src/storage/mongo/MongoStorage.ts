@@ -32,5 +32,8 @@ export async function createMongoStorage(uri: string): Promise<Storage> {
     async backup() {
       throw new Error("not supported");
     },
+    async restore() {
+      throw new Error("not supported");
+    },
   };
 }
