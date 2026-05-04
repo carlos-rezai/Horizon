@@ -1,5 +1,66 @@
 # Dev Journal
 
+## 2026-05-04 — SQLite Driver refactor close-out (issue #65)
+
+Eight leaks plus the missing-other-half restore feature from the SQLite
+Driver shipping (issues #62–#64) are now closed before the Electron shell
+slice begins.
+
+**Wire prefix.** Storage routes drop the `/api/` segment that #62/#63
+introduced as a local anomaly. Every other domain mounts at `/<domain>/*`;
+storage now does too. SPA helpers and the consolidated route file follow.
+
+**One router per domain.** `routes/storageStatus.ts` and
+`routes/storageBackup.ts` are now a single `routes/storage.ts` mounted
+once at `/storage`. The two `__tests__/storage*.route.test.ts` files
+collapsed into one `storage.route.test.ts` along with the route.
+
+**Unsupported-driver action returns 400, not 501.** The Mongo path of
+`POST /storage/backup` previously returned 501 with `{"error":"not
+supported"}` — but `sanitize5xx` blanket-rewrote that to
+`{"error":"Internal server error"}` in the Cloud Build, so the legitimate
+"this driver doesn't support backup" case looked like a server crash. The
+route now uses an `isUnsupportedDriverError` predicate that maps the
+literal `"not supported"` message to a 4xx body
+(`Storage driver does not support {backup,restore}`); other throws
+propagate to Express's error middleware unchanged.
+
+**Required `path` for SQLite.** `createStorage("sqlite")` no longer
+silently defaults `path` to `:memory:`. A missing `path` throws
+`SQLite storage driver requires a 'path' option` at boot. The Electron
+entrypoint (when it lands) must read `HORIZON_DB_PATH` and pass the
+resolved file path explicitly. Tests pass `":memory:"` themselves.
+
+**Restore endpoint + UI.** `POST /storage/restore` accepts a multipart
+`file` upload (multer), writes it to a unique temp path under
+`os.tmpdir()`, calls `storage.restore(tempPath)`, and unlinks the temp
+file in a `finally`. `StorageIntegrityError` maps to 400 with one of two
+stable messages (`Backup file failed integrity check` /
+`Backup was written by a newer version of Horizon`). The Settings →
+Storage UI gains a "Restore from backup" button (SQLite only) that opens
+a hidden file input, shows a confirm dialog naming the file, and surfaces
+the server error on failure.
+
+**Integrity helpers.** `connection.ts`, `migrate.ts`, and
+`SqliteStorage.ts:validateRestoreSource` previously each ran their own
+`PRAGMA integrity_check` / `user_version` comparison with subtly
+different error message shapes. They now share
+`storage/sqlite/integrity.ts` (`assertIntegrity`, `assertSchemaNotAhead`).
+
+**Settings UI realignment.** The status display + action buttons live in
+`features/settings/StorageStatus/` (`.tsx`/`.styles.ts`/`.test.tsx`).
+`SettingsStoragePage` is composition-only: heading + `<StorageStatus />`.
+Tests split into one-file-per-unit-of-behaviour: `useStorageStatus.test.ts`,
+`downloadBackup.test.ts`, `uploadRestore.test.ts`, `StorageStatus.test.tsx`,
+plus a smoke test on the page. Meridian theme tokens cover all storage UI;
+no raw HTML semantic elements unstyled.
+
+**What's next.** The Electron shell (design log 10) builds on top of
+this: a daemonised Express child process, `app.getPath('userData')`
+wired into `HORIZON_DB_PATH`, and a Settings-page integration of the
+open-path's `StorageIntegrityError` envelope (today the Express child
+would crash at boot — the shell will need to handle it).
+
 ## 2026-05-01 — Repository Abstraction refactor close-out (issue #54)
 
 Six leaks left over from the Repository Abstraction shipping (issues #51–#53)
