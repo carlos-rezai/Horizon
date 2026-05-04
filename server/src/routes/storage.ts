@@ -23,6 +23,11 @@ async function safeUnlink(p: string): Promise<void> {
   }
 }
 
+router.get("/status", async (req, res) => {
+  const status = await getStorage(req).status();
+  res.json(status);
+});
+
 router.post("/backup", async (req, res) => {
   const tempPath = makeTempPath();
 
