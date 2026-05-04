@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { API_BASE } from "../../utils/api";
 
 export interface StorageStatus {
@@ -13,6 +13,7 @@ interface UseStorageStatusResult {
   status: StorageStatus | null;
   isLoading: boolean;
   error: string | null;
+  refetch: () => Promise<void>;
 }
 
 export function useStorageStatus(): UseStorageStatusResult {
@@ -20,33 +21,25 @@ export function useStorageStatus(): UseStorageStatusResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(`${API_BASE}/storage/status`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch storage status: ${res.status}`);
-        }
-        return res.json() as Promise<StorageStatus>;
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setStatus(data);
-          setIsLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+  const fetchStatus = useCallback(async (): Promise<void> => {
+    try {
+      const res = await fetch(`${API_BASE}/storage/status`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch storage status: ${res.status}`);
+      }
+      const data = (await res.json()) as StorageStatus;
+      setStatus(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { status, isLoading, error };
+  useEffect(() => {
+    void fetchStatus();
+  }, [fetchStatus]);
+
+  return { status, isLoading, error, refetch: fetchStatus };
 }
