@@ -1,7 +1,32 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import Database from "better-sqlite3";
+import fs from "fs";
+import os from "os";
+import path from "path";
 import { migrate } from "../storage/sqlite/migrate.js";
+import {
+  openConnection,
+  closeConnection,
+} from "../storage/sqlite/connection.js";
 import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
+
+interface SchemaRow {
+  type: string;
+  name: string;
+  tbl_name: string;
+  sql: string | null;
+}
+
+function snapshotSchema(db: Database.Database): SchemaRow[] {
+  return db
+    .prepare(
+      `SELECT type, name, tbl_name, sql
+         FROM sqlite_master
+        WHERE name NOT LIKE 'sqlite_%'
+        ORDER BY type, name`
+    )
+    .all() as SchemaRow[];
+}
 
 describe("migrate (SQLite)", () => {
   it("applies every migration to a fresh DB and bumps PRAGMA user_version", async () => {
@@ -108,5 +133,70 @@ describe("migrate (SQLite)", () => {
     expect(secondCategoryCount).toBe(firstCategoryCount);
 
     db.close();
+  });
+
+  it("is an explicit no-op when user_version is already at the latest: full schema snapshot and version are byte-for-byte unchanged", async () => {
+    const db = new Database(":memory:");
+
+    await migrate(db);
+    const versionBefore = db.pragma("user_version", {
+      simple: true,
+    }) as number;
+    const schemaBefore = snapshotSchema(db);
+
+    await migrate(db);
+
+    const versionAfter = db.pragma("user_version", {
+      simple: true,
+    }) as number;
+    const schemaAfter = snapshotSchema(db);
+
+    expect(versionAfter).toBe(versionBefore);
+    expect(schemaAfter).toEqual(schemaBefore);
+
+    db.close();
+  });
+
+  describe("tempfile lifecycle", () => {
+    let dbPath: string;
+
+    beforeEach(() => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-migrate-"));
+      dbPath = path.join(dir, "horizon.db");
+    });
+
+    afterEach(() => {
+      fs.rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    });
+
+    it("open → migrate → close → reopen → migrate is a no-op across a process restart (version and schema snapshot identical)", async () => {
+      const first = openConnection(dbPath);
+      const versionAfterFirstMigrate = first.pragma("user_version", {
+        simple: true,
+      }) as number;
+      const schemaAfterFirstMigrate = snapshotSchema(first);
+      closeConnection(first);
+
+      const second = openConnection(dbPath);
+      const versionAfterReopen = second.pragma("user_version", {
+        simple: true,
+      }) as number;
+      const schemaAfterReopen = snapshotSchema(second);
+
+      await migrate(second);
+
+      const versionAfterSecondMigrate = second.pragma("user_version", {
+        simple: true,
+      }) as number;
+      const schemaAfterSecondMigrate = snapshotSchema(second);
+
+      expect(versionAfterFirstMigrate).toBeGreaterThan(0);
+      expect(versionAfterReopen).toBe(versionAfterFirstMigrate);
+      expect(versionAfterSecondMigrate).toBe(versionAfterFirstMigrate);
+      expect(schemaAfterReopen).toEqual(schemaAfterFirstMigrate);
+      expect(schemaAfterSecondMigrate).toEqual(schemaAfterFirstMigrate);
+
+      closeConnection(second);
+    });
   });
 });
