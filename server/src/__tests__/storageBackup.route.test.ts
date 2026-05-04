@@ -90,7 +90,7 @@ describe("POST /api/storage/backup — SQLite driver", () => {
     const body = res.body as Buffer;
     expect(Buffer.isBuffer(body)).toBe(true);
     expect(body.length).toBeGreaterThan(0);
-    expect(body.subarray(0, 16).toString("utf8")).toBe("SQLite format 3 ");
+    expect(body.subarray(0, 16).toString("utf8")).toBe("SQLite format 3\0");
   });
 
   it("does not leak horizon-backup-* temp entries after the response completes", async () => {

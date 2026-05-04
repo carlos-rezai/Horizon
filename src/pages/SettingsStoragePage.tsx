@@ -1,6 +1,8 @@
+import Button from "../primitives/Button/Button";
 import Heading from "../primitives/Heading/Heading";
 import Spinner from "../primitives/Spinner/Spinner";
 import Text from "../primitives/Text/Text";
+import { downloadBackup } from "../features/settings/downloadBackup";
 import { useStorageStatus } from "../features/settings/useStorageStatus";
 
 export default function SettingsStoragePage() {
@@ -53,6 +55,15 @@ export default function SettingsStoragePage() {
           </>
         )}
       </dl>
+      {status.driver === "sqlite" && (
+        <Button
+          onClick={() => {
+            void downloadBackup();
+          }}
+        >
+          Download backup
+        </Button>
+      )}
     </div>
   );
 }
