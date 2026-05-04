@@ -39,4 +39,16 @@ describe("createStorage", () => {
 
     await storage.close();
   });
+
+  it('throws a clear error when called with "sqlite" and no path option', async () => {
+    await expect(createStorage("sqlite", {})).rejects.toThrow(
+      "SQLite storage driver requires a 'path' option"
+    );
+  });
+
+  it('throws a clear error when called with "sqlite" and no options at all', async () => {
+    await expect(createStorage("sqlite")).rejects.toThrow(
+      "SQLite storage driver requires a 'path' option"
+    );
+  });
 });
