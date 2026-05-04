@@ -20,7 +20,7 @@ import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
 // SQLite — real driver behind createApp
 // ---------------------------------------------------------------------------
 
-describe("POST /api/storage/backup — SQLite driver", () => {
+describe("POST /storage/backup — SQLite driver", () => {
   let app: Express;
   let reset: () => Promise<void>;
   let cleanup: () => Promise<void>;
@@ -50,7 +50,7 @@ describe("POST /api/storage/backup — SQLite driver", () => {
 
   it("returns 200", async () => {
     const res = await request(app)
-      .post("/api/storage/backup")
+      .post("/storage/backup")
       .buffer(true)
       .parse((response, callback) => {
         const chunks: Buffer[] = [];
@@ -63,7 +63,7 @@ describe("POST /api/storage/backup — SQLite driver", () => {
 
   it("sets Content-Disposition: attachment with a .db filename", async () => {
     const res = await request(app)
-      .post("/api/storage/backup")
+      .post("/storage/backup")
       .buffer(true)
       .parse((response, callback) => {
         const chunks: Buffer[] = [];
@@ -79,7 +79,7 @@ describe("POST /api/storage/backup — SQLite driver", () => {
 
   it("streams a body that begins with the SQLite magic header", async () => {
     const res = await request(app)
-      .post("/api/storage/backup")
+      .post("/storage/backup")
       .buffer(true)
       .parse((response, callback) => {
         const chunks: Buffer[] = [];
@@ -97,7 +97,7 @@ describe("POST /api/storage/backup — SQLite driver", () => {
     const before = snapshotBackupTempEntries();
 
     await request(app)
-      .post("/api/storage/backup")
+      .post("/storage/backup")
       .buffer(true)
       .parse((response, callback) => {
         const chunks: Buffer[] = [];
@@ -115,7 +115,7 @@ describe("POST /api/storage/backup — SQLite driver", () => {
 // Mongo — stub the Storage facade so the route surfaces the asymmetry as 501
 // ---------------------------------------------------------------------------
 
-describe("POST /api/storage/backup — Mongo driver (stubbed)", () => {
+describe("POST /storage/backup — Mongo driver (stubbed)", () => {
   let app: Express;
 
   beforeEach(async () => {
@@ -144,12 +144,12 @@ describe("POST /api/storage/backup — Mongo driver (stubbed)", () => {
   });
 
   it("returns 501", async () => {
-    const res = await request(app).post("/api/storage/backup");
+    const res = await request(app).post("/storage/backup");
     expect(res.status).toBe(501);
   });
 
   it("returns a stable error body", async () => {
-    const res = await request(app).post("/api/storage/backup");
+    const res = await request(app).post("/storage/backup");
     expect(res.body).toEqual({ error: "not supported" });
   });
 });

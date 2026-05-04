@@ -127,7 +127,7 @@ describe("SettingsStoragePage — Download backup button (SQLite)", () => {
       const url = typeof input === "string" ? input : input.toString();
       const method = init?.method ?? "GET";
 
-      if (method === "GET" && url.includes("/api/storage/status")) {
+      if (method === "GET" && url.includes("/storage/status")) {
         return Promise.resolve({
           ok: true,
           json: async () => ({
@@ -140,7 +140,7 @@ describe("SettingsStoragePage — Download backup button (SQLite)", () => {
         } as Response);
       }
 
-      if (method === "POST" && url.includes("/api/storage/backup")) {
+      if (method === "POST" && url.includes("/storage/backup")) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -167,7 +167,7 @@ describe("SettingsStoragePage — Download backup button (SQLite)", () => {
     });
   });
 
-  it("clicking the button POSTs to /api/storage/backup", async () => {
+  it("clicking the button POSTs to /storage/backup", async () => {
     mockStatusFetch();
 
     renderPage();
@@ -186,7 +186,7 @@ describe("SettingsStoragePage — Download backup button (SQLite)", () => {
         const url = typeof c[0] === "string" ? c[0] : String(c[0]);
         const init = c[1] as RequestInit | undefined;
         return (
-          url.includes("/api/storage/backup") &&
+          url.includes("/storage/backup") &&
           (init?.method ?? "GET").toUpperCase() === "POST"
         );
       });
