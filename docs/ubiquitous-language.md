@@ -272,6 +272,23 @@
 | **Restore**                | The `Storage.restore(srcPath)` operation that closes storage, validates the source via **Integrity Check** and `user_version`, copies it into place, and reopens                                                          | Recover, import                     |
 | **`HORIZON_DB_PATH`**      | The env var the entrypoint reads to resolve the SQLite file path before calling `createSqliteStorage(path)` — Electron main sets it to `app.getPath('userData')/horizon.db`; local dev defaults to `./horizon.db`         | DB path env, sqlite path            |
 
+## Desktop Shell (new)
+
+| Term                       | Definition                                                                                                                                                                                           | Aliases to avoid                   |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **Electron Main**          | The privileged Node process that owns app lifecycle, BrowserWindow, and the **Server Handle** — the only place that knows about `app.getPath('userData')`                                            | Main process, host                 |
+| **Renderer**               | The sandboxed Chromium process that runs the React app — talks to the **Server Handle**'s child only over HTTP loopback                                                                              | Window process, web view, frontend |
+| **Server Handle**          | The `electron/serverHandle.ts` wrapper around `utilityProcess.fork()` — owns start, stop, the **Ready Handshake**, and the **Shutdown Handshake** for the Express child                              | Server wrapper, server process     |
+| **utilityProcess**         | Electron's first-class API for non-renderer Node children — used by the **Server Handle** to spawn the Express server in a separate Node process that inherits Electron's bundled Node               | Worker, child process, fork        |
+| **Ready Handshake**        | The `{ type: 'ready', port }` message the **Server Handle**'s child posts to **Electron Main** once the Express server has bound an ephemeral port — gated by a 10-second timeout                    | Startup signal, port handshake     |
+| **Shutdown Handshake**     | The `{ type: 'shutdown' }` message **Electron Main** sends on `before-quit`; the child runs `await storage.close()` (triggering the **WAL Checkpoint**) before exiting; 5-second grace then `kill()` | Quit handshake, drain              |
+| **Fatal Message**          | A `{ type: 'fatal', kind, message }` message the **Server Handle**'s child posts on `StorageIntegrityError` or other startup failure — surfaces in **Electron Main** as a modal dialog               | Crash signal, error message        |
+| **Preload Bridge**         | The `electron/preload.ts` script that runs in the **Renderer** under `contextIsolation: true` and exposes exactly `window.horizon = { apiBaseUrl, platform }` via `contextBridge`                    | Preload script, IPC bridge         |
+| **window.horizon**         | The single global the **Preload Bridge** exposes to the **Renderer** — frontend code reads `window.horizon?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL` to find the loopback API                | window globals, electron API       |
+| **API Base URL Injection** | The mechanism that delivers the resolved port from **Electron Main** to the **Renderer**: main passes `--api-base-url=http://127.0.0.1:N` via `additionalArguments`; the **Preload Bridge** reads it | Port injection, API discovery      |
+| **Single-Instance Lock**   | Electron's `app.requestSingleInstanceLock()` guarantee that only one **Desktop Build** instance runs per user — second-launch focuses the existing window via `second-instance`                      | Singleton, instance guard          |
+| **Loopback Bind**          | The `app.listen(PORT, '127.0.0.1', …)` rule: the **Desktop Build** server is reachable only from the local machine — never `0.0.0.0`, never a LAN address                                            | Localhost-only, 127-bind           |
+
 ## Build Targets (new)
 
 | Term              | Definition                                                                                                                                                                      | Aliases to avoid                      |
@@ -283,6 +300,17 @@
 | **Auth Gate**     | The global `requireOwner` Express middleware that verifies the Google ID token and matches the `sub` claim against the Owner allowlist of one — mounted only on the Cloud Build | Auth check, login guard               |
 
 ## Relationships (additions)
+
+- The **Desktop Build** is the **Electron Main** process plus a **Renderer** plus a **Server Handle**'s `utilityProcess` child running the same Express app the **Cloud Build** runs
+- The **Server Handle** owns the lifecycle of the Express child — **Electron Main** never spawns Node directly
+- The **Renderer** never imports Electron, never imports `better-sqlite3`, and never reads files — it talks to the Express child via the **API Base URL Injection** + HTTP only
+- The **Preload Bridge** is the **only** code path that crosses from **Electron Main** into the **Renderer** — it exposes `apiBaseUrl` and `platform` and nothing else
+- The **Ready Handshake** must complete before any **BrowserWindow** is created — startup that fails the 10s timeout surfaces a fatal dialog and quits
+- The **Shutdown Handshake** must complete before **Electron Main** exits — without it, the **WAL Checkpoint** never runs and the on-disk `.db` is not the canonical snapshot
+- A **Fatal Message** with `kind: 'integrity'` corresponds 1:1 to a **StorageIntegrityError** thrown by the **SQLite Driver** at startup
+- The **Desktop Build** server always uses **Loopback Bind** — off-box traffic can never reach it
+- Exactly one **Desktop Build** instance runs per user via the **Single-Instance Lock**
+- The **SQLite Driver** never imports Electron — **Electron Main** is the only producer of `HORIZON_DB_PATH` in the **Desktop Build**
 
 - **Storage** is implemented by exactly one **Storage Driver** at runtime — selected by the entrypoint via `STORAGE_DRIVER`
 - The **Cloud Build** uses the **Mongo Driver**; the **Desktop Build** uses the **SQLite Driver**
@@ -346,6 +374,32 @@
 >
 > **Domain expert:** "It doesn't. The driver takes a path argument, full stop. The entrypoint reads HORIZON_DB_PATH from the environment and passes it in. On the Desktop Build, Electron main sets that env var to app.getPath('userData') + '/horizon.db' before spawning the Express child. The driver never imports anything from Electron."
 
+## Example dialogue (Electron Desktop Shell)
+
+> **Dev:** "When the **Desktop Build** starts, what's the first thing **Electron Main** does after `app.whenReady()`?"
+>
+> **Domain expert:** "It takes the **Single-Instance Lock**. Then it asks the **Server Handle** to start. The Server Handle uses `utilityProcess.fork()` to spawn the Express server with `PORT=0`, `STORAGE_DRIVER=sqlite`, `HORIZON_DB_PATH=app.getPath('userData')/horizon.db`, and `AUTH_DISABLED=1`. It waits for the **Ready Handshake** — the `{ type: 'ready', port }` message — with a ten-second timeout."
+>
+> **Dev:** "Why an ephemeral port?"
+>
+> **Domain expert:** "Two reasons. One — it can't collide with `npm run server:dev` or anything else the user has bound to 3001. Two — the server is the authority on its own port; main just gets told. That number then flows to the **Renderer** via **API Base URL Injection** — main passes `--api-base-url=http://127.0.0.1:N` via `additionalArguments`, and the **Preload Bridge** reads it and exposes `window.horizon.apiBaseUrl`."
+>
+> **Dev:** "Does the **Renderer** ever talk directly to SQLite or to Electron?"
+>
+> **Domain expert:** "Never. The Renderer is sandboxed, `contextIsolation` is on, and the Preload Bridge exposes exactly two strings — `apiBaseUrl` and `platform`. The Renderer talks to the server over HTTP, just like the **Cloud Build** SPA does. There is no second code path."
+>
+> **Dev:** "What happens on quit?"
+>
+> **Domain expert:** "**Electron Main** intercepts `before-quit`, sends the **Shutdown Handshake** message to the Server Handle's child, and waits up to five seconds. The child runs `await storage.close()` — which triggers the **WAL Checkpoint** — and exits. Without that handshake the `.db-wal` file would still be present on disk and the **Online Backup** story would be broken."
+>
+> **Dev:** "And if the database is corrupted at startup?"
+>
+> **Domain expert:** "The **SQLite Driver** throws a **StorageIntegrityError**. The Server Handle's child catches it and posts a **Fatal Message** with `kind: 'integrity'`. **Electron Main** shows a modal: **Quit** or **Show data folder**. Never silent recovery — finance data, log 09 was firm on that."
+>
+> **Dev:** "Could someone on the same network reach the Desktop Build server?"
+>
+> **Domain expert:** "No. The server uses **Loopback Bind** — it's `127.0.0.1` only, never `0.0.0.0`. Off-box traffic can't hit it. Combined with `AUTH_DISABLED=1` being safe only because of the loopback rule — drop the loopback rule and the security model collapses."
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
@@ -394,3 +448,22 @@
   migrations) and connection-state pragmas (`journal_mode`, `synchronous`, `busy_timeout`).
   Always qualify as **Connection Pragma** when discussing per-connection tuning, to keep
   the boundary between connection state and schema state explicit.
+- **"main"** (new) — overloaded (the `main` git branch, `package.json` `main` field,
+  the C `main()` function). When discussing the Desktop Shell, always use **Electron Main**
+  for the privileged Node process that owns app lifecycle and the Server Handle.
+- **"renderer"** (new) — overloaded (React renderer, server-side renderer). In the
+  Desktop Shell context, **Renderer** is the sandboxed Chromium process that runs the
+  React app. Never use "renderer" alone in code discussions that span both meanings.
+- **"child process"** (new) — generic Node term. In the Desktop Build, prefer
+  **Server Handle** for the Electron-managed wrapper, and **utilityProcess** for the
+  Electron API itself. Never use raw `child_process.fork`/`spawn` for the Express server —
+  the architectural decision in design log 10 is `utilityProcess.fork()`.
+- **"port"** (new) — in the Desktop Build the server's port is **always ephemeral**
+  (`PORT=0`); never assume `3001` or any fixed number. The authoritative port flows from
+  the server through the **Ready Handshake** and reaches the **Renderer** via
+  **API Base URL Injection**.
+- **"IPC"** (new) — overloaded (Electron's renderer IPC, OS-level IPC, the parent-port
+  channel between Electron Main and a utilityProcess). In the Desktop Shell, the only
+  IPC that exists is the **Ready Handshake**, **Shutdown Handshake**, and **Fatal Message**
+  on the Server Handle's parent port. The **Renderer** has no IPC — it talks to the
+  server over HTTP only.
