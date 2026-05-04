@@ -12,8 +12,8 @@ import fs from "fs";
 import os from "os";
 import type { Express } from "express";
 import { createApp } from "../app.js";
-import type { Storage, StorageStatus } from "../storage/Storage.js";
 import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
+import { createMongoStorageStub } from "./helpers/mongoStorageStub.js";
 
 // ---------------------------------------------------------------------------
 // SQLite — real driver behind createApp
@@ -149,36 +149,12 @@ describe("POST /storage/backup — SQLite driver", () => {
 // without spinning up a real Mongo (the parity spec covers driver behaviour)
 // ---------------------------------------------------------------------------
 
-function makeMongoStub(overrides?: Partial<Storage>): Storage {
-  return {
-    accounts: {} as Storage["accounts"],
-    transactions: {} as Storage["transactions"],
-    transfers: {} as Storage["transfers"],
-    categories: {} as Storage["categories"],
-    milestones: {} as Storage["milestones"],
-    recurringTransactions: {} as Storage["recurringTransactions"],
-    close: async () => undefined,
-    backup: async () => {
-      throw new Error("not supported");
-    },
-    restore: async () => {
-      throw new Error("not supported");
-    },
-    status: async (): Promise<StorageStatus> => ({
-      driver: "mongo",
-      schemaVersion: 0,
-      integrity: "ok",
-    }),
-    ...overrides,
-  };
-}
-
 describe("GET /storage/status — Mongo driver (stubbed)", () => {
   let app: Express;
 
   beforeAll(async () => {
     process.env.AUTH_DISABLED = "1";
-    app = await createApp(makeMongoStub());
+    app = await createApp(createMongoStorageStub());
   });
 
   it("returns 200 with the Mongo-shaped status payload and no path/sizeBytes", async () => {
@@ -200,7 +176,7 @@ describe("POST /storage/backup — Mongo driver (stubbed)", () => {
 
   beforeEach(async () => {
     process.env.AUTH_DISABLED = "1";
-    app = await createApp(makeMongoStub());
+    app = await createApp(createMongoStorageStub());
   });
 
   it("returns 400 when the driver does not support backup", async () => {
@@ -218,7 +194,7 @@ describe("POST /storage/backup — non-supported failure (stubbed)", () => {
   beforeEach(async () => {
     process.env.AUTH_DISABLED = "1";
     app = await createApp(
-      makeMongoStub({
+      createMongoStorageStub({
         backup: async () => {
           throw new Error("disk full");
         },
@@ -238,7 +214,7 @@ describe("POST /storage/restore — Mongo driver (stubbed)", () => {
 
   beforeEach(async () => {
     process.env.AUTH_DISABLED = "1";
-    app = await createApp(makeMongoStub());
+    app = await createApp(createMongoStorageStub());
   });
 
   it("returns 400 when the driver does not support restore", async () => {
