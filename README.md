@@ -176,7 +176,7 @@ Then open http://localhost:5173 in your browser.
 | Restschuld Trajectory Chart                | ✅ Complete |
 | Projection Engine Audit                    | ✅ Complete |
 | Repository abstraction (storage driver)    | ✅ Complete |
-| SQLite driver (offline storage)            | 🔲 Planned  |
+| SQLite driver (offline storage)            | ✅ Complete |
 | Electron desktop shell                     | 🔲 Planned  |
 | Desktop packaging (Windows installer)      | 🔲 Planned  |
 | Monthly digest (AI)                        | 🔲 Planned  |
