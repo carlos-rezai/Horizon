@@ -8,10 +8,14 @@ import {
   it,
 } from "vitest";
 import request from "supertest";
+import Database from "better-sqlite3";
 import fs from "fs";
 import os from "os";
+import path from "path";
 import type { Express } from "express";
 import { createApp } from "../app.js";
+import { createStorage } from "../storage/index.js";
+import type { Storage } from "../storage/Storage.js";
 import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
 import { createMongoStorageStub } from "./helpers/mongoStorageStub.js";
 
@@ -206,6 +210,109 @@ describe("POST /storage/backup — non-supported failure (stubbed)", () => {
     const res = await request(app).post("/storage/backup");
     expect(res.status).not.toBe(400);
     expect(res.status).toBeGreaterThanOrEqual(500);
+  });
+});
+
+describe("POST /storage/restore — SQLite driver", () => {
+  let app: Express;
+  let storage: Storage;
+  let livePath: string;
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    process.env.AUTH_DISABLED = "1";
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-route-"));
+    livePath = path.join(tmpDir, "live.db");
+    storage = await createStorage("sqlite", { path: livePath });
+    app = await createApp(storage);
+  });
+
+  afterEach(async () => {
+    await storage.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  async function makeValidBackup(): Promise<string> {
+    const snapPath = path.join(tmpDir, "snap.db");
+    await storage.backup(snapPath);
+    return snapPath;
+  }
+
+  it("returns 204 and the live data is replaced by the backup snapshot", async () => {
+    const before = await storage.accounts.create({
+      name: "Pre-restore",
+      kind: "Girokonto",
+      openingBalance: 1234,
+      openingDate: "2026-01-01",
+    });
+
+    const snapPath = await makeValidBackup();
+
+    await storage.accounts.delete(before.id);
+    const after = await storage.accounts.create({
+      name: "Post-restore",
+      kind: "Tagesgeld",
+      openingBalance: 7777,
+      openingDate: "2026-02-01",
+    });
+
+    const res = await request(app)
+      .post("/storage/restore")
+      .attach("file", snapPath);
+
+    expect(res.status).toBe(204);
+
+    const accountsRes = await request(app).get("/accounts");
+    expect(accountsRes.status).toBe(200);
+    const ids = (accountsRes.body as Array<{ id: string }>).map((a) => a.id);
+    expect(ids).toContain(before.id);
+    expect(ids).not.toContain(after.id);
+  });
+
+  it("returns 400 when no file is uploaded", async () => {
+    const res = await request(app).post("/storage/restore");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 with the integrity-check message for a corrupt file and leaves live data untouched", async () => {
+    const before = await storage.accounts.create({
+      name: "Pre-corrupt",
+      kind: "Girokonto",
+      openingBalance: 999,
+      openingDate: "2026-01-01",
+    });
+
+    const corruptPath = path.join(tmpDir, "corrupt.db");
+    fs.writeFileSync(corruptPath, Buffer.from("not a sqlite database"));
+
+    const res = await request(app)
+      .post("/storage/restore")
+      .attach("file", corruptPath);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "Backup file failed integrity check",
+    });
+
+    const accountsRes = await request(app).get("/accounts");
+    const ids = (accountsRes.body as Array<{ id: string }>).map((a) => a.id);
+    expect(ids).toContain(before.id);
+  });
+
+  it("returns 400 with the future-schema message when the source user_version is ahead", async () => {
+    const futurePath = path.join(tmpDir, "future.db");
+    const futureDb = new Database(futurePath);
+    futureDb.pragma("user_version = 9999");
+    futureDb.close();
+
+    const res = await request(app)
+      .post("/storage/restore")
+      .attach("file", futurePath);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "Backup was written by a newer version of Horizon",
+    });
   });
 });
 
