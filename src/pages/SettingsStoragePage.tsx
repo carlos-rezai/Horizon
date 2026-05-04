@@ -6,6 +6,7 @@ import Text from "../primitives/Text/Text";
 import { downloadBackup } from "../features/settings/downloadBackup";
 import { uploadRestore } from "../features/settings/uploadRestore";
 import { useStorageStatus } from "../features/settings/useStorageStatus";
+import { Container, Header } from "./SettingsStoragePage.styles";
 
 type RestoreOutcome =
   | { kind: "idle" }
@@ -54,8 +55,10 @@ export default function SettingsStoragePage() {
   }
 
   return (
-    <div>
-      <Heading level={1}>Storage</Heading>
+    <Container>
+      <Header>
+        <Heading level={1}>Storage</Heading>
+      </Header>
       <dl>
         <dt>
           <Text>Driver</Text>
@@ -134,6 +137,6 @@ export default function SettingsStoragePage() {
       )}
       {outcome.kind === "success" && <Text>Restore succeeded</Text>}
       {outcome.kind === "error" && <Text>{outcome.message}</Text>}
-    </div>
+    </Container>
   );
 }
