@@ -1,14 +1,21 @@
 import { Router, type Request } from "express";
+import multer from "multer";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { randomUUID } from "crypto";
 import type { Storage } from "../storage/Storage.js";
+import { StorageIntegrityError } from "../storage/sqlite/errors.js";
 
 const router = Router();
 
 const UNSUPPORTED_BACKUP_MESSAGE = "Storage driver does not support backup";
 const UNSUPPORTED_RESTORE_MESSAGE = "Storage driver does not support restore";
+const RESTORE_INTEGRITY_MESSAGE = "Backup file failed integrity check";
+const RESTORE_FUTURE_SCHEMA_MESSAGE =
+  "Backup was written by a newer version of Horizon";
+
+const upload = multer({ dest: os.tmpdir() });
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
@@ -22,12 +29,19 @@ async function safeUnlink(p: string): Promise<void> {
   try {
     await fs.promises.unlink(p);
   } catch {
-    // ignore — file may not exist if backup never produced it
+    // ignore — file may not exist
   }
 }
 
 function isUnsupportedDriverError(err: unknown): boolean {
   return err instanceof Error && err.message === "not supported";
+}
+
+function mapIntegrityErrorMessage(err: StorageIntegrityError): string {
+  if (/ahead of/i.test(err.message)) {
+    return RESTORE_FUTURE_SCHEMA_MESSAGE;
+  }
+  return RESTORE_INTEGRITY_MESSAGE;
 }
 
 router.get("/status", async (req, res) => {
@@ -70,24 +84,30 @@ router.post("/backup", async (req, res, next) => {
   }
 });
 
-router.post("/restore", async (req, res, next) => {
-  const tempPath = makeTempPath("restore");
+router.post("/restore", upload.single("file"), async (req, res, next) => {
+  const uploaded = req.file;
+
+  if (!uploaded) {
+    res.status(400).json({ error: "Missing 'file' upload" });
+    return;
+  }
 
   try {
-    await getStorage(req).restore(tempPath);
+    await getStorage(req).restore(uploaded.path);
+    res.status(204).end();
   } catch (err) {
-    await safeUnlink(tempPath);
     if (isUnsupportedDriverError(err)) {
       res.status(400).json({ error: UNSUPPORTED_RESTORE_MESSAGE });
       return;
     }
+    if (err instanceof StorageIntegrityError) {
+      res.status(400).json({ error: mapIntegrityErrorMessage(err) });
+      return;
+    }
     next(err);
-    return;
   } finally {
-    await safeUnlink(tempPath);
+    await safeUnlink(uploaded.path);
   }
-
-  res.status(204).end();
 });
 
 export default router;

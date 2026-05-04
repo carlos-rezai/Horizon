@@ -318,14 +318,25 @@ describe("POST /storage/restore — SQLite driver", () => {
 
 describe("POST /storage/restore — Mongo driver (stubbed)", () => {
   let app: Express;
+  let tmpDir: string;
+  let dummyPath: string;
 
   beforeEach(async () => {
     process.env.AUTH_DISABLED = "1";
     app = await createApp(createMongoStorageStub());
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-mongo-"));
+    dummyPath = path.join(tmpDir, "dummy.db");
+    fs.writeFileSync(dummyPath, Buffer.from("dummy"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
   it("returns 400 when the driver does not support restore", async () => {
-    const res = await request(app).post("/storage/restore");
+    const res = await request(app)
+      .post("/storage/restore")
+      .attach("file", dummyPath);
     expect(res.status).toBe(400);
     expect(res.body).toEqual({
       error: "Storage driver does not support restore",
