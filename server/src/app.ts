@@ -89,8 +89,8 @@ export async function createApp(storage: Storage): Promise<Express> {
   app.use("/recurring-transactions", recurringTransactionsRouter);
   app.use("/projection", projectionRouter);
   app.use("/milestones", milestonesRouter);
-  app.use("/api/storage", storageStatusRouter);
-  app.use("/api/storage", storageBackupRouter);
+  app.use("/storage", storageStatusRouter);
+  app.use("/storage", storageBackupRouter);
 
   if (!authDisabled) {
     app.use(logUnhandledError);

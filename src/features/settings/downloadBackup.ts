@@ -1,7 +1,7 @@
 import { API_BASE } from "../../utils/api";
 
 export async function downloadBackup(): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/storage/backup`, {
+  const res = await fetch(`${API_BASE}/storage/backup`, {
     method: "POST",
   });
   if (!res.ok) {

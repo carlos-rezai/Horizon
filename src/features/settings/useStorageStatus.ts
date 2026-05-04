@@ -23,7 +23,7 @@ export function useStorageStatus(): UseStorageStatusResult {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_BASE}/api/storage/status`)
+    fetch(`${API_BASE}/storage/status`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Failed to fetch storage status: ${res.status}`);
