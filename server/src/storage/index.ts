@@ -19,8 +19,10 @@ export async function createStorage(
     return createMongoStorage(options.uri);
   }
   if (driver === "sqlite") {
-    const path = options?.path ?? ":memory:";
-    return createSqliteStorage(path, { verbose: options?.verbose });
+    if (!options?.path) {
+      throw new Error("SQLite storage driver requires a 'path' option");
+    }
+    return createSqliteStorage(options.path, { verbose: options.verbose });
   }
   throw new Error(`Unknown storage driver: ${String(driver)}`);
 }
