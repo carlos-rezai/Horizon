@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { migrate } from "./migrate.js";
 import { StorageIntegrityError } from "./errors.js";
+import { assertIntegrity } from "./integrity.js";
 
 const PRAGMAS = [
   "journal_mode = WAL",
@@ -39,16 +40,6 @@ export function openConnection(
     throw new StorageIntegrityError(`SQLite integrity_check failed: ${detail}`);
   }
   return db;
-}
-
-function assertIntegrity(db: Database.Database): void {
-  const rows = db.pragma("integrity_check") as Array<{
-    integrity_check: string;
-  }>;
-  const detail = rows.map((r) => r.integrity_check).join("\n");
-  if (detail !== "ok") {
-    throw new StorageIntegrityError(`SQLite integrity_check failed: ${detail}`);
-  }
 }
 
 export function closeConnection(db: Database.Database): void {

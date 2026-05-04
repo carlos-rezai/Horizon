@@ -7,6 +7,7 @@ import {
   type OpenConnectionOptions,
 } from "./connection.js";
 import { StorageIntegrityError } from "./errors.js";
+import { assertIntegrity, assertSchemaNotAhead } from "./integrity.js";
 import { createSqliteAccountsRepo } from "./accounts.js";
 import { createSqliteCategoriesRepo } from "./categories.js";
 import { createSqliteMilestonesRepo } from "./milestones.js";
@@ -55,23 +56,8 @@ function validateRestoreSource(srcPath: string, maxUserVersion: number): void {
     );
   }
   try {
-    const rows = srcDb.pragma("integrity_check") as Array<{
-      integrity_check: string;
-    }>;
-    const detail = rows.map((r) => r.integrity_check).join("\n");
-    if (detail !== "ok") {
-      throw new StorageIntegrityError(
-        `SQLite integrity_check failed: ${detail}`
-      );
-    }
-    const srcVersion = srcDb.pragma("user_version", {
-      simple: true,
-    }) as number;
-    if (srcVersion > maxUserVersion) {
-      throw new StorageIntegrityError(
-        `SQLite restore source user_version ${srcVersion} is ahead of live schema ${maxUserVersion}. The source was written by a newer build of Horizon.`
-      );
-    }
+    assertIntegrity(srcDb);
+    assertSchemaNotAhead(srcDb, maxUserVersion);
   } catch (err) {
     srcDb.close();
     if (err instanceof StorageIntegrityError) throw err;
