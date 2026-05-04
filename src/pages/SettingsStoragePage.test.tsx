@@ -274,3 +274,221 @@ describe("SettingsStoragePage — Download backup button (Mongo)", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("SettingsStoragePage — Restore from backup button (SQLite)", () => {
+  interface RestoreFetchOptions {
+    initialStatus?: {
+      driver: "sqlite" | "mongo";
+      schemaVersion: number;
+      integrity: string;
+      path?: string;
+      sizeBytes?: number;
+    };
+    secondStatus?: {
+      driver: "sqlite" | "mongo";
+      schemaVersion: number;
+      integrity: string;
+      path?: string;
+      sizeBytes?: number;
+    };
+    restoreResponse?: { ok: boolean; status: number; body?: unknown };
+  }
+
+  function mockRestoreFetch(opts: RestoreFetchOptions = {}): {
+    statusCalls: number;
+  } {
+    const initialStatus = opts.initialStatus ?? {
+      driver: "sqlite" as const,
+      schemaVersion: 2,
+      integrity: "ok",
+      path: "/Users/x/horizon.db",
+      sizeBytes: 100,
+    };
+    const secondStatus = opts.secondStatus ?? initialStatus;
+    const restoreResponse = opts.restoreResponse ?? {
+      ok: true,
+      status: 204,
+      body: {},
+    };
+
+    const counter = { statusCalls: 0 };
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(((
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      const url = typeof input === "string" ? input : input.toString();
+      const method = (init?.method ?? "GET").toUpperCase();
+
+      if (method === "GET" && url.includes("/storage/status")) {
+        counter.statusCalls += 1;
+        const body = counter.statusCalls === 1 ? initialStatus : secondStatus;
+        return Promise.resolve({
+          ok: true,
+          json: async () => body,
+        } as Response);
+      }
+
+      if (method === "POST" && url.includes("/storage/restore")) {
+        return Promise.resolve({
+          ok: restoreResponse.ok,
+          status: restoreResponse.status,
+          json: async () => restoreResponse.body ?? {},
+        } as Response);
+      }
+
+      throw new Error(`Unexpected fetch: ${method} ${url}`);
+    }) as typeof fetch);
+
+    return counter;
+  }
+
+  it("renders a Restore from backup button under SQLite", async () => {
+    mockRestoreFetch();
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /restore from backup/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("clicking the button opens a file picker (hidden file input)", async () => {
+    mockRestoreFetch();
+
+    renderPage();
+
+    const button = await screen.findByRole("button", {
+      name: /restore from backup/i,
+    });
+
+    const inputBefore = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement | null;
+    expect(inputBefore).not.toBeNull();
+
+    const clickSpy = vi.fn();
+    if (inputBefore) inputBefore.click = clickSpy;
+
+    fireEvent.click(button);
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it("selecting a file shows a confirm dialog naming the file", async () => {
+    mockRestoreFetch();
+
+    renderPage();
+
+    await screen.findByRole("button", { name: /restore from backup/i });
+
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+
+    const file = new File([new Uint8Array([0x00])], "my-backup.db");
+    Object.defineProperty(fileInput, "files", { value: [file] });
+    fireEvent.change(fileInput);
+
+    await waitFor(() => {
+      expect(screen.getByText(/my-backup\.db/)).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: /confirm/i })
+    ).toBeInTheDocument();
+  });
+
+  it("confirming calls uploadRestore, refetches status, and shows success", async () => {
+    const counter = mockRestoreFetch();
+
+    renderPage();
+
+    await screen.findByRole("button", { name: /restore from backup/i });
+
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    const file = new File([new Uint8Array([0x00])], "ok.db");
+    Object.defineProperty(fileInput, "files", { value: [file] });
+    fireEvent.change(fileInput);
+
+    const confirm = await screen.findByRole("button", { name: /confirm/i });
+    fireEvent.click(confirm);
+
+    await waitFor(() => {
+      const calls = (
+        globalThis.fetch as unknown as { mock: { calls: unknown[][] } }
+      ).mock.calls;
+      const restoreCall = calls.find((c) => {
+        const url = typeof c[0] === "string" ? c[0] : String(c[0]);
+        const init = c[1] as RequestInit | undefined;
+        return (
+          url.includes("/storage/restore") &&
+          (init?.method ?? "GET").toUpperCase() === "POST"
+        );
+      });
+      expect(restoreCall).toBeDefined();
+    });
+
+    await waitFor(() => {
+      expect(counter.statusCalls).toBeGreaterThanOrEqual(2);
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/restore.*succe/i)).toBeInTheDocument();
+    });
+  });
+
+  it("surfaces the server error when uploadRestore rejects", async () => {
+    mockRestoreFetch({
+      restoreResponse: {
+        ok: false,
+        status: 400,
+        body: { error: "Backup file failed integrity check" },
+      },
+    });
+
+    renderPage();
+
+    await screen.findByRole("button", { name: /restore from backup/i });
+
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    const file = new File([new Uint8Array([0x00])], "bad.db");
+    Object.defineProperty(fileInput, "files", { value: [file] });
+    fireEvent.change(fileInput);
+
+    const confirm = await screen.findByRole("button", { name: /confirm/i });
+    fireEvent.click(confirm);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Backup file failed integrity check/i)
+      ).toBeInTheDocument();
+    });
+  });
+});
+
+describe("SettingsStoragePage — Restore from backup button (Mongo)", () => {
+  it("does not render the Restore button under Mongo", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        driver: "mongo",
+        schemaVersion: 0,
+        integrity: "ok",
+      }),
+    } as Response);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/mongo/i)).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /restore from backup/i })
+    ).not.toBeInTheDocument();
+  });
+});
