@@ -10,7 +10,6 @@ import {
 import request from "supertest";
 import fs from "fs";
 import os from "os";
-import path from "path";
 import type { Express } from "express";
 import { createApp } from "../app.js";
 import type { Storage, StorageStatus } from "../storage/Storage.js";
@@ -19,6 +18,40 @@ import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
 // ---------------------------------------------------------------------------
 // SQLite — real driver behind createApp
 // ---------------------------------------------------------------------------
+
+describe("GET /storage/status — SQLite driver", () => {
+  let app: Express;
+  let reset: () => Promise<void>;
+  let cleanup: () => Promise<void>;
+
+  beforeAll(async () => {
+    const handle = await createSqliteAppHandle();
+    app = handle.app;
+    reset = handle.reset;
+    cleanup = handle.cleanup;
+  });
+
+  afterAll(async () => {
+    await cleanup();
+  });
+
+  afterEach(async () => {
+    await reset();
+  });
+
+  it("returns 200 with the SQLite-shaped status payload", async () => {
+    const res = await request(app).get("/storage/status");
+
+    expect(res.status).toBe(200);
+    expect(res.body.driver).toBe("sqlite");
+    expect(typeof res.body.schemaVersion).toBe("number");
+    expect(res.body.schemaVersion).toBeGreaterThan(0);
+    expect(res.body.integrity).toBe("ok");
+    expect(res.body.path).toBe(":memory:");
+    expect(typeof res.body.sizeBytes).toBe("number");
+    expect(res.body.sizeBytes).toBeGreaterThanOrEqual(0);
+  });
+});
 
 describe("POST /storage/backup — SQLite driver", () => {
   let app: Express;
@@ -112,44 +145,107 @@ describe("POST /storage/backup — SQLite driver", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Mongo — stub the Storage facade so the route surfaces the asymmetry as 501
+// Mongo — stub the Storage facade so we exercise the route's response shape
+// without spinning up a real Mongo (the parity spec covers driver behaviour)
 // ---------------------------------------------------------------------------
+
+function makeMongoStub(overrides?: Partial<Storage>): Storage {
+  return {
+    accounts: {} as Storage["accounts"],
+    transactions: {} as Storage["transactions"],
+    transfers: {} as Storage["transfers"],
+    categories: {} as Storage["categories"],
+    milestones: {} as Storage["milestones"],
+    recurringTransactions: {} as Storage["recurringTransactions"],
+    close: async () => undefined,
+    backup: async () => {
+      throw new Error("not supported");
+    },
+    restore: async () => {
+      throw new Error("not supported");
+    },
+    status: async (): Promise<StorageStatus> => ({
+      driver: "mongo",
+      schemaVersion: 0,
+      integrity: "ok",
+    }),
+    ...overrides,
+  };
+}
+
+describe("GET /storage/status — Mongo driver (stubbed)", () => {
+  let app: Express;
+
+  beforeAll(async () => {
+    process.env.AUTH_DISABLED = "1";
+    app = await createApp(makeMongoStub());
+  });
+
+  it("returns 200 with the Mongo-shaped status payload and no path/sizeBytes", async () => {
+    const res = await request(app).get("/storage/status");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      driver: "mongo",
+      schemaVersion: 0,
+      integrity: "ok",
+    });
+    expect(res.body.path).toBeUndefined();
+    expect(res.body.sizeBytes).toBeUndefined();
+  });
+});
 
 describe("POST /storage/backup — Mongo driver (stubbed)", () => {
   let app: Express;
 
   beforeEach(async () => {
     process.env.AUTH_DISABLED = "1";
-    const mongoStub: Storage = {
-      accounts: {} as Storage["accounts"],
-      transactions: {} as Storage["transactions"],
-      transfers: {} as Storage["transfers"],
-      categories: {} as Storage["categories"],
-      milestones: {} as Storage["milestones"],
-      recurringTransactions: {} as Storage["recurringTransactions"],
-      close: async () => undefined,
-      backup: async () => {
-        throw new Error("not supported");
-      },
-      restore: async () => {
-        throw new Error("not supported");
-      },
-      status: async (): Promise<StorageStatus> => ({
-        driver: "mongo",
-        schemaVersion: 0,
-        integrity: "ok",
-      }),
-    };
-    app = await createApp(mongoStub);
+    app = await createApp(makeMongoStub());
   });
 
-  it("returns 501", async () => {
+  it("returns 400 when the driver does not support backup", async () => {
     const res = await request(app).post("/storage/backup");
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "Storage driver does not support backup",
+    });
+  });
+});
+
+describe("POST /storage/backup — non-supported failure (stubbed)", () => {
+  let app: Express;
+
+  beforeEach(async () => {
+    process.env.AUTH_DISABLED = "1";
+    app = await createApp(
+      makeMongoStub({
+        backup: async () => {
+          throw new Error("disk full");
+        },
+      })
+    );
   });
 
-  it("returns a stable error body", async () => {
+  it("does not return 400 for a non-'not supported' failure", async () => {
     const res = await request(app).post("/storage/backup");
-    expect(res.body).toEqual({ error: "not supported" });
+    expect(res.status).not.toBe(400);
+    expect(res.status).toBeGreaterThanOrEqual(500);
+  });
+});
+
+describe("POST /storage/restore — Mongo driver (stubbed)", () => {
+  let app: Express;
+
+  beforeEach(async () => {
+    process.env.AUTH_DISABLED = "1";
+    app = await createApp(makeMongoStub());
+  });
+
+  it("returns 400 when the driver does not support restore", async () => {
+    const res = await request(app).post("/storage/restore");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "Storage driver does not support restore",
+    });
   });
 });
