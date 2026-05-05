@@ -1,5 +1,6 @@
 import path from "node:path";
 import { utilityProcess, type UtilityProcess } from "electron";
+import { awaitExitOrKill } from "./awaitExitOrKill.js";
 import { resolveDbPath } from "./paths.js";
 
 const READY_TIMEOUT_MS = 10_000;
@@ -14,7 +15,7 @@ export interface ServerHandleOptions {
 
 export interface ServerHandle {
   start(): Promise<{ port: number }>;
-  shutdown(): Promise<void>;
+  shutdown(timeoutMs: number): Promise<void>;
   onFatal(handler: FatalHandler): void;
 }
 
@@ -110,16 +111,14 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
       });
     },
 
-    async shutdown(): Promise<void> {
+    async shutdown(timeoutMs: number): Promise<void> {
       if (!child) {
         return;
       }
       const current = child;
       child = null;
       current.postMessage({ type: "shutdown" });
-      await new Promise<void>((resolve) => {
-        current.once("exit", () => resolve());
-      });
+      await awaitExitOrKill(current, timeoutMs);
     },
   };
 }
