@@ -138,6 +138,8 @@ async function createWindow(port: number): Promise<void> {
     await mainWindow.loadFile(path.join(appRoot, "dist", "index.html"));
   } else {
     await mainWindow.loadURL("http://localhost:5173");
+  }
+  if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
   }
 }
