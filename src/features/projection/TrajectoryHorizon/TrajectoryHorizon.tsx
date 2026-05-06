@@ -237,12 +237,13 @@ export default function TrajectoryHorizon({
                   width={90}
                 />
                 <Tooltip
-                  content={
+                  content={(props) => (
                     <ChartTooltip
+                      {...props}
                       nonMortgageAccounts={nonMortgageAccounts}
                       accountColours={accountColours}
                     />
-                  }
+                  )}
                 />
                 <Legend
                   verticalAlign="bottom"
