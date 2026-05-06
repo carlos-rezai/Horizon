@@ -10,7 +10,6 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
-import type { TooltipContentProps } from "recharts";
 import type {
   MonthlySnapshot,
   TrajectoryDataPoint,
@@ -66,7 +65,9 @@ interface Props {
 
 const HORIZON_MONTHS = 120;
 
-interface ChartTooltipProps extends TooltipContentProps<number, string> {
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: { payload: TrajectoryDataPoint }[];
   nonMortgageAccounts: AccountWithBalance[];
   accountColours: string[];
 }
