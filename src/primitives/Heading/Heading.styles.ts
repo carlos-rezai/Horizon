@@ -9,7 +9,7 @@ const levelSizeMap = {
 
 type Level = keyof typeof levelSizeMap;
 
-export const headingStyles = (level: Level) => `
+export const headingStyles = (_level: Level) => `
   font-size: inherit;
   font-weight: inherit;
   line-height: inherit;

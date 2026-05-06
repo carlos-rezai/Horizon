@@ -10,9 +10,11 @@ afterEach(() => {
 
 describe("useStorageStatus", () => {
   it("starts in a loading state", () => {
-    let resolveFetch: ((value: Response) => void) | null = null;
+    const fetchResolver: { fn: ((value: Response) => void) | null } = {
+      fn: null,
+    };
     const pending = new Promise<Response>((resolve) => {
-      resolveFetch = resolve;
+      fetchResolver.fn = resolve;
     });
     vi.spyOn(globalThis, "fetch").mockReturnValue(pending);
 
@@ -22,18 +24,16 @@ describe("useStorageStatus", () => {
     expect(result.current.status).toBeNull();
     expect(result.current.error).toBeNull();
 
-    if (resolveFetch) {
-      resolveFetch({
-        ok: true,
-        json: async () => ({
-          driver: "sqlite",
-          schemaVersion: 2,
-          integrity: "ok",
-          path: ":memory:",
-          sizeBytes: 0,
-        }),
-      } as Response);
-    }
+    fetchResolver.fn?.({
+      ok: true,
+      json: async () => ({
+        driver: "sqlite",
+        schemaVersion: 2,
+        integrity: "ok",
+        path: ":memory:",
+        sizeBytes: 0,
+      }),
+    } as Response);
   });
 
   it("returns the SQLite-shaped payload after fetch succeeds", async () => {

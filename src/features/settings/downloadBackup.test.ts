@@ -56,7 +56,7 @@ describe("downloadBackup", () => {
       expect(init.method).toBe("POST");
 
       expect(createObjectURL).toHaveBeenCalled();
-      const blobArg = createObjectURL.mock.calls[0]?.[0];
+      const blobArg = (createObjectURL.mock.calls as [Blob][][])[0]?.[0];
       expect(blobArg).toBeInstanceOf(Blob);
 
       const downloadAnchor = anchorClicks.find(
