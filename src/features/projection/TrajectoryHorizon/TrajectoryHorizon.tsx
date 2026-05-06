@@ -67,7 +67,7 @@ const HORIZON_MONTHS = 120;
 
 interface ChartTooltipProps {
   active?: boolean;
-  payload?: { payload: TrajectoryDataPoint }[];
+  payload?: readonly { payload: TrajectoryDataPoint }[];
   nonMortgageAccounts: AccountWithBalance[];
   accountColours: string[];
 }
