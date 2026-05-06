@@ -11,12 +11,13 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "prepare": "husky",
+    "electron:rebuild": "electron-rebuild -f -w better-sqlite3",
     "test": "vitest run",
     "test:watch": "vitest",
     "server:build": "tsc -p server/tsconfig.json",
     "electron:build": "tsc -p electron",
     "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\"",
-    "electron:start": "npm run build && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
+    "electron:start": "npm run electron:rebuild && npm run build && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -41,6 +42,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.4",
     "@eslint/js": "^9.39.4",
     "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
