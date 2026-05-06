@@ -9,12 +9,16 @@ import {
   type MenuItemConstructorOptions,
 } from "electron";
 import { resolveDbPath } from "./paths.js";
+import { resolveRendererConfig } from "./resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle.js";
 
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 
 const isDev = !app.isPackaged;
-const corsOrigin = isDev ? "http://localhost:5173" : "*";
+const { loadProdRenderer, corsOrigin } = resolveRendererConfig(
+  app.isPackaged,
+  process.env
+);
 
 const serverHandle = createServerHandle({ isDev, corsOrigin });
 
@@ -129,13 +133,13 @@ async function createWindow(port: number): Promise<void> {
     mainWindow = null;
   });
 
-  if (isDev) {
-    await mainWindow.loadURL("http://localhost:5173");
-    mainWindow.webContents.openDevTools();
-  } else {
+  if (loadProdRenderer) {
     await mainWindow.loadFile(
       path.join(app.getAppPath(), "dist", "index.html")
     );
+  } else {
+    await mainWindow.loadURL("http://localhost:5173");
+    mainWindow.webContents.openDevTools();
   }
 }
 
@@ -157,7 +161,7 @@ async function main(): Promise<void> {
 
   await app.whenReady();
 
-  if (!isDev) {
+  if (loadProdRenderer) {
     Menu.setApplicationMenu(buildProdMenu());
   }
 

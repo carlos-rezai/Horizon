@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "electron:build": "tsc -p electron",
-    "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\""
+    "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\"",
+    "electron:start": "npm run build && npm run electron:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 electron electron/dist/main.js"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -50,6 +51,7 @@
     "@types/supertest": "^7.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^41.5.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
