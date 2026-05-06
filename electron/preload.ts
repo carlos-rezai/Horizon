@@ -1,5 +1,13 @@
 import { contextBridge } from "electron";
-import { parseApiBaseUrlArg } from "./parseApiBaseUrlArg.js";
+
+const FLAG = "--api-base-url=";
+
+function parseApiBaseUrlArg(argv: readonly string[]): string | null {
+  for (const arg of argv) {
+    if (arg.startsWith(FLAG)) return arg.slice(FLAG.length);
+  }
+  return null;
+}
 
 const apiBaseUrl = parseApiBaseUrlArg(process.argv) ?? "";
 

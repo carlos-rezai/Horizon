@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "./dist",
     "rootDir": ".",
     "types": ["node"],
@@ -12,9 +12,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true
+    "esModuleInterop": true
   },
-  "include": ["**/*.ts"],
-  "exclude": ["dist", "**/*.test.ts", "preload.ts"]
+  "include": ["preload.ts"],
+  "exclude": ["dist"]
 }

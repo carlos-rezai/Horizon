@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "server:build": "tsc -p server/tsconfig.json && node --input-type=module -e \"import {cpSync} from 'node:fs';cpSync('server/src/storage/sqlite/migrations','server/dist/storage/sqlite/migrations',{recursive:true,force:true})\"",
-    "electron:build": "tsc -p electron",
+    "electron:build": "tsc -p electron && tsc -p electron/tsconfig.preload.json",
     "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\"",
     "electron:start": "npm run electron:rebuild && npm run build:electron && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
   },
