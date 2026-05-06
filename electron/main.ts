@@ -134,9 +134,8 @@ async function createWindow(port: number): Promise<void> {
   });
 
   if (loadProdRenderer) {
-    await mainWindow.loadFile(
-      path.join(app.getAppPath(), "dist", "index.html")
-    );
+    const appRoot = app.isPackaged ? app.getAppPath() : process.cwd();
+    await mainWindow.loadFile(path.join(appRoot, "dist", "index.html"));
   } else {
     await mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools();
