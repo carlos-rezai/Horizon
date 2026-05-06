@@ -21,7 +21,9 @@ export function openConnection(
 ): Database.Database {
   const db =
     options?.verbose !== undefined
-      ? new Database(path, { verbose: options.verbose })
+      ? new Database(path, {
+          verbose: options.verbose as (sql?: unknown) => void,
+        })
       : new Database(path);
   try {
     for (const pragma of PRAGMAS) {

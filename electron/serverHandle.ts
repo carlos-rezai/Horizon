@@ -60,11 +60,13 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
 
     async start(): Promise<{ port: number }> {
       const repoRoot = process.cwd();
-      const entry = options.isDev
-        ? path.join(repoRoot, "server", "src", "server.ts")
-        : path.join(repoRoot, "server", "dist", "server.js");
+      const useCompiledServer =
+        !options.isDev || !!process.env.HORIZON_FORCE_COMPILED_SERVER;
+      const entry = useCompiledServer
+        ? path.join(repoRoot, "server", "dist", "server.js")
+        : path.join(repoRoot, "server", "src", "server.ts");
 
-      const execArgv = options.isDev ? ["--import", "tsx"] : [];
+      const execArgv = useCompiledServer ? [] : ["--import", "tsx"];
 
       child = utilityProcess.fork(entry, [], {
         execArgv,

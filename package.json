@@ -13,9 +13,10 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:watch": "vitest",
+    "server:build": "tsc -p server/tsconfig.json",
     "electron:build": "tsc -p electron",
     "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\"",
-    "electron:start": "npm run build && npm run electron:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 electron electron/dist/main.js"
+    "electron:start": "npm run build && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^6.9.1",
