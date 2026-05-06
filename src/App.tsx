@@ -1,13 +1,16 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import AccountDetailPage from "./pages/AccountDetailPage";
 import PlanPage from "./pages/PlanPage";
 import SettingsStoragePage from "./pages/SettingsStoragePage";
 
+const Router =
+  window.horizon?.platform === "electron" ? HashRouter : BrowserRouter;
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route
           path="/"
@@ -42,6 +45,6 @@ export default function App() {
           }
         />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
