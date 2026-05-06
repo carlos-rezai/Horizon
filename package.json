@@ -7,6 +7,7 @@
     "dev": "vite",
     "server:dev": "tsx watch server/src/server.ts",
     "build": "tsc -b && vite build",
+    "build:electron": "tsc -b && cross-env VITE_BUILD_FOR_ELECTRON=1 vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -17,7 +18,7 @@
     "server:build": "tsc -p server/tsconfig.json && node --input-type=module -e \"import {cpSync} from 'node:fs';cpSync('server/src/storage/sqlite/migrations','server/dist/storage/sqlite/migrations',{recursive:true,force:true})\"",
     "electron:build": "tsc -p electron",
     "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\"",
-    "electron:start": "npm run electron:rebuild && npm run build && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
+    "electron:start": "npm run electron:rebuild && npm run build:electron && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^6.9.1",
