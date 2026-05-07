@@ -10,7 +10,6 @@ export interface SqliteAppHandle {
 }
 
 export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
-  process.env.AUTH_DISABLED = "1";
   let inner = await createStorage({ path: ":memory:" });
 
   const wrapped: Storage = {

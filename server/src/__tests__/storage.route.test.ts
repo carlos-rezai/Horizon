@@ -154,7 +154,6 @@ describe("POST /storage/restore — SQLite driver", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    process.env.AUTH_DISABLED = "1";
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-route-"));
     livePath = path.join(tmpDir, "live.db");
     storage = await createStorage({ path: livePath });
