@@ -76,6 +76,11 @@ export default function RecurringTransactionModal({
 
     const parsedAmount = eurosToCents(amount);
 
+    if (isNaN(parsedAmount)) {
+      setError("Amount must be a valid number.");
+      return;
+    }
+
     if (linkedAccountId && parsedAmount <= 0) {
       setError("Transfer amount must be greater than zero.");
       return;
@@ -114,11 +119,11 @@ export default function RecurringTransactionModal({
         <FormField label="Amount" htmlFor="rt-amount">
           <Input
             id="rt-amount"
-            type="number"
+            type="text"
+            inputMode="decimal"
             aria-label="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            step="0.01"
           />
         </FormField>
 
