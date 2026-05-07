@@ -10,7 +10,6 @@ export type FatalHandler = (kind: FatalKind, message: string) => void;
 
 export interface ServerHandleOptions {
   isDev: boolean;
-  corsOrigin: string;
 }
 
 export interface ServerHandle {
@@ -77,7 +76,6 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
           AUTH_DISABLED: "1",
           PORT: "0",
           HORIZON_DB_PATH: resolveDbPath(),
-          CORS_ORIGIN: options.corsOrigin,
         },
       });
 

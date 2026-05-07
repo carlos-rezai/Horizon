@@ -1,6 +1,5 @@
 export interface RendererConfig {
   loadProdRenderer: boolean;
-  corsOrigin: string;
 }
 
 export function resolveRendererConfig(
@@ -9,6 +8,5 @@ export function resolveRendererConfig(
 ): RendererConfig {
   const forceProdRenderer = env.HORIZON_FORCE_PROD_RENDERER === "1";
   const loadProdRenderer = isPackaged || forceProdRenderer;
-  const corsOrigin = loadProdRenderer ? "*" : "http://localhost:5173";
-  return { loadProdRenderer, corsOrigin };
+  return { loadProdRenderer };
 }

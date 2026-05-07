@@ -15,12 +15,9 @@ import { createServerHandle } from "./serverHandle.js";
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 
 const isDev = !app.isPackaged;
-const { loadProdRenderer, corsOrigin } = resolveRendererConfig(
-  app.isPackaged,
-  process.env
-);
+const { loadProdRenderer } = resolveRendererConfig(app.isPackaged, process.env);
 
-const serverHandle = createServerHandle({ isDev, corsOrigin });
+const serverHandle = createServerHandle({ isDev });
 
 let mainWindow: BrowserWindow | null = null;
 let fatalDialogShown = false;
