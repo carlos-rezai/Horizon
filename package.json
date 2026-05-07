@@ -16,7 +16,7 @@
     "test:watch": "vitest",
     "server:build": "tsc -p server/tsconfig.json && node scripts/copy-migrations.mjs",
     "electron:build": "tsc -p electron && esbuild electron/preload.ts --bundle --platform=node --external:electron --outfile=electron/dist/preload.js",
-    "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\"",
+    "electron:dev": "concurrently \"vite\" \"tsx watch electron/main.ts\" \"esbuild electron/preload.ts --bundle --platform=node --external:electron --outfile=electron/dist/preload.js --watch\"",
     "electron:start": "npm run electron:rebuild && npm run build && npm run electron:build && npm run server:build && cross-env HORIZON_FORCE_PROD_RENDERER=1 HORIZON_FORCE_COMPILED_SERVER=1 electron electron/dist/main.js"
   },
   "dependencies": {
