@@ -9,8 +9,6 @@ import { StorageIntegrityError } from "../storage/sqlite/errors.js";
 
 const router = Router();
 
-const UNSUPPORTED_BACKUP_MESSAGE = "Storage driver does not support backup";
-const UNSUPPORTED_RESTORE_MESSAGE = "Storage driver does not support restore";
 const RESTORE_INTEGRITY_MESSAGE = "Backup file failed integrity check";
 const RESTORE_FUTURE_SCHEMA_MESSAGE =
   "Backup was written by a newer version of Horizon";
@@ -33,10 +31,6 @@ async function safeUnlink(p: string): Promise<void> {
   }
 }
 
-function isUnsupportedDriverError(err: unknown): boolean {
-  return err instanceof Error && err.message === "not supported";
-}
-
 function mapIntegrityErrorMessage(err: StorageIntegrityError): string {
   if (/ahead of/i.test(err.message)) {
     return RESTORE_FUTURE_SCHEMA_MESSAGE;
@@ -56,10 +50,6 @@ router.post("/backup", async (req, res, next) => {
     await getStorage(req).backup(tempPath);
   } catch (err) {
     await safeUnlink(tempPath);
-    if (isUnsupportedDriverError(err)) {
-      res.status(400).json({ error: UNSUPPORTED_BACKUP_MESSAGE });
-      return;
-    }
     next(err);
     return;
   }
@@ -96,10 +86,6 @@ router.post("/restore", upload.single("file"), async (req, res, next) => {
     await getStorage(req).restore(uploaded.path);
     res.status(204).end();
   } catch (err) {
-    if (isUnsupportedDriverError(err)) {
-      res.status(400).json({ error: UNSUPPORTED_RESTORE_MESSAGE });
-      return;
-    }
     if (err instanceof StorageIntegrityError) {
       res.status(400).json({ error: mapIntegrityErrorMessage(err) });
       return;
