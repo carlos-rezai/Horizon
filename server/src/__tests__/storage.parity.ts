@@ -15,10 +15,7 @@ export type MakeStorage = () => Promise<{
   cleanup: () => Promise<void>;
 }>;
 
-export function runStorageSpec(
-  driver: "sqlite" | "mongo",
-  makeStorage: MakeStorage
-): void {
+export function runStorageSpec(makeStorage: MakeStorage): void {
   let storage: Storage;
   let reset: () => Promise<void>;
   let cleanup: () => Promise<void>;
@@ -1490,156 +1487,138 @@ export function runStorageSpec(
   // -------------------------------------------------------------------------
 
   describe("Storage.backup", () => {
-    if (driver === "mongo") {
-      it("rejects with Error('not supported') — Mongo has no online backup", async () => {
-        // The Storage facade exposes backup uniformly. The Mongo driver is
-        // honest about not implementing it: callers see a typed throw rather
-        // than a silent no-op. This is the deliberate asymmetry the parent
-        // PRD calls out — mismatched capabilities surface, never hide.
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
-        const destPath = path.join(dir, "snapshot.db");
-        try {
-          await expect(storage.backup(destPath)).rejects.toThrow(
-            "not supported"
-          );
-        } finally {
-          fs.rmSync(dir, { recursive: true, force: true });
-        }
+    it("writes a self-contained .db file at destPath", async () => {
+      const account = await storage.accounts.create({
+        kind: "Tagesgeld",
+        name: "Backup Source",
+        openingBalance: 12345,
+        openingDate: "2026-04-01",
       });
-    } else {
-      it("writes a self-contained .db file at destPath", async () => {
-        const account = await storage.accounts.create({
-          kind: "Tagesgeld",
-          name: "Backup Source",
-          openingBalance: 12345,
-          openingDate: "2026-04-01",
-        });
-        await storage.transactions.create(account.id, {
-          date: "2026-04-15",
-          amount: -100,
-          description: "Coffee",
-          category: "Food",
-        });
-
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
-        const destPath = path.join(dir, "snapshot.db");
-        try {
-          await storage.backup(destPath);
-
-          expect(fs.existsSync(destPath)).toBe(true);
-          // A real SQLite file: non-empty and starting with the SQLite magic
-          // string. Guards against a degenerate "touch the path" implementation.
-          const contents = fs.readFileSync(destPath);
-          expect(contents.length).toBeGreaterThan(0);
-          expect(contents.subarray(0, 16).toString("utf8")).toBe(
-            "SQLite format 3 "
-          );
-        } finally {
-          fs.rmSync(dir, { recursive: true, force: true });
-        }
+      await storage.transactions.create(account.id, {
+        date: "2026-04-15",
+        amount: -100,
+        description: "Coffee",
+        category: "Food",
       });
 
-      it("produces a backup file that round-trips identical data when reopened", async () => {
-        const account = await storage.accounts.create({
-          kind: "Tagesgeld",
-          name: "Backup Source",
-          openingBalance: 12345,
-          openingDate: "2026-04-01",
-        });
-        const tx = await storage.transactions.create(account.id, {
-          date: "2026-04-15",
-          amount: -100,
-          description: "Coffee",
-          category: "Food",
-        });
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
 
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
-        const destPath = path.join(dir, "snapshot.db");
+        expect(fs.existsSync(destPath)).toBe(true);
+        // A real SQLite file: non-empty and starting with the SQLite magic
+        // string. Guards against a degenerate "touch the path" implementation.
+        const contents = fs.readFileSync(destPath);
+        expect(contents.length).toBeGreaterThan(0);
+        expect(contents.subarray(0, 16).toString("utf8")).toBe(
+          "SQLite format 3 "
+        );
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("produces a backup file that round-trips identical data when reopened", async () => {
+      const account = await storage.accounts.create({
+        kind: "Tagesgeld",
+        name: "Backup Source",
+        openingBalance: 12345,
+        openingDate: "2026-04-01",
+      });
+      const tx = await storage.transactions.create(account.id, {
+        date: "2026-04-15",
+        amount: -100,
+        description: "Coffee",
+        category: "Food",
+      });
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        // Open the produced backup file with a fresh storage — exactly the
+        // shape the parent PRD specifies (createStorage({ path })).
+        const restored = await createStorage({ path: destPath });
         try {
-          await storage.backup(destPath);
+          const accs = await restored.accounts.findAll();
+          expect(accs).toHaveLength(1);
+          expect(accs[0].id).toBe(account.id);
+          expect(accs[0].name).toBe("Backup Source");
+          expect(accs[0].kind).toBe("Tagesgeld");
+          expect(accs[0].openingBalance).toBe(12345);
 
-          // Open the produced backup file with a fresh storage — exactly the
-          // shape the parent PRD specifies (createStorage("sqlite", { path })).
-          const restored = await createStorage("sqlite", { path: destPath });
-          try {
-            const accs = await restored.accounts.findAll();
-            expect(accs).toHaveLength(1);
-            expect(accs[0].id).toBe(account.id);
-            expect(accs[0].name).toBe("Backup Source");
-            expect(accs[0].kind).toBe("Tagesgeld");
-            expect(accs[0].openingBalance).toBe(12345);
+          const txs = await restored.transactions.findAll();
+          expect(txs).toHaveLength(1);
+          expect(txs[0].id).toBe(tx!.id);
+          expect(txs[0].accountId).toBe(account.id);
+          expect(txs[0].amount).toBe(-100);
+          expect(txs[0].description).toBe("Coffee");
+          expect(txs[0].category).toBe("Food");
 
-            const txs = await restored.transactions.findAll();
-            expect(txs).toHaveLength(1);
-            expect(txs[0].id).toBe(tx!.id);
-            expect(txs[0].accountId).toBe(account.id);
-            expect(txs[0].amount).toBe(-100);
-            expect(txs[0].description).toBe("Coffee");
-            expect(txs[0].category).toBe("Food");
-
-            // The backup must include seed data too — the restored DB is a
-            // full snapshot, not just user rows.
-            const cats = await restored.categories.findAll();
-            const names = cats.map((c) => c.name);
-            for (const name of DEFAULT_CATEGORY_NAMES) {
-              expect(names).toContain(name);
-            }
-          } finally {
-            await restored.close();
+          // The backup must include seed data too — the restored DB is a
+          // full snapshot, not just user rows.
+          const cats = await restored.categories.findAll();
+          const names = cats.map((c) => c.name);
+          for (const name of DEFAULT_CATEGORY_NAMES) {
+            expect(names).toContain(name);
           }
         } finally {
-          fs.rmSync(dir, { recursive: true, force: true });
+          await restored.close();
         }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("leaves the live storage usable for further reads and writes after backup", async () => {
+      // The PRD: "consistent across WAL, never a torn copy" — backup must
+      // not park the live DB in a state that blocks subsequent calls.
+      const before = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "Before",
+        openingBalance: 100000,
+        openingDate: "2026-04-01",
       });
 
-      it("leaves the live storage usable for further reads and writes after backup", async () => {
-        // The PRD: "consistent across WAL, never a torn copy" — backup must
-        // not park the live DB in a state that blocks subsequent calls.
-        const before = await storage.accounts.create({
-          kind: "Girokonto",
-          name: "Before",
-          openingBalance: 100000,
-          openingDate: "2026-04-01",
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        // Read works post-backup.
+        const beforeFound = await storage.accounts.findById(before.id);
+        expect(beforeFound?.id).toBe(before.id);
+
+        // Write works post-backup.
+        const after = await storage.accounts.create({
+          kind: "Tagesgeld",
+          name: "After",
+          openingBalance: 50000,
+          openingDate: "2026-04-02",
         });
 
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
-        const destPath = path.join(dir, "snapshot.db");
+        const all = await storage.accounts.findAll();
+        const ids = all.map((a) => a.id);
+        expect(ids).toContain(before.id);
+        expect(ids).toContain(after.id);
+
+        // The post-backup write must NOT appear in the prior snapshot —
+        // backup captured the state at-the-moment, not future writes.
+        const restored = await createStorage({ path: destPath });
         try {
-          await storage.backup(destPath);
-
-          // Read works post-backup.
-          const beforeFound = await storage.accounts.findById(before.id);
-          expect(beforeFound?.id).toBe(before.id);
-
-          // Write works post-backup.
-          const after = await storage.accounts.create({
-            kind: "Tagesgeld",
-            name: "After",
-            openingBalance: 50000,
-            openingDate: "2026-04-02",
-          });
-
-          const all = await storage.accounts.findAll();
-          const ids = all.map((a) => a.id);
-          expect(ids).toContain(before.id);
-          expect(ids).toContain(after.id);
-
-          // The post-backup write must NOT appear in the prior snapshot —
-          // backup captured the state at-the-moment, not future writes.
-          const restored = await createStorage("sqlite", { path: destPath });
-          try {
-            const restoredAccs = await restored.accounts.findAll();
-            const restoredIds = restoredAccs.map((a) => a.id);
-            expect(restoredIds).toContain(before.id);
-            expect(restoredIds).not.toContain(after.id);
-          } finally {
-            await restored.close();
-          }
+          const restoredAccs = await restored.accounts.findAll();
+          const restoredIds = restoredAccs.map((a) => a.id);
+          expect(restoredIds).toContain(before.id);
+          expect(restoredIds).not.toContain(after.id);
         } finally {
-          fs.rmSync(dir, { recursive: true, force: true });
+          await restored.close();
         }
-      });
-    }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -1647,189 +1626,170 @@ export function runStorageSpec(
   // -------------------------------------------------------------------------
 
   describe("Storage.restore", () => {
-    if (driver === "mongo") {
-      it("rejects with Error('not supported') — Mongo has no online restore", async () => {
-        // Mirrors the existing Storage.backup mongo test. The Mongo driver
-        // implements restore as an honest throw so callers see one capability
-        // signal instead of a silent no-op.
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-"));
-        const srcPath = path.join(dir, "snapshot.db");
-        try {
-          // The path doesn't need to point at a real file — the throw must
-          // happen before any disk access.
-          await expect(storage.restore(srcPath)).rejects.toThrow(
-            "not supported"
-          );
-        } finally {
-          fs.rmSync(dir, { recursive: true, force: true });
+    // The SQLite restore tests need a file-backed live storage — "swap the
+    // file in and reopen" has no meaning against a :memory: DB. Each test
+    // owns its own tempfile lifecycle so the parity fixture (still :memory:)
+    // is untouched and remains green.
+    it("restores live data from a valid backup and the live handle keeps serving queries", async () => {
+      const liveDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "horizon-restore-live-")
+      );
+      const snapDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "horizon-restore-snap-")
+      );
+      const livePath = path.join(liveDir, "horizon.db");
+      const snapPath = path.join(snapDir, "snapshot.db");
+      const live = await createStorage({ path: livePath });
+      try {
+        // Seed known state, snapshot it.
+        const seedAcc = await live.accounts.create({
+          kind: "Tagesgeld",
+          name: "Seed",
+          openingBalance: 200000,
+          openingDate: "2026-04-01",
+        });
+        const seedTx = await live.transactions.create(seedAcc.id, {
+          date: "2026-04-15",
+          amount: -1000,
+          description: "Coffee",
+          category: "Food",
+        });
+        await live.backup(snapPath);
+
+        // Diverge the live DB after the snapshot is taken.
+        const drift = await live.accounts.create({
+          kind: "Girokonto",
+          name: "Drift",
+          openingBalance: 50000,
+          openingDate: "2026-04-20",
+        });
+        const deleteResult = await live.transactions.delete(seedTx!.id);
+        expect(deleteResult).toEqual({ ok: true });
+
+        // Restore from the snapshot — live handle continues to be used.
+        await live.restore(snapPath);
+
+        // Live data after restore matches the snapshot exactly.
+        const accountsAfter = await live.accounts.findAll();
+        const accIds = accountsAfter.map((a) => a.id);
+        expect(accIds).toContain(seedAcc.id);
+        expect(accIds).not.toContain(drift.id);
+
+        const txsAfter = await live.transactions.findAll();
+        expect(txsAfter).toHaveLength(1);
+        expect(txsAfter[0].id).toBe(seedTx!.id);
+        expect(txsAfter[0].description).toBe("Coffee");
+
+        // Same handle still serves a follow-up write — the AC's "live
+        // Storage handle continues to serve queries via a freshly reopened
+        // connection".
+        const post = await live.accounts.create({
+          kind: "Girokonto",
+          name: "Post-restore",
+          openingBalance: 1,
+          openingDate: "2026-04-25",
+        });
+        const finalAccs = await live.accounts.findAll();
+        expect(finalAccs.map((a) => a.id)).toContain(post.id);
+      } finally {
+        await live.close();
+        fs.rmSync(liveDir, { recursive: true, force: true });
+        fs.rmSync(snapDir, { recursive: true, force: true });
+      }
+    });
+
+    it("rejects a corrupt source with StorageIntegrityError and leaves the live database untouched", async () => {
+      const liveDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "horizon-restore-live-")
+      );
+      const corruptDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "horizon-restore-corrupt-")
+      );
+      const livePath = path.join(liveDir, "horizon.db");
+      const corruptPath = path.join(corruptDir, "corrupt.db");
+      const live = await createStorage({ path: livePath });
+      try {
+        const liveAcc = await live.accounts.create({
+          kind: "Girokonto",
+          name: "Untouched",
+          openingBalance: 999000,
+          openingDate: "2026-04-01",
+        });
+
+        // Build a corrupt source file: a real SQLite DB whose B-tree pages
+        // have been overwritten — the SQLite header still parses but
+        // PRAGMA integrity_check fails. Same trick as connection.test.ts.
+        const seed = await createStorage({ path: corruptPath });
+        await seed.accounts.create({
+          kind: "Tagesgeld",
+          name: "Seed",
+          openingBalance: 1,
+          openingDate: "2026-04-01",
+        });
+        await seed.close();
+        const buf = fs.readFileSync(corruptPath);
+        for (let i = 2000; i < 3000 && i < buf.length; i++) {
+          buf[i] = 0xff;
         }
-      });
-    } else {
-      // The SQLite restore tests need a file-backed live storage — "swap the
-      // file in and reopen" has no meaning against a :memory: DB. Each test
-      // owns its own tempfile lifecycle so the parity fixture (still :memory:)
-      // is untouched and remains green.
-      it("restores live data from a valid backup and the live handle keeps serving queries", async () => {
-        const liveDir = fs.mkdtempSync(
-          path.join(os.tmpdir(), "horizon-restore-live-")
+        fs.writeFileSync(corruptPath, buf);
+
+        await expect(live.restore(corruptPath)).rejects.toBeInstanceOf(
+          StorageIntegrityError
         );
-        const snapDir = fs.mkdtempSync(
-          path.join(os.tmpdir(), "horizon-restore-snap-")
+
+        // The live DB must still serve its pre-restore data — the
+        // validation failure must happen before any file swap.
+        const stillThere = await live.accounts.findById(liveAcc.id);
+        expect(stillThere?.id).toBe(liveAcc.id);
+        expect(stillThere?.name).toBe("Untouched");
+      } finally {
+        await live.close();
+        fs.rmSync(liveDir, { recursive: true, force: true });
+        fs.rmSync(corruptDir, { recursive: true, force: true });
+      }
+    });
+
+    it("rejects a future-schema source with StorageIntegrityError and leaves the live database untouched", async () => {
+      const liveDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "horizon-restore-live-")
+      );
+      const futureDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "horizon-restore-future-")
+      );
+      const livePath = path.join(liveDir, "horizon.db");
+      const futurePath = path.join(futureDir, "future.db");
+      const live = await createStorage({ path: livePath });
+      try {
+        const liveAcc = await live.accounts.create({
+          kind: "Girokonto",
+          name: "Untouched",
+          openingBalance: 999000,
+          openingDate: "2026-04-01",
+        });
+
+        // Build a source whose user_version is far ahead of the latest
+        // shipped migration. integrity_check returns ok, but user_version
+        // says "this DB was written by a newer build" — restore must
+        // refuse for the same reason openConnection refuses (see
+        // connection.test.ts "throws StorageIntegrityError on a future
+        // user_version").
+        const futureDb = new Database(futurePath);
+        futureDb.pragma("user_version = 9999");
+        futureDb.close();
+
+        await expect(live.restore(futurePath)).rejects.toBeInstanceOf(
+          StorageIntegrityError
         );
-        const livePath = path.join(liveDir, "horizon.db");
-        const snapPath = path.join(snapDir, "snapshot.db");
-        const live = await createStorage("sqlite", { path: livePath });
-        try {
-          // Seed known state, snapshot it.
-          const seedAcc = await live.accounts.create({
-            kind: "Tagesgeld",
-            name: "Seed",
-            openingBalance: 200000,
-            openingDate: "2026-04-01",
-          });
-          const seedTx = await live.transactions.create(seedAcc.id, {
-            date: "2026-04-15",
-            amount: -1000,
-            description: "Coffee",
-            category: "Food",
-          });
-          await live.backup(snapPath);
 
-          // Diverge the live DB after the snapshot is taken.
-          const drift = await live.accounts.create({
-            kind: "Girokonto",
-            name: "Drift",
-            openingBalance: 50000,
-            openingDate: "2026-04-20",
-          });
-          const deleteResult = await live.transactions.delete(seedTx!.id);
-          expect(deleteResult).toEqual({ ok: true });
-
-          // Restore from the snapshot — live handle continues to be used.
-          await live.restore(snapPath);
-
-          // Live data after restore matches the snapshot exactly.
-          const accountsAfter = await live.accounts.findAll();
-          const accIds = accountsAfter.map((a) => a.id);
-          expect(accIds).toContain(seedAcc.id);
-          expect(accIds).not.toContain(drift.id);
-
-          const txsAfter = await live.transactions.findAll();
-          expect(txsAfter).toHaveLength(1);
-          expect(txsAfter[0].id).toBe(seedTx!.id);
-          expect(txsAfter[0].description).toBe("Coffee");
-
-          // Same handle still serves a follow-up write — the AC's "live
-          // Storage handle continues to serve queries via a freshly reopened
-          // connection".
-          const post = await live.accounts.create({
-            kind: "Girokonto",
-            name: "Post-restore",
-            openingBalance: 1,
-            openingDate: "2026-04-25",
-          });
-          const finalAccs = await live.accounts.findAll();
-          expect(finalAccs.map((a) => a.id)).toContain(post.id);
-        } finally {
-          await live.close();
-          fs.rmSync(liveDir, { recursive: true, force: true });
-          fs.rmSync(snapDir, { recursive: true, force: true });
-        }
-      });
-
-      it("rejects a corrupt source with StorageIntegrityError and leaves the live database untouched", async () => {
-        const liveDir = fs.mkdtempSync(
-          path.join(os.tmpdir(), "horizon-restore-live-")
-        );
-        const corruptDir = fs.mkdtempSync(
-          path.join(os.tmpdir(), "horizon-restore-corrupt-")
-        );
-        const livePath = path.join(liveDir, "horizon.db");
-        const corruptPath = path.join(corruptDir, "corrupt.db");
-        const live = await createStorage("sqlite", { path: livePath });
-        try {
-          const liveAcc = await live.accounts.create({
-            kind: "Girokonto",
-            name: "Untouched",
-            openingBalance: 999000,
-            openingDate: "2026-04-01",
-          });
-
-          // Build a corrupt source file: a real SQLite DB whose B-tree pages
-          // have been overwritten — the SQLite header still parses but
-          // PRAGMA integrity_check fails. Same trick as connection.test.ts.
-          const seed = await createStorage("sqlite", { path: corruptPath });
-          await seed.accounts.create({
-            kind: "Tagesgeld",
-            name: "Seed",
-            openingBalance: 1,
-            openingDate: "2026-04-01",
-          });
-          await seed.close();
-          const buf = fs.readFileSync(corruptPath);
-          for (let i = 2000; i < 3000 && i < buf.length; i++) {
-            buf[i] = 0xff;
-          }
-          fs.writeFileSync(corruptPath, buf);
-
-          await expect(live.restore(corruptPath)).rejects.toBeInstanceOf(
-            StorageIntegrityError
-          );
-
-          // The live DB must still serve its pre-restore data — the
-          // validation failure must happen before any file swap.
-          const stillThere = await live.accounts.findById(liveAcc.id);
-          expect(stillThere?.id).toBe(liveAcc.id);
-          expect(stillThere?.name).toBe("Untouched");
-        } finally {
-          await live.close();
-          fs.rmSync(liveDir, { recursive: true, force: true });
-          fs.rmSync(corruptDir, { recursive: true, force: true });
-        }
-      });
-
-      it("rejects a future-schema source with StorageIntegrityError and leaves the live database untouched", async () => {
-        const liveDir = fs.mkdtempSync(
-          path.join(os.tmpdir(), "horizon-restore-live-")
-        );
-        const futureDir = fs.mkdtempSync(
-          path.join(os.tmpdir(), "horizon-restore-future-")
-        );
-        const livePath = path.join(liveDir, "horizon.db");
-        const futurePath = path.join(futureDir, "future.db");
-        const live = await createStorage("sqlite", { path: livePath });
-        try {
-          const liveAcc = await live.accounts.create({
-            kind: "Girokonto",
-            name: "Untouched",
-            openingBalance: 999000,
-            openingDate: "2026-04-01",
-          });
-
-          // Build a source whose user_version is far ahead of the latest
-          // shipped migration. integrity_check returns ok, but user_version
-          // says "this DB was written by a newer build" — restore must
-          // refuse for the same reason openConnection refuses (see
-          // connection.test.ts "throws StorageIntegrityError on a future
-          // user_version").
-          const futureDb = new Database(futurePath);
-          futureDb.pragma("user_version = 9999");
-          futureDb.close();
-
-          await expect(live.restore(futurePath)).rejects.toBeInstanceOf(
-            StorageIntegrityError
-          );
-
-          const stillThere = await live.accounts.findById(liveAcc.id);
-          expect(stillThere?.id).toBe(liveAcc.id);
-          expect(stillThere?.name).toBe("Untouched");
-        } finally {
-          await live.close();
-          fs.rmSync(liveDir, { recursive: true, force: true });
-          fs.rmSync(futureDir, { recursive: true, force: true });
-        }
-      });
-    }
+        const stillThere = await live.accounts.findById(liveAcc.id);
+        expect(stillThere?.id).toBe(liveAcc.id);
+        expect(stillThere?.name).toBe("Untouched");
+      } finally {
+        await live.close();
+        fs.rmSync(liveDir, { recursive: true, force: true });
+        fs.rmSync(futureDir, { recursive: true, force: true });
+      }
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -1837,28 +1797,16 @@ export function runStorageSpec(
   // -------------------------------------------------------------------------
 
   describe("Storage.status", () => {
-    if (driver === "mongo") {
-      it("returns the Mongo-shaped status payload with no path/sizeBytes", async () => {
-        const status = await storage.status();
+    it("returns the SQLite-shaped status payload with driver, schemaVersion, integrity, path, sizeBytes", async () => {
+      const status = await storage.status();
 
-        expect(status.driver).toBe("mongo");
-        expect(status.schemaVersion).toBe(0);
-        expect(status.integrity).toBe("ok");
-        expect(status.path).toBeUndefined();
-        expect(status.sizeBytes).toBeUndefined();
-      });
-    } else {
-      it("returns the SQLite-shaped status payload with driver, schemaVersion, integrity, path, sizeBytes", async () => {
-        const status = await storage.status();
-
-        expect(status.driver).toBe("sqlite");
-        expect(typeof status.schemaVersion).toBe("number");
-        expect(status.schemaVersion).toBeGreaterThan(0);
-        expect(status.integrity).toBe("ok");
-        expect(status.path).toBe(":memory:");
-        expect(typeof status.sizeBytes).toBe("number");
-        expect(status.sizeBytes).toBeGreaterThanOrEqual(0);
-      });
-    }
+      expect(status.driver).toBe("sqlite");
+      expect(typeof status.schemaVersion).toBe("number");
+      expect(status.schemaVersion).toBeGreaterThan(0);
+      expect(status.integrity).toBe("ok");
+      expect(status.path).toBe(":memory:");
+      expect(typeof status.sizeBytes).toBe("number");
+      expect(status.sizeBytes).toBeGreaterThanOrEqual(0);
+    });
   });
 }

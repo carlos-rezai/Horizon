@@ -17,7 +17,6 @@ import { createApp } from "../app.js";
 import { createStorage } from "../storage/index.js";
 import type { Storage } from "../storage/Storage.js";
 import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
-import { createMongoStorageStub } from "./helpers/mongoStorageStub.js";
 
 // ---------------------------------------------------------------------------
 // SQLite — real driver behind createApp
@@ -148,71 +147,6 @@ describe("POST /storage/backup — SQLite driver", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Mongo — stub the Storage facade so we exercise the route's response shape
-// without spinning up a real Mongo (the parity spec covers driver behaviour)
-// ---------------------------------------------------------------------------
-
-describe("GET /storage/status — Mongo driver (stubbed)", () => {
-  let app: Express;
-
-  beforeAll(async () => {
-    process.env.AUTH_DISABLED = "1";
-    app = await createApp(createMongoStorageStub());
-  });
-
-  it("returns 200 with the Mongo-shaped status payload and no path/sizeBytes", async () => {
-    const res = await request(app).get("/storage/status");
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      driver: "mongo",
-      schemaVersion: 0,
-      integrity: "ok",
-    });
-    expect(res.body.path).toBeUndefined();
-    expect(res.body.sizeBytes).toBeUndefined();
-  });
-});
-
-describe("POST /storage/backup — Mongo driver (stubbed)", () => {
-  let app: Express;
-
-  beforeEach(async () => {
-    process.env.AUTH_DISABLED = "1";
-    app = await createApp(createMongoStorageStub());
-  });
-
-  it("returns 400 when the driver does not support backup", async () => {
-    const res = await request(app).post("/storage/backup");
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({
-      error: "Storage driver does not support backup",
-    });
-  });
-});
-
-describe("POST /storage/backup — non-supported failure (stubbed)", () => {
-  let app: Express;
-
-  beforeEach(async () => {
-    process.env.AUTH_DISABLED = "1";
-    app = await createApp(
-      createMongoStorageStub({
-        backup: async () => {
-          throw new Error("disk full");
-        },
-      })
-    );
-  });
-
-  it("does not return 400 for a non-'not supported' failure", async () => {
-    const res = await request(app).post("/storage/backup");
-    expect(res.status).not.toBe(400);
-    expect(res.status).toBeGreaterThanOrEqual(500);
-  });
-});
-
 describe("POST /storage/restore — SQLite driver", () => {
   let app: Express;
   let storage: Storage;
@@ -223,7 +157,7 @@ describe("POST /storage/restore — SQLite driver", () => {
     process.env.AUTH_DISABLED = "1";
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-route-"));
     livePath = path.join(tmpDir, "live.db");
-    storage = await createStorage("sqlite", { path: livePath });
+    storage = await createStorage({ path: livePath });
     app = await createApp(storage);
   });
 
@@ -312,34 +246,6 @@ describe("POST /storage/restore — SQLite driver", () => {
     expect(res.status).toBe(400);
     expect(res.body).toEqual({
       error: "Backup was written by a newer version of Horizon",
-    });
-  });
-});
-
-describe("POST /storage/restore — Mongo driver (stubbed)", () => {
-  let app: Express;
-  let tmpDir: string;
-  let dummyPath: string;
-
-  beforeEach(async () => {
-    process.env.AUTH_DISABLED = "1";
-    app = await createApp(createMongoStorageStub());
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-restore-mongo-"));
-    dummyPath = path.join(tmpDir, "dummy.db");
-    fs.writeFileSync(dummyPath, Buffer.from("dummy"));
-  });
-
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  it("returns 400 when the driver does not support restore", async () => {
-    const res = await request(app)
-      .post("/storage/restore")
-      .attach("file", dummyPath);
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({
-      error: "Storage driver does not support restore",
     });
   });
 });

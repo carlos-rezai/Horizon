@@ -1,4 +1,4 @@
-import type { AccountKind } from "../models/Account.js";
+import type { AccountKind } from "../storage/types.js";
 
 export interface TxEntry {
   amount: number;

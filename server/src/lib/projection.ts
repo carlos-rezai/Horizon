@@ -1,5 +1,5 @@
-import type { AccountKind } from "../models/Account.js";
-import type { Frequency } from "../models/RecurringTransaction.js";
+import type { AccountKind } from "../storage/types.js";
+import type { Frequency } from "../storage/types.js";
 
 export interface ProjectionAccountEntry {
   id: string;

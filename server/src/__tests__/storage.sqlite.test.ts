@@ -31,14 +31,14 @@ describe("SQLite Storage Driver — parity", () => {
     status: () => inner.status(),
   };
 
-  runStorageSpec("sqlite", async () => {
-    inner = await createStorage("sqlite", { path: ":memory:" });
+  runStorageSpec(async () => {
+    inner = await createStorage({ path: ":memory:" });
 
     return {
       storage: wrapped,
       reset: async () => {
         await inner.close();
-        inner = await createStorage("sqlite", { path: ":memory:" });
+        inner = await createStorage({ path: ":memory:" });
       },
       cleanup: async () => {
         await inner.close();

@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 
@@ -25,14 +18,16 @@ interface AppHandle {
   cleanup: () => Promise<void>;
 }
 
-async function buildApp(env: Record<string, string | undefined>): Promise<AppHandle> {
+async function buildApp(
+  env: Record<string, string | undefined>
+): Promise<AppHandle> {
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
   }
   const { createApp } = await import("../app.js");
   const { createStorage } = await import("../storage/index.js");
-  const storage = await createStorage("sqlite", { path: ":memory:" });
+  const storage = await createStorage({ path: ":memory:" });
   const app = await createApp(storage);
   return {
     app,

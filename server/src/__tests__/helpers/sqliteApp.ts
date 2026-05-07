@@ -11,7 +11,7 @@ export interface SqliteAppHandle {
 
 export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
   process.env.AUTH_DISABLED = "1";
-  let inner = await createStorage("sqlite", { path: ":memory:" });
+  let inner = await createStorage({ path: ":memory:" });
 
   const wrapped: Storage = {
     get accounts() {
@@ -44,7 +44,7 @@ export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
     app,
     reset: async () => {
       await inner.close();
-      inner = await createStorage("sqlite", { path: ":memory:" });
+      inner = await createStorage({ path: ":memory:" });
     },
     cleanup: async () => {
       await inner.close();
