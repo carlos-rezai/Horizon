@@ -400,6 +400,31 @@
 >
 > **Domain expert:** "No. The server uses **Loopback Bind** — it's `127.0.0.1` only, never `0.0.0.0`. Off-box traffic can't hit it. Combined with `AUTH_DISABLED=1` being safe only because of the loopback rule — drop the loopback rule and the security model collapses."
 
+## Desktop Packaging (new)
+
+| Term                    | Definition                                                                                                                                                                 | Aliases to avoid                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **electron-builder**    | The packaging tool that compiles the Desktop Build into a distributable Windows installer — handles ASAR, native module unpacking, and NSIS target configuration           | electron-packager, electron-forge          |
+| **NSIS Installer**      | The Windows installer format produced by electron-builder — installs the Desktop Build as a native Windows application with Start Menu entry and Add/Remove Programs entry | Setup.exe, installer, distribution package |
+| **oneClick Install**    | The per-user, no-elevation NSIS install mode — installs to `%AppData%\Local\Horizon` with no UAC prompt, no admin rights required                                          | Per-machine install, system install        |
+| **SmartScreen Warning** | The Windows security dialog shown when running an unsigned installer — dismissed with "More info → Run anyway"; the accepted tradeoff of the zero-cost constraint          | Security warning, Windows warning          |
+| **ASAR**                | Electron's archive format that bundles app files (JS, assets) into a single file for distribution — native `.node` binaries cannot be loaded from inside it                | App bundle, archive                        |
+| **asarUnpack**          | The electron-builder config that extracts native `.node` files outside the ASAR so Electron can load them at runtime                                                       | Unpack config, native exclusion            |
+| **Server Bundle**       | The esbuild-compiled single-file output of the Express server (`server/dist/server.bundle.js`) — included inside the ASAR; `better-sqlite3` is marked external             | Server dist, server build output           |
+| **appId**               | The reverse-domain identifier written to the Windows registry to uniquely identify the Desktop Build (`io.github.carlosrezai.horizon`)                                     | App name, bundle ID                        |
+| **Versioned Release**   | A GitHub Release pairing a versioned NSIS Installer with changelog notes — the distribution unit for each meaningful Desktop Build update                                  | Release, version, update                   |
+| **release/**            | The output directory for built installer artifacts — gitignored to prevent multi-GB files from being committed; installer filenames carry the semver version               | dist/, output/, build/                     |
+
+## Relationships (Desktop Packaging additions)
+
+- **electron-builder** produces the **NSIS Installer** from the compiled **Desktop Build**
+- The **ASAR** contains the **Server Bundle** and all JS/asset files; native `.node` files are extracted alongside it via **asarUnpack**
+- A **Versioned Release** is created manually: bump `package.json` version → run `npm run release` → attach the **NSIS Installer** from `release/` to a GitHub Release
+- The **Server Bundle** marks `better-sqlite3` as external so the native `.node` file is loaded from the **asarUnpack** location at runtime
+- **oneClick Install** is a property of the **NSIS Installer** — the **Desktop Build** always installs per-user, never per-machine
+- The **SmartScreen Warning** appears because the **NSIS Installer** is unsigned — a deliberate consequence of the zero-cost constraint, documented in the README
+- The **Loopback Bind** invariant applies in the packaged **Desktop Build** exactly as in development — the **Server Bundle** always binds to `127.0.0.1`
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
