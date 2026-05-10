@@ -164,6 +164,23 @@ Then open http://localhost:5173 in your browser.
 
 ---
 
+## Installing the Desktop App
+
+Download `Horizon-Setup-x.x.x.exe` from the [Releases](https://github.com/carlos-rezai/Horizon/releases) page and double-click the installer.
+
+### SmartScreen Warning
+
+Windows will show a SmartScreen security dialog when you run the installer because it is unsigned. Code signing certificates carry a recurring cost that is outside the scope of this project — the warning is expected, not a sign of malware.
+
+To proceed:
+
+1. Click **More info**
+2. Click **Run anyway**
+
+The installer requires no administrator rights (no UAC prompt) and installs Horizon to `%AppData%\Local\Horizon\`. Your financial data lives in `%AppData%\Roaming\Horizon\` and survives both reinstallation and uninstall.
+
+---
+
 ## Build Status
 
 | Feature                                    | Status      |

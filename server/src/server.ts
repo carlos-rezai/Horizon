@@ -21,6 +21,8 @@ async function main(): Promise<void> {
     process.exit(0);
   });
 
+  // Security invariant: loopback-only — the desktop build must never be reachable off-box.
+  // Changing this to 0.0.0.0 would expose an auth-disabled server to the local network.
   const server = app.listen(PORT, "127.0.0.1", () => {
     const address = server.address();
     const boundPort =
