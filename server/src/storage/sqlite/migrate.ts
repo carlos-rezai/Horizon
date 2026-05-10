@@ -6,6 +6,12 @@ import { assertSchemaNotAhead } from "./integrity.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// import.meta.url resolves to this file's location at runtime. In the tsc
+// output each module keeps its source-relative path, so __dirname is
+// storage/sqlite/ and migrations live at storage/sqlite/migrations/. In the
+// esbuild bundle the entire server collapses into one file, so __dirname is
+// server/dist/ and migrations live at server/dist/migrations/. The copy
+// scripts in scripts/ use --dest to match whichever layout is active.
 const MIGRATIONS_DIR = path.join(__dirname, "migrations");
 
 interface MigrationFile {
