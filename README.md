@@ -10,46 +10,20 @@ Horizon tracks income, spending, and mortgage payoff across multiple accounts. I
 
 This project has two purposes:
 
-1. **A genuinely useful personal tool** — manually log transactions, track balances across accounts, monitor a mortgage paydown trajectory, and let AI surface patterns, flag anomalies, and advise on annual lump-sum decisions.
+1. **A genuinely useful personal tool** — manually log transactions, track balances across accounts, monitor a mortgage paydown trajectory, and run financial projections years into the future.
 
 2. **A portfolio demonstrating AI-assisted engineering** — every feature was built using a structured Claude Code workflow: grill-me sessions, PRDs, TDD, and a living ubiquitous language document. The methodology is as much the point as the product.
 
 ---
 
-## Two Builds, One Codebase
+## Desktop App
 
-Horizon ships in two flavours from a single repository:
+Horizon is an offline-first desktop application for Windows. There is no cloud version, no authentication, and no network dependency. All data lives in a single SQLite file on your machine.
 
-- **Desktop (offline)** — an Electron app with a local SQLite database. No cloud, no auth, no network. This is the version Carlos actually runs day-to-day.
-- **Cloud (portfolio)** — the same code deployed to Vercel + Render with MongoDB Atlas, Google Auth, and the full AI feature set. This is the public demo.
-
-A `STORAGE_DRIVER=sqlite|mongo` env switch sits behind a repository abstraction in the Express layer, so both builds stay in lockstep without a fork.
-
----
-
-## AI Features
-
-Three distinct AI interaction patterns — each with a different shape and purpose.
-
-### Monthly Digest
-
-A structured financial report, generated on demand or monthly. The AI analyses all account activity for the period and returns a clear summary: what changed, where you stand against the plan, and what needs attention. Not a chatbot — a CFO report for one.
-
-### Anomaly Detection + Q&A
-
-The AI monitors your cashflow for unusual months and surfaces them unprompted. You can then ask follow-up questions in plain English:
-
-> "Why was March so tight?"
-> "Am I on track for October?"
-> "How does this month compare to the last six?"
-
-It answers against your actual data, not generic financial advice.
-
-### Sondertilgung Advisor
-
-Once a year — ideally in September — the AI analyses your savings balance, monthly cashflow, and mortgage trajectory to answer one question: can you make the full Sondertilgung payment in October, or do you need to adjust?
-
-Deterministic scoring + AI-generated reasoning, built specifically for the German mortgage context. It's a niche feature, and that's the point.
+- **Shell:** Electron, wrapping the React frontend and bundling the Express server as a utility process
+- **Storage:** SQLite via `better-sqlite3` — single-file database, trivially backed up
+- **No auth** — single-user, local-only by design
+- **Packaging:** NSIS installer via `electron-builder`, installs per-user with no UAC prompt
 
 ---
 
@@ -67,100 +41,57 @@ grill-me → design-log → ubiquitous-language → write-a-prd → prd-to-plan 
 - All domain terminology is locked in docs/ubiquitous-language.md
 - Design decisions are recorded in docs/design-logs/
 
-The .claude/ folder contains all skill definitions. The docs/ folder contains the full paper trail — PRDs, design logs, and the ubiquitous language dictionary — so the reasoning behind every decision is readable alongside the code.
+The `.claude/` folder contains all skill definitions. The `docs/` folder contains the full paper trail — PRDs, design logs, and the ubiquitous language dictionary — so the reasoning behind every decision is readable alongside the code.
 
 ---
 
 ## Tech Stack
 
-| Layer    | Choice                        | Why                                                |
-| -------- | ----------------------------- | -------------------------------------------------- |
-| Frontend | React + TypeScript + Vite     | Production-standard, full TypeScript coverage      |
-| UI       | styled-components + Meridian  | Custom design system, precision over convenience   |
-| Backend  | Node.js + Express             | Lightweight, consistent with JS ecosystem          |
-| Database | MongoDB Atlas / SQLite        | Mongo for cloud, `better-sqlite3` for desktop      |
-| Desktop  | Electron + electron-builder   | Wraps the existing app for offline personal use    |
-| AI       | Google Gemini API             | Multi-step reasoning, streaming, structured output |
-| Testing  | Vitest + Testing Library      | Fast, Vite-native, great DX                        |
-| Auth     | Google Auth (production only) | Demo runs without auth on mock data                |
+| Layer    | Choice                       | Why                                              |
+| -------- | ---------------------------- | ------------------------------------------------ |
+| Frontend | React + TypeScript + Vite    | Production-standard, full TypeScript coverage    |
+| UI       | styled-components + Meridian | Custom design system, precision over convenience |
+| Backend  | Node.js + Express            | Lightweight, consistent with JS ecosystem        |
+| Database | SQLite via better-sqlite3    | Offline-first, single-file, zero config          |
+| Desktop  | Electron + electron-builder  | Wraps the existing app for offline personal use  |
+| Testing  | Vitest + Testing Library     | Fast, Vite-native, great DX                      |
 
 ---
 
 ## Project Structure
 
+```
 horizon/
-├── .claude/ # Claude Code skills and CLAUDE.md
-├── ai/
-│ ├── pipelines/ # Multi-step AI orchestration
-│ ├── prompts/ # Typed prompt functions
-│ └── types/ # AI-specific TypeScript types
-├── server/ # Express backend
-│ └── src/
-│ ├── routes/ # /api/accounts, /api/transactions, /api/ai
-│ ├── services/ # MongoDB + AI pipeline execution
-│ └── lib/ # db.ts, utils
-├── src/ # React frontend
-│ ├── assets/ # Static images, fonts, icons
-│ ├── styles/ # Global CSS reset, themes
-│ ├── tokens/ # Colors, spacing, typography, breakpoints
-│ ├── primitives/ # Atomic UI elements (Button, Input, Text)
-│ ├── components/ # Composed UI blocks (Card, FormField, Modal)
-│ ├── features/ # Domain UI + logic co-located
-│ │ ├── accounts/
-│ │ ├── transactions/
-│ │ ├── mortgage/
-│ │ ├── digest/
-│ │ └── advisor/
-│ ├── layouts/ # Page chrome (DashboardLayout, AuthLayout)
-│ ├── pages/ # Route-level views, composition only
-│ ├── hooks/ # Global shared hooks
-│ ├── types/ # Shared TypeScript interfaces
-│ └── utils/ # Pure helper functions
+├── .claude/            # Claude Code skills and CLAUDE.md
+├── electron/           # Main process, preload, server lifecycle
+├── server/             # Express backend
+│   └── src/
+│       ├── routes/     # /accounts, /transactions, /storage, …
+│       ├── storage/    # SQLite driver + repository abstraction
+│       └── lib/        # projection, utilities
+├── src/                # React frontend
+│   ├── assets/         # Static images, fonts, icons
+│   ├── styles/         # Global CSS reset, themes
+│   ├── tokens/         # Colors, spacing, typography, breakpoints
+│   ├── primitives/     # Atomic UI elements (Button, Input, Text)
+│   ├── components/     # Composed UI blocks (Card, FormField, Modal)
+│   ├── features/       # Domain UI + logic co-located
+│   │   ├── accounts/
+│   │   ├── transactions/
+│   │   ├── mortgage/
+│   │   └── settings/
+│   ├── layouts/        # Page chrome
+│   ├── pages/          # Route-level views, composition only
+│   ├── hooks/          # Global shared hooks
+│   ├── types/          # Shared TypeScript interfaces
+│   └── utils/          # Pure helper functions
 └── docs/
-├── design-logs/ # Immutable feature design snapshots
-├── PRDs/ # Product requirements and implementation plans
-├── refactor-plans/ # Refactor RFCs filed as work items
-├── ubiquitous-language.md
-└── dev-journal.md
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- MongoDB Atlas account — [free tier](https://www.mongodb.com/cloud/atlas)
-- Gemini API key — [free, no billing](https://aistudio.google.com)
-
-### Installation
-
-git clone https://github.com/carlos-rezai/Horizon.git
-cd Horizon
-npm install
-cd server && npm install && cd ..
-
-### Environment Variables
-
-Create a .env file in the project root:
-
-VITE_API_BASE_URL=http://localhost:3001
-
-Create a .env file in server/:
-
-MONGODB_URI=your_mongodb_atlas_uri
-GEMINI_API_KEY=your_gemini_api_key
-PORT=3001
-
-### Run
-
-Terminal 1 — Frontend:
-npm run dev
-
-Terminal 2 — Backend:
-cd server && npm run dev
-
-Then open http://localhost:5173 in your browser.
+    ├── design-logs/    # Immutable feature design snapshots
+    ├── PRDs/           # Product requirements and implementation plans
+    ├── refactor-plans/ # Refactor RFCs filed as work items
+    ├── ubiquitous-language.md
+    └── dev-journal.md
+```
 
 ---
 
@@ -181,26 +112,60 @@ The installer requires no administrator rights (no UAC prompt) and installs Hori
 
 ---
 
+## Running from Source
+
+### Prerequisites
+
+- Node.js 20+
+
+### Install
+
+```
+git clone https://github.com/carlos-rezai/Horizon.git
+cd Horizon
+npm install
+```
+
+### Dev (browser + hot reload)
+
+```
+npm run electron:dev
+```
+
+### Smoke-test (compiled, production renderer)
+
+```
+npm run electron:start
+```
+
+### Build installer
+
+```
+npm run release
+```
+
+Output: `release/Horizon-Setup-x.x.x.exe`
+
+---
+
 ## Build Status
 
-| Feature                                    | Status      |
-| ------------------------------------------ | ----------- |
-| Account + transaction core (manual entry)  | ✅ Complete |
-| Dashboard + milestone tracker              | ✅ Complete |
-| Account + transaction UI                   | ✅ Complete |
-| Meridian design system                     | ✅ Complete |
-| Financial Projection Dashboard             | ✅ Complete |
-| Restschuld Trajectory Chart                | ✅ Complete |
-| Projection Engine Audit                    | ✅ Complete |
-| Repository abstraction (storage driver)    | ✅ Complete |
-| SQLite driver (offline storage)            | ✅ Complete |
-| Electron desktop shell                     | 🔲 Planned  |
-| Desktop packaging (Windows installer)      | 🔲 Planned  |
-| Monthly digest (AI)                        | 🔲 Planned  |
-| Anomaly detection + Q&A (AI)               | 🔲 Planned  |
-| Sondertilgung advisor (AI)                 | 🔲 Planned  |
-| Google Auth (production)                   | 🔲 Planned  |
-| Deployed — Vercel + Render + MongoDB Atlas | 🔲 Planned  |
+| Feature                                   | Status      |
+| ----------------------------------------- | ----------- |
+| Account + transaction core (manual entry) | ✅ Complete |
+| Dashboard + milestone tracker             | ✅ Complete |
+| Account + transaction UI                  | ✅ Complete |
+| Meridian design system                    | ✅ Complete |
+| Financial Projection Dashboard            | ✅ Complete |
+| Restschuld Trajectory Chart               | ✅ Complete |
+| Projection Engine Audit                   | ✅ Complete |
+| Repository abstraction (storage driver)   | ✅ Complete |
+| SQLite driver (offline storage)           | ✅ Complete |
+| Electron desktop shell                    | ✅ Complete |
+| Desktop packaging (Windows installer)     | ✅ Complete |
+| Monthly digest (AI)                       | ⏸ Deferred  |
+| Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
+| Sondertilgung advisor (AI)                | ⏸ Deferred  |
 
 ---
 
@@ -221,7 +186,3 @@ Transitioning from frontend specialist to agentic AI engineering — building st
 
 [GitHub](https://github.com/carlos-rezai)
 [LinkedIn](https://www.linkedin.com/in/aryan-carlos-r-0ba21017b/)
-
----
-
-> Demo: Live demo with mock data coming soon.
