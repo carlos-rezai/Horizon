@@ -73,6 +73,11 @@
     "appId": "io.github.carlosrezai.horizon",
     "productName": "Horizon",
     "icon": "src/assets/icon.ico",
+    "files": [
+      "dist/**",
+      "electron/dist/**",
+      "server/dist/**"
+    ],
     "asarUnpack": [
       "**/*.node"
     ],
