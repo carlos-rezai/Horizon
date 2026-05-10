@@ -1,7 +1,7 @@
-import path from "node:path";
-import { utilityProcess, type UtilityProcess } from "electron";
+import { app, utilityProcess, type UtilityProcess } from "electron";
 import { awaitExitOrKill } from "./awaitExitOrKill.js";
 import { resolveDbPath } from "./paths.js";
+import { resolveServerEntry } from "./resolveServerEntry.js";
 
 const READY_TIMEOUT_MS = 10_000;
 
@@ -58,14 +58,13 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
     },
 
     async start(): Promise<{ port: number }> {
-      const repoRoot = process.cwd();
-      const useCompiledServer =
-        !options.isDev || !!process.env.HORIZON_FORCE_COMPILED_SERVER;
-      const entry = useCompiledServer
-        ? path.join(repoRoot, "server", "dist", "server.js")
-        : path.join(repoRoot, "server", "src", "server.ts");
-
-      const execArgv = useCompiledServer ? [] : ["--import", "tsx"];
+      const { entry, execArgv } = resolveServerEntry(
+        app.isPackaged,
+        options.isDev,
+        process.env as Record<string, string | undefined>,
+        app.getAppPath(),
+        process.cwd()
+      );
 
       child = utilityProcess.fork(entry, [], {
         execArgv,
