@@ -38,3 +38,6 @@ server/.env.production
 
 # OS
 Thumbs.d
+
+# electron-builder output
+release/
