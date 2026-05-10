@@ -71,8 +71,6 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
         stdio: "pipe",
         env: {
           ...process.env,
-          STORAGE_DRIVER: "sqlite",
-          AUTH_DISABLED: "1",
           PORT: "0",
           HORIZON_DB_PATH: resolveDbPath(),
         },
