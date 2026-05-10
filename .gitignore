@@ -41,3 +41,8 @@ Thumbs.d
 
 # electron-builder output
 release/
+
+# local dev SQLite database
+horizon.db
+horizon.db-shm
+horizon.db-wal
