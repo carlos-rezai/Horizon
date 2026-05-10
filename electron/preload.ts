@@ -5,5 +5,4 @@ const apiBaseUrl = parseApiBaseUrlArg(process.argv) ?? "";
 
 contextBridge.exposeInMainWorld("horizon", {
   apiBaseUrl,
-  platform: "electron",
 });

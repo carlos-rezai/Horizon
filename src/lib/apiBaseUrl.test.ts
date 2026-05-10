@@ -9,9 +9,7 @@ async function loadModule(): Promise<ApiBaseUrlModule> {
   return (await import("./apiBaseUrl")) as ApiBaseUrlModule;
 }
 
-type HorizonGlobal =
-  | { apiBaseUrl: string; platform: "electron" }
-  | undefined;
+type HorizonGlobal = { apiBaseUrl: string } | undefined;
 
 interface WindowWithHorizon extends Window {
   horizon?: HorizonGlobal;
@@ -26,10 +24,7 @@ describe("resolveApiBaseUrl", () => {
 
   beforeEach(() => {
     originalHorizon = (window as WindowWithHorizon).horizon;
-    envHadKey = Object.prototype.hasOwnProperty.call(
-      env,
-      "VITE_API_BASE_URL"
-    );
+    envHadKey = Object.prototype.hasOwnProperty.call(env, "VITE_API_BASE_URL");
     originalEnvValue = env.VITE_API_BASE_URL;
     (window as WindowWithHorizon).horizon = undefined;
   });
@@ -46,7 +41,6 @@ describe("resolveApiBaseUrl", () => {
   it("returns window.horizon.apiBaseUrl when window.horizon is set, even if VITE_API_BASE_URL is also set", async () => {
     (window as WindowWithHorizon).horizon = {
       apiBaseUrl: "http://127.0.0.1:54321",
-      platform: "electron",
     };
     env.VITE_API_BASE_URL = "http://from-env.example";
 
