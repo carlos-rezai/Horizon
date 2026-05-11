@@ -163,6 +163,7 @@ Output: `release/Horizon-Setup-x.x.x.exe`
 | SQLite driver (offline storage)           | ✅ Complete |
 | Electron desktop shell                    | ✅ Complete |
 | Desktop packaging (Windows installer)     | ✅ Complete |
+| UI Redesign                               | 🔲 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
