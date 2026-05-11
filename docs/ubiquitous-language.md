@@ -17,17 +17,17 @@
 
 ## Transactions
 
-| Term                                    | Definition                                                                                                                  | Aliases to avoid                                |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **Transaction**                         | A single financial movement recorded against an account                                                                     | Entry, record, payment                          |
-| **Transfer**                            | A movement of money between two Horizon accounts, modelled as two linked Transactions                                       | Internal transaction, move                      |
-| **TransferId**                          | The shared identifier that links the two legs of a Transfer                                                                 | —                                               |
-| **RecurringTransaction**                | A standing order that fires on a defined schedule and drives the Projection Engine                                          | Standing order, Dauerauftrag, scheduled payment |
-| **Active RecurringTransaction** (new)   | A RecurringTransaction with `isActive: true` — included in all Projection Engine calculations                               | Enabled, on                                     |
-| **Inactive RecurringTransaction** (new) | A RecurringTransaction with `isActive: false` — paused but retained; excluded from projections                              | Disabled, deleted, off                          |
-| **Recurring Transfer** (new)            | A RecurringTransaction with a `linkedAccountId` — models a scheduled movement between two accounts in the Projection Engine | Scheduled transfer                              |
-| **One-off Transfer** (new)              | A single, non-recurring Transfer between two accounts recorded directly as two linked Transactions                          | Ad-hoc transfer, manual transfer                |
-| **Category**                            | A user-managed label applied to a Transaction for reporting and AI analysis                                                 | Tag, type, label                                |
+| Term                                            | Definition                                                                                                                                            | Aliases to avoid                                |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Transaction**                                 | A single financial movement recorded against an account                                                                                               | Entry, record, payment                          |
+| **Transfer**                                    | A movement of money between two Horizon accounts, modelled as two linked Transactions                                                                 | Internal transaction, move                      |
+| **TransferId**                                  | The shared identifier that links the two legs of a Transfer                                                                                           | —                                               |
+| **RecurringTransaction**                        | A standing order that fires on a defined schedule and drives the Projection Engine                                                                    | Standing order, Dauerauftrag, scheduled payment |
+| ~~**Active RecurringTransaction**~~ (removed)   | ~~A RecurringTransaction with `isActive: true`.~~ `isActive` removed in UI redesign — all RecurringTransactions are always active; delete to stop one | —                                               |
+| ~~**Inactive RecurringTransaction**~~ (removed) | ~~A RecurringTransaction with `isActive: false`.~~ Concept removed — use delete instead of pause                                                      | —                                               |
+| **Recurring Transfer** (new)                    | A RecurringTransaction with a `linkedAccountId` — models a scheduled movement between two accounts in the Projection Engine                           | Scheduled transfer                              |
+| **One-off Transfer** (new)                      | A single, non-recurring Transfer between two accounts recorded directly as two linked Transactions                                                    | Ad-hoc transfer, manual transfer                |
+| **Category**                                    | A user-managed label applied to a Transaction for reporting and AI analysis                                                                           | Tag, type, label                                |
 
 ## Mortgage
 
@@ -64,17 +64,18 @@
 
 ## Dashboard
 
-| Term                           | Definition                                                                                                                                       | Aliases to avoid                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| **Milestone**                  | A user-defined named target: a specific account must reach a specific balance                                                                    | Goal, target, checkpoint         |
-| **Mortgage Countdown**         | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account                                                      | Payoff tracker, countdown        |
-| **Plan Summary** (new)         | The compact dashboard widget showing one clickable Year Summary Row per projected year-end, linking to the Plan Page                             | Plan widget, plan preview        |
-| **Year Summary Row** (new)     | A single row in the Plan Summary showing end-of-year Total Liquid, Restschuld, and ST amount for one projected year                              | Annual row, year row             |
-| **Plan Page** (new)            | The dedicated `/plan` route that displays the full Projection Accordion                                                                          | Plan view, projection page       |
-| **Projection Accordion** (new) | The year-grouped, expandable UI on the Plan Page — collapsed shows Year Summary Row data, expanded shows 12 monthly rows                         | Plan table, projection table     |
-| **Trajectory Horizon** (new)   | The 20-year chart widget on the Dashboard showing Total Liquid, Restschuld, and Net Cashflow as three lines over 240 months                      | Projection chart, plan chart     |
-| **Payoff Marker** (new)        | The vertical dashed reference line on the Trajectory Horizon chart that marks the Payoff Month                                                   | Payoff line, payoff indicator    |
-| **Freedom Phase** (new)        | The post-payoff period in the Trajectory Horizon chart where Restschuld is zero and Total Liquid accelerates — the second act of the 20-year arc | Post-payoff phase, savings phase |
+| Term                           | Definition                                                                                                                                                    | Aliases to avoid                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| ~~**Milestone**~~ (removed)    | ~~A user-defined named target: a specific account must reach a specific balance.~~ Removed in UI redesign — was designed for permanently-deferred AI features | ~~Goal, target, checkpoint~~     |
+| **Mortgage Countdown**         | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account                                                                   | Payoff tracker, countdown        |
+| **Plan Summary** (new)         | The compact dashboard widget showing one clickable Year Summary Row per projected year-end, linking to the Plan Page                                          | Plan widget, plan preview        |
+| **Year Summary Row** (new)     | A single row in the Plan Summary showing end-of-year Total Liquid, Restschuld, and ST amount for one projected year                                           | Annual row, year row             |
+| **Plan Page** (updated)        | The dedicated `/plan` route that displays the full Projection Accordion — labeled **Outlook** in the sidebar nav                                              | Plan view, projection page       |
+| **Outlook** (new)              | The sidebar nav label for the Plan Page — chosen over "Plan" to convey forward-looking intent and pair cleanly with "Dashboard"                               | Plan, Forecast, Projection       |
+| **Projection Accordion** (new) | The year-grouped, expandable UI on the Plan Page — collapsed shows Year Summary Row data, expanded shows 12 monthly rows                                      | Plan table, projection table     |
+| **Trajectory Horizon** (new)   | The 20-year chart widget on the Dashboard showing Total Liquid, Restschuld, and Net Cashflow as three lines over 240 months                                   | Projection chart, plan chart     |
+| **Payoff Marker** (new)        | The vertical dashed reference line on the Trajectory Horizon chart that marks the Payoff Month                                                                | Payoff line, payoff indicator    |
+| **Freedom Phase** (new)        | The post-payoff period in the Trajectory Horizon chart where Restschuld is zero and Total Liquid accelerates — the second act of the 20-year arc              | Post-payoff phase, savings phase |
 
 ## Derived Metrics
 
@@ -88,11 +89,12 @@
 ## Relationships
 
 - An **Account** has exactly one **AccountKind**
+- An **Account** may have one **Account Icon** and one **Account Color** — both optional; the UI pre-fills a random **Account Color** from the **Account Color Palette** as a default
 - An **Account** has exactly one **Opening Date** — the date its **Opening Balance** was captured in Horizon
 - A **Current Balance** is always derived, never stored: **Opening Balance** + **Recurring History** replayed from **Opening Date** + **Variable Spending** actuals — never stored directly (updated)
 - A **Transfer** is always composed of exactly two **Transactions** sharing a **TransferId**
 - A **RecurringTransaction** may produce a **Transaction** on each occurrence date
-- Only **Active RecurringTransactions** are applied by the **Projection Engine** — **Inactive RecurringTransactions** are skipped
+- All **RecurringTransactions** are applied by the **Projection Engine** — there is no inactive/paused state; delete to stop one
 - A **Recurring Transfer** is a **RecurringTransaction** with a `linkedAccountId` — the Projection Engine credits the linked account and (if it is a Mortgage) reduces **Restschuld**
 - A **One-off Transfer** is always composed of exactly two **Transactions** sharing a **TransferId** — it has no schedule
 - A **Sondertilgung** is a **Transfer** from a **Tagesgeld** account to a **Mortgage** account — it reduces the **Restschuld**
@@ -102,8 +104,8 @@
 - **Variable Spending** is the only category of actual transaction — salary, transfers, and regular expenses are never entered as actual transactions in the **Recurring-Only Projection Model**
 - The **Plan** is always the output of the **Projection Engine** — it is never entered or stored manually
 - **Total Liquid** includes only **Girokonto** and **Tagesgeld** accounts — determined by **AccountKind**
-- A **Milestone** targets exactly one **Account** and has exactly one **target balance**
-- The **Estimated Completion Month** of a **Milestone** is derived from the **Plan** — never stored
+- ~~A **Milestone** targets exactly one **Account** and has exactly one **target balance**~~ (removed)
+- ~~The **Estimated Completion Month** of a **Milestone** is derived from the **Plan** — never stored~~ (removed)
 - The **Payoff Month** of a **Mortgage** account is derived from the **Plan** — never stored
 - The **Payoff Year** is the calendar year that contains the **Payoff Month** — used to visually distinguish the payoff year in the **Projection Accordion**
 - The **Mortgage Countdown** displays one entry per **Mortgage** account
@@ -173,11 +175,20 @@
 > hits it in October, it debits Tagesgeld and reduces the Restschuld. That's
 > what makes the Payoff Month move earlier."
 
-## Design System (new)
+## Design System (updated)
 
-| Term         | Definition                                                                               | Aliases to avoid             |
-| ------------ | ---------------------------------------------------------------------------------------- | ---------------------------- |
-| **Meridian** | The custom design system for Horizon — defines visual tokens, primitives, and components | "the design system", "theme" |
+| Term                            | Definition                                                                                                                                                                 | Aliases to avoid                |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Meridian**                    | The custom design system for Horizon — defines visual tokens, primitives, and components                                                                                   | "the design system", "theme"    |
+| **Stitch** (new)                | The Google design reference (`src/assets/DESIGN.md`) used as the visual target for the UI redesign — defines the MD3 color token set, dual-font system, and shape language | Reference design, Google design |
+| **MD3 Tokens** (new)            | The Material Design 3 color token set adopted wholesale from the Stitch reference — replaces the original Meridian color names                                             | Material tokens, design tokens  |
+| **Tonal Layering** (new)        | The elevation model that uses progressively lighter surface tints (not shadows) to convey depth — Level 0 base, Level 1 cards, Level 2 modals                              | Shadow elevation, drop shadows  |
+| **Sidebar** (new)               | The fixed 220px left-side navigation shell that replaced the top bar in the UI redesign — contains the wordmark, Dashboard, Outlook, and Settings links                    | Nav bar, side nav, top bar      |
+| **Per-kind Color Map** (new)    | A `Record<AccountKind, string>` defined in tokens that maps each account kind to a deterministic chart line color — ensures the same kind always renders the same color    | Color palette, chart colors     |
+| **Account Icon** (new)          | A lucide-react icon name string chosen by the user at account creation from the curated icon set — stored as `TEXT` in the database, nullable                              | Account image, account avatar   |
+| **Account Color** (new)         | A hex color string chosen by the user at account creation from the curated palette — stored as `TEXT` in the database, nullable; random default pre-filled in the modal    | Account tint, account theme     |
+| **Account Color Palette** (new) | The curated set of 10 MD3-derived hex values available for **Account Color** selection — chosen to be visually distinct on dark surfaces                                   | Color picker, color wheel       |
+| **Account Icon Set** (new)      | The curated set of 8 lucide-react icon names available for **Account Icon** selection (Wallet, Home, PiggyBank, TrendingUp, CreditCard, Landmark, Building2, Banknote)     | Icon library, icon picker       |
 
 ## Example dialogue (Financial Projection Dashboard)
 
@@ -433,6 +444,7 @@
   financial intentions and the Projection Engine output. In Horizon,
   **Plan** always means the set of MonthlySnapshots produced by the
   Projection Engine. There is no separate plan data store.
+- **"outlook" vs "plan"** (new) — **Outlook** is the nav label visible to the user (sidebar, page title). **Plan** and **Plan Page** remain the internal code terms (`/plan` route, `PlanPage.tsx`, `PlanSummary`). Never rename the route or component to "Outlook" — the distinction between user-facing label and code identifier is intentional.
 - **"payment"** is ambiguous — it could mean the monthly Darlehen, a
   Sondertilgung, or a CreditCard settlement. Always use the specific term.
 - **"savings"** — avoid. Use **Tagesgeld** (the account kind) or
