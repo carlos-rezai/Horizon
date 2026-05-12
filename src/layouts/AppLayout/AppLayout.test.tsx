@@ -20,10 +20,26 @@ function renderAtRoute(path: string) {
             }
           />
           <Route
+            path="/plan"
+            element={
+              <AppLayout>
+                <p>Plan content</p>
+              </AppLayout>
+            }
+          />
+          <Route
             path="/accounts/:id"
             element={
               <AppLayout>
                 <p>Account content</p>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/settings/storage"
+            element={
+              <AppLayout>
+                <p>Settings content</p>
               </AppLayout>
             }
           />
@@ -45,6 +61,11 @@ describe("AppLayout — wordmark", () => {
 
   it("renders the Horizon wordmark on the account detail route", () => {
     renderAtRoute("/accounts/abc123");
+    expect(screen.getByText("Horizon")).toBeInTheDocument();
+  });
+
+  it("renders the Horizon wordmark on the plan route", () => {
+    renderAtRoute("/plan");
     expect(screen.getByText("Horizon")).toBeInTheDocument();
   });
 });
@@ -77,5 +98,60 @@ describe("AppLayout — settings navigation", () => {
     renderAtRoute("/");
     const link = screen.getByRole("link", { name: /settings/i });
     expect(link).toHaveAttribute("href", "/settings/storage");
+  });
+});
+
+describe("AppLayout — sidebar nav links", () => {
+  it("renders a Dashboard link targeting /", () => {
+    renderAtRoute("/");
+    const link = screen.getByRole("link", { name: /dashboard/i });
+    expect(link).toHaveAttribute("href", "/");
+  });
+
+  it("renders an Outlook link targeting /plan", () => {
+    renderAtRoute("/");
+    const link = screen.getByRole("link", { name: /outlook/i });
+    expect(link).toHaveAttribute("href", "/plan");
+  });
+
+  it("renders a Settings link targeting /settings/storage", () => {
+    renderAtRoute("/");
+    const link = screen.getByRole("link", { name: /settings/i });
+    expect(link).toHaveAttribute("href", "/settings/storage");
+  });
+
+  it("all three nav links are present on the plan route", () => {
+    renderAtRoute("/plan");
+    expect(
+      screen.getByRole("link", { name: /dashboard/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /outlook/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
+  });
+});
+
+describe("AppLayout — active nav state", () => {
+  it("Dashboard link has aria-current='page' when at /", () => {
+    renderAtRoute("/");
+    const link = screen.getByRole("link", { name: /dashboard/i });
+    expect(link).toHaveAttribute("aria-current", "page");
+  });
+
+  it("Dashboard link does not have aria-current='page' when at /plan", () => {
+    renderAtRoute("/plan");
+    const link = screen.getByRole("link", { name: /dashboard/i });
+    expect(link).not.toHaveAttribute("aria-current", "page");
+  });
+
+  it("Outlook link has aria-current='page' when at /plan", () => {
+    renderAtRoute("/plan");
+    const link = screen.getByRole("link", { name: /outlook/i });
+    expect(link).toHaveAttribute("aria-current", "page");
+  });
+
+  it("Outlook link does not have aria-current='page' when at /", () => {
+    renderAtRoute("/");
+    const link = screen.getByRole("link", { name: /outlook/i });
+    expect(link).not.toHaveAttribute("aria-current", "page");
   });
 });

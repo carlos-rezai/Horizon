@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { theme } from "./index";
+import { theme, accountIconSet } from "./index";
+import type { AccountKind } from "../types/account";
 
 // Token layer tests verify the shape and rules of the Meridian design
 // system token object. These are plain TypeScript — no React, no jsdom.
@@ -102,5 +103,106 @@ describe("theme.breakpoints — media query helpers", () => {
 
   it("up('lg') returns a min-width media query string for 1024px", () => {
     expect(theme.breakpoints.up("lg")).toBe("@media (min-width: 1024px)");
+  });
+});
+
+describe("theme.colors — MD3 token keys", () => {
+  const md3Keys = [
+    "primary",
+    "onPrimary",
+    "primaryContainer",
+    "onPrimaryContainer",
+    "surface",
+    "onSurface",
+    "surfaceContainerHigh",
+    "surfaceContainerHighest",
+    "outline",
+    "outlineVariant",
+    "error",
+    "onError",
+  ];
+
+  md3Keys.forEach((key) => {
+    it(`exports the "${key}" MD3 colour key`, () => {
+      expect(theme.colors).toHaveProperty(key);
+    });
+  });
+
+  it("old Meridian key 'bgBase' is no longer present", () => {
+    expect(theme.colors).not.toHaveProperty("bgBase");
+  });
+});
+
+describe("theme.colors.chartColors — AccountKind coverage", () => {
+  const allKinds: AccountKind[] = [
+    "Girokonto",
+    "Tagesgeld",
+    "Mortgage",
+    "CreditCard",
+    "Investment",
+  ];
+
+  it("chartColors is defined on theme.colors", () => {
+    expect(theme.colors).toHaveProperty("chartColors");
+  });
+
+  allKinds.forEach((kind) => {
+    it(`chartColors has a colour entry for "${kind}"`, () => {
+      expect(theme.colors.chartColors).toHaveProperty(kind);
+    });
+  });
+
+  it("chartColors has exactly 5 entries (one per AccountKind)", () => {
+    expect(Object.keys(theme.colors.chartColors)).toHaveLength(5);
+  });
+});
+
+describe("theme.colors.accountColorPalette", () => {
+  it("is defined on theme.colors", () => {
+    expect(theme.colors).toHaveProperty("accountColorPalette");
+  });
+
+  it("has exactly 10 entries", () => {
+    expect(theme.colors.accountColorPalette).toHaveLength(10);
+  });
+});
+
+describe("accountIconSet named export", () => {
+  it("is exported from the tokens module", () => {
+    expect(accountIconSet).toBeDefined();
+  });
+
+  it("has exactly 8 entries", () => {
+    expect(accountIconSet).toHaveLength(8);
+  });
+});
+
+describe("theme.radius — redesign tokens", () => {
+  it("card radius is 12", () => {
+    expect(theme.radius.card).toBe(12);
+  });
+
+  it("button radius is 8", () => {
+    expect(theme.radius.button).toBe(8);
+  });
+
+  it("badge radius is 9999", () => {
+    expect(theme.radius.badge).toBe(9999);
+  });
+});
+
+describe("theme.typography — font families", () => {
+  it("fontFamily.ui includes Hanken Grotesk", () => {
+    expect(theme.typography.fontFamily.ui).toContain("Hanken Grotesk");
+  });
+
+  it("fontFamily.mono includes JetBrains Mono", () => {
+    expect(theme.typography.fontFamily.mono).toContain("JetBrains Mono");
+  });
+});
+
+describe("theme.layout — content max-width", () => {
+  it("contentMaxWidth is 1200", () => {
+    expect(theme.layout.contentMaxWidth).toBe(1200);
   });
 });
