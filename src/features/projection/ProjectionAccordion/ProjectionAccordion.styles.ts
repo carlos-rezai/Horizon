@@ -7,7 +7,7 @@ export const StyledAccordion = styled.div`
 `;
 
 export const StyledYearSection = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: 8px;
   overflow: hidden;
 `;
@@ -19,32 +19,32 @@ export const StyledYearHeader = styled.button`
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space3}px
     ${({ theme }) => theme.spacing.space4}px;
-  background-color: ${({ theme }) => theme.colors.bgSurface};
+  background-color: ${({ theme }) => theme.colors.surfaceContainer};
   border: none;
   cursor: pointer;
   text-align: left;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.bgElevated};
+    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
 `;
 
 export const StyledYearLabel = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.md}px;
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
   min-width: 48px;
 `;
 
 export const StyledYearMeta = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-variant-numeric: tabular-nums;
 `;
 
 export const StyledChevron = styled.span<{ $expanded: boolean }>`
   margin-left: auto;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   display: flex;
   align-items: center;
   transform: ${({ $expanded }) =>
@@ -54,7 +54,7 @@ export const StyledChevron = styled.span<{ $expanded: boolean }>`
 
 export const StyledTableWrapper = styled.div`
   overflow-x: auto;
-  background-color: ${({ theme }) => theme.colors.bgBase};
+  background-color: ${({ theme }) => theme.colors.surface};
 `;
 
 export const StyledTable = styled.table`
@@ -68,9 +68,9 @@ export const StyledTh = styled.th`
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   text-align: right;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-weight: ${({ theme }) => theme.typography.weights.medium};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   white-space: nowrap;
 
   &:first-child {
@@ -83,32 +83,32 @@ export const StyledTr = styled.tr<{
   $isPayoffMonth?: boolean;
 }>`
   &:not(:last-child) {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   }
 
   background-color: ${({ theme, $isSTMonth, $isPayoffMonth }) => {
-    if ($isPayoffMonth) return theme.colors.warningTint;
-    if ($isSTMonth) return theme.colors.positiveTint;
+    if ($isPayoffMonth) return theme.colors.tertiaryTint;
+    if ($isSTMonth) return theme.colors.secondaryTint;
     return "transparent";
   }};
 
   &:hover {
     background-color: ${({ theme, $isSTMonth, $isPayoffMonth }) => {
-      if ($isPayoffMonth) return theme.colors.warningTint;
-      if ($isSTMonth) return theme.colors.positiveTint;
-      return theme.colors.bgSurface;
+      if ($isPayoffMonth) return theme.colors.tertiaryTint;
+      if ($isSTMonth) return theme.colors.secondaryTint;
+      return theme.colors.surfaceContainer;
     }};
   }
 `;
 
 export const StyledPayoffBadge = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.warning};
+  color: ${({ theme }) => theme.colors.tertiary};
   font-variant-numeric: tabular-nums;
 `;
 
 export const StyledSTBadge = styled.span`
-  color: ${({ theme }) => theme.colors.positive};
+  color: ${({ theme }) => theme.colors.secondary};
   font-size: ${({ theme }) => theme.typography.sizes.xs}px;
   margin-left: ${({ theme }) => theme.spacing.space2}px;
 `;
@@ -118,18 +118,18 @@ export const StyledTd = styled.td<{ $isActual?: boolean }>`
     ${({ theme }) => theme.spacing.space3}px;
   text-align: right;
   color: ${({ theme, $isActual }) =>
-    $isActual ? theme.colors.textMuted : theme.colors.textPrimary};
+    $isActual ? theme.colors.onSurfaceVariant : theme.colors.onSurface};
   white-space: nowrap;
 
   &:first-child {
     text-align: left;
-    color: ${({ theme }) => theme.colors.textMuted};
+    color: ${({ theme }) => theme.colors.onSurfaceVariant};
   }
 `;
 
 export const StyledEmptyState = styled.div`
   padding: ${({ theme }) => theme.spacing.space8}px;
   text-align: center;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
 `;

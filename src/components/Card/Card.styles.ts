@@ -6,8 +6,10 @@ interface StyledCardProps {
 
 export const StyledCard = styled.div<StyledCardProps>`
   background-color: ${({ theme, $elevated }) =>
-    $elevated ? theme.colors.bgElevated : theme.colors.bgSurface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.lg}px;
+    $elevated
+      ? theme.colors.surfaceContainerHigh
+      : theme.colors.surfaceContainer};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.card}px;
   padding: ${({ theme }) => theme.spacing.space4}px;
 `;

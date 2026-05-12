@@ -15,9 +15,9 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   body {
-    background-color: ${({ theme }) => theme.colors.bgBase};
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-family: ${({ theme }) => theme.typography.fontFamily};
+    background-color: ${({ theme }) => theme.colors.surface};
+    color: ${({ theme }) => theme.colors.onSurface};
+    font-family: ${({ theme }) => theme.typography.fontFamily.ui};
     font-size: ${({ theme }) => theme.typography.sizes.md}px;
     line-height: ${({ theme }) => theme.typography.lineHeights.normal};
     -webkit-font-smoothing: antialiased;

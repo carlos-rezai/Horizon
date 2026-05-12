@@ -10,5 +10,5 @@ export const StyledText = styled.span<{
   font-variant-numeric: ${({ $tabular }) =>
     $tabular ? "tabular-nums" : "normal"};
   line-height: ${({ theme }) => theme.typography.lineHeights.normal};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
 `;

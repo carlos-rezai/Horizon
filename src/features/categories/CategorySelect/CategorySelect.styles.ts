@@ -9,7 +9,7 @@ export const StyledWrapper = styled.div`
 export const StyledLabel = styled.label`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-weight: ${({ theme }) => theme.typography.weights.medium};
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
 `;
 
 export const StyledInlineAddRow = styled.div`
@@ -19,7 +19,7 @@ export const StyledInlineAddRow = styled.div`
 `;
 
 export const StyledErrorText = styled.p`
-  color: ${({ theme }) => theme.colors.negative};
+  color: ${({ theme }) => theme.colors.error};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   margin: 0;
 `;

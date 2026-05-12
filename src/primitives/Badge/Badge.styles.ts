@@ -5,25 +5,25 @@ import type { colors } from "../../tokens/colors";
 type ColorKey = keyof typeof colors;
 
 const bgMap: Record<AccountKind, ColorKey> = {
-  Girokonto: "accentTint",
-  Tagesgeld: "positiveTint",
-  Mortgage: "negativeTint",
-  CreditCard: "warningTint",
-  Investment: "mutedTint",
+  Girokonto: "primaryTint",
+  Tagesgeld: "secondaryTint",
+  Mortgage: "errorTint",
+  CreditCard: "tertiaryTint",
+  Investment: "surfaceVariantTint",
 };
 
 const textMap: Record<AccountKind, ColorKey> = {
-  Girokonto: "accent",
-  Tagesgeld: "positive",
-  Mortgage: "negative",
-  CreditCard: "warning",
-  Investment: "textMuted",
+  Girokonto: "primary",
+  Tagesgeld: "secondary",
+  Mortgage: "error",
+  CreditCard: "tertiary",
+  Investment: "onSurfaceVariant",
 };
 
 export const StyledBadge = styled.span<{ $kind: AccountKind }>`
   display: inline-block;
   padding: 2px ${({ theme }) => theme.spacing.space2}px;
-  border-radius: ${({ theme }) => theme.radius.sm}px;
+  border-radius: ${({ theme }) => theme.radius.badge}px;
   font-size: ${({ theme }) => theme.typography.sizes.xs}px;
   font-weight: ${({ theme }) => theme.typography.weights.medium};
   line-height: ${({ theme }) => theme.typography.lineHeights.tight};

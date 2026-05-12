@@ -13,27 +13,27 @@ export const StyledRow = styled.li`
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space4}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.bgElevated};
+    background: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
 `;
 
 export const StyledDate = styled.span`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
 `;
 
 export const StyledAmount = styled.span`
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
 `;
 
 export const StyledDescription = styled.span`
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -41,15 +41,15 @@ export const StyledDescription = styled.span`
 
 export const StyledTransferBadge = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.xs}px;
-  color: ${({ theme }) => theme.colors.accent};
-  background: ${({ theme }) => theme.colors.bgElevated};
-  border: 1px solid ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.primary};
+  background: ${({ theme }) => theme.colors.surfaceContainerHigh};
+  border: 1px solid ${({ theme }) => theme.colors.primary};
   border-radius: 4px;
   padding: 2px 6px;
 `;
 
 export const StyledEmptyState = styled.p`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   text-align: center;
   padding: ${({ theme }) => theme.spacing.space6}px;
 `;

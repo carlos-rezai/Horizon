@@ -5,8 +5,8 @@ export const Container = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space5}px;
-  background-color: ${({ theme }) => theme.colors.bgSurface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.surfaceContainer};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.md}px;
 `;
 
@@ -19,14 +19,14 @@ export const StatusList = styled.dl`
 `;
 
 export const StatusLabel = styled.dt`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-weight: ${({ theme }) => theme.typography.weights.medium};
   margin: 0;
 `;
 
 export const StatusValue = styled.dd`
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
   font-size: ${({ theme }) => theme.typography.sizes.md}px;
   margin: 0;
   font-variant-numeric: tabular-nums;
@@ -43,9 +43,9 @@ export const ConfirmDialog = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space3}px;
   padding: ${({ theme }) => theme.spacing.space4}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.md}px;
-  background-color: ${({ theme }) => theme.colors.bgElevated};
+  background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
 `;
 
 export const ConfirmActions = styled.div`

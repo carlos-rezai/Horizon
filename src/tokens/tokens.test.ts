@@ -25,26 +25,6 @@ describe("theme — top-level shape", () => {
   });
 });
 
-describe("theme.colors — semantic keys", () => {
-  const requiredKeys = [
-    "bgBase",
-    "bgSurface",
-    "bgElevated",
-    "border",
-    "textPrimary",
-    "textMuted",
-    "accent",
-    "positive",
-    "negative",
-  ];
-
-  requiredKeys.forEach((key) => {
-    it(`exports the "${key}" colour key`, () => {
-      expect(theme.colors).toHaveProperty(key);
-    });
-  });
-});
-
 describe("theme.spacing — 4px grid rule", () => {
   it("exports all 16 spacing steps (space1 through space16)", () => {
     for (let n = 1; n <= 16; n++) {

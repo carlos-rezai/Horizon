@@ -172,9 +172,9 @@ export default function TrajectoryHorizon({
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
   const accountColours = [
-    theme.colors.accent,
-    theme.colors.negative,
-    theme.colors.textMuted,
+    theme.colors.primary,
+    theme.colors.error,
+    theme.colors.onSurfaceVariant,
   ];
 
   const dataMax = data.reduce((max, p) => {
@@ -219,14 +219,17 @@ export default function TrajectoryHorizon({
                 margin={{ top: 8, right: 70, left: 70, bottom: 8 }}
               >
                 <CartesianGrid
-                  stroke={theme.colors.border}
+                  stroke={theme.colors.outlineVariant}
                   strokeDasharray="3 3"
                   vertical={false}
                 />
                 <XAxis
                   dataKey="monthIndex"
                   tick={
-                    <YearTick data={data} mutedColor={theme.colors.textMuted} />
+                    <YearTick
+                      data={data}
+                      mutedColor={theme.colors.onSurfaceVariant}
+                    />
                   }
                   interval={0}
                 />
@@ -255,7 +258,7 @@ export default function TrajectoryHorizon({
                   <ReferenceLine
                     yAxisId="left"
                     x={data.findIndex((p) => p.label === payoffMonth)}
-                    stroke={theme.colors.textPrimary}
+                    stroke={theme.colors.onSurface}
                     strokeDasharray="2 6"
                     strokeWidth={1}
                   />
@@ -277,7 +280,7 @@ export default function TrajectoryHorizon({
                   dataKey="restschuld"
                   name="Restschuld"
                   dot={false}
-                  stroke={theme.colors.warning}
+                  stroke={theme.colors.tertiary}
                   connectNulls={false}
                 />
               </ComposedChart>

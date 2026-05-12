@@ -1,61 +1,66 @@
 import styled from "styled-components";
 
-export const StyledTopBar = styled.header`
+export const StyledWrapper = styled.div`
   display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.space3}px;
-  padding: 0 ${({ theme }) => theme.spacing.space6}px;
-  height: ${({ theme }) => theme.layout.topBarHeight}px;
-  background-color: ${({ theme }) => theme.colors.bgSurface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  min-height: 100vh;
 `;
 
-export const StyledWordmark = styled.a`
+export const StyledSidebar = styled.aside`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: ${({ theme }) => theme.layout.sidebarWidth}px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: ${({ theme }) => theme.spacing.space6}px
+    ${({ theme }) => theme.spacing.space4}px;
+  background-color: ${({ theme }) => theme.colors.surfaceContainer};
+  border-right: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+`;
+
+export const StyledWordmark = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.md}px;
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
   letter-spacing: 0.02em;
-  text-decoration: none;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-  }
+  margin-bottom: ${({ theme }) => theme.spacing.space6}px;
 `;
 
-export const StyledBackButton = styled.button`
+export const StyledNav = styled.nav`
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  padding: ${({ theme }) => theme.spacing.space1}px;
-  color: ${({ theme }) => theme.colors.textMuted};
-  cursor: pointer;
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background-color: ${({ theme }) => theme.colors.bgElevated};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.accent};
-    outline-offset: 2px;
-  }
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 
 export const StyledNavLink = styled.a`
-  margin-left: auto;
+  display: block;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space3}px;
+  border-radius: ${({ theme }) => theme.radius.button}px;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   text-decoration: none;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
+    color: ${({ theme }) => theme.colors.onSurface};
+  }
+
+  &[aria-current="page"] {
+    background-color: ${({ theme }) => theme.colors.primaryContainer};
+    color: ${({ theme }) => theme.colors.onPrimaryContainer};
   }
 `;
 
+export const StyledSpacer = styled.div`
+  flex: 1;
+`;
+
 export const StyledMain = styled.main`
+  margin-left: ${({ theme }) => theme.layout.sidebarWidth}px;
+  flex: 1;
   display: flex;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing.space6}px

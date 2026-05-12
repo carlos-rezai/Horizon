@@ -7,8 +7,8 @@ export const StyledSection = styled.section`
 `;
 
 export const StyledCard = styled.div`
-  background-color: ${({ theme }) => theme.colors.bgSurface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.surfaceContainer};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: 8px;
   padding: ${({ theme }) => theme.spacing.space4}px;
   display: flex;
@@ -20,12 +20,12 @@ export const StyledRestschuld = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.lg}px;
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
   font-variant-numeric: tabular-nums;
-  color: ${({ theme }) => theme.colors.negative};
+  color: ${({ theme }) => theme.colors.error};
   margin: 0;
 `;
 
 export const StyledCountdownText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   margin: 0;
 `;

@@ -16,12 +16,12 @@ export const StyledActions = styled.div`
 
 export const StyledTransferNote = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   margin: 0;
 `;
 
 export const StyledErrorText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.negative};
+  color: ${({ theme }) => theme.colors.error};
   margin: 0;
 `;

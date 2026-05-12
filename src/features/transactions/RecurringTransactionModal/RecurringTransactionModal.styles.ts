@@ -16,12 +16,12 @@ export const StyledActions = styled.div`
 
 export const StyledErrorText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.negative};
+  color: ${({ theme }) => theme.colors.error};
   margin: 0;
 `;
 
 export const StyledWarningText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.warning};
+  color: ${({ theme }) => theme.colors.tertiary};
   margin: 0;
 `;

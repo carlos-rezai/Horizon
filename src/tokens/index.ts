@@ -6,6 +6,17 @@ import { radius } from "./radius";
 import { layout } from "./layout";
 import { transitions } from "./transitions";
 
+export const accountIconSet: string[] = [
+  "Wallet",
+  "PiggyBank",
+  "Home",
+  "CreditCard",
+  "TrendingUp",
+  "Briefcase",
+  "Building",
+  "DollarSign",
+];
+
 export const theme = {
   colors,
   spacing,

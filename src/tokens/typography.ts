@@ -1,5 +1,8 @@
 export const typography = {
-  fontFamily: "'Inter', sans-serif",
+  fontFamily: {
+    ui: "'Hanken Grotesk', sans-serif",
+    mono: "'JetBrains Mono', monospace",
+  },
   sizes: {
     xs: 12,
     sm: 14,

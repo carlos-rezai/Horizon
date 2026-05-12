@@ -16,9 +16,9 @@ export const StyledTh = styled.th`
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   text-align: right;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-weight: ${({ theme }) => theme.typography.weights.medium};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 
   &:first-child {
     text-align: left;
@@ -27,10 +27,10 @@ export const StyledTh = styled.th`
 
 export const StyledRow = styled.tr`
   cursor: pointer;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.bgSurface};
+    background-color: ${({ theme }) => theme.colors.surfaceContainer};
   }
 `;
 
@@ -38,7 +38,7 @@ export const StyledTd = styled.td`
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   text-align: right;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.onSurface};
   white-space: nowrap;
 
   &:first-child {
@@ -48,11 +48,11 @@ export const StyledTd = styled.td`
 `;
 
 export const StyledSTAmount = styled.span`
-  color: ${({ theme }) => theme.colors.positive};
+  color: ${({ theme }) => theme.colors.secondary};
 `;
 
 export const StyledEmptyState = styled.p`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   margin-top: ${({ theme }) => theme.spacing.space3}px;
 `;
