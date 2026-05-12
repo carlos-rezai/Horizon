@@ -6,16 +6,15 @@ export const StyledList = styled.ul`
   margin: 0;
 `;
 
-export const StyledRow = styled.li<{ $inactive?: boolean }>`
+export const StyledRow = styled.li`
   display: grid;
-  grid-template-columns: auto 1fr 120px 100px 60px auto;
+  grid-template-columns: 1fr 120px 100px 60px auto;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space4}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   cursor: pointer;
-  opacity: ${({ $inactive }) => ($inactive ? 0.45 : 1)};
 
   &:hover {
     background: ${({ theme }) => theme.colors.bgElevated};

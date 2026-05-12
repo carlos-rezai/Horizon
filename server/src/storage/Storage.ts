@@ -6,8 +6,6 @@ import type {
   Category,
   CategoryCreateInput,
   DeleteResult,
-  Milestone,
-  MilestoneCreateInput,
   RecurringTransaction,
   RecurringTransactionCreateInput,
   RecurringTransactionUpdateInput,
@@ -57,12 +55,6 @@ export interface CategoriesRepo {
   delete(id: string): Promise<DeleteResult | null>;
 }
 
-export interface MilestonesRepo {
-  findAll(): Promise<Milestone[]>;
-  create(input: MilestoneCreateInput): Promise<Milestone | null>;
-  delete(id: string): Promise<boolean>;
-}
-
 export interface RecurringTransactionsRepo {
   findAll(): Promise<RecurringTransaction[]>;
   findActive(): Promise<RecurringTransaction[]>;
@@ -89,7 +81,6 @@ export interface Storage {
   transactions: TransactionsRepo;
   transfers: TransfersRepo;
   categories: CategoriesRepo;
-  milestones: MilestonesRepo;
   recurringTransactions: RecurringTransactionsRepo;
   close(): Promise<void>;
   backup(destPath: string): Promise<void>;

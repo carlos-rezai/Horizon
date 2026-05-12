@@ -31,7 +31,6 @@ interface UseRecurringTransactionsResult {
   error: string | null;
   create: (payload: CreatePayload) => Promise<void>;
   update: (id: string, payload: UpdatePayload) => Promise<void>;
-  toggleIsActive: (id: string, currentIsActive: boolean) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -109,27 +108,6 @@ export function useRecurringTransactions(
     );
   }
 
-  async function toggleIsActive(
-    id: string,
-    currentIsActive: boolean
-  ): Promise<void> {
-    const res = await fetch(`${API_BASE}/recurring-transactions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !currentIsActive }),
-    });
-
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to toggle recurring transaction");
-    }
-
-    const updated = (await res.json()) as RecurringTransaction;
-    setRecurringTransactions((prev) =>
-      prev.map((rt) => (rt.id === id ? updated : rt))
-    );
-  }
-
   async function remove(id: string): Promise<void> {
     const res = await fetch(`${API_BASE}/recurring-transactions/${id}`, {
       method: "DELETE",
@@ -149,7 +127,6 @@ export function useRecurringTransactions(
     error,
     create,
     update,
-    toggleIsActive,
     remove,
   };
 }

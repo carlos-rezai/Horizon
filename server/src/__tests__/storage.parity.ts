@@ -281,19 +281,6 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       expect(result).toEqual({ ok: false, reason: "in_use" });
     });
-
-    it('returns { ok: false, reason: "in_use" } when a milestone references the account', async () => {
-      const account = await makeAccount();
-      await storage.milestones.create({
-        name: "Emergency fund",
-        accountId: account.id,
-        targetBalance: 600000,
-      });
-
-      const result = await storage.accounts.delete(account.id);
-
-      expect(result).toEqual({ ok: false, reason: "in_use" });
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -1035,108 +1022,11 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
-  // Milestones
-  // -------------------------------------------------------------------------
-
-  describe("MilestonesRepo.findAll", () => {
-    it("returns an empty array when no milestones exist", async () => {
-      const all = await storage.milestones.findAll();
-      expect(all).toEqual([]);
-    });
-
-    it("returns all milestones with string ids and accountIds", async () => {
-      const account = await makeAccount({
-        kind: "Tagesgeld",
-        name: "Reserve",
-        openingBalance: 500000,
-      });
-
-      await storage.milestones.create({
-        name: "Emergency fund",
-        accountId: account.id,
-        targetBalance: 600000,
-      });
-      await storage.milestones.create({
-        name: "House deposit",
-        accountId: account.id,
-        targetBalance: 2000000,
-      });
-
-      const all = await storage.milestones.findAll();
-      expect(all).toHaveLength(2);
-      for (const m of all) {
-        expect(typeof m.id).toBe("string");
-        expect(typeof m.accountId).toBe("string");
-      }
-    });
-  });
-
-  describe("MilestonesRepo.create", () => {
-    it("returns the milestone DTO for a valid accountId", async () => {
-      const account = await makeAccount();
-
-      const milestone = await storage.milestones.create({
-        name: "Emergency fund",
-        accountId: account.id,
-        targetBalance: 600000,
-      });
-
-      expect(milestone).not.toBeNull();
-      expect(milestone?.accountId).toBe(account.id);
-      expect(milestone?.name).toBe("Emergency fund");
-      expect(milestone?.targetBalance).toBe(600000);
-    });
-
-    it("returns null for an unparseable accountId (no row persists)", async () => {
-      const milestone = await storage.milestones.create({
-        name: "Emergency fund",
-        accountId: "not-an-id",
-        targetBalance: 600000,
-      });
-
-      expect(milestone).toBeNull();
-      expect(await storage.milestones.findAll()).toEqual([]);
-    });
-
-    it("returns null for a well-formed but unknown accountId", async () => {
-      const milestone = await storage.milestones.create({
-        name: "Emergency fund",
-        accountId: "00000000-0000-0000-0000-000000000000",
-        targetBalance: 600000,
-      });
-
-      expect(milestone).toBeNull();
-      expect(await storage.milestones.findAll()).toEqual([]);
-    });
-  });
-
-  describe("MilestonesRepo.delete", () => {
-    it("returns true and removes the milestone", async () => {
-      const account = await makeAccount();
-      const milestone = await storage.milestones.create({
-        name: "Emergency fund",
-        accountId: account.id,
-        targetBalance: 600000,
-      });
-
-      const result = await storage.milestones.delete(milestone!.id);
-
-      expect(result).toBe(true);
-      expect(await storage.milestones.findAll()).toEqual([]);
-    });
-
-    it("returns false for an unparseable id", async () => {
-      const result = await storage.milestones.delete("not-an-id");
-      expect(result).toBe(false);
-    });
-  });
-
-  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 
   describe("RecurringTransactionsRepo.create", () => {
-    it("defaults isActive to true and returns a DTO with string id", async () => {
+    it("returns a DTO with string id and correct fields", async () => {
       const account = await makeAccount();
 
       const r = await storage.recurringTransactions.create({
@@ -1155,7 +1045,6 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(r.category).toBe("Housing");
       expect(r.frequency).toBe("monthly");
       expect(r.dayOfMonth).toBe(1);
-      expect(r.isActive).toBe(true);
     });
 
     it("preserves linkedAccountId for a recurring transfer", async () => {
@@ -1320,7 +1209,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   describe("RecurringTransactionsRepo.findAll", () => {
-    it("returns both active and inactive rows", async () => {
+    it("returns all rows", async () => {
       const account = await makeAccount();
 
       const a = await storage.recurringTransactions.create({
@@ -1340,8 +1229,6 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         dayOfMonth: 10,
       });
 
-      await storage.recurringTransactions.update(b.id, { isActive: false });
-
       const all = await storage.recurringTransactions.findAll();
       expect(all).toHaveLength(2);
       const ids = all.map((r) => r.id);
@@ -1356,10 +1243,10 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   describe("RecurringTransactionsRepo.findActive", () => {
-    it("returns only rows with isActive: true", async () => {
+    it("returns all rows (all recurring transactions are always active)", async () => {
       const account = await makeAccount();
 
-      const active = await storage.recurringTransactions.create({
+      const a = await storage.recurringTransactions.create({
         accountId: account.id,
         amount: 95000,
         description: "Rent",
@@ -1367,7 +1254,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         frequency: "monthly",
         dayOfMonth: 1,
       });
-      const inactive = await storage.recurringTransactions.create({
+      const b = await storage.recurringTransactions.create({
         accountId: account.id,
         amount: 20000,
         description: "Gym",
@@ -1376,32 +1263,11 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         dayOfMonth: 10,
       });
 
-      await storage.recurringTransactions.update(inactive.id, {
-        isActive: false,
-      });
-
-      const onlyActive = await storage.recurringTransactions.findActive();
-
-      expect(onlyActive).toHaveLength(1);
-      expect(onlyActive[0].id).toBe(active.id);
-      expect(onlyActive.every((r) => r.isActive === true)).toBe(true);
-    });
-
-    it("returns an empty array when no active rows exist", async () => {
-      const account = await makeAccount();
-
-      const r = await storage.recurringTransactions.create({
-        accountId: account.id,
-        amount: 95000,
-        description: "Rent",
-        category: "Housing",
-        frequency: "monthly",
-        dayOfMonth: 1,
-      });
-      await storage.recurringTransactions.update(r.id, { isActive: false });
-
-      const onlyActive = await storage.recurringTransactions.findActive();
-      expect(onlyActive).toEqual([]);
+      const active = await storage.recurringTransactions.findActive();
+      expect(active).toHaveLength(2);
+      const ids = active.map((r) => r.id);
+      expect(ids).toContain(a.id);
+      expect(ids).toContain(b.id);
     });
   });
 
@@ -1426,28 +1292,6 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(updated?.amount).toBe(98000);
       expect(updated?.description).toBe("New rent");
       expect(updated?.id).toBe(r.id);
-    });
-
-    it("toggles isActive: true → false → true", async () => {
-      const account = await makeAccount();
-      const r = await storage.recurringTransactions.create({
-        accountId: account.id,
-        amount: 95000,
-        description: "Rent",
-        category: "Housing",
-        frequency: "monthly",
-        dayOfMonth: 1,
-      });
-
-      const off = await storage.recurringTransactions.update(r.id, {
-        isActive: false,
-      });
-      expect(off?.isActive).toBe(false);
-
-      const on = await storage.recurringTransactions.update(r.id, {
-        isActive: true,
-      });
-      expect(on?.isActive).toBe(true);
     });
 
     it("returns null for an unparseable id", async () => {

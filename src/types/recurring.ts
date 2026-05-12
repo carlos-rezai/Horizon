@@ -8,7 +8,6 @@ export interface RecurringTransaction {
   category: string;
   frequency: RecurringFrequency;
   dayOfMonth: number;
-  isActive: boolean;
   linkedAccountId?: string;
   monthOfYear?: number;
 }

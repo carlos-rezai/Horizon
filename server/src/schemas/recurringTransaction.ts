@@ -17,7 +17,6 @@ export const RecurringTransactionUpdateSchema = z.object({
   amount: z.number().int().optional(),
   description: z.string().min(1).optional(),
   category: z.string().min(1).optional(),
-  isActive: z.boolean().optional(),
   frequency: FrequencyEnum.optional(),
   dayOfMonth: z.number().int().min(1).max(31).optional(),
   linkedAccountId: z.string().min(1).optional(),

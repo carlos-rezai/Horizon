@@ -12,13 +12,11 @@ import {
 
 interface Props {
   recurringTransactions: RecurringTransaction[];
-  onToggle: (rt: RecurringTransaction) => void;
   onRowClick: (rt: RecurringTransaction) => void;
 }
 
 export default function RecurringTransactionList({
   recurringTransactions,
-  onToggle,
   onRowClick,
 }: Props) {
   if (recurringTransactions.length === 0) {
@@ -28,22 +26,7 @@ export default function RecurringTransactionList({
   return (
     <StyledList>
       {recurringTransactions.map((rt) => (
-        <StyledRow
-          key={rt.id}
-          $inactive={!rt.isActive}
-          data-inactive={rt.isActive ? undefined : "true"}
-          onClick={() => onRowClick(rt)}
-        >
-          <input
-            type="checkbox"
-            checked={rt.isActive}
-            onChange={() => {}}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle(rt);
-            }}
-            aria-label={`Toggle ${rt.description}`}
-          />
+        <StyledRow key={rt.id} onClick={() => onRowClick(rt)}>
           <StyledDescription>{rt.description}</StyledDescription>
           <StyledAmount>{formatBalance(rt.amount)}</StyledAmount>
           <StyledMeta>{rt.frequency}</StyledMeta>

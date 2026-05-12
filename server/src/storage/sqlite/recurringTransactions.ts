@@ -12,7 +12,6 @@ interface RecurringTransactionRow {
   category: string;
   frequency: Frequency;
   day_of_month: number;
-  is_active: number;
   linked_account_id: string | null;
   month_of_year: number | null;
 }
@@ -26,7 +25,6 @@ function toDTO(row: RecurringTransactionRow): RecurringTransaction {
     category: row.category,
     frequency: row.frequency,
     dayOfMonth: row.day_of_month,
-    isActive: row.is_active === 1,
   };
   if (row.linked_account_id !== null) {
     dto.linkedAccountId = row.linked_account_id;
@@ -41,9 +39,6 @@ export function createSqliteRecurringTransactionsRepo(
   db: Database.Database
 ): RecurringTransactionsRepo {
   const selectAllStmt = db.prepare(`SELECT * FROM recurring_transactions`);
-  const selectActiveStmt = db.prepare(
-    `SELECT * FROM recurring_transactions WHERE is_active = 1`
-  );
   const selectByIdStmt = db.prepare(
     `SELECT * FROM recurring_transactions WHERE id = ?`
   );
@@ -53,15 +48,14 @@ export function createSqliteRecurringTransactionsRepo(
   const insertStmt = db.prepare(
     `INSERT INTO recurring_transactions
        (id, account_id, amount, description, category, frequency,
-        day_of_month, is_active, linked_account_id, month_of_year)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
+        day_of_month, linked_account_id, month_of_year)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const updateStmt = db.prepare(
     `UPDATE recurring_transactions
        SET amount = COALESCE(?, amount),
            description = COALESCE(?, description),
            category = COALESCE(?, category),
-           is_active = COALESCE(?, is_active),
            frequency = COALESCE(?, frequency),
            day_of_month = COALESCE(?, day_of_month),
            linked_account_id = COALESCE(?, linked_account_id),
@@ -79,7 +73,7 @@ export function createSqliteRecurringTransactionsRepo(
     },
 
     async findActive() {
-      const rows = selectActiveStmt.all() as RecurringTransactionRow[];
+      const rows = selectAllStmt.all() as RecurringTransactionRow[];
       return rows.map(toDTO);
     },
 
@@ -110,7 +104,6 @@ export function createSqliteRecurringTransactionsRepo(
         category: input.category,
         frequency: input.frequency,
         dayOfMonth: input.dayOfMonth,
-        isActive: true,
       };
       if (input.linkedAccountId !== undefined) {
         dto.linkedAccountId = input.linkedAccountId;
@@ -127,13 +120,10 @@ export function createSqliteRecurringTransactionsRepo(
         | RecurringTransactionRow
         | undefined;
       if (!existing) return null;
-      const isActiveBinding =
-        input.isActive === undefined ? null : input.isActive ? 1 : 0;
       updateStmt.run(
         input.amount ?? null,
         input.description ?? null,
         input.category ?? null,
-        isActiveBinding,
         input.frequency ?? null,
         input.dayOfMonth ?? null,
         input.linkedAccountId ?? null,

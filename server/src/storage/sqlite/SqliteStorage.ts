@@ -10,7 +10,6 @@ import { StorageIntegrityError } from "./errors.js";
 import { assertIntegrity, assertSchemaNotAhead } from "./integrity.js";
 import { createSqliteAccountsRepo } from "./accounts.js";
 import { createSqliteCategoriesRepo } from "./categories.js";
-import { createSqliteMilestonesRepo } from "./milestones.js";
 import { createSqliteRecurringTransactionsRepo } from "./recurringTransactions.js";
 import { createSqliteTransactionsRepo } from "./transactions.js";
 import { createSqliteTransfersRepo } from "./transfers.js";
@@ -22,7 +21,6 @@ interface Repos {
   transactions: ReturnType<typeof createSqliteTransactionsRepo>;
   transfers: ReturnType<typeof createSqliteTransfersRepo>;
   categories: ReturnType<typeof createSqliteCategoriesRepo>;
-  milestones: ReturnType<typeof createSqliteMilestonesRepo>;
   recurringTransactions: ReturnType<
     typeof createSqliteRecurringTransactionsRepo
   >;
@@ -33,14 +31,12 @@ function buildRepos(db: Database.Database): Repos {
   const accounts = createSqliteAccountsRepo(db, transactions);
   const transfers = createSqliteTransfersRepo(db);
   const categories = createSqliteCategoriesRepo(db);
-  const milestones = createSqliteMilestonesRepo(db);
   const recurringTransactions = createSqliteRecurringTransactionsRepo(db);
   return {
     accounts,
     transactions,
     transfers,
     categories,
-    milestones,
     recurringTransactions,
   };
 }
@@ -86,9 +82,6 @@ export async function createSqliteStorage(
     },
     get categories() {
       return repos.categories;
-    },
-    get milestones() {
-      return repos.milestones;
     },
     get recurringTransactions() {
       return repos.recurringTransactions;

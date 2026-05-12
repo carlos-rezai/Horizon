@@ -19,7 +19,6 @@ export interface ProjectionRecurringEntry {
   amount: number;
   frequency: Frequency;
   dayOfMonth: number;
-  isActive: boolean;
   linkedAccountId?: string;
   monthOfYear?: number;
 }
@@ -131,7 +130,7 @@ export function projectBalances(
   const accountMap = new Map<string, ProjectionAccountEntry>();
   for (const a of accounts) accountMap.set(a.id, a);
 
-  const activeRecurring = recurringTransactions.filter((r) => r.isActive);
+  const activeRecurring = recurringTransactions;
 
   // Initialise from opening balances
   const runningBalances = new Map<string, number>();

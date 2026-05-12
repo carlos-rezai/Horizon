@@ -4,11 +4,9 @@ import { useAccounts } from "../features/accounts/useAccounts";
 import { useProjection } from "../features/projection/useProjection";
 import { useAllRecurringTransactions } from "../features/projection/useAllRecurringTransactions";
 import PlanSummary from "../features/projection/PlanSummary/PlanSummary";
-import { useMilestones } from "../features/milestones/useMilestones";
 import AccountOverview from "../features/accounts/AccountOverview/AccountOverview";
 import AccountCreateModal from "../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown/MortgageCountdown";
-import MilestoneTracker from "../features/milestones/MilestoneTracker/MilestoneTracker";
 import TrajectoryHorizon from "../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import Spinner from "../primitives/Spinner/Spinner";
 import Heading from "../primitives/Heading/Heading";
@@ -34,19 +32,9 @@ export default function DashboardPage() {
   } = useProjection();
   const { recurringTransactions } = useAllRecurringTransactions();
 
-  const {
-    milestones,
-    isLoading: milestonesLoading,
-    error: milestonesError,
-    addMilestone,
-    deleteMilestone,
-  } = useMilestones();
-
-  if (accountsLoading || projectionLoading || milestonesLoading)
-    return <Spinner />;
+  if (accountsLoading || projectionLoading) return <Spinner />;
   if (accountsError) return <Text>{`Error: ${accountsError}`}</Text>;
   if (projectionError) return <Text>{`Error: ${projectionError}`}</Text>;
-  if (milestonesError) return <Text>{`Error: ${milestonesError}`}</Text>;
 
   const totalLiquid = computeTotalLiquid(accounts);
 
@@ -82,15 +70,6 @@ export default function DashboardPage() {
           accounts={accounts}
           recurringTransactions={recurringTransactions}
           isLoading={projectionLoading}
-        />
-      </StyledSection>
-      <StyledSection>
-        <MilestoneTracker
-          milestones={milestones}
-          accounts={accounts}
-          snapshots={snapshots}
-          onAdd={addMilestone}
-          onDelete={deleteMilestone}
         />
       </StyledSection>
     </StyledDashboard>

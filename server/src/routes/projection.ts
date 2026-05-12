@@ -39,7 +39,6 @@ router.get("/", async (req, res) => {
     amount: r.amount,
     frequency: r.frequency,
     dayOfMonth: r.dayOfMonth,
-    isActive: r.isActive,
     ...(r.linkedAccountId !== undefined && {
       linkedAccountId: r.linkedAccountId,
     }),

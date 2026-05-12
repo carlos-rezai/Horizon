@@ -49,19 +49,6 @@ export interface CategoryCreateInput {
   name: string;
 }
 
-export interface Milestone {
-  id: string;
-  name: string;
-  accountId: string;
-  targetBalance: number;
-}
-
-export interface MilestoneCreateInput {
-  name: string;
-  accountId: string;
-  targetBalance: number;
-}
-
 export type Frequency = "monthly" | "quarterly" | "annual";
 
 export interface RecurringTransaction {
@@ -72,7 +59,6 @@ export interface RecurringTransaction {
   category: string;
   frequency: Frequency;
   dayOfMonth: number;
-  isActive: boolean;
   linkedAccountId?: string;
   monthOfYear?: number;
 }
@@ -92,7 +78,6 @@ export interface RecurringTransactionUpdateInput {
   amount?: number;
   description?: string;
   category?: string;
-  isActive?: boolean;
   frequency?: Frequency;
   dayOfMonth?: number;
   linkedAccountId?: string;

@@ -11,7 +11,6 @@ import categoriesRouter from "./routes/categories.js";
 import transfersRouter from "./routes/transfers.js";
 import recurringTransactionsRouter from "./routes/recurringTransactions.js";
 import projectionRouter from "./routes/projection.js";
-import milestonesRouter from "./routes/milestones.js";
 import storageRouter from "./routes/storage.js";
 import type { Storage } from "./storage/Storage.js";
 
@@ -42,7 +41,6 @@ export function createApp(storage: Storage): Express {
   app.use("/transfers", transfersRouter);
   app.use("/recurring-transactions", recurringTransactionsRouter);
   app.use("/projection", projectionRouter);
-  app.use("/milestones", milestonesRouter);
   app.use("/storage", storageRouter);
 
   app.use(logUnhandledError);

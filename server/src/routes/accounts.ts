@@ -99,8 +99,7 @@ router.delete("/:id", async (req, res) => {
   if (!result.ok) {
     if (result.reason === "in_use") {
       res.status(409).json({
-        error:
-          "Cannot delete account referenced by a recurring transaction or milestone",
+        error: "Cannot delete account referenced by a recurring transaction",
       });
       return;
     }

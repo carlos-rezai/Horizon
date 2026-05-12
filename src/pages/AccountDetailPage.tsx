@@ -23,7 +23,6 @@ export default function AccountDetailPage() {
   const { accounts, isLoading, error, refresh } = useAccounts();
   const {
     recurringTransactions,
-    toggleIsActive,
     remove: removeRecurring,
     update: updateRecurring,
     create: createRecurring,
@@ -130,7 +129,6 @@ export default function AccountDetailPage() {
         </StyledActions>
         <RecurringTransactionList
           recurringTransactions={recurringTransactions}
-          onToggle={(rt) => toggleIsActive(rt.id, rt.isActive)}
           onRowClick={(rt) => setEditingRecurring(rt)}
         />
         {showAddRecurring && (
