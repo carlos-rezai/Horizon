@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAccounts } from "../features/accounts/useAccounts";
 import AccountDetailHeader from "../features/accounts/AccountDetailHeader/AccountDetailHeader";
 import TransactionCreateModal from "../features/transactions/TransactionCreateModal/TransactionCreateModal";
@@ -7,6 +7,7 @@ import TransferCreateModal from "../features/transactions/TransferCreateModal/Tr
 import RecurringTransactionList from "../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
 import { useRecurringTransactions } from "../features/transactions/useRecurringTransactions";
+import Card from "../components/Card/Card";
 import Heading from "../primitives/Heading/Heading";
 import Button from "../primitives/Button/Button";
 import { API_BASE } from "../utils/api";
@@ -87,78 +88,85 @@ export default function AccountDetailPage() {
 
   return (
     <StyledPage>
-      <AccountDetailHeader
-        account={account}
-        hasTransactions={hasTransactions}
-        onRename={handleRename}
-        onUpdateOpeningBalance={handleUpdateOpeningBalance}
-        onDelete={handleDelete}
-      />
+      <Card>
+        <Link to="/">← Back</Link>
+        <AccountDetailHeader
+          account={account}
+          hasTransactions={hasTransactions}
+          onRename={handleRename}
+          onUpdateOpeningBalance={handleUpdateOpeningBalance}
+          onDelete={handleDelete}
+        />
+      </Card>
       <StyledSection>
-        <Heading level={2}>Transactions</Heading>
-        <StyledActions>
-          <Button type="button" onClick={() => setShowAddTransaction(true)}>
-            Add transaction
-          </Button>
-          <Button type="button" onClick={() => setShowAddTransfer(true)}>
-            Add transfer
-          </Button>
-        </StyledActions>
-        {showAddTransaction && (
-          <TransactionCreateModal
-            accountId={account.id}
-            onClose={() => setShowAddTransaction(false)}
-            onSuccess={() => setShowAddTransaction(false)}
-          />
-        )}
-        {showAddTransfer && (
-          <TransferCreateModal
-            fromAccountId={account.id}
-            accounts={accounts}
-            onClose={() => setShowAddTransfer(false)}
-            onSuccess={() => setShowAddTransfer(false)}
-          />
-        )}
+        <Card>
+          <Heading level={2}>Transactions</Heading>
+          <StyledActions>
+            <Button type="button" onClick={() => setShowAddTransaction(true)}>
+              Add transaction
+            </Button>
+            <Button type="button" onClick={() => setShowAddTransfer(true)}>
+              Add transfer
+            </Button>
+          </StyledActions>
+          {showAddTransaction && (
+            <TransactionCreateModal
+              accountId={account.id}
+              onClose={() => setShowAddTransaction(false)}
+              onSuccess={() => setShowAddTransaction(false)}
+            />
+          )}
+          {showAddTransfer && (
+            <TransferCreateModal
+              fromAccountId={account.id}
+              accounts={accounts}
+              onClose={() => setShowAddTransfer(false)}
+              onSuccess={() => setShowAddTransfer(false)}
+            />
+          )}
+        </Card>
       </StyledSection>
       <StyledSection>
-        <Heading level={2}>Recurring Transactions</Heading>
-        <StyledActions>
-          <Button type="button" onClick={() => setShowAddRecurring(true)}>
-            Add recurring transaction
-          </Button>
-        </StyledActions>
-        <RecurringTransactionList
-          recurringTransactions={recurringTransactions}
-          onRowClick={(rt) => setEditingRecurring(rt)}
-        />
-        {showAddRecurring && (
-          <RecurringTransactionModal
-            accountId={account.id}
-            otherAccounts={accounts.filter((a) => a.id !== account.id)}
-            onClose={() => setShowAddRecurring(false)}
-            onSaved={(formData) => {
-              void createRecurring(formData);
-              setShowAddRecurring(false);
-            }}
-            onDeleted={() => setShowAddRecurring(false)}
+        <Card>
+          <Heading level={2}>Recurring Transactions</Heading>
+          <StyledActions>
+            <Button type="button" onClick={() => setShowAddRecurring(true)}>
+              Add recurring transaction
+            </Button>
+          </StyledActions>
+          <RecurringTransactionList
+            recurringTransactions={recurringTransactions}
+            onRowClick={(rt) => setEditingRecurring(rt)}
           />
-        )}
-        {editingRecurring && (
-          <RecurringTransactionModal
-            accountId={account.id}
-            transaction={editingRecurring}
-            otherAccounts={accounts.filter((a) => a.id !== account.id)}
-            onClose={() => setEditingRecurring(null)}
-            onSaved={(formData) => {
-              void updateRecurring(editingRecurring.id, formData);
-              setEditingRecurring(null);
-            }}
-            onDeleted={() => {
-              void removeRecurring(editingRecurring.id);
-              setEditingRecurring(null);
-            }}
-          />
-        )}
+          {showAddRecurring && (
+            <RecurringTransactionModal
+              accountId={account.id}
+              otherAccounts={accounts.filter((a) => a.id !== account.id)}
+              onClose={() => setShowAddRecurring(false)}
+              onSaved={(formData) => {
+                void createRecurring(formData);
+                setShowAddRecurring(false);
+              }}
+              onDeleted={() => setShowAddRecurring(false)}
+            />
+          )}
+          {editingRecurring && (
+            <RecurringTransactionModal
+              accountId={account.id}
+              transaction={editingRecurring}
+              otherAccounts={accounts.filter((a) => a.id !== account.id)}
+              onClose={() => setEditingRecurring(null)}
+              onSaved={(formData) => {
+                void updateRecurring(editingRecurring.id, formData);
+                setEditingRecurring(null);
+              }}
+              onDeleted={() => {
+                void removeRecurring(editingRecurring.id);
+                setEditingRecurring(null);
+              }}
+            />
+          )}
+        </Card>
       </StyledSection>
     </StyledPage>
   );

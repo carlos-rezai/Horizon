@@ -7,5 +7,9 @@ interface CardProps {
 }
 
 export default function Card({ elevated = false, children }: CardProps) {
-  return <StyledCard $elevated={elevated}>{children}</StyledCard>;
+  return (
+    <StyledCard $elevated={elevated} data-testid="card">
+      {children}
+    </StyledCard>
+  );
 }

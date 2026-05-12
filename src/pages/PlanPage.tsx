@@ -4,9 +4,10 @@ import { useProjection } from "../features/projection/useProjection";
 import { useAllRecurringTransactions } from "../features/projection/useAllRecurringTransactions";
 import { ProjectionAccordion } from "../features/projection";
 import TrajectoryHorizon from "../features/projection/TrajectoryHorizon/TrajectoryHorizon";
+import Card from "../components/Card/Card";
 import Spinner from "../primitives/Spinner/Spinner";
 import Heading from "../primitives/Heading/Heading";
-import Text from "../primitives/Text/Text";
+import { StyledPlanPage, StyledErrorText } from "./PlanPage.styles";
 
 export default function PlanPage() {
   const location = useLocation();
@@ -25,23 +26,31 @@ export default function PlanPage() {
   const initialYear = location.state?.year as number | undefined;
 
   if (accountsLoading || projectionLoading) return <Spinner />;
-  if (accountsError) return <Text>{`Error: ${accountsError}`}</Text>;
-  if (projectionError) return <Text>{`Error: ${projectionError}`}</Text>;
+  if (accountsError)
+    return <StyledErrorText>{`Error: ${accountsError}`}</StyledErrorText>;
+  if (projectionError)
+    return <StyledErrorText>{`Error: ${projectionError}`}</StyledErrorText>;
 
   return (
-    <div>
-      <Heading level={1}>Financial Plan</Heading>
-      <TrajectoryHorizon
-        snapshots={snapshots}
-        accounts={accounts}
-        recurringTransactions={recurringTransactions}
-        isLoading={projectionLoading}
-      />
-      <ProjectionAccordion
-        snapshots={snapshots}
-        accounts={accounts}
-        initialYear={initialYear}
-      />
-    </div>
+    <StyledPlanPage>
+      <Card>
+        <Heading level={1}>Financial Plan</Heading>
+      </Card>
+      <Card>
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={accounts}
+          recurringTransactions={recurringTransactions}
+          isLoading={projectionLoading}
+        />
+      </Card>
+      <Card>
+        <ProjectionAccordion
+          snapshots={snapshots}
+          accounts={accounts}
+          initialYear={initialYear}
+        />
+      </Card>
+    </StyledPlanPage>
   );
 }

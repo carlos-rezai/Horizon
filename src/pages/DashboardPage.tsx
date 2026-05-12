@@ -8,13 +8,17 @@ import AccountOverview from "../features/accounts/AccountOverview/AccountOvervie
 import AccountCreateModal from "../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../features/mortgage/MortgageCountdown/MortgageCountdown";
 import TrajectoryHorizon from "../features/projection/TrajectoryHorizon/TrajectoryHorizon";
+import Card from "../components/Card/Card";
 import Spinner from "../primitives/Spinner/Spinner";
 import Heading from "../primitives/Heading/Heading";
-import Text from "../primitives/Text/Text";
 import Button from "../primitives/Button/Button";
 import { computeTotalLiquid } from "../utils/accounts";
 import { formatBalance } from "../utils/format";
-import { StyledDashboard, StyledSection } from "./DashboardPage.styles";
+import {
+  StyledDashboard,
+  StyledSection,
+  StyledErrorText,
+} from "./DashboardPage.styles";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -33,44 +37,54 @@ export default function DashboardPage() {
   const { recurringTransactions } = useAllRecurringTransactions();
 
   if (accountsLoading || projectionLoading) return <Spinner />;
-  if (accountsError) return <Text>{`Error: ${accountsError}`}</Text>;
-  if (projectionError) return <Text>{`Error: ${projectionError}`}</Text>;
+  if (accountsError)
+    return <StyledErrorText>{`Error: ${accountsError}`}</StyledErrorText>;
+  if (projectionError)
+    return <StyledErrorText>{`Error: ${projectionError}`}</StyledErrorText>;
 
   const totalLiquid = computeTotalLiquid(accounts);
 
   return (
     <StyledDashboard>
       <StyledSection>
-        <Heading level={1}>Dashboard</Heading>
-        <Heading level={2}>Accounts</Heading>
-        <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
-        <Text>Total Liquid: {formatBalance(totalLiquid)}</Text>
-        <AccountOverview accounts={accounts} />
-        {showCreateModal && (
-          <AccountCreateModal
-            onClose={() => setShowCreateModal(false)}
-            onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+        <Card>
+          <Heading level={1}>Dashboard</Heading>
+          <Heading level={2}>Accounts</Heading>
+          <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
+          <span>Total Liquid: {formatBalance(totalLiquid)}</span>
+          <AccountOverview accounts={accounts} />
+          {showCreateModal && (
+            <AccountCreateModal
+              onClose={() => setShowCreateModal(false)}
+              onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+            />
+          )}
+        </Card>
+      </StyledSection>
+      <StyledSection>
+        <Card>
+          <MortgageCountdown accounts={accounts} snapshots={snapshots} />
+        </Card>
+      </StyledSection>
+      <StyledSection>
+        <Card>
+          <PlanSummary
+            snapshots={snapshots}
+            accounts={accounts}
+            recurringTransactions={recurringTransactions}
+            maxYears={10}
           />
-        )}
+        </Card>
       </StyledSection>
       <StyledSection>
-        <MortgageCountdown accounts={accounts} snapshots={snapshots} />
-      </StyledSection>
-      <StyledSection>
-        <PlanSummary
-          snapshots={snapshots}
-          accounts={accounts}
-          recurringTransactions={recurringTransactions}
-          maxYears={10}
-        />
-      </StyledSection>
-      <StyledSection>
-        <TrajectoryHorizon
-          snapshots={snapshots}
-          accounts={accounts}
-          recurringTransactions={recurringTransactions}
-          isLoading={projectionLoading}
-        />
+        <Card>
+          <TrajectoryHorizon
+            snapshots={snapshots}
+            accounts={accounts}
+            recurringTransactions={recurringTransactions}
+            isLoading={projectionLoading}
+          />
+        </Card>
       </StyledSection>
     </StyledDashboard>
   );
