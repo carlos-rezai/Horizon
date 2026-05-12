@@ -12,6 +12,8 @@ export interface Account {
   openingBalance: number;
   openingDate: string;
   sondertilgungAllowance?: number;
+  icon?: string | null;
+  color?: string | null;
 }
 
 export interface AccountWithBalance extends Account {
@@ -24,12 +26,16 @@ export interface AccountCreateInput {
   openingBalance: number;
   openingDate: string;
   sondertilgungAllowance?: number;
+  icon?: string | null;
+  color?: string | null;
 }
 
 export interface AccountUpdateInput {
   name?: string;
   openingBalance?: number;
   sondertilgungAllowance?: number;
+  icon?: string | null;
+  color?: string | null;
 }
 
 export type DeleteResult =

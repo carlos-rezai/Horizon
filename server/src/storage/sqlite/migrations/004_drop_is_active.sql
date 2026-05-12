@@ -3,8 +3,7 @@
 -- transactions are always active; delete to stop one.
 -- SQLite cannot DROP COLUMN on older versions, so the standard
 -- rename/recreate/copy/drop pattern is used.
-
-BEGIN;
+-- Note: no explicit BEGIN/COMMIT — migrate.ts wraps all migrations in a transaction.
 
 CREATE TABLE recurring_transactions_new (
   id TEXT PRIMARY KEY,
@@ -30,5 +29,3 @@ DROP TABLE recurring_transactions;
 ALTER TABLE recurring_transactions_new RENAME TO recurring_transactions;
 
 CREATE INDEX idx_recurring_transactions_account_id ON recurring_transactions(account_id);
-
-COMMIT;

@@ -21,6 +21,7 @@ export interface ProjectionRecurringEntry {
   dayOfMonth: number;
   linkedAccountId?: string;
   monthOfYear?: number;
+  isActive?: boolean;
 }
 
 interface AccountSnapshot {
@@ -130,7 +131,9 @@ export function projectBalances(
   const accountMap = new Map<string, ProjectionAccountEntry>();
   for (const a of accounts) accountMap.set(a.id, a);
 
-  const activeRecurring = recurringTransactions;
+  const activeRecurring = recurringTransactions.filter(
+    (r) => r.isActive !== false
+  );
 
   // Initialise from opening balances
   const runningBalances = new Map<string, number>();

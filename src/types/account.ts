@@ -13,4 +13,6 @@ export interface AccountWithBalance {
   openingDate: string;
   balance: number;
   sondertilgungAllowance?: number;
+  icon?: string | null;
+  color?: string | null;
 }

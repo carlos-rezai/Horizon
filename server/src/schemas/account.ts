@@ -14,10 +14,14 @@ export const AccountCreateSchema = z.object({
   openingBalance: z.number().int(),
   openingDate: z.string().min(1),
   sondertilgungAllowance: z.number().int().optional(),
+  icon: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
 });
 
 export const AccountUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   openingBalance: z.number().int().optional(),
   sondertilgungAllowance: z.number().int().optional(),
+  icon: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
 });

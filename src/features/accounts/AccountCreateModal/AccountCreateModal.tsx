@@ -1,5 +1,8 @@
 import { useState } from "react";
+import * as LucideIcons from "lucide-react";
+import type { LucideProps } from "lucide-react";
 import type { AccountKind } from "../../../types/account";
+import { accountIconSet, theme as meridianTheme } from "../../../tokens";
 import { API_BASE } from "../../../utils/api";
 import { eurosToCents } from "../../../utils/currency";
 import Modal from "../../../components/Modal/Modal";
@@ -11,6 +14,10 @@ import {
   StyledForm,
   StyledActions,
   StyledErrorText,
+  StyledIconGrid,
+  StyledIconButton,
+  StyledColorRow,
+  StyledColorSwatch,
 } from "./AccountCreateModal.styles";
 
 interface Props {
@@ -26,6 +33,12 @@ const ACCOUNT_KINDS: AccountKind[] = [
   "Investment",
 ];
 
+const COLOR_PALETTE = meridianTheme.colors.accountColorPalette;
+
+function randomPaletteColor(): string {
+  return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+}
+
 export default function AccountCreateModal({ onClose, onSuccess }: Props) {
   const [kind, setKind] = useState<AccountKind>("Girokonto");
   const [name, setName] = useState("");
@@ -33,6 +46,10 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
   const [openingDate, setOpeningDate] = useState("");
   const [sondertilgungAllowance, setSondertilgungAllowance] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>(() =>
+    randomPaletteColor()
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +60,8 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
       name: name.trim(),
       openingBalance: eurosToCents(openingBalance),
       openingDate,
+      icon: selectedIcon,
+      color: selectedColor,
     };
 
     if (kind === "Mortgage" && sondertilgungAllowance) {
@@ -123,6 +142,40 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
             />
           </FormField>
         )}
+
+        <StyledIconGrid>
+          {accountIconSet.map((iconName) => {
+            const Icon = LucideIcons[iconName as keyof typeof LucideIcons] as
+              | React.ComponentType<LucideProps>
+              | undefined;
+            return (
+              <StyledIconButton
+                key={iconName}
+                type="button"
+                aria-label={iconName}
+                $selected={selectedIcon === iconName}
+                onClick={() =>
+                  setSelectedIcon(selectedIcon === iconName ? null : iconName)
+                }
+              >
+                {Icon && <Icon size={18} />}
+              </StyledIconButton>
+            );
+          })}
+        </StyledIconGrid>
+
+        <StyledColorRow>
+          {COLOR_PALETTE.map((color) => (
+            <StyledColorSwatch
+              key={color}
+              type="button"
+              aria-label={color}
+              $color={color}
+              $selected={selectedColor === color}
+              onClick={() => setSelectedColor(color)}
+            />
+          ))}
+        </StyledColorRow>
 
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 

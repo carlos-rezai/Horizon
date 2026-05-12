@@ -11,6 +11,8 @@ interface AccountRow {
   opening_balance: number;
   opening_date: string;
   sondertilgung_allowance: number | null;
+  icon: string | null;
+  color: string | null;
 }
 
 interface AccountWithBalanceRow extends AccountRow {
@@ -24,6 +26,8 @@ function toAccountDTO(row: AccountRow): Account {
     name: row.name,
     openingBalance: row.opening_balance,
     openingDate: row.opening_date,
+    icon: row.icon,
+    color: row.color,
   };
   if (row.sondertilgung_allowance !== null) {
     dto.sondertilgungAllowance = row.sondertilgung_allowance;
@@ -43,8 +47,8 @@ export function createSqliteAccountsRepo(
 ): AccountsRepo {
   const insertStmt = db.prepare(
     `INSERT INTO accounts
-       (id, kind, name, opening_balance, opening_date, sondertilgung_allowance)
-     VALUES (?, ?, ?, ?, ?, ?)`
+       (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const selectAllStmt = db.prepare(`SELECT * FROM accounts`);
   const selectByIdStmt = db.prepare(`SELECT * FROM accounts WHERE id = ?`);
@@ -52,7 +56,9 @@ export function createSqliteAccountsRepo(
     `UPDATE accounts
        SET name = COALESCE(?, name),
            opening_balance = COALESCE(?, opening_balance),
-           sondertilgung_allowance = COALESCE(?, sondertilgung_allowance)
+           sondertilgung_allowance = COALESCE(?, sondertilgung_allowance),
+           icon = ?,
+           color = ?
      WHERE id = ?`
   );
   const deleteStmt = db.prepare(`DELETE FROM accounts WHERE id = ?`);
@@ -62,7 +68,7 @@ export function createSqliteAccountsRepo(
   );
   const selectAllWithBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
-            a.sondertilgung_allowance,
+            a.sondertilgung_allowance, a.icon, a.color,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -70,7 +76,7 @@ export function createSqliteAccountsRepo(
   );
   const selectByIdWithBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
-            a.sondertilgung_allowance,
+            a.sondertilgung_allowance, a.icon, a.color,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -96,7 +102,9 @@ export function createSqliteAccountsRepo(
         input.name,
         input.openingBalance,
         input.openingDate,
-        input.sondertilgungAllowance ?? null
+        input.sondertilgungAllowance ?? null,
+        input.icon ?? null,
+        input.color ?? null
       );
       const dto: Account = {
         id,
@@ -104,6 +112,8 @@ export function createSqliteAccountsRepo(
         name: input.name,
         openingBalance: input.openingBalance,
         openingDate: input.openingDate,
+        icon: input.icon ?? null,
+        color: input.color ?? null,
       };
       if (input.sondertilgungAllowance !== undefined) {
         dto.sondertilgungAllowance = input.sondertilgungAllowance;
@@ -130,6 +140,8 @@ export function createSqliteAccountsRepo(
         input.name ?? null,
         input.openingBalance ?? null,
         input.sondertilgungAllowance ?? null,
+        "icon" in input ? (input.icon ?? null) : existing.icon,
+        "color" in input ? (input.color ?? null) : existing.color,
         id
       );
       const updated = selectByIdStmt.get(id) as AccountRow;
