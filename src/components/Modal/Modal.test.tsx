@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ThemeProvider } from "styled-components";
+import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Modal from "./Modal";
 
@@ -56,5 +56,30 @@ describe("Modal — interaction", () => {
     );
     fireEvent.click(screen.getByRole("dialog"));
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+function renderForCSS(ui: React.ReactElement) {
+  return render(
+    <StyleSheetManager disableCSSOMInjection>
+      <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+    </StyleSheetManager>
+  );
+}
+
+function getInjectedCSS(): string {
+  return Array.from(document.querySelectorAll("style"))
+    .map((el) => el.textContent ?? "")
+    .join("\n");
+}
+
+describe("Modal — styles", () => {
+  it("dialog is elevated above card surfaces with a drop shadow", () => {
+    renderForCSS(
+      <Modal onClose={vi.fn()}>
+        <p>Content</p>
+      </Modal>
+    );
+    expect(getInjectedCSS()).toContain("box-shadow");
   });
 });

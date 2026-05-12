@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ThemeProvider } from "styled-components";
+import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Input from "./Input";
 
@@ -52,5 +52,31 @@ describe("Input — interaction", () => {
       target: { value: "100" },
     });
     expect(onChange).toHaveBeenCalledTimes(1);
+  });
+});
+
+function renderForCSS(ui: React.ReactElement) {
+  return render(
+    <StyleSheetManager disableCSSOMInjection>
+      <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+    </StyleSheetManager>
+  );
+}
+
+function getInjectedCSS(): string {
+  return Array.from(document.querySelectorAll("style"))
+    .map((el) => el.textContent ?? "")
+    .join("\n");
+}
+
+describe("Input — styles", () => {
+  it("uses surfaceContainerLowest as background color", () => {
+    renderForCSS(<Input aria-label="Amount" />);
+    expect(getInjectedCSS()).toContain(theme.colors.surfaceContainerLowest);
+  });
+
+  it("focus state includes a 2px ring box-shadow", () => {
+    renderForCSS(<Input aria-label="Amount" />);
+    expect(getInjectedCSS()).toContain("0 0 0 2px");
   });
 });

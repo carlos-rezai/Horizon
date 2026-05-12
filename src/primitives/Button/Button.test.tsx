@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ThemeProvider } from "styled-components";
+import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Button from "./Button";
 
@@ -79,5 +79,41 @@ describe("Button — interaction", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Click" }));
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+function renderForCSS(ui: React.ReactElement) {
+  return render(
+    <StyleSheetManager disableCSSOMInjection>
+      <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+    </StyleSheetManager>
+  );
+}
+
+function getInjectedCSS(): string {
+  return Array.from(document.querySelectorAll("style"))
+    .map((el) => el.textContent ?? "")
+    .join("\n");
+}
+
+describe("Button — styles", () => {
+  it("primary variant uses primaryContainer as background color", () => {
+    renderForCSS(<Button variant="primary">Save</Button>);
+    expect(getInjectedCSS()).toContain(theme.colors.primaryContainer);
+  });
+
+  it("all variants use 'all 0.2s ease' base transition", () => {
+    renderForCSS(<Button variant="primary">Save</Button>);
+    expect(getInjectedCSS()).toContain("all 0.2s ease");
+  });
+
+  it("secondary variant uses transparent background color", () => {
+    renderForCSS(<Button variant="secondary">Cancel</Button>);
+    expect(getInjectedCSS()).toContain("background-color:transparent");
+  });
+
+  it("secondary variant uses outlineVariant as border color", () => {
+    renderForCSS(<Button variant="secondary">Cancel</Button>);
+    expect(getInjectedCSS()).toContain(theme.colors.outlineVariant);
   });
 });

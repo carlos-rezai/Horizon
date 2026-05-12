@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
-import { ThemeProvider } from "styled-components";
+import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Badge from "./Badge";
 
@@ -39,5 +39,26 @@ describe("Badge", () => {
       renderWithTheme(<Badge kind="Investment" />);
       expect(screen.getByText("Investment")).toBeInTheDocument();
     });
+  });
+});
+
+function renderForCSS(ui: React.ReactElement) {
+  return render(
+    <StyleSheetManager disableCSSOMInjection>
+      <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+    </StyleSheetManager>
+  );
+}
+
+function getInjectedCSS(): string {
+  return Array.from(document.querySelectorAll("style"))
+    .map((el) => el.textContent ?? "")
+    .join("\n");
+}
+
+describe("Badge — styles", () => {
+  it("renders as a pill with 9999px border-radius", () => {
+    renderForCSS(<Badge kind="Girokonto" />);
+    expect(getInjectedCSS()).toContain("9999");
   });
 });
