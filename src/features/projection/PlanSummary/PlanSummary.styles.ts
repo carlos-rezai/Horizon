@@ -30,7 +30,7 @@ export const StyledRow = styled.tr`
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.surfaceContainer};
+    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
 `;
 

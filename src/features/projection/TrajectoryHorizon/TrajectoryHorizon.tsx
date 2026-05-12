@@ -69,14 +69,14 @@ interface ChartTooltipProps {
   active?: boolean;
   payload?: readonly { payload?: TrajectoryDataPoint }[];
   nonMortgageAccounts: AccountWithBalance[];
-  accountColours: string[];
+  getColor: (kind: string) => string;
 }
 
 function ChartTooltip({
   active,
   payload,
   nonMortgageAccounts,
-  accountColours,
+  getColor,
 }: ChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -88,14 +88,11 @@ function ChartTooltip({
       <StyledTooltipRowPositive>
         Liquid: {formatBalance(point.totalLiquid)}
       </StyledTooltipRowPositive>
-      {nonMortgageAccounts.map((a, i) => {
+      {nonMortgageAccounts.map((a) => {
         const value = point[a.id];
         if (typeof value !== "number") return null;
         return (
-          <StyledTooltipRowMuted
-            key={a.id}
-            style={{ color: accountColours[i % accountColours.length] }}
-          >
+          <StyledTooltipRowMuted key={a.id} style={{ color: getColor(a.kind) }}>
             {a.name}: {formatBalance(value)}
           </StyledTooltipRowMuted>
         );
@@ -171,11 +168,12 @@ export default function TrajectoryHorizon({
   );
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
-  const accountColours = [
-    theme.colors.primary,
-    theme.colors.error,
-    theme.colors.onSurfaceVariant,
-  ];
+
+  function kindColor(kind: string): string {
+    const mapped =
+      theme.colors.chartColors[kind as keyof typeof theme.colors.chartColors];
+    return mapped ?? theme.colors.onSurfaceVariant;
+  }
 
   const dataMax = data.reduce((max, p) => {
     const candidates: number[] = [];
@@ -212,6 +210,15 @@ export default function TrajectoryHorizon({
               Payoff: {formatMonthLabel(payoffMonth)}
             </StyledPayoffMarker>
           )}
+          {nonMortgageAccounts.map((a) => (
+            <span
+              key={a.kind}
+              data-testid={`chart-line-${a.kind}`}
+              data-color={kindColor(a.kind)}
+              aria-hidden="true"
+              style={{ display: "none" }}
+            />
+          ))}
           <StyledChartWrapper data-testid="trajectory-horizon-chart">
             <ResponsiveContainer width="100%" height={360}>
               <ComposedChart
@@ -245,7 +252,7 @@ export default function TrajectoryHorizon({
                     <ChartTooltip
                       {...props}
                       nonMortgageAccounts={nonMortgageAccounts}
-                      accountColours={accountColours}
+                      getColor={kindColor}
                     />
                   )}
                 />
@@ -263,7 +270,7 @@ export default function TrajectoryHorizon({
                     strokeWidth={1}
                   />
                 )}
-                {nonMortgageAccounts.map((a, i) => (
+                {nonMortgageAccounts.map((a) => (
                   <Line
                     key={a.id}
                     yAxisId="left"
@@ -271,7 +278,7 @@ export default function TrajectoryHorizon({
                     dataKey={a.id}
                     name={a.name}
                     dot={false}
-                    stroke={accountColours[i % accountColours.length]}
+                    stroke={kindColor(a.kind)}
                   />
                 ))}
                 <Line

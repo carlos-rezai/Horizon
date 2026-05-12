@@ -8,6 +8,8 @@ import {
   StyledCard,
   StyledRestschuld,
   StyledCountdownText,
+  StyledProgressTrack,
+  StyledProgressFill,
 } from "./MortgageCountdown.styles";
 
 interface Props {
@@ -60,6 +62,24 @@ export default function MortgageCountdown({ accounts, snapshots }: Props) {
                 {computeTimeRemaining(now, payoffMonth)}
               </StyledCountdownText>
             )}
+            <StyledProgressTrack
+              role="progressbar"
+              aria-valuenow={account.openingBalance - account.balance}
+              aria-valuemax={account.openingBalance}
+            >
+              <StyledProgressFill
+                $percent={
+                  account.openingBalance > 0
+                    ? Math.min(
+                        100,
+                        ((account.openingBalance - account.balance) /
+                          account.openingBalance) *
+                          100
+                      )
+                    : 0
+                }
+              />
+            </StyledProgressTrack>
           </StyledCard>
         );
       })}

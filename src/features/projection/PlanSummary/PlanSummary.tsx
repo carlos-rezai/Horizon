@@ -72,6 +72,7 @@ export default function PlanSummary({
             {rows.map((row) => (
               <StyledRow
                 key={row.year}
+                data-testid="year-summary-row"
                 onClick={() => handleRowClick(row.year)}
               >
                 <StyledTd>{row.year}</StyledTd>

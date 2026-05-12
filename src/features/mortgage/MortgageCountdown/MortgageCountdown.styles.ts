@@ -29,3 +29,18 @@ export const StyledCountdownText = styled.p`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   margin: 0;
 `;
+
+export const StyledProgressTrack = styled.div`
+  width: 100%;
+  height: 4px;
+  background-color: ${({ theme }) => theme.colors.surfaceContainerHighest};
+  border-radius: 2px;
+  overflow: hidden;
+`;
+
+export const StyledProgressFill = styled.div<{ $percent: number }>`
+  height: 100%;
+  width: ${({ $percent }) => $percent}%;
+  background-color: ${({ theme }) => theme.colors.tertiary};
+  border-radius: 2px;
+`;
