@@ -43,7 +43,7 @@ describe("migrate (SQLite)", () => {
     db.close();
   });
 
-  it("creates all five tables on a fresh DB", async () => {
+  it("creates four tables on a fresh DB (milestones removed)", async () => {
     const db = new Database(":memory:");
 
     await migrate(db);
@@ -58,8 +58,8 @@ describe("migrate (SQLite)", () => {
     expect(names).toContain("accounts");
     expect(names).toContain("transactions");
     expect(names).toContain("categories");
-    expect(names).toContain("milestones");
     expect(names).toContain("recurring_transactions");
+    expect(names).not.toContain("milestones");
 
     db.close();
   });
@@ -108,7 +108,38 @@ describe("migrate (SQLite)", () => {
     expect(indexedColumns).toContain("transactions.transfer_id");
     expect(indexedColumns).toContain("transactions.date");
     expect(indexedColumns).toContain("recurring_transactions.account_id");
-    expect(indexedColumns).toContain("recurring_transactions.is_active");
+    expect(indexedColumns).not.toContain("recurring_transactions.is_active");
+
+    db.close();
+  });
+
+  it("recurring_transactions table has no is_active column after migration", async () => {
+    const db = new Database(":memory:");
+
+    await migrate(db);
+
+    const cols = db
+      .prepare(`PRAGMA table_info(recurring_transactions)`)
+      .all() as Array<{ name: string }>;
+    const colNames = cols.map((c) => c.name);
+
+    expect(colNames).not.toContain("is_active");
+
+    db.close();
+  });
+
+  it("accounts table has icon and color columns after migration", async () => {
+    const db = new Database(":memory:");
+
+    await migrate(db);
+
+    const cols = db.prepare(`PRAGMA table_info(accounts)`).all() as Array<{
+      name: string;
+    }>;
+    const colNames = cols.map((c) => c.name);
+
+    expect(colNames).toContain("icon");
+    expect(colNames).toContain("color");
 
     db.close();
   });

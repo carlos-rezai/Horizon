@@ -56,7 +56,7 @@ describe("POST /recurring-transactions", () => {
     expect(res.body.category).toBe("Housing");
     expect(res.body.frequency).toBe("monthly");
     expect(res.body.dayOfMonth).toBe(1);
-    expect(res.body.isActive).toBe(true);
+    expect(res.body.isActive).toBeUndefined();
   });
 
   it("stores and returns linkedAccountId for a recurring transfer", async () => {
@@ -175,7 +175,7 @@ describe("POST /recurring-transactions", () => {
 // ---------------------------------------------------------------------------
 
 describe("GET /recurring-transactions", () => {
-  it("returns all recurring transactions including inactive ones", async () => {
+  it("returns all recurring transactions and none have an isActive field", async () => {
     const accountId = await createAccount();
     await request(app).post("/recurring-transactions").send({
       accountId,
@@ -185,8 +185,7 @@ describe("GET /recurring-transactions", () => {
       frequency: "monthly",
       dayOfMonth: 1,
     });
-
-    const createRes = await request(app).post("/recurring-transactions").send({
+    await request(app).post("/recurring-transactions").send({
       accountId,
       amount: 20000,
       description: "Gym",
@@ -195,19 +194,13 @@ describe("GET /recurring-transactions", () => {
       dayOfMonth: 10,
     });
 
-    // Deactivate the second one
-    await request(app)
-      .patch(`/recurring-transactions/${createRes.body.id}`)
-      .send({ isActive: false });
-
     const res = await request(app).get("/recurring-transactions");
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
-    const active = res.body.filter((r: { isActive: boolean }) => r.isActive);
-    const inactive = res.body.filter((r: { isActive: boolean }) => !r.isActive);
-    expect(active).toHaveLength(1);
-    expect(inactive).toHaveLength(1);
+    for (const rt of res.body) {
+      expect(rt.isActive).toBeUndefined();
+    }
   });
 
   it("returns an empty array when no recurring transactions exist", async () => {
@@ -242,50 +235,6 @@ describe("PATCH /recurring-transactions/:id", () => {
     expect(res.status).toBe(200);
     expect(res.body.amount).toBe(98000);
     expect(res.body.description).toBe("New rent");
-  });
-
-  it("deactivates a standing order with isActive: false", async () => {
-    const accountId = await createAccount();
-    const createRes = await request(app).post("/recurring-transactions").send({
-      accountId,
-      amount: 95000,
-      description: "Rent",
-      category: "Housing",
-      frequency: "monthly",
-      dayOfMonth: 1,
-    });
-    const id = createRes.body.id;
-
-    const res = await request(app)
-      .patch(`/recurring-transactions/${id}`)
-      .send({ isActive: false });
-
-    expect(res.status).toBe(200);
-    expect(res.body.isActive).toBe(false);
-  });
-
-  it("reactivates a standing order with isActive: true", async () => {
-    const accountId = await createAccount();
-    const createRes = await request(app).post("/recurring-transactions").send({
-      accountId,
-      amount: 95000,
-      description: "Rent",
-      category: "Housing",
-      frequency: "monthly",
-      dayOfMonth: 1,
-    });
-    const id = createRes.body.id;
-
-    await request(app)
-      .patch(`/recurring-transactions/${id}`)
-      .send({ isActive: false });
-
-    const res = await request(app)
-      .patch(`/recurring-transactions/${id}`)
-      .send({ isActive: true });
-
-    expect(res.status).toBe(200);
-    expect(res.body.isActive).toBe(true);
   });
 
   it("returns 404 for an unknown id", async () => {

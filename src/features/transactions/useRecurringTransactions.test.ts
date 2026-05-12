@@ -14,7 +14,6 @@ const rt1: RecurringTransaction = {
   category: "Housing",
   frequency: "monthly",
   dayOfMonth: 1,
-  isActive: true,
 };
 
 const rt2: RecurringTransaction = {
@@ -25,7 +24,6 @@ const rt2: RecurringTransaction = {
   category: "Health",
   frequency: "monthly",
   dayOfMonth: 15,
-  isActive: false,
 };
 
 const updatedRt1: RecurringTransaction = {
@@ -80,7 +78,6 @@ describe("useRecurringTransactions — create", () => {
       category: "Entertainment",
       frequency: "monthly",
       dayOfMonth: 10,
-      isActive: true,
     };
 
     vi.spyOn(globalThis, "fetch")
@@ -126,7 +123,6 @@ describe("useRecurringTransactions — create", () => {
       category: "Entertainment",
       frequency: "monthly",
       dayOfMonth: 10,
-      isActive: true,
     };
 
     vi.spyOn(globalThis, "fetch")
@@ -178,85 +174,6 @@ describe("useRecurringTransactions — create", () => {
           frequency: "monthly",
           dayOfMonth: 1,
         });
-      })
-    ).rejects.toThrow();
-  });
-});
-
-describe("useRecurringTransactions — toggleIsActive", () => {
-  it("calls PATCH /recurring-transactions/:id with the flipped isActive value", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [rt1, rt2],
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ ...rt1, isActive: false }),
-      } as Response);
-
-    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
-    await act(async () => {});
-
-    await act(async () => {
-      await result.current.toggleIsActive("rt-1", true);
-    });
-
-    const patchCall = vi
-      .mocked(fetch)
-      .mock.calls.find(
-        ([url, init]) =>
-          typeof url === "string" &&
-          url.includes("/recurring-transactions/rt-1") &&
-          (init as RequestInit)?.method === "PATCH"
-      );
-    expect(patchCall).toBeDefined();
-
-    const body = JSON.parse((patchCall![1] as RequestInit).body as string);
-    expect(body.isActive).toBe(false);
-  });
-
-  it("replaces the entry in the list with the updated isActive value", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [rt1, rt2],
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ ...rt1, isActive: false }),
-      } as Response);
-
-    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
-    await act(async () => {});
-
-    await act(async () => {
-      await result.current.toggleIsActive("rt-1", true);
-    });
-
-    const updated = result.current.recurringTransactions.find(
-      (r) => r.id === "rt-1"
-    );
-    expect(updated?.isActive).toBe(false);
-  });
-
-  it("throws when the server returns an error on toggleIsActive", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [rt1, rt2],
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ error: "Toggle failed" }),
-      } as Response);
-
-    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
-    await act(async () => {});
-
-    await expect(
-      act(async () => {
-        await result.current.toggleIsActive("rt-1", true);
       })
     ).rejects.toThrow();
   });
