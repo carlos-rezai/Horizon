@@ -200,7 +200,6 @@ const rt = (
   category: "Mortgage",
   frequency: "annual",
   dayOfMonth: 1,
-  isActive: true,
   ...overrides,
 });
 

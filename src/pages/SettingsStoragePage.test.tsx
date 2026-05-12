@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { ThemeProvider, StyleSheetManager } from "styled-components";
+import { ThemeProvider } from "styled-components";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { theme } from "../tokens";
 import SettingsStoragePage from "./SettingsStoragePage";
@@ -18,18 +18,6 @@ function renderPage() {
         <SettingsStoragePage />
       </MemoryRouter>
     </ThemeProvider>
-  );
-}
-
-function renderForCSS() {
-  return render(
-    <StyleSheetManager disableCSSOMInjection>
-      <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={["/settings/storage"]}>
-          <SettingsStoragePage />
-        </MemoryRouter>
-      </ThemeProvider>
-    </StyleSheetManager>
   );
 }
 

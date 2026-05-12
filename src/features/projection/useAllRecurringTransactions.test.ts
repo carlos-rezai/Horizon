@@ -12,7 +12,6 @@ const rt1: RecurringTransaction = {
   category: "Housing",
   frequency: "monthly",
   dayOfMonth: 1,
-  isActive: true,
 };
 
 const rt2: RecurringTransaction = {
@@ -23,7 +22,6 @@ const rt2: RecurringTransaction = {
   category: "Mortgage",
   frequency: "annual",
   dayOfMonth: 1,
-  isActive: true,
   linkedAccountId: "mortgage-1",
 };
 

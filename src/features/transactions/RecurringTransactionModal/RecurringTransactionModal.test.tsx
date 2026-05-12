@@ -44,7 +44,6 @@ const existingRt: RecurringTransaction = {
   category: "cat-1",
   frequency: "monthly",
   dayOfMonth: 1,
-  isActive: true,
 };
 
 const renderCreateModal = (
