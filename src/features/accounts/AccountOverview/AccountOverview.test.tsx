@@ -24,6 +24,8 @@ interface AccountWithBalance {
   openingDate: string;
   balance: number;
   sondertilgungAllowance?: number;
+  icon?: string | null;
+  color?: string | null;
 }
 
 const mockAccounts: AccountWithBalance[] = [
@@ -102,5 +104,57 @@ describe("AccountOverview", () => {
 
     expect(hrefs).toContain("/accounts/1");
     expect(hrefs).toContain("/accounts/2");
+  });
+});
+
+describe("AccountOverview — icon rendering", () => {
+  it("renders the account icon when icon is set", () => {
+    const accounts: AccountWithBalance[] = [
+      {
+        id: "1",
+        kind: "Girokonto",
+        name: "Main Checking",
+        openingBalance: 100000,
+        openingDate: "2026-01-01",
+        balance: 150000,
+        icon: "Wallet",
+        color: "#adc6ff",
+      },
+    ];
+
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={accounts} />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId("account-icon")).toBeInTheDocument();
+  });
+
+  it("renders a neutral fallback when icon is null", () => {
+    const accounts: AccountWithBalance[] = [
+      {
+        id: "1",
+        kind: "Girokonto",
+        name: "Main Checking",
+        openingBalance: 100000,
+        openingDate: "2026-01-01",
+        balance: 150000,
+        icon: null,
+        color: null,
+      },
+    ];
+
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={accounts} />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId("account-icon-fallback")).toBeInTheDocument();
   });
 });

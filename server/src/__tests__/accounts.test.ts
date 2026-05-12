@@ -27,6 +27,33 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe("POST /accounts", () => {
+  it("saves icon and color when both are provided", async () => {
+    const res = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      icon: "Wallet",
+      color: "#adc6ff",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.icon).toBe("Wallet");
+    expect(res.body.color).toBe("#adc6ff");
+  });
+
+  it("saves null icon when icon is omitted", async () => {
+    const res = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.icon).toBeNull();
+  });
+
   it("creates a Girokonto and returns it", async () => {
     const res = await request(app).post("/accounts").send({
       kind: "Girokonto",
@@ -139,6 +166,23 @@ describe("GET /accounts", () => {
     expect(res.body[0].balance).toBe(537685);
   });
 
+  it("includes icon and color on each account", async () => {
+    await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      icon: "PiggyBank",
+      color: "#4edea3",
+    });
+
+    const res = await request(app).get("/accounts");
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].icon).toBe("PiggyBank");
+    expect(res.body[0].color).toBe("#4edea3");
+  });
+
   it("returns openingDate as an ISO string", async () => {
     await request(app).post("/accounts").send({
       kind: "Girokonto",
@@ -174,6 +218,23 @@ describe("GET /accounts/:id", () => {
     expect(res.body.name).toBe("Visa");
   });
 
+  it("includes icon and color on a single account", async () => {
+    const created = await request(app).post("/accounts").send({
+      kind: "Tagesgeld",
+      name: "Reserve",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      icon: "Home",
+      color: "#ffb786",
+    });
+
+    const res = await request(app).get(`/accounts/${created.body.id}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.icon).toBe("Home");
+    expect(res.body.color).toBe("#ffb786");
+  });
+
   it("returns 404 for an unknown id", async () => {
     const res = await request(app).get("/accounts/000000000000000000000000");
 
@@ -206,6 +267,23 @@ describe("PATCH /accounts/:id", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe("New Name");
+  });
+
+  it("updates icon and color", async () => {
+    const created = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+    });
+
+    const res = await request(app)
+      .patch(`/accounts/${created.body.id}`)
+      .send({ icon: "TrendingUp", color: "#c2c6d6" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.icon).toBe("TrendingUp");
+    expect(res.body.color).toBe("#c2c6d6");
   });
 
   it("returns 404 for an unknown id", async () => {

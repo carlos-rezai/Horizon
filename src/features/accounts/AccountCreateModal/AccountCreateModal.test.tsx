@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
-import { theme } from "../../../tokens";
+import { theme, accountIconSet } from "../../../tokens";
 import AccountCreateModal from "./AccountCreateModal";
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -176,5 +176,120 @@ describe("AccountCreateModal — overlay", () => {
     fireEvent.click(screen.getByTestId("modal-overlay"));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AccountCreateModal — icon picker", () => {
+  it("renders one button per icon in the set", () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    accountIconSet.forEach((name) => {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    });
+  });
+
+  it("submits the clicked icon name in the request body", async () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Wallet" }));
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Main" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const body = JSON.parse(
+        (calls[calls.length - 1][1] as RequestInit).body as string
+      );
+      expect(body.icon).toBe("Wallet");
+    });
+  });
+
+  it("submits null for icon when no icon is selected", async () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Main" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const body = JSON.parse(
+        (calls[calls.length - 1][1] as RequestInit).body as string
+      );
+      expect(body.icon).toBeNull();
+    });
+  });
+});
+
+describe("AccountCreateModal — color picker", () => {
+  it("renders one swatch button per color in the palette", () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    theme.colors.accountColorPalette.forEach((color) => {
+      expect(screen.getByRole("button", { name: color })).toBeInTheDocument();
+    });
+  });
+
+  it("pre-fills a palette color on mount so submit body always has a color", async () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Main" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const body = JSON.parse(
+        (calls[calls.length - 1][1] as RequestInit).body as string
+      );
+      expect(theme.colors.accountColorPalette).toContain(body.color);
+    });
+  });
+
+  it("submits the clicked swatch color in the request body", async () => {
+    const targetColor = theme.colors.accountColorPalette[2];
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: targetColor }));
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Main" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const body = JSON.parse(
+        (calls[calls.length - 1][1] as RequestInit).body as string
+      );
+      expect(body.color).toBe(targetColor);
+    });
   });
 });
