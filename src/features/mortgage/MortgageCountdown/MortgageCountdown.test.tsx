@@ -100,6 +100,28 @@ describe("MortgageCountdown", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders a progress bar for each mortgage account", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
+
+    renderWithTheme(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
+
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+  });
+
+  it("progress bar exposes aria-valuenow and aria-valuemax", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
+
+    renderWithTheme(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
+
+    const bar = screen.getByRole("progressbar");
+    expect(bar).toHaveAttribute("aria-valuenow");
+    expect(bar).toHaveAttribute("aria-valuemax");
+  });
+
   it("shows time remaining when payoff month is found", () => {
     // Build snapshots where balance reaches 0 partway through
     const snapshots: MonthlySnapshot[] = Array.from({ length: 120 }, (_, i) => {

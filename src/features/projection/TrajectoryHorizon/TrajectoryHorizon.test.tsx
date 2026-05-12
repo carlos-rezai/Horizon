@@ -214,4 +214,50 @@ describe("TrajectoryHorizon", () => {
 
     expect(screen.getByTestId("trajectory-horizon-chart")).toBeInTheDocument();
   });
+
+  describe("chart kind color mapping", () => {
+    it("renders a chart-line marker for each non-mortgage account, keyed by kind", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByTestId("chart-line-Girokonto")).toBeInTheDocument();
+    });
+
+    it("Girokonto chart line marker carries the chartColors.Girokonto color from the theme", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByTestId("chart-line-Girokonto")).toHaveAttribute(
+        "data-color",
+        theme.colors.chartColors.Girokonto
+      );
+    });
+
+    it("does not render chart-line markers when in loading state", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={[]}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={true}
+        />
+      );
+
+      expect(
+        screen.queryByTestId("chart-line-Girokonto")
+      ).not.toBeInTheDocument();
+    });
+  });
 });
