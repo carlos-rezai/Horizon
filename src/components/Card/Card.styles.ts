@@ -12,4 +12,5 @@ export const StyledCard = styled.div<StyledCardProps>`
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.card}px;
   padding: ${({ theme }) => theme.spacing.space4}px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 `;

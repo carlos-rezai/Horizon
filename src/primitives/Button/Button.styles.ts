@@ -13,15 +13,15 @@ export const StyledButton = styled.button<{ $variant: Variant }>`
   font-weight: ${({ theme }) => theme.typography.weights.medium};
   line-height: 1;
   cursor: pointer;
-  transition: opacity ${({ theme }) => theme.transitions.fast};
+  transition: all 0.2s ease;
   border: 1px solid transparent;
 
   ${({ $variant, theme }) =>
     $variant === "primary" &&
     css`
-      background-color: ${theme.colors.primary};
+      background-color: ${theme.colors.primaryContainer};
       color: ${theme.colors.onPrimary};
-      border-color: ${theme.colors.primary};
+      border-color: ${theme.colors.primaryContainer};
     `}
 
   ${({ $variant, theme }) =>

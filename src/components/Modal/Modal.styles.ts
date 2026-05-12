@@ -11,10 +11,11 @@ export const StyledOverlay = styled.div`
 `;
 
 export const StyledDialog = styled.div`
-  background-color: ${({ theme }) => theme.colors.surfaceContainer};
+  background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.card}px;
   padding: ${({ theme }) => theme.spacing.space6}px;
   min-width: ${({ theme }) => theme.layout.modalWidth}px;
   max-width: 90vw;
+  box-shadow: 0px 10px 25px -5px rgba(0, 0, 0, 0.5);
 `;

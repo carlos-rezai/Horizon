@@ -4,7 +4,7 @@ export const StyledInput = styled.input`
   width: 100%;
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
-  background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
+  background-color: ${({ theme }) => theme.colors.surfaceContainerLowest};
   color: ${({ theme }) => theme.colors.onSurface};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.button}px;
@@ -16,9 +16,9 @@ export const StyledInput = styled.input`
   }
 
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
+    outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primary};
   }
 
   &:disabled {
