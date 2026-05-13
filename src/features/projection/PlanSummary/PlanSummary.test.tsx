@@ -105,3 +105,49 @@ describe("PlanSummary — row click navigation", () => {
     });
   });
 });
+
+describe("PlanSummary — column headers", () => {
+  it("renders 'Savings Rate' as the ST column header", () => {
+    renderSummary();
+
+    expect(screen.getByText("Savings Rate")).toBeInTheDocument();
+  });
+});
+
+describe("PlanSummary — payoff year", () => {
+  const mortgageAccount: AccountWithBalance = {
+    id: "m1",
+    kind: "Mortgage",
+    name: "Home Loan",
+    openingBalance: -20000000,
+    openingDate: "2026-01-01",
+    balance: -20000000,
+  };
+
+  const payoffSnapshots: MonthlySnapshot[] = [
+    {
+      month: "2026-12",
+      accounts: { m1: { projected: -5000000 }, g1: { projected: 100000 } },
+      netCashflow: 5000,
+      totalLiquid: 100000,
+    },
+    {
+      month: "2027-12",
+      accounts: { m1: { projected: 0 }, g1: { projected: 200000 } },
+      netCashflow: 5000,
+      totalLiquid: 200000,
+    },
+  ];
+
+  it("renders a PAYOFF badge on the first row where restschuld reaches zero", () => {
+    renderSummary(payoffSnapshots, [giroAccount, mortgageAccount]);
+
+    expect(screen.getByText("PAYOFF")).toBeInTheDocument();
+  });
+
+  it("renders the PAYOFF badge only on the payoff year row", () => {
+    renderSummary(payoffSnapshots, [giroAccount, mortgageAccount]);
+
+    expect(screen.getAllByText("PAYOFF")).toHaveLength(1);
+  });
+});

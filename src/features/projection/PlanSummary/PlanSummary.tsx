@@ -7,10 +7,17 @@ import { formatBalance } from "../../../utils/format";
 import Heading from "../../../primitives/Heading/Heading";
 import {
   StyledSection,
+  StyledPlanHeader,
+  StyledPlanSubtitle,
+  StyledViewFullPlan,
   StyledTable,
   StyledTh,
   StyledRow,
+  StyledPayoffRow,
+  StyledPayoffBadge,
   StyledTd,
+  StyledTotalLiquidAmount,
+  StyledRestschuldAmount,
   StyledSTAmount,
   StyledEmptyState,
 } from "./PlanSummary.styles";
@@ -47,13 +54,19 @@ export default function PlanSummary({
   const allRows = deriveYearSummaries(snapshots, mortgageIds, stMonths);
   const rows = maxYears !== undefined ? allRows.slice(0, maxYears) : allRows;
 
+  const payoffYear = rows.find((r) => r.restschuld === 0)?.year ?? null;
+
   function handleRowClick(year: number) {
     navigate(`/plan#${year}`, { state: { year } });
   }
 
   return (
     <StyledSection>
-      <Heading level={2}>Plan</Heading>
+      <StyledPlanHeader>
+        <Heading level={2}>Plan Overview</Heading>
+        <StyledPlanSubtitle>Scheduled Projection Summary</StyledPlanSubtitle>
+        <StyledViewFullPlan to="/plan">View full plan →</StyledViewFullPlan>
+      </StyledPlanHeader>
       {rows.length === 0 ? (
         <StyledEmptyState>
           Add accounts on the dashboard to see your financial plan.
@@ -65,36 +78,50 @@ export default function PlanSummary({
               <StyledTh>Year</StyledTh>
               <StyledTh>Total Liquid</StyledTh>
               {mortgageIds.length > 0 && <StyledTh>Restschuld</StyledTh>}
-              <StyledTh>ST</StyledTh>
+              <StyledTh>Savings Rate</StyledTh>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <StyledRow
-                key={row.year}
-                data-testid="year-summary-row"
-                onClick={() => handleRowClick(row.year)}
-              >
-                <StyledTd>{row.year}</StyledTd>
-                <StyledTd>{formatBalance(row.totalLiquid)}</StyledTd>
-                {mortgageIds.length > 0 && (
+            {rows.map((row) => {
+              const isPayoff = row.year === payoffYear;
+              const RowComponent = isPayoff ? StyledPayoffRow : StyledRow;
+              return (
+                <RowComponent
+                  key={row.year}
+                  data-testid="year-summary-row"
+                  onClick={() => handleRowClick(row.year)}
+                >
+                  <StyledTd>{row.year}</StyledTd>
                   <StyledTd>
-                    {row.restschuld !== null
-                      ? formatBalance(row.restschuld)
-                      : "—"}
+                    <StyledTotalLiquidAmount>
+                      {formatBalance(row.totalLiquid)}
+                    </StyledTotalLiquidAmount>
                   </StyledTd>
-                )}
-                <StyledTd>
-                  {row.stAmount !== null ? (
-                    <StyledSTAmount>
-                      {formatBalance(row.stAmount)}
-                    </StyledSTAmount>
-                  ) : (
-                    "—"
+                  {mortgageIds.length > 0 && (
+                    <StyledTd>
+                      {row.restschuld !== null ? (
+                        <StyledRestschuldAmount>
+                          {formatBalance(row.restschuld)}
+                        </StyledRestschuldAmount>
+                      ) : (
+                        "—"
+                      )}
+                    </StyledTd>
                   )}
-                </StyledTd>
-              </StyledRow>
-            ))}
+                  <StyledTd>
+                    {isPayoff ? (
+                      <StyledPayoffBadge>PAYOFF</StyledPayoffBadge>
+                    ) : row.stAmount !== null ? (
+                      <StyledSTAmount>
+                        {formatBalance(row.stAmount)}
+                      </StyledSTAmount>
+                    ) : (
+                      "—"
+                    )}
+                  </StyledTd>
+                </RowComponent>
+              );
+            })}
           </tbody>
         </StyledTable>
       )}
