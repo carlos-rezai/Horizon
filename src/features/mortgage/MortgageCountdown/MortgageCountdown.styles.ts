@@ -6,6 +6,14 @@ export const StyledSection = styled.section`
   gap: ${({ theme }) => theme.spacing.space4}px;
 `;
 
+export const StyledSectionLabel = styled.span`
+  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+`;
+
 export const StyledCard = styled.div`
   background-color: ${({ theme }) => theme.colors.surfaceContainer};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
@@ -16,17 +24,32 @@ export const StyledCard = styled.div`
   gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
-export const StyledRestschuld = styled.p`
-  font-size: ${({ theme }) => theme.typography.sizes.lg}px;
+export const StyledAccountNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+`;
+
+export const StyledHeroAmount = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.xxl}px;
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
   font-variant-numeric: tabular-nums;
   color: ${({ theme }) => theme.colors.error};
   margin: 0;
 `;
 
+export const StyledTimeLabel = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  margin: 0;
+`;
+
 export const StyledCountdownText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  color: ${({ theme }) => theme.colors.tertiary};
   margin: 0;
 `;
 

@@ -1,12 +1,15 @@
+import { Home } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import { findMortgagePayoffMonth } from "../../../utils/projection";
 import { formatBalance } from "../../../utils/format";
-import Heading from "../../../primitives/Heading/Heading";
 import {
   StyledSection,
+  StyledSectionLabel,
   StyledCard,
-  StyledRestschuld,
+  StyledAccountNameRow,
+  StyledHeroAmount,
+  StyledTimeLabel,
   StyledCountdownText,
   StyledProgressTrack,
   StyledProgressFill,
@@ -25,7 +28,7 @@ function computeTimeRemaining(fromMonth: string, toMonth: string): string {
   const months = totalMonths % 12;
   const yearLabel = years === 1 ? "year" : "years";
   const monthLabel = months === 1 ? "month" : "months";
-  return `${years} ${yearLabel} ${months} ${monthLabel} remaining`;
+  return `${years} ${yearLabel} ${months} ${monthLabel}`;
 }
 
 function currentMonth(): string {
@@ -44,23 +47,29 @@ export default function MortgageCountdown({ accounts, snapshots }: Props) {
 
   return (
     <StyledSection>
-      <Heading level={2}>Mortgage Countdown</Heading>
+      <StyledSectionLabel>Mortgage Countdown</StyledSectionLabel>
       {mortgageAccounts.map((account) => {
         const payoffMonth = findMortgagePayoffMonth(snapshots, account.id);
         return (
           <StyledCard key={account.id}>
-            <Heading level={3}>{account.name}</Heading>
-            <StyledRestschuld>
+            <StyledAccountNameRow>
+              <Home size={16} />
+              {account.name}
+            </StyledAccountNameRow>
+            <StyledHeroAmount>
               {formatBalance(account.balance)}
-            </StyledRestschuld>
+            </StyledHeroAmount>
             {payoffMonth === null ? (
               <StyledCountdownText>
                 Not paid off within 10-year horizon.
               </StyledCountdownText>
             ) : (
-              <StyledCountdownText>
-                {computeTimeRemaining(now, payoffMonth)}
-              </StyledCountdownText>
+              <>
+                <StyledTimeLabel>Time Remaining</StyledTimeLabel>
+                <StyledCountdownText>
+                  {computeTimeRemaining(now, payoffMonth)}
+                </StyledCountdownText>
+              </>
             )}
             <StyledProgressTrack
               role="progressbar"

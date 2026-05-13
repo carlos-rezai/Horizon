@@ -141,8 +141,17 @@ describe("MortgageCountdown", () => {
       <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
     );
 
-    expect(
-      screen.getByText(/\d+ years?.*\d+ months?.*remaining/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText("Time Remaining")).toBeInTheDocument();
+    expect(screen.getByText(/\d+ years?.*\d+ months?/i)).toBeInTheDocument();
+  });
+
+  it("renders the 'Mortgage Countdown' section label", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
+
+    renderWithTheme(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
+
+    expect(screen.getByText("Mortgage Countdown")).toBeInTheDocument();
   });
 });
