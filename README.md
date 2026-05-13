@@ -164,6 +164,7 @@ Output: `release/Horizon-Setup-x.x.x.exe`
 | Electron desktop shell                    | ✅ Complete |
 | Desktop packaging (Windows installer)     | ✅ Complete |
 | UI Redesign                               | ✅ Complete |
+| In-app auto-update (electron-updater)     | 🔲 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
