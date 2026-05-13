@@ -53,9 +53,7 @@ export default function DashboardPage() {
       </StyledPageHeader>
       <StyledGrid>
         <StyledSection $gridArea="mortgage-countdown">
-          <Card>
-            <MortgageCountdown accounts={accounts} snapshots={snapshots} />
-          </Card>
+          <MortgageCountdown accounts={accounts} snapshots={snapshots} />
         </StyledSection>
         <StyledSection $gridArea="trajectory">
           <Card>
@@ -68,20 +66,16 @@ export default function DashboardPage() {
           </Card>
         </StyledSection>
         <StyledSection $gridArea="accounts">
-          <Card>
-            <Heading level={2}>Accounts</Heading>
-            <Button onClick={() => setShowCreateModal(true)}>
-              Add account
-            </Button>
-            <span>Total Liquid: {formatBalance(totalLiquid)}</span>
-            <AccountOverview accounts={accounts} />
-            {showCreateModal && (
-              <AccountCreateModal
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
-              />
-            )}
-          </Card>
+          <Heading level={2}>Accounts</Heading>
+          <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
+          <span>Total Liquid: {formatBalance(totalLiquid)}</span>
+          <AccountOverview accounts={accounts} />
+          {showCreateModal && (
+            <AccountCreateModal
+              onClose={() => setShowCreateModal(false)}
+              onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+            />
+          )}
         </StyledSection>
         <StyledSection $gridArea="plan">
           <Card>

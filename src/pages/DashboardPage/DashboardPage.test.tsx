@@ -70,10 +70,10 @@ function getInjectedCSS(): string {
 describe("DashboardPage — card surfaces", () => {
   beforeEach(mockAllSuccess);
 
-  it("renders at least 4 card surfaces — one for each section", async () => {
+  it("renders at least 2 card surfaces — TrajectoryHorizon and PlanSummary", async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(4);
+      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(2);
     });
   });
 });
