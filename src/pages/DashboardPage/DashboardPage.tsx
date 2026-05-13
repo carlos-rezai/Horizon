@@ -17,6 +17,7 @@ import { formatBalance } from "../../utils/format";
 import {
   StyledDashboard,
   StyledPageHeader,
+  StyledGrid,
   StyledSection,
   StyledErrorText,
 } from "./DashboardPage.styles";
@@ -50,45 +51,49 @@ export default function DashboardPage() {
       <StyledPageHeader>
         <Heading level={1}>Dashboard</Heading>
       </StyledPageHeader>
-      <StyledSection>
-        <Card>
-          <Heading level={2}>Accounts</Heading>
-          <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
-          <span>Total Liquid: {formatBalance(totalLiquid)}</span>
-          <AccountOverview accounts={accounts} />
-          {showCreateModal && (
-            <AccountCreateModal
-              onClose={() => setShowCreateModal(false)}
-              onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+      <StyledGrid>
+        <StyledSection $gridArea="mortgage-countdown">
+          <Card>
+            <MortgageCountdown accounts={accounts} snapshots={snapshots} />
+          </Card>
+        </StyledSection>
+        <StyledSection $gridArea="trajectory">
+          <Card>
+            <TrajectoryHorizon
+              snapshots={snapshots}
+              accounts={accounts}
+              recurringTransactions={recurringTransactions}
+              isLoading={projectionLoading}
             />
-          )}
-        </Card>
-      </StyledSection>
-      <StyledSection>
-        <Card>
-          <MortgageCountdown accounts={accounts} snapshots={snapshots} />
-        </Card>
-      </StyledSection>
-      <StyledSection>
-        <Card>
-          <PlanSummary
-            snapshots={snapshots}
-            accounts={accounts}
-            recurringTransactions={recurringTransactions}
-            maxYears={10}
-          />
-        </Card>
-      </StyledSection>
-      <StyledSection>
-        <Card>
-          <TrajectoryHorizon
-            snapshots={snapshots}
-            accounts={accounts}
-            recurringTransactions={recurringTransactions}
-            isLoading={projectionLoading}
-          />
-        </Card>
-      </StyledSection>
+          </Card>
+        </StyledSection>
+        <StyledSection $gridArea="accounts">
+          <Card>
+            <Heading level={2}>Accounts</Heading>
+            <Button onClick={() => setShowCreateModal(true)}>
+              Add account
+            </Button>
+            <span>Total Liquid: {formatBalance(totalLiquid)}</span>
+            <AccountOverview accounts={accounts} />
+            {showCreateModal && (
+              <AccountCreateModal
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+              />
+            )}
+          </Card>
+        </StyledSection>
+        <StyledSection $gridArea="plan">
+          <Card>
+            <PlanSummary
+              snapshots={snapshots}
+              accounts={accounts}
+              recurringTransactions={recurringTransactions}
+              maxYears={10}
+            />
+          </Card>
+        </StyledSection>
+      </StyledGrid>
     </StyledDashboard>
   );
 }
