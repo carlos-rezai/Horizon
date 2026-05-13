@@ -23,6 +23,13 @@ export const StyledSection = styled.section<{ $gridArea: string }>`
   grid-area: ${({ $gridArea }) => $gridArea};
 `;
 
+export const StyledAccountsHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${({ theme }) => theme.spacing.space4}px;
+`;
+
 export const StyledErrorText = styled.span`
   color: ${({ theme }) => theme.colors.error};
 `;

@@ -19,6 +19,7 @@ import {
   StyledPageHeader,
   StyledGrid,
   StyledSection,
+  StyledAccountsHeader,
   StyledErrorText,
 } from "./DashboardPage.styles";
 
@@ -66,9 +67,13 @@ export default function DashboardPage() {
           </Card>
         </StyledSection>
         <StyledSection $gridArea="accounts">
-          <Heading level={2}>Accounts</Heading>
-          <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
-          <span>Total Liquid: {formatBalance(totalLiquid)}</span>
+          <StyledAccountsHeader>
+            <Button onClick={() => setShowCreateModal(true)}>
+              Add account
+            </Button>
+            <Heading level={2}>Accounts Summary</Heading>
+            <span>Total Liquid: {formatBalance(totalLiquid)}</span>
+          </StyledAccountsHeader>
           <AccountOverview accounts={accounts} />
           {showCreateModal && (
             <AccountCreateModal
