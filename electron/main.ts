@@ -109,8 +109,8 @@ async function createWindow(port: number): Promise<void> {
   );
 
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 1920,
+    height: 1080,
     show: false,
     webPreferences: {
       contextIsolation: true,

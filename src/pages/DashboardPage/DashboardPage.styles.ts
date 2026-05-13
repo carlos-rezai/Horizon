@@ -6,16 +6,13 @@ export const StyledDashboard = styled.div`
   gap: ${({ theme }) => theme.spacing.space8}px;
 `;
 
-export const StyledPageHeader = styled.header`
-  margin-bottom: ${({ theme }) => theme.spacing.space4}px;
-`;
-
 export const StyledGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
-    "mortgage-countdown trajectory"
-    "accounts plan";
+    "trajectory        trajectory"
+    "accounts          plan"
+    "mortgage-countdown mortgage-countdown";
   gap: ${({ theme }) => theme.spacing.space8}px;
 `;
 

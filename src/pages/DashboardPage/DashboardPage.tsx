@@ -9,6 +9,7 @@ import AccountCreateModal from "../../features/accounts/AccountCreateModal/Accou
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
 import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import Card from "../../components/Card/Card";
+import PageHeader from "../../components/PageHeader/PageHeader";
 import Spinner from "../../primitives/Spinner/Spinner";
 import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
@@ -16,7 +17,6 @@ import { computeTotalLiquid } from "../../utils/accounts";
 import { formatBalance } from "../../utils/format";
 import {
   StyledDashboard,
-  StyledPageHeader,
   StyledGrid,
   StyledSection,
   StyledAccountsHeader,
@@ -49,13 +49,8 @@ export default function DashboardPage() {
 
   return (
     <StyledDashboard>
-      <StyledPageHeader>
-        <Heading level={1}>Dashboard</Heading>
-      </StyledPageHeader>
+      <PageHeader text="Dashboard" />
       <StyledGrid>
-        <StyledSection $gridArea="mortgage-countdown">
-          <MortgageCountdown accounts={accounts} snapshots={snapshots} />
-        </StyledSection>
         <StyledSection $gridArea="trajectory">
           <Card>
             <TrajectoryHorizon
@@ -91,6 +86,9 @@ export default function DashboardPage() {
               maxYears={10}
             />
           </Card>
+        </StyledSection>
+        <StyledSection $gridArea="mortgage-countdown">
+          <MortgageCountdown accounts={accounts} snapshots={snapshots} />
         </StyledSection>
       </StyledGrid>
     </StyledDashboard>

@@ -70,10 +70,10 @@ function getInjectedCSS(): string {
 describe("PlanPage — card surfaces", () => {
   beforeEach(mockAllSuccess);
 
-  it("renders at least 3 card surfaces — heading, chart, and accordion", async () => {
+  it("renders at least 2 card surfaces — chart and accordion", async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(3);
+      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(2);
     });
   });
 });
