@@ -66,11 +66,15 @@ export const StyledIconWrapper = styled.span<StyledIconWrapperProps>`
   flex-shrink: 0;
 `;
 
-export const StyledIconFallback = styled.span`
+interface StyledAccountAvatarProps {
+  $color: string;
+}
+
+export const StyledAccountAvatar = styled.span<StyledAccountAvatarProps>`
   display: inline-block;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background-color: ${({ theme }) => theme.colors.surfaceVariant};
+  border-radius: 50%;
+  background-color: ${({ $color }) => $color}26;
   flex-shrink: 0;
 `;

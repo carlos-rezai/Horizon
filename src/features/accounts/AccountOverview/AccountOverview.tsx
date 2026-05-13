@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTheme } from "styled-components";
 import * as LucideIcons from "lucide-react";
 import type { LucideProps } from "lucide-react";
 import type { AccountWithBalance, AccountKind } from "../../../types/account";
@@ -10,7 +11,7 @@ import {
   StyledBalance,
   StyledEmptyState,
   StyledIconWrapper,
-  StyledIconFallback,
+  StyledAccountAvatar,
 } from "./AccountOverview.styles";
 
 interface Props {
@@ -29,18 +30,33 @@ function formatBalance(cents: number): string {
 function AccountIcon({
   icon,
   color,
+  kind,
 }: {
   icon: string | null | undefined;
   color: string | null | undefined;
+  kind: AccountKind;
 }) {
+  const theme = useTheme();
+  const avatarColor = color ?? theme.colors.chartColors[kind];
+
   if (!icon) {
-    return <StyledIconFallback data-testid="account-icon-fallback" />;
+    return (
+      <StyledAccountAvatar
+        $color={avatarColor}
+        data-testid="account-icon-fallback"
+      />
+    );
   }
   const Icon = LucideIcons[icon as keyof typeof LucideIcons] as
     | React.ComponentType<LucideProps>
     | undefined;
   if (!Icon) {
-    return <StyledIconFallback data-testid="account-icon-fallback" />;
+    return (
+      <StyledAccountAvatar
+        $color={avatarColor}
+        data-testid="account-icon-fallback"
+      />
+    );
   }
   return (
     <StyledIconWrapper data-testid="account-icon" $color={color ?? undefined}>
@@ -61,7 +77,11 @@ export default function AccountOverview({ accounts }: Props) {
         return (
           <li key={account.id}>
             <StyledAccountLink as={Link} to={`/accounts/${account.id}`}>
-              <AccountIcon icon={account.icon} color={account.color} />
+              <AccountIcon
+                icon={account.icon}
+                color={account.color}
+                kind={account.kind}
+              />
               <StyledAccountName>{account.name}</StyledAccountName>
               <Badge kind={account.kind} />
               <StyledBalance $isLiability={isLiability}>
