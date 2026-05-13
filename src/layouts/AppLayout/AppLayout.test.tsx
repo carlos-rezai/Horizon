@@ -108,9 +108,9 @@ describe("AppLayout — sidebar nav links", () => {
     expect(link).toHaveAttribute("href", "/");
   });
 
-  it("renders an Outlook link targeting /plan", () => {
+  it("renders a Financial Plan link targeting /plan", () => {
     renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /outlook/i });
+    const link = screen.getByRole("link", { name: /financial plan/i });
     expect(link).toHaveAttribute("href", "/plan");
   });
 
@@ -125,7 +125,9 @@ describe("AppLayout — sidebar nav links", () => {
     expect(
       screen.getByRole("link", { name: /dashboard/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /outlook/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /financial plan/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
   });
 });
@@ -143,15 +145,15 @@ describe("AppLayout — active nav state", () => {
     expect(link).not.toHaveAttribute("aria-current", "page");
   });
 
-  it("Outlook link has aria-current='page' when at /plan", () => {
+  it("Financial Plan link has aria-current='page' when at /plan", () => {
     renderAtRoute("/plan");
-    const link = screen.getByRole("link", { name: /outlook/i });
+    const link = screen.getByRole("link", { name: /financial plan/i });
     expect(link).toHaveAttribute("aria-current", "page");
   });
 
-  it("Outlook link does not have aria-current='page' when at /", () => {
+  it("Financial Plan link does not have aria-current='page' when at /", () => {
     renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /outlook/i });
+    const link = screen.getByRole("link", { name: /financial plan/i });
     expect(link).not.toHaveAttribute("aria-current", "page");
   });
 });

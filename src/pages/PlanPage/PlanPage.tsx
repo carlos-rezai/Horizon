@@ -5,15 +5,10 @@ import { useAllRecurringTransactions } from "../../features/projection/useAllRec
 import { ProjectionAccordion } from "../../features/projection";
 import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import Card from "../../components/Card/Card";
+import CardHeader from "../../components/CardHeader/CardHeader";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import Spinner from "../../primitives/Spinner/Spinner";
-import Heading from "../../primitives/Heading/Heading";
-import {
-  StyledPlanPage,
-  StyledCardHeader,
-  StyledCardSubtitle,
-  StyledErrorText,
-} from "./PlanPage.styles";
+import { StyledPlanPage, StyledErrorText } from "./PlanPage.styles";
 
 export default function PlanPage() {
   const location = useLocation();
@@ -40,6 +35,7 @@ export default function PlanPage() {
   return (
     <StyledPlanPage>
       <PageHeader text="Financial Plan" />
+      <CardHeader text="Trajectory Horizon" />
       <Card>
         <TrajectoryHorizon
           snapshots={snapshots}
@@ -48,11 +44,8 @@ export default function PlanPage() {
           isLoading={projectionLoading}
         />
       </Card>
+      <CardHeader text="Plan Detail" />
       <Card>
-        <StyledCardHeader>
-          <Heading level={2}>Plan Detail</Heading>
-          <StyledCardSubtitle>Monthly projection breakdown</StyledCardSubtitle>
-        </StyledCardHeader>
         <ProjectionAccordion
           snapshots={snapshots}
           accounts={accounts}

@@ -28,7 +28,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </StyledNavLink>
           <StyledNavLink as={NavLink} to="/plan">
             <TrendingUp size={16} />
-            Outlook
+            Financial Plan
           </StyledNavLink>
         </StyledNav>
         <StyledSpacer />

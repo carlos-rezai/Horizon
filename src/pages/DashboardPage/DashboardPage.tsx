@@ -7,8 +7,8 @@ import PlanSummary from "../../features/projection/PlanSummary/PlanSummary";
 import AccountOverview from "../../features/accounts/AccountOverview/AccountOverview";
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
-import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import Card from "../../components/Card/Card";
+import CardHeader from "../../components/CardHeader/CardHeader";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import Spinner from "../../primitives/Spinner/Spinner";
 import Heading from "../../primitives/Heading/Heading";
@@ -20,6 +20,7 @@ import {
   StyledGrid,
   StyledSection,
   StyledAccountsHeader,
+  StyledAccountsHeaderInfo,
   StyledErrorText,
 } from "./DashboardPage.styles";
 
@@ -51,23 +52,15 @@ export default function DashboardPage() {
     <StyledDashboard>
       <PageHeader text="Dashboard" />
       <StyledGrid>
-        <StyledSection $gridArea="trajectory">
-          <Card>
-            <TrajectoryHorizon
-              snapshots={snapshots}
-              accounts={accounts}
-              recurringTransactions={recurringTransactions}
-              isLoading={projectionLoading}
-            />
-          </Card>
-        </StyledSection>
         <StyledSection $gridArea="accounts">
           <StyledAccountsHeader>
+            <StyledAccountsHeaderInfo>
+              <Heading level={2}>Accounts Summary</Heading>
+              <span>Total Liquid: {formatBalance(totalLiquid)}</span>
+            </StyledAccountsHeaderInfo>
             <Button onClick={() => setShowCreateModal(true)}>
               Add account
             </Button>
-            <Heading level={2}>Accounts Summary</Heading>
-            <span>Total Liquid: {formatBalance(totalLiquid)}</span>
           </StyledAccountsHeader>
           <AccountOverview accounts={accounts} />
           {showCreateModal && (
@@ -78,6 +71,7 @@ export default function DashboardPage() {
           )}
         </StyledSection>
         <StyledSection $gridArea="plan">
+          <CardHeader text="Plan Overview" />
           <Card>
             <PlanSummary
               snapshots={snapshots}
@@ -88,6 +82,7 @@ export default function DashboardPage() {
           </Card>
         </StyledSection>
         <StyledSection $gridArea="mortgage-countdown">
+          <CardHeader text="Mortgage Countdown" />
           <MortgageCountdown accounts={accounts} snapshots={snapshots} />
         </StyledSection>
       </StyledGrid>

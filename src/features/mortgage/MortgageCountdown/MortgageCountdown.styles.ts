@@ -6,14 +6,6 @@ export const StyledSection = styled.section`
   gap: ${({ theme }) => theme.spacing.space4}px;
 `;
 
-export const StyledSectionLabel = styled.span`
-  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
-  font-weight: ${({ theme }) => theme.typography.weights.medium};
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-`;
-
 export const StyledCard = styled.div`
   background-color: ${({ theme }) => theme.colors.surfaceContainer};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};

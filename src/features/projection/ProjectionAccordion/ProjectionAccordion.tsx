@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -14,8 +13,9 @@ import {
   StyledYearSection,
   StyledYearHeader,
   StyledYearLabel,
-  StyledYearMeta,
-  StyledChevron,
+  StyledLiquidMeta,
+  StyledRestschuldMeta,
+  StyledRowSpacer,
   StyledTableWrapper,
   StyledTable,
   StyledTh,
@@ -80,6 +80,14 @@ export default function ProjectionAccordion({
     new Set([defaultExpanded])
   );
 
+  useEffect(() => {
+    if (!initialYear) return;
+    const el = document.getElementById(`year-${initialYear}`);
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [initialYear]);
+
   if (snapshots.length === 0 || accounts.length === 0) {
     return (
       <StyledEmptyState>
@@ -127,28 +135,26 @@ export default function ProjectionAccordion({
         const isPayoffYear = payoffYear === year;
 
         return (
-          <StyledYearSection key={year}>
+          <StyledYearSection key={year} id={`year-${year}`}>
             <StyledYearHeader
               aria-expanded={isExpanded}
               onClick={() => toggleYear(year)}
             >
               <StyledYearLabel>{year}</StyledYearLabel>
+              <StyledLiquidMeta>
+                Liquid {formatBalance(lastSnapshot.totalLiquid)}
+              </StyledLiquidMeta>
+              {summaryRestschuld !== null && (
+                <StyledRestschuldMeta>
+                  RS {formatBalance(summaryRestschuld)}
+                </StyledRestschuldMeta>
+              )}
+              <StyledRowSpacer />
               {isPayoffYear && payoffMonth && (
                 <StyledPayoffBadge>
                   Paid off {formatMonth(payoffMonth)}
                 </StyledPayoffBadge>
               )}
-              <StyledYearMeta>
-                Liquid {formatBalance(lastSnapshot.totalLiquid)}
-              </StyledYearMeta>
-              {summaryRestschuld !== null && (
-                <StyledYearMeta>
-                  RS {formatBalance(summaryRestschuld)}
-                </StyledYearMeta>
-              )}
-              <StyledChevron $expanded={isExpanded}>
-                <ChevronDown size={16} />
-              </StyledChevron>
             </StyledYearHeader>
 
             {isExpanded && (

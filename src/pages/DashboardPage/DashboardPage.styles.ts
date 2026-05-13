@@ -10,9 +10,8 @@ export const StyledGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
-    "trajectory        trajectory"
-    "accounts          plan"
-    "mortgage-countdown mortgage-countdown";
+    "mortgage-countdown mortgage-countdown"
+    "accounts           plan";
   gap: ${({ theme }) => theme.spacing.space8}px;
 `;
 
@@ -25,6 +24,12 @@ export const StyledAccountsHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${({ theme }) => theme.spacing.space4}px;
+`;
+
+export const StyledAccountsHeaderInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space4}px;
 `;
 
 export const StyledErrorText = styled.span`

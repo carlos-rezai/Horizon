@@ -22,7 +22,6 @@ import {
   findMortgagePayoffMonth,
 } from "../../../utils/projection";
 import { formatBalance } from "../../../utils/format";
-import Heading from "../../../primitives/Heading/Heading";
 import {
   StyledSection,
   StyledChartWrapper,
@@ -194,7 +193,6 @@ export default function TrajectoryHorizon({
 
   return (
     <StyledSection>
-      <Heading level={2}>Trajectory Horizon</Heading>
       {isLoading ? (
         <StyledLoadingState data-testid="trajectory-horizon-loading">
           Loading…

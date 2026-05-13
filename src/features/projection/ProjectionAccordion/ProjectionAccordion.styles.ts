@@ -3,24 +3,20 @@ import styled from "styled-components";
 export const StyledAccordion = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
-export const StyledYearSection = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  border-radius: 8px;
-  overflow: hidden;
-`;
+export const StyledYearSection = styled.div``;
 
 export const StyledYearHeader = styled.button`
   width: 100%;
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
-  padding: ${({ theme }) => theme.spacing.space3}px
-    ${({ theme }) => theme.spacing.space4}px;
-  background-color: ${({ theme }) => theme.colors.surfaceContainer};
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space3}px;
+  background: transparent;
   border: none;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   cursor: pointer;
   text-align: left;
 
@@ -42,8 +38,19 @@ export const StyledYearMeta = styled.span`
   font-variant-numeric: tabular-nums;
 `;
 
+export const StyledLiquidMeta = styled(StyledYearMeta)`
+  color: ${({ theme }) => theme.colors.secondary};
+`;
+
+export const StyledRestschuldMeta = styled(StyledYearMeta)`
+  color: ${({ theme }) => theme.colors.error};
+`;
+
+export const StyledRowSpacer = styled.span`
+  flex: 1;
+`;
+
 export const StyledChevron = styled.span<{ $expanded: boolean }>`
-  margin-left: auto;
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   display: flex;
   align-items: center;

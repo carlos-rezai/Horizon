@@ -4,11 +4,8 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import { deriveSTMonths, deriveYearSummaries } from "../../../utils/projection";
 import { formatBalance } from "../../../utils/format";
-import Heading from "../../../primitives/Heading/Heading";
 import {
   StyledSection,
-  StyledPlanHeader,
-  StyledPlanSubtitle,
   StyledViewFullPlan,
   StyledTable,
   StyledTh,
@@ -62,11 +59,7 @@ export default function PlanSummary({
 
   return (
     <StyledSection>
-      <StyledPlanHeader>
-        <Heading level={2}>Plan Overview</Heading>
-        <StyledPlanSubtitle>Scheduled Projection Summary</StyledPlanSubtitle>
-        <StyledViewFullPlan to="/plan">View full plan →</StyledViewFullPlan>
-      </StyledPlanHeader>
+      <StyledViewFullPlan to="/plan">View full plan →</StyledViewFullPlan>
       {rows.length === 0 ? (
         <StyledEmptyState>
           Add accounts on the dashboard to see your financial plan.

@@ -5,17 +5,6 @@ export const StyledSection = styled.section`
   margin-top: ${({ theme }) => theme.spacing.space6}px;
 `;
 
-export const StyledPlanHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-`;
-
-export const StyledPlanSubtitle = styled.span`
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-`;
-
 export const StyledViewFullPlan = styled(Link)`
   color: ${({ theme }) => theme.colors.secondary};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;

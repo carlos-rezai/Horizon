@@ -90,21 +90,6 @@ const snapshotsNoPayoff: MonthlySnapshot[] = [
 const noRecurring: RecurringTransaction[] = [];
 
 describe("TrajectoryHorizon", () => {
-  it("renders the heading 'Trajectory Horizon'", () => {
-    renderWithTheme(
-      <TrajectoryHorizon
-        snapshots={snapshots}
-        accounts={[giroAccount]}
-        recurringTransactions={noRecurring}
-        isLoading={false}
-      />
-    );
-
-    expect(
-      screen.getByRole("heading", { name: /trajectory horizon/i })
-    ).toBeInTheDocument();
-  });
-
   it("renders a loading indicator when isLoading is true", () => {
     renderWithTheme(
       <TrajectoryHorizon

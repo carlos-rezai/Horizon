@@ -5,7 +5,6 @@ import { findMortgagePayoffMonth } from "../../../utils/projection";
 import { formatBalance } from "../../../utils/format";
 import {
   StyledSection,
-  StyledSectionLabel,
   StyledCard,
   StyledAccountNameRow,
   StyledHeroAmount,
@@ -47,7 +46,6 @@ export default function MortgageCountdown({ accounts, snapshots }: Props) {
 
   return (
     <StyledSection>
-      <StyledSectionLabel>Mortgage Countdown</StyledSectionLabel>
       {mortgageAccounts.map((account) => {
         const payoffMonth = findMortgagePayoffMonth(snapshots, account.id);
         return (
