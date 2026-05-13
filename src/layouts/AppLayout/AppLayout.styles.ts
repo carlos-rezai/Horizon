@@ -34,7 +34,9 @@ export const StyledNav = styled.nav`
 `;
 
 export const StyledNavLink = styled.a`
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space2}px;
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   border-radius: ${({ theme }) => theme.radius.button}px;

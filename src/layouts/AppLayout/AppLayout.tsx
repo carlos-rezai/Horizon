@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import { LayoutDashboard, TrendingUp, Settings } from "lucide-react";
 import {
   StyledWrapper,
   StyledSidebar,
@@ -22,14 +23,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <StyledWordmark>Horizon</StyledWordmark>
         <StyledNav>
           <StyledNavLink as={NavLink} to="/" end>
+            <LayoutDashboard size={16} />
             Dashboard
           </StyledNavLink>
           <StyledNavLink as={NavLink} to="/plan">
+            <TrendingUp size={16} />
             Outlook
           </StyledNavLink>
         </StyledNav>
         <StyledSpacer />
         <StyledNavLink as={NavLink} to="/settings/storage">
+          <Settings size={16} />
           Settings
         </StyledNavLink>
       </StyledSidebar>
