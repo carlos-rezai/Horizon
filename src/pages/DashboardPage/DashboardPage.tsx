@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccounts } from "../features/accounts/useAccounts";
-import { useProjection } from "../features/projection/useProjection";
-import { useAllRecurringTransactions } from "../features/projection/useAllRecurringTransactions";
-import PlanSummary from "../features/projection/PlanSummary/PlanSummary";
-import AccountOverview from "../features/accounts/AccountOverview/AccountOverview";
-import AccountCreateModal from "../features/accounts/AccountCreateModal/AccountCreateModal";
-import MortgageCountdown from "../features/mortgage/MortgageCountdown/MortgageCountdown";
-import TrajectoryHorizon from "../features/projection/TrajectoryHorizon/TrajectoryHorizon";
-import Card from "../components/Card/Card";
-import Spinner from "../primitives/Spinner/Spinner";
-import Heading from "../primitives/Heading/Heading";
-import Button from "../primitives/Button/Button";
-import { computeTotalLiquid } from "../utils/accounts";
-import { formatBalance } from "../utils/format";
+import { useAccounts } from "../../features/accounts/useAccounts";
+import { useProjection } from "../../features/projection/useProjection";
+import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
+import PlanSummary from "../../features/projection/PlanSummary/PlanSummary";
+import AccountOverview from "../../features/accounts/AccountOverview/AccountOverview";
+import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
+import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
+import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
+import Card from "../../components/Card/Card";
+import Spinner from "../../primitives/Spinner/Spinner";
+import Heading from "../../primitives/Heading/Heading";
+import Button from "../../primitives/Button/Button";
+import { computeTotalLiquid } from "../../utils/accounts";
+import { formatBalance } from "../../utils/format";
 import {
   StyledDashboard,
   StyledSection,

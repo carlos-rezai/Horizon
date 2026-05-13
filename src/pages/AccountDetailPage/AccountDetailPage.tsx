@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useAccounts } from "../features/accounts/useAccounts";
-import AccountDetailHeader from "../features/accounts/AccountDetailHeader/AccountDetailHeader";
-import TransactionCreateModal from "../features/transactions/TransactionCreateModal/TransactionCreateModal";
-import TransferCreateModal from "../features/transactions/TransferCreateModal/TransferCreateModal";
-import RecurringTransactionList from "../features/transactions/RecurringTransactionList/RecurringTransactionList";
-import RecurringTransactionModal from "../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
-import { useRecurringTransactions } from "../features/transactions/useRecurringTransactions";
-import Card from "../components/Card/Card";
-import Heading from "../primitives/Heading/Heading";
-import Button from "../primitives/Button/Button";
-import { API_BASE } from "../utils/api";
-import type { Transaction } from "../types/transaction";
-import type { RecurringTransaction } from "../types/recurring";
+import { useAccounts } from "../../features/accounts/useAccounts";
+import AccountDetailHeader from "../../features/accounts/AccountDetailHeader/AccountDetailHeader";
+import TransactionCreateModal from "../../features/transactions/TransactionCreateModal/TransactionCreateModal";
+import TransferCreateModal from "../../features/transactions/TransferCreateModal/TransferCreateModal";
+import RecurringTransactionList from "../../features/transactions/RecurringTransactionList/RecurringTransactionList";
+import RecurringTransactionModal from "../../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
+import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions";
+import Card from "../../components/Card/Card";
+import Heading from "../../primitives/Heading/Heading";
+import Button from "../../primitives/Button/Button";
+import { API_BASE } from "../../utils/api";
+import type { Transaction } from "../../types/transaction";
+import type { RecurringTransaction } from "../../types/recurring";
 import {
   StyledPage,
   StyledSection,

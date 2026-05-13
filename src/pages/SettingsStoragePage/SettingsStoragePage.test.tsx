@@ -3,7 +3,7 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { theme } from "../tokens";
+import { theme } from "../../tokens";
 import SettingsStoragePage from "./SettingsStoragePage";
 
 afterEach(() => {

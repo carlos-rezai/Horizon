@@ -3,9 +3,9 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
-import { theme } from "../tokens";
+import { theme } from "../../tokens";
 import AccountDetailPage from "./AccountDetailPage";
-import type { AccountWithBalance } from "../types/account";
+import type { AccountWithBalance } from "../../types/account";
 
 afterEach(() => {
   cleanup();

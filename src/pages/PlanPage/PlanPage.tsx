@@ -1,12 +1,12 @@
 import { useLocation } from "react-router-dom";
-import { useAccounts } from "../features/accounts/useAccounts";
-import { useProjection } from "../features/projection/useProjection";
-import { useAllRecurringTransactions } from "../features/projection/useAllRecurringTransactions";
-import { ProjectionAccordion } from "../features/projection";
-import TrajectoryHorizon from "../features/projection/TrajectoryHorizon/TrajectoryHorizon";
-import Card from "../components/Card/Card";
-import Spinner from "../primitives/Spinner/Spinner";
-import Heading from "../primitives/Heading/Heading";
+import { useAccounts } from "../../features/accounts/useAccounts";
+import { useProjection } from "../../features/projection/useProjection";
+import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
+import { ProjectionAccordion } from "../../features/projection";
+import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
+import Card from "../../components/Card/Card";
+import Spinner from "../../primitives/Spinner/Spinner";
+import Heading from "../../primitives/Heading/Heading";
 import { StyledPlanPage, StyledErrorText } from "./PlanPage.styles";
 
 export default function PlanPage() {
