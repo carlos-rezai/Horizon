@@ -16,6 +16,7 @@ import { computeTotalLiquid } from "../../utils/accounts";
 import { formatBalance } from "../../utils/format";
 import {
   StyledDashboard,
+  StyledPageHeader,
   StyledSection,
   StyledErrorText,
 } from "./DashboardPage.styles";
@@ -46,9 +47,11 @@ export default function DashboardPage() {
 
   return (
     <StyledDashboard>
+      <StyledPageHeader>
+        <Heading level={1}>Dashboard</Heading>
+      </StyledPageHeader>
       <StyledSection>
         <Card>
-          <Heading level={1}>Dashboard</Heading>
           <Heading level={2}>Accounts</Heading>
           <Button onClick={() => setShowCreateModal(true)}>Add account</Button>
           <span>Total Liquid: {formatBalance(totalLiquid)}</span>
