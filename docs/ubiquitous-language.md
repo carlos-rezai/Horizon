@@ -436,6 +436,52 @@
 - The **SmartScreen Warning** appears because the **NSIS Installer** is unsigned — a deliberate consequence of the zero-cost constraint, documented in the README
 - The **Loopback Bind** invariant applies in the packaged **Desktop Build** exactly as in development — the **Server Bundle** always binds to `127.0.0.1`
 
+## In-App Auto-Update (new)
+
+| Term                                | Definition                                                                                                                                                                            | Aliases to avoid                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **electron-updater**                | The npm package (part of electron-builder) that checks GitHub Releases for new versions, downloads the NSIS Installer, and triggers installation                                      | auto-updater, update library             |
+| **Update Check**                    | The startup operation that queries the GitHub Releases API for a newer version — runs once per launch, fails silently on network error                                                | Version check, update poll               |
+| **Update State**                    | The current phase of the update lifecycle — one of `idle`, `available`, or `ready`                                                                                                    | Update status, update phase              |
+| **Auto-Download**                   | The user-configurable preference (default: ON) that controls whether a detected update is downloaded silently in the background — stored in **HorizonPreferences** via electron-store | Auto-update toggle, download preference  |
+| **HorizonPreferences**              | The electron-store schema that persists user preferences across sessions — currently holds `autoDownload: boolean`                                                                    | Settings store, preferences file         |
+| **Snackbar**                        | The reusable `components/Snackbar/` notification component — four variants (`info`, `success`, `warning`, `error`), optional action button, close button, fixed bottom-right corner   | Toast, banner, alert                     |
+| **Update Banner**                   | The `features/updates/UpdateBanner` component that renders a **Snackbar** when **Update State** is `available` or `ready` — owned by `AppLayout`                                      | Update notification, update toast        |
+| **Self-Signed Cert**                | A zero-cost code-signing certificate generated with PowerShell and imported into the developer's Windows Trusted Root store — bypasses SmartScreen on that machine permanently        | Code-signing cert, developer certificate |
+| **GitHub Actions Release Workflow** | The `.github/workflows/release.yml` CI pipeline that builds the NSIS Installer on a Windows runner and publishes it to GitHub Releases — triggered by a **Version Tag**               | Release pipeline, CI release             |
+| **Version Tag**                     | A `v*` git tag (e.g. `v0.2.0`) created by `npm version` that triggers the **GitHub Actions Release Workflow** — the atomic unit of a release                                          | Release tag, semver tag                  |
+
+## Relationships (In-App Auto-Update additions)
+
+- The **Update Check** runs once at startup via **electron-updater** — it reads **Auto-Download** from **HorizonPreferences** before starting
+- When **Auto-Download** is ON: detected update → silent background download → **Update State** transitions to `ready` → **Update Banner** appears
+- When **Auto-Download** is OFF: detected update → **Update State** transitions to `available` → **Update Banner** appears with a "Download" button
+- The **Update Banner** is rendered by `AppLayout` via `useUpdateStatus` hook — visible across all pages
+- The **Snackbar** is a reusable `components/` primitive — the **Update Banner** is one consumer; other features may use it for warnings and errors
+- A **Version Tag** is always created by `npm version patch/minor/major` — never by hand-editing `package.json`
+- The **GitHub Actions Release Workflow** uploads the **NSIS Installer** and a `latest.yml` manifest — **electron-updater** reads the manifest to detect new versions
+- The **Self-Signed Cert** is a developer machine setup only — other machines still see the **SmartScreen Warning**
+- **HorizonPreferences** is read by **Electron Main** before **electron-updater** starts — it is never read directly by the **Renderer**
+- The **Preload Bridge** now exposes `window.horizon.updates` — listener registration for update events plus `quitAndInstall` and `downloadUpdate` invokes
+
+## Example dialogue (In-App Auto-Update)
+
+> **Dev:** "When does the Update Check happen — is it on a timer?"
+>
+> **Domain expert:** "No. Once, at startup, via electron-updater. The developer always knows when a release is out because they published it. A timer would be noise."
+>
+> **Dev:** "What if Auto-Download is off and an update is detected?"
+>
+> **Domain expert:** "The Update State goes to `available` and the Update Banner shows a 'Download' button. The user triggers the download explicitly. With Auto-Download on, the download happens silently and the banner only appears when the update is ready to install."
+>
+> **Dev:** "What does 'ready' mean exactly?"
+>
+> **Domain expert:** "electron-updater has finished downloading the new NSIS Installer. The Update Banner now shows 'Restart to update'. Clicking it calls quitAndInstall — the app quits, the installer runs silently, the new version launches."
+>
+> **Dev:** "Why is the Snackbar in `components/` but the Update Banner in `features/`?"
+>
+> **Domain expert:** "The Snackbar is a dumb UI atom — it knows nothing about updates, errors, or Electron. The Update Banner knows about Update State and the Preload Bridge. That business logic belongs in `features/updates/`. The Snackbar is just the visual shell."
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
@@ -499,8 +545,9 @@
   (`PORT=0`); never assume `3001` or any fixed number. The authoritative port flows from
   the server through the **Ready Handshake** and reaches the **Renderer** via
   **API Base URL Injection**.
-- **"IPC"** (new) — overloaded (Electron's renderer IPC, OS-level IPC, the parent-port
-  channel between Electron Main and a utilityProcess). In the Desktop Shell, the only
-  IPC that exists is the **Ready Handshake**, **Shutdown Handshake**, and **Fatal Message**
-  on the Server Handle's parent port. The **Renderer** has no IPC — it talks to the
-  server over HTTP only.
+- **"IPC"** (updated) — overloaded (Electron's renderer IPC, OS-level IPC, the parent-port
+  channel between Electron Main and a utilityProcess). In the Desktop Shell, the Server Handle
+  IPC consists of the **Ready Handshake**, **Shutdown Handshake**, and **Fatal Message** on
+  the parent port. The **Renderer** additionally communicates with **Electron Main** through
+  the **Preload Bridge** — `window.horizon.updates` exposes update event listeners and
+  `quitAndInstall`/`downloadUpdate` invokes. The Renderer still never talks to SQLite directly.
