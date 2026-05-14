@@ -10,9 +10,18 @@ import {
   type MenuItemConstructorOptions,
 } from "electron";
 import electronUpdaterPkg from "electron-updater";
+import ElectronStore from "electron-store";
 import { resolveDbPath } from "./paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle.js";
+
+interface HorizonPreferences {
+  autoDownload: boolean;
+}
+
+const prefs = new ElectronStore<HorizonPreferences>({
+  defaults: { autoDownload: true },
+});
 
 const { autoUpdater } = electronUpdaterPkg;
 const SHUTDOWN_TIMEOUT_MS = 5_000;
@@ -145,16 +154,26 @@ async function createWindow(port: number): Promise<void> {
 }
 
 function setupAutoUpdater(): void {
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = prefs.get("autoDownload");
   autoUpdater.on("error", () => {});
   autoUpdater.on("update-downloaded", () => {
     mainWindow?.webContents.send("update-downloaded");
+  });
+  autoUpdater.on("update-available", () => {
+    if (!prefs.get("autoDownload")) {
+      mainWindow?.webContents.send("update-available");
+    }
   });
   ipcMain.handle("update:quit-and-install", () => {
     autoUpdater.quitAndInstall();
   });
   ipcMain.handle("update:download", () => {
     void autoUpdater.downloadUpdate();
+  });
+  ipcMain.handle("update:get-auto-download", () => prefs.get("autoDownload"));
+  ipcMain.handle("update:set-auto-download", (_event, enabled: boolean) => {
+    prefs.set("autoDownload", enabled);
+    autoUpdater.autoDownload = enabled;
   });
   ipcMain.handle("app:get-version", () => app.getVersion());
   void autoUpdater.checkForUpdates();

@@ -12,11 +12,19 @@ export function useUpdateStatus(): UpdateStatus {
   const [state, setState] = useState<UpdateState>("idle");
 
   useEffect(() => {
-    const unsubscribe = window.horizon?.updates.onUpdateDownloaded(() => {
-      setState("ready");
-    });
+    const unsubscribeDownloaded = window.horizon?.updates.onUpdateDownloaded(
+      () => {
+        setState("ready");
+      }
+    );
+    const unsubscribeAvailable = window.horizon?.updates.onUpdateAvailable(
+      () => {
+        setState("available");
+      }
+    );
     return () => {
-      unsubscribe?.();
+      unsubscribeDownloaded?.();
+      unsubscribeAvailable?.();
     };
   }, []);
 
@@ -24,7 +32,9 @@ export function useUpdateStatus(): UpdateStatus {
     window.horizon?.updates.quitAndInstall();
   }
 
-  function download() {}
+  function download() {
+    window.horizon?.updates.downloadUpdate();
+  }
 
   return { state, install, download };
 }

@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld("horizon", {
       ipcRenderer.on("update-downloaded", handler);
       return () => ipcRenderer.removeListener("update-downloaded", handler);
     },
+    onUpdateAvailable(cb: () => void) {
+      const handler = () => cb();
+      ipcRenderer.on("update-available", handler);
+      return () => ipcRenderer.removeListener("update-available", handler);
+    },
     quitAndInstall() {
       void ipcRenderer.invoke("update:quit-and-install");
     },
@@ -22,10 +27,13 @@ contextBridge.exposeInMainWorld("horizon", {
       return ipcRenderer.invoke("app:get-version") as Promise<string>;
     },
     getAutoDownload(): Promise<boolean> {
-      return Promise.resolve(true);
+      return ipcRenderer.invoke("update:get-auto-download") as Promise<boolean>;
     },
-    setAutoDownload(_enabled: boolean): Promise<void> {
-      return Promise.resolve();
+    setAutoDownload(enabled: boolean): Promise<void> {
+      return ipcRenderer.invoke(
+        "update:set-auto-download",
+        enabled
+      ) as Promise<void>;
     },
   },
 });
