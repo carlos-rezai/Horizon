@@ -9,11 +9,12 @@ import {
   shell,
   type MenuItemConstructorOptions,
 } from "electron";
-import { autoUpdater } from "electron-updater";
+import electronUpdaterPkg from "electron-updater";
 import { resolveDbPath } from "./paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle.js";
 
+const { autoUpdater } = electronUpdaterPkg;
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 
 const isDev = !app.isPackaged;
@@ -155,6 +156,7 @@ function setupAutoUpdater(): void {
   ipcMain.handle("update:download", () => {
     void autoUpdater.downloadUpdate();
   });
+  ipcMain.handle("app:get-version", () => app.getVersion());
   void autoUpdater.checkForUpdates();
 }
 

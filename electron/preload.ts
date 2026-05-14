@@ -18,5 +18,14 @@ contextBridge.exposeInMainWorld("horizon", {
     downloadUpdate() {
       void ipcRenderer.invoke("update:download");
     },
+    getAppVersion(): Promise<string> {
+      return ipcRenderer.invoke("app:get-version") as Promise<string>;
+    },
+    getAutoDownload(): Promise<boolean> {
+      return Promise.resolve(true);
+    },
+    setAutoDownload(_enabled: boolean): Promise<void> {
+      return Promise.resolve();
+    },
   },
 });

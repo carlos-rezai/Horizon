@@ -11,7 +11,7 @@ async function loadModule(): Promise<ApiBaseUrlModule> {
 
 type HorizonGlobal = { apiBaseUrl: string } | undefined;
 
-interface WindowWithHorizon extends Window {
+interface WindowWithHorizon {
   horizon?: HorizonGlobal;
 }
 
@@ -23,14 +23,14 @@ describe("resolveApiBaseUrl", () => {
   let originalEnvValue: unknown;
 
   beforeEach(() => {
-    originalHorizon = (window as WindowWithHorizon).horizon;
+    originalHorizon = (window as unknown as WindowWithHorizon).horizon;
     envHadKey = Object.prototype.hasOwnProperty.call(env, "VITE_API_BASE_URL");
     originalEnvValue = env.VITE_API_BASE_URL;
-    (window as WindowWithHorizon).horizon = undefined;
+    (window as unknown as WindowWithHorizon).horizon = undefined;
   });
 
   afterEach(() => {
-    (window as WindowWithHorizon).horizon = originalHorizon;
+    (window as unknown as WindowWithHorizon).horizon = originalHorizon;
     if (envHadKey) {
       env.VITE_API_BASE_URL = originalEnvValue;
     } else {
@@ -39,7 +39,7 @@ describe("resolveApiBaseUrl", () => {
   });
 
   it("returns window.horizon.apiBaseUrl when window.horizon is set, even if VITE_API_BASE_URL is also set", async () => {
-    (window as WindowWithHorizon).horizon = {
+    (window as unknown as WindowWithHorizon).horizon = {
       apiBaseUrl: "http://127.0.0.1:54321",
     };
     env.VITE_API_BASE_URL = "http://from-env.example";
@@ -50,7 +50,7 @@ describe("resolveApiBaseUrl", () => {
   });
 
   it("falls back to import.meta.env.VITE_API_BASE_URL when window.horizon is undefined", async () => {
-    (window as WindowWithHorizon).horizon = undefined;
+    (window as unknown as WindowWithHorizon).horizon = undefined;
     env.VITE_API_BASE_URL = "http://from-env.example";
 
     const { resolveApiBaseUrl } = await loadModule();
@@ -59,7 +59,7 @@ describe("resolveApiBaseUrl", () => {
   });
 
   it("falls back to 'http://localhost:3001' when both window.horizon and VITE_API_BASE_URL are unset", async () => {
-    (window as WindowWithHorizon).horizon = undefined;
+    (window as unknown as WindowWithHorizon).horizon = undefined;
     delete env.VITE_API_BASE_URL;
 
     const { resolveApiBaseUrl } = await loadModule();

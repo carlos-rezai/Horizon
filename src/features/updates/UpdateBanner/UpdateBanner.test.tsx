@@ -30,6 +30,9 @@ describe("UpdateBanner", () => {
         onUpdateDownloaded: () => () => {},
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
+        getAutoDownload: vi.fn().mockResolvedValue(true),
+        setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
     };
 
@@ -49,6 +52,9 @@ describe("UpdateBanner", () => {
         },
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
+        getAutoDownload: vi.fn().mockResolvedValue(true),
+        setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
     };
 
@@ -78,6 +84,9 @@ describe("UpdateBanner", () => {
         },
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
+        getAutoDownload: vi.fn().mockResolvedValue(true),
+        setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
     };
 
