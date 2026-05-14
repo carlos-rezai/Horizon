@@ -7,6 +7,7 @@ declare global {
       platform: string;
       updates: {
         onUpdateDownloaded: (cb: () => void) => () => void;
+        onUpdateAvailable: (cb: () => void) => () => void;
         quitAndInstall: () => void;
         downloadUpdate: () => void;
         getAppVersion: () => Promise<string>;

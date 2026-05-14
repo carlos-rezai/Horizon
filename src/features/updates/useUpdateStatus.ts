@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 
-type UpdateState = "idle" | "ready";
+type UpdateState = "idle" | "available" | "ready";
 
 interface UpdateStatus {
   state: UpdateState;
   install: () => void;
+  download: () => void;
 }
 
 export function useUpdateStatus(): UpdateStatus {
@@ -23,5 +24,7 @@ export function useUpdateStatus(): UpdateStatus {
     window.horizon?.updates.quitAndInstall();
   }
 
-  return { state, install };
+  function download() {}
+
+  return { state, install, download };
 }
