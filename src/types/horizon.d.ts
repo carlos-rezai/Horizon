@@ -9,6 +9,9 @@ declare global {
         onUpdateDownloaded: (cb: () => void) => () => void;
         quitAndInstall: () => void;
         downloadUpdate: () => void;
+        getAppVersion: () => Promise<string>;
+        getAutoDownload: () => Promise<boolean>;
+        setAutoDownload: (enabled: boolean) => Promise<void>;
       };
     };
   }
