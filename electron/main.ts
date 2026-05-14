@@ -5,9 +5,11 @@ import {
   Menu,
   app,
   dialog,
+  ipcMain,
   shell,
   type MenuItemConstructorOptions,
 } from "electron";
+import { autoUpdater } from "electron-updater";
 import { resolveDbPath } from "./paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle.js";
@@ -141,6 +143,21 @@ async function createWindow(port: number): Promise<void> {
   }
 }
 
+function setupAutoUpdater(): void {
+  autoUpdater.autoDownload = true;
+  autoUpdater.on("error", () => {});
+  autoUpdater.on("update-downloaded", () => {
+    mainWindow?.webContents.send("update-downloaded");
+  });
+  ipcMain.handle("update:quit-and-install", () => {
+    autoUpdater.quitAndInstall();
+  });
+  ipcMain.handle("update:download", () => {
+    void autoUpdater.downloadUpdate();
+  });
+  void autoUpdater.checkForUpdates();
+}
+
 async function main(): Promise<void> {
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
@@ -166,6 +183,9 @@ async function main(): Promise<void> {
   try {
     const { port } = await serverHandle.start();
     await createWindow(port);
+    if (app.isPackaged) {
+      setupAutoUpdater();
+    }
   } catch (err) {
     if (!fatalDialogShown) {
       const message = err instanceof Error ? err.message : String(err);

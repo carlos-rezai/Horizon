@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, Settings } from "lucide-react";
+import UpdateBanner from "../../features/updates/UpdateBanner/UpdateBanner";
 import {
   StyledWrapper,
   StyledSidebar,
@@ -40,6 +41,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <StyledMain>
         <StyledContent>{children}</StyledContent>
       </StyledMain>
+      <UpdateBanner />
     </StyledWrapper>
   );
 }
