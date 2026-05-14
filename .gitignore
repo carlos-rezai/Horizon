@@ -27,6 +27,14 @@ electron/dist
 # Claude Code
 .claude/
 
+# Code-signing certificates
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+*.cer
+
 # Environment variables
 .env
 .env.local
