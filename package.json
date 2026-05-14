@@ -71,6 +71,10 @@
     "vite": "^8.0.1",
     "vitest": "^4.1.2"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlos-rezai/Horizon"
+  },
   "build": {
     "appId": "io.github.carlosrezai.horizon",
     "productName": "Horizon",
@@ -99,6 +103,12 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false
-    }
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "carlos-rezai",
+      "repo": "horizon"
+    },
+    "allowUncheckedUpdates": true
   }
 }
