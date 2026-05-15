@@ -20,7 +20,7 @@ import {
   buildTrajectoryData,
   deriveSTMonths,
   findMortgagePayoffMonth,
-} from "../../../utils/projection";
+} from "../../../utils/projection/projection";
 import { formatBalance } from "../../../utils/format/format";
 import {
   StyledSection,

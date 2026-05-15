@@ -7,9 +7,9 @@ import {
   deriveYearSummaries,
   buildTrajectoryData,
 } from "./projection";
-import type { MonthlySnapshot } from "../types/projection";
-import type { AccountWithBalance } from "../types/account";
-import type { RecurringTransaction } from "../types/recurring";
+import type { MonthlySnapshot } from "../../types/projection";
+import type { AccountWithBalance } from "../../types/account";
+import type { RecurringTransaction } from "../../types/recurring";
 
 const snapshot = (
   month: string,

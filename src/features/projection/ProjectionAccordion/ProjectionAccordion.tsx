@@ -6,7 +6,7 @@ import {
   buildAccountColumns,
   findMortgagePayoffMonth,
   deriveSTMonths,
-} from "../../../utils/projection";
+} from "../../../utils/projection/projection";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import {
   StyledAccordion,

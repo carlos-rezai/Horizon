@@ -2,7 +2,10 @@ import { useNavigate } from "react-router-dom";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
-import { deriveSTMonths, deriveYearSummaries } from "../../../utils/projection";
+import {
+  deriveSTMonths,
+  deriveYearSummaries,
+} from "../../../utils/projection/projection";
 import { formatBalance } from "../../../utils/format/format";
 import {
   StyledSection,

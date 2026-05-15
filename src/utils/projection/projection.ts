@@ -2,9 +2,9 @@ import type {
   MonthlySnapshot,
   TrajectoryDataPoint,
   YearSummaryRow,
-} from "../types/projection";
-import type { AccountKind, AccountWithBalance } from "../types/account";
-import type { RecurringTransaction } from "../types/recurring";
+} from "../../types/projection";
+import type { AccountKind, AccountWithBalance } from "../../types/account";
+import type { RecurringTransaction } from "../../types/recurring";
 
 const KIND_ORDER: Record<AccountKind, number> = {
   Girokonto: 0,
