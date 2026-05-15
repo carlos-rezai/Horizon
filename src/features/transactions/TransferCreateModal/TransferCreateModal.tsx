@@ -1,7 +1,7 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency/currency";
-import { API_BASE } from "../../../utils/api";
+import { API_BASE } from "../../../utils/api/api";
 import type { AccountWithBalance } from "../../../types/account";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";

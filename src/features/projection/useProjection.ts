@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { MonthlySnapshot } from "../../types/projection";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 interface UseProjectionResult {
   snapshots: MonthlySnapshot[];

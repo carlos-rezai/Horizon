@@ -3,7 +3,7 @@ import type {
   RecurringTransaction,
   RecurringFrequency,
 } from "../../types/recurring";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 interface CreatePayload {
   amount: number;

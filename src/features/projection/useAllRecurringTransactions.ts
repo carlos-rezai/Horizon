@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { RecurringTransaction } from "../../types/recurring";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 interface UseAllRecurringTransactionsResult {
   recurringTransactions: RecurringTransaction[];

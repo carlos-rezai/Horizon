@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Category } from "../../types/category";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 interface UseCategoriesWithInlineAddResult {
   categories: Category[];

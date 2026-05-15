@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 export interface StorageStatus {
   driver: "sqlite" | "mongo";

@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 export async function uploadRestore(file: File): Promise<void> {
   const formData = new FormData();

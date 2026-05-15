@@ -10,7 +10,7 @@ import { useRecurringTransactions } from "../../features/transactions/useRecurri
 import Card from "../../components/Card/Card";
 import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 import type { Transaction } from "../../types/transaction";
 import type { RecurringTransaction } from "../../types/recurring";
 import {

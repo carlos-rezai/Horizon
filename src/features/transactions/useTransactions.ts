@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Transaction } from "../../types/transaction";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 interface CreatePayload {
   date: string;

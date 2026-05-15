@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { AccountWithBalance } from "../../types/account";
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 interface UseAccountsResult {
   accounts: AccountWithBalance[];

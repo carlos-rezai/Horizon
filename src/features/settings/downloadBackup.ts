@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/api";
+import { API_BASE } from "../../utils/api/api";
 
 export async function downloadBackup(): Promise<void> {
   const res = await fetch(`${API_BASE}/storage/backup`, {
