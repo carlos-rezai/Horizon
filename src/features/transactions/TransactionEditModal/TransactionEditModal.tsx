@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Transaction } from "../../../types/transaction";
-import { eurosToCents } from "../../../utils/currency";
+import { eurosToCents } from "../../../utils/currency/currency";
 import { API_BASE } from "../../../utils/api";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";

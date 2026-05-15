@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import { formatBalance } from "../../../utils/format";
-import { centsToEuros, eurosToCents } from "../../../utils/currency";
+import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";
 import {

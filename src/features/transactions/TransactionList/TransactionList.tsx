@@ -1,5 +1,5 @@
 import type { Transaction } from "../../../types/transaction";
-import { centsToEuros } from "../../../utils/currency";
+import { centsToEuros } from "../../../utils/currency/currency";
 import {
   StyledList,
   StyledRow,

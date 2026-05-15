@@ -4,7 +4,7 @@ import type { LucideProps } from "lucide-react";
 import type { AccountKind } from "../../../types/account";
 import { accountIconSet, theme as meridianTheme } from "../../../tokens";
 import { API_BASE } from "../../../utils/api";
-import { eurosToCents } from "../../../utils/currency";
+import { eurosToCents } from "../../../utils/currency/currency";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import Input from "../../../primitives/Input/Input";

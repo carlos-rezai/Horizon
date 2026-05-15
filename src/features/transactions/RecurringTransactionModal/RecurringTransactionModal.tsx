@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
-import { eurosToCents } from "../../../utils/currency";
+import { eurosToCents } from "../../../utils/currency/currency";
 import type {
   RecurringTransaction,
   RecurringFrequency,
