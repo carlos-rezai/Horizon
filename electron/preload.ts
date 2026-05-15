@@ -6,6 +6,7 @@ const apiBaseUrl = parseApiBaseUrlArg(process.argv) ?? "";
 contextBridge.exposeInMainWorld("horizon", {
   apiBaseUrl,
   platform: process.platform,
+  electronVersion: process.versions.electron,
   updates: {
     onUpdateDownloaded(cb: () => void) {
       const handler = () => cb();

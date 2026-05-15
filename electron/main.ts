@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   BrowserWindow,
@@ -14,6 +15,14 @@ import ElectronStore from "electron-store";
 import { resolveDbPath } from "./paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle.js";
+const devAppVersion = (
+  JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL("../../package.json", import.meta.url)),
+      "utf-8"
+    )
+  ) as { version: string }
+).version;
 
 interface HorizonPreferences {
   autoDownload: boolean;
@@ -175,8 +184,12 @@ function setupAutoUpdater(): void {
     prefs.set("autoDownload", enabled);
     autoUpdater.autoDownload = enabled;
   });
-  ipcMain.handle("app:get-version", () => app.getVersion());
-  void autoUpdater.checkForUpdates();
+  ipcMain.handle("app:get-version", () =>
+    app.isPackaged ? app.getVersion() : devAppVersion
+  );
+  if (app.isPackaged) {
+    void autoUpdater.checkForUpdates();
+  }
 }
 
 async function main(): Promise<void> {
@@ -204,9 +217,7 @@ async function main(): Promise<void> {
   try {
     const { port } = await serverHandle.start();
     await createWindow(port);
-    if (app.isPackaged) {
-      setupAutoUpdater();
-    }
+    setupAutoUpdater();
   } catch (err) {
     if (!fatalDialogShown) {
       const message = err instanceof Error ? err.message : String(err);

@@ -146,6 +146,50 @@ npm run release
 
 Output: `release/Horizon-Setup-x.x.x.exe`
 
+### Developer setup — self-signed code-signing certificate
+
+To build a locally-installable update that does not trigger a SmartScreen warning, generate a self-signed certificate and import it into the Windows Trusted Root store once per machine.
+
+**1. Generate and import the certificate (run once as Administrator)**
+
+```powershell
+# Generate the certificate
+$cert = New-SelfSignedCertificate `
+  -Subject "CN=Horizon Dev" `
+  -Type CodeSigningCert `
+  -CertStoreLocation Cert:\CurrentUser\My `
+  -NotAfter (Get-Date).AddYears(5)
+
+# Export as .pfx (set your own password)
+$pwd = ConvertTo-SecureString -String "YOUR_PASSWORD" -Force -AsPlainText
+Export-PfxCertificate -Cert $cert -FilePath horizon-dev.pfx -Password $pwd
+
+# Import into Trusted Root so Windows trusts your own certificate
+Import-PfxCertificate `
+  -FilePath horizon-dev.pfx `
+  -CertStoreLocation Cert:\LocalMachine\Root `
+  -Password $pwd
+```
+
+**2. Set local environment variables**
+
+Create a `.env.local` file (never committed) or set them in your shell session:
+
+```
+WIN_CERTIFICATE_FILE=C:\full\path\to\horizon-dev.pfx
+WIN_CERTIFICATE_PASSWORD=YOUR_PASSWORD
+```
+
+`electron-builder.config.js` reads these at build time and passes them to the Windows code-signing step.
+
+**3. Build**
+
+```
+npm run release
+```
+
+The generated installer will be signed with your local certificate and will install without a SmartScreen warning on the same machine.
+
 ---
 
 ## Build Status

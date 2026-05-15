@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
-import { VersionText } from "./AppVersion.styles";
+import { VersionList, VersionText } from "./AppVersion.styles";
 
 export default function AppVersion() {
-  const [version, setVersion] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    void window.horizon?.updates.getAppVersion().then(setVersion);
+    void window.horizon?.updates.getAppVersion().then(setAppVersion);
   }, []);
 
-  if (!version) return null;
-  return <VersionText>{version}</VersionText>;
+  if (!appVersion) return null;
+
+  const electronVersion = window.horizon?.electronVersion;
+
+  return (
+    <VersionList>
+      <VersionText>Horizon {appVersion}</VersionText>
+      {electronVersion && <VersionText>Electron {electronVersion}</VersionText>}
+    </VersionList>
+  );
 }

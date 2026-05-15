@@ -16,12 +16,14 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 describe("AppVersion", () => {
-  it("renders the version string from getAppVersion", async () => {
+  it("renders labeled Horizon and Electron versions", async () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "41.5.0",
       updates: {
         onUpdateDownloaded: () => () => {},
+        onUpdateAvailable: () => () => {},
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
         getAppVersion: vi.fn().mockResolvedValue("0.2.0"),
@@ -33,7 +35,8 @@ describe("AppVersion", () => {
     renderWithTheme(<AppVersion />);
 
     await waitFor(() => {
-      expect(screen.getByText("0.2.0")).toBeInTheDocument();
+      expect(screen.getByText("Horizon 0.2.0")).toBeInTheDocument();
+      expect(screen.getByText("Electron 41.5.0")).toBeInTheDocument();
     });
   });
 });

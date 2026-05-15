@@ -74,8 +74,10 @@ function mockHorizon() {
   window.horizon = {
     apiBaseUrl: "",
     platform: "win32",
+    electronVersion: "0.0.0",
     updates: {
       onUpdateDownloaded: () => () => {},
+      onUpdateAvailable: () => () => {},
       quitAndInstall: vi.fn(),
       downloadUpdate: vi.fn(),
       getAppVersion: vi.fn().mockResolvedValue("0.1.0"),

@@ -5,6 +5,7 @@ declare global {
     horizon?: {
       apiBaseUrl: string;
       platform: string;
+      electronVersion: string;
       updates: {
         onUpdateDownloaded: (cb: () => void) => () => void;
         onUpdateAvailable: (cb: () => void) => () => void;

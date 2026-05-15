@@ -26,6 +26,7 @@ describe("UpdateBanner", () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "0.0.0",
       updates: {
         onUpdateDownloaded: () => () => {},
         onUpdateAvailable: () => () => {},
@@ -46,6 +47,7 @@ describe("UpdateBanner", () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "0.0.0",
       updates: {
         onUpdateDownloaded: (cb) => {
           registeredCb = cb;
@@ -79,6 +81,7 @@ describe("UpdateBanner", () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "0.0.0",
       updates: {
         onUpdateDownloaded: (cb) => {
           registeredCb = cb;
@@ -115,6 +118,7 @@ describe("UpdateBanner", () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "0.0.0",
       updates: {
         onUpdateDownloaded: () => () => {},
         onUpdateAvailable: (cb) => {
@@ -149,6 +153,7 @@ describe("UpdateBanner", () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "0.0.0",
       updates: {
         onUpdateDownloaded: () => () => {},
         onUpdateAvailable: (cb) => {
@@ -180,6 +185,7 @@ describe("UpdateBanner", () => {
     window.horizon = {
       apiBaseUrl: "",
       platform: "win32",
+      electronVersion: "0.0.0",
       updates: {
         onUpdateDownloaded: (cb) => {
           registeredDownloadedCb = cb;
