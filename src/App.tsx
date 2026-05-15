@@ -1,9 +1,11 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout/AppLayout";
-import DashboardPage from "./pages/DashboardPage";
-import AccountDetailPage from "./pages/AccountDetailPage";
-import PlanPage from "./pages/PlanPage";
-import SettingsStoragePage from "./pages/SettingsStoragePage";
+import {
+  DashboardPage,
+  AccountDetailPage,
+  PlanPage,
+  SettingsStoragePage,
+} from "./pages";
 
 export default function App() {
   return (
