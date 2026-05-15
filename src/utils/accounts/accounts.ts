@@ -1,4 +1,4 @@
-import type { AccountWithBalance } from "../types/account";
+import type { AccountWithBalance } from "../../types/account";
 
 const LIQUID_KINDS = new Set(["Girokonto", "Tagesgeld"]);
 

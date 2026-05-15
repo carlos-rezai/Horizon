@@ -13,7 +13,7 @@ import PageHeader from "../../components/PageHeader/PageHeader";
 import Spinner from "../../primitives/Spinner/Spinner";
 import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
-import { computeTotalLiquid } from "../../utils/accounts";
+import { computeTotalLiquid } from "../../utils/accounts/accounts";
 import { formatBalance } from "../../utils/format";
 import {
   StyledDashboard,

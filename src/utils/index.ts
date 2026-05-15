@@ -1,4 +1,4 @@
-export { computeTotalLiquid } from "./accounts";
+export { computeTotalLiquid } from "./accounts/accounts";
 export { eurosToCents, centsToEuros } from "./currency/currency";
 export { formatBalance, formatMonth } from "./format";
 export { apiFetch, setSilentRefresh } from "./apiFetch";
