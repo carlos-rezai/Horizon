@@ -13,7 +13,7 @@ interface ApiFetchModule {
 }
 
 async function loadTokenStore(): Promise<TokenStoreModule> {
-  return (await import("../auth/tokenStore")) as TokenStoreModule;
+  return (await import("../../auth/tokenStore")) as TokenStoreModule;
 }
 
 async function loadApiFetch(): Promise<ApiFetchModule> {

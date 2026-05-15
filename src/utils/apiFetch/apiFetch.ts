@@ -1,4 +1,4 @@
-import { getToken } from "../auth/tokenStore";
+import { getToken } from "../../auth/tokenStore";
 
 type SilentRefresh = () => Promise<void>;
 
