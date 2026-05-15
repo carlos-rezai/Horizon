@@ -21,7 +21,7 @@ import {
   deriveSTMonths,
   findMortgagePayoffMonth,
 } from "../../../utils/projection";
-import { formatBalance } from "../../../utils/format";
+import { formatBalance } from "../../../utils/format/format";
 import {
   StyledSection,
   StyledChartWrapper,

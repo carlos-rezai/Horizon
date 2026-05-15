@@ -14,7 +14,7 @@ import Spinner from "../../primitives/Spinner/Spinner";
 import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
 import { computeTotalLiquid } from "../../utils/accounts/accounts";
-import { formatBalance } from "../../utils/format";
+import { formatBalance } from "../../utils/format/format";
 import {
   StyledDashboard,
   StyledGrid,

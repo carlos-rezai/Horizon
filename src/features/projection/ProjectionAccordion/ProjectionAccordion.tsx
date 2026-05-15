@@ -7,7 +7,7 @@ import {
   findMortgagePayoffMonth,
   deriveSTMonths,
 } from "../../../utils/projection";
-import { formatBalance, formatMonth } from "../../../utils/format";
+import { formatBalance, formatMonth } from "../../../utils/format/format";
 import {
   StyledAccordion,
   StyledYearSection,

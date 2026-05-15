@@ -3,7 +3,7 @@ import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import { deriveSTMonths, deriveYearSummaries } from "../../../utils/projection";
-import { formatBalance } from "../../../utils/format";
+import { formatBalance } from "../../../utils/format/format";
 import {
   StyledSection,
   StyledViewFullPlan,

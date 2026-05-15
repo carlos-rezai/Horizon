@@ -1,5 +1,5 @@
 import type { RecurringTransaction } from "../../../types/recurring";
-import { formatBalance } from "../../../utils/format";
+import { formatBalance } from "../../../utils/format/format";
 import {
   StyledList,
   StyledRow,
