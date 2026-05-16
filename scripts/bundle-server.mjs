@@ -4,7 +4,10 @@ await build({
   entryPoints: ["server/src/server.ts"],
   bundle: true,
   platform: "node",
-  format: "cjs",
+  format: "esm",
   external: ["better-sqlite3"],
-  outfile: "server/dist/server.bundle.cjs",
+  banner: {
+    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
+  },
+  outfile: "server/dist/server.bundle.js",
 });

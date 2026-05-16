@@ -18,7 +18,7 @@ export function resolveServerEntry(
     // app.asar.unpacked/ at the same relative path.
     const unpackedRoot = path.join(path.dirname(appPath), "app.asar.unpacked");
     return {
-      entry: path.join(unpackedRoot, "server", "dist", "server.bundle.cjs"),
+      entry: path.join(unpackedRoot, "server", "dist", "server.bundle.js"),
       execArgv: [],
     };
   }

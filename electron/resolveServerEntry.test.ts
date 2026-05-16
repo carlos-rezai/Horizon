@@ -19,7 +19,7 @@ describe("resolveServerEntry", () => {
         "app.asar.unpacked",
         "server",
         "dist",
-        "server.bundle.cjs"
+        "server.bundle.js"
       )
     );
     expect(result.execArgv).toEqual([]);
@@ -67,7 +67,7 @@ describe("resolveServerEntry", () => {
         "app.asar.unpacked",
         "server",
         "dist",
-        "server.bundle.cjs"
+        "server.bundle.js"
       )
     );
     expect(result.execArgv).toEqual([]);
