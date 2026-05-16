@@ -17,7 +17,7 @@ export function buildConfig(env) {
     productName: "Horizon",
     icon: "src/assets/icon.ico",
     files: ["dist/**", "electron/dist/**", "server/dist/**"],
-    asarUnpack: ["**/*.node"],
+    asarUnpack: ["**/*.node", "server/dist/**"],
     directories: { output: "release" },
     win,
     nsis: { oneClick: true, perMachine: false },

@@ -88,7 +88,8 @@
       "server/dist/**"
     ],
     "asarUnpack": [
-      "**/*.node"
+      "**/*.node",
+      "server/dist/**"
     ],
     "directories": {
       "output": "release"

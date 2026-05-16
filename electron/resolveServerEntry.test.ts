@@ -4,11 +4,23 @@ import { describe, expect, it } from "vitest";
 import { resolveServerEntry } from "./resolveServerEntry";
 
 describe("resolveServerEntry", () => {
-  it("uses appPath and bundle when packaged", () => {
-    const result = resolveServerEntry(true, false, {}, "/app", "/cwd");
+  it("uses unpacked path and bundle when packaged", () => {
+    const result = resolveServerEntry(
+      true,
+      false,
+      {},
+      "/resources/app.asar",
+      "/cwd"
+    );
 
     expect(result.entry).toBe(
-      path.join("/app", "server", "dist", "server.bundle.js")
+      path.join(
+        "/resources",
+        "app.asar.unpacked",
+        "server",
+        "dist",
+        "server.bundle.js"
+      )
     );
     expect(result.execArgv).toEqual([]);
   });
@@ -40,11 +52,23 @@ describe("resolveServerEntry", () => {
     expect(result.execArgv).toEqual([]);
   });
 
-  it("packaged wins over isDev — uses appPath and bundle even when isDev is true", () => {
-    const result = resolveServerEntry(true, true, {}, "/app", "/cwd");
+  it("packaged wins over isDev — uses unpacked path and bundle even when isDev is true", () => {
+    const result = resolveServerEntry(
+      true,
+      true,
+      {},
+      "/resources/app.asar",
+      "/cwd"
+    );
 
     expect(result.entry).toBe(
-      path.join("/app", "server", "dist", "server.bundle.js")
+      path.join(
+        "/resources",
+        "app.asar.unpacked",
+        "server",
+        "dist",
+        "server.bundle.js"
+      )
     );
     expect(result.execArgv).toEqual([]);
   });

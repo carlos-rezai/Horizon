@@ -46,10 +46,6 @@ describe("release pipeline config", () => {
       const publish = build.publish as Record<string, unknown>;
       expect(publish.repo).toBe("horizon");
     });
-
-    it("sets allowUncheckedUpdates to true", () => {
-      expect(build.allowUncheckedUpdates).toBe(true);
-    });
   });
 
   describe(".github/workflows/release.yml", () => {

@@ -13,8 +13,12 @@ export function resolveServerEntry(
   cwd: string
 ): ServerEntry {
   if (isPackaged) {
+    // utilityProcess.fork() is a native spawn — it cannot read from inside an
+    // asar archive. The server bundle is declared in asarUnpack so it lands in
+    // app.asar.unpacked/ at the same relative path.
+    const unpackedRoot = path.join(path.dirname(appPath), "app.asar.unpacked");
     return {
-      entry: path.join(appPath, "server", "dist", "server.bundle.js"),
+      entry: path.join(unpackedRoot, "server", "dist", "server.bundle.js"),
       execArgv: [],
     };
   }
