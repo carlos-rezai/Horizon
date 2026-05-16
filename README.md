@@ -208,7 +208,7 @@ The generated installer will be signed with your local certificate and will inst
 | Electron desktop shell                    | ✅ Complete |
 | Desktop packaging (Windows installer)     | ✅ Complete |
 | UI Redesign                               | ✅ Complete |
-| In-app auto-update (electron-updater)     | 🔲 Planned  |
+| In-app auto-update (electron-updater)     | ✅ Complete |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
