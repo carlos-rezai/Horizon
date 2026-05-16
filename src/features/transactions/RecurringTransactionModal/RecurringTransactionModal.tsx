@@ -38,7 +38,6 @@ interface Props {
 }
 
 export default function RecurringTransactionModal({
-  accountId: _accountId,
   transaction,
   otherAccounts,
   onClose,

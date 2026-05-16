@@ -7,14 +7,6 @@ const levelSizeMap = {
   4: "md",
 } as const;
 
-type Level = keyof typeof levelSizeMap;
-
-export const headingStyles = (_level: Level) => `
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-`;
-
 // One styled component per level so the element type is correct
 export const StyledH1 = styled.h1`
   color: ${({ theme }) => theme.colors.onSurface};
