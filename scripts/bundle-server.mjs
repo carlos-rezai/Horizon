@@ -4,7 +4,7 @@ await build({
   entryPoints: ["server/src/server.ts"],
   bundle: true,
   platform: "node",
-  format: "esm",
+  format: "cjs",
   external: ["better-sqlite3"],
-  outfile: "server/dist/server.bundle.js",
+  outfile: "server/dist/server.bundle.cjs",
 });
