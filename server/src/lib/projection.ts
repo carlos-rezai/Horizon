@@ -230,6 +230,25 @@ export function projectBalances(
       accountsSnapshot[a.id] = snapshot;
     }
 
+    // Re-anchor non-mortgage running balances to actual after each current/past
+    // month so future projections build from the real balance, not the projected
+    // one (which would double-count recurring transfers already implicit in the
+    // actual balance).
+    if (month <= currentDate) {
+      for (const a of accounts) {
+        if (a.kind === "Mortgage") continue;
+        runningBalances.set(
+          a.id,
+          a.openingBalance +
+            transactions
+              .filter(
+                (tx) => tx.accountId === a.id && tx.date.slice(0, 7) <= month
+              )
+              .reduce((sum, tx) => sum + tx.amount, 0)
+        );
+      }
+    }
+
     snapshots.push({
       month,
       accounts: accountsSnapshot,

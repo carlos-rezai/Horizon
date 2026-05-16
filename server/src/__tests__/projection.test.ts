@@ -85,12 +85,12 @@ describe("projectBalances - monthly recurrence", () => {
       "2026-04"
     );
 
-    // Month 0: 100000 - 50000 = 50000
+    // Month 0: 100000 - 50000 = 50000 (projected; re-anchors to actual=100000 after snapshot)
     expect(snapshots[0].accounts["a1"].projected).toBe(50000);
-    // Month 1: 50000 - 50000 = 0
-    expect(snapshots[1].accounts["a1"].projected).toBe(0);
-    // Month 2: 0 - 50000 = -50000
-    expect(snapshots[2].accounts["a1"].projected).toBe(-50000);
+    // Month 1: re-anchored 100000 - 50000 = 50000
+    expect(snapshots[1].accounts["a1"].projected).toBe(50000);
+    // Month 2: 50000 - 50000 = 0
+    expect(snapshots[2].accounts["a1"].projected).toBe(0);
   });
 
   it("netCashflow for each month reflects the monthly recurring amount", () => {
@@ -141,8 +141,9 @@ describe("projectBalances - monthly recurrence", () => {
     );
 
     // totalLiquid = Girokonto only (Mortgage excluded)
+    // month 0: 100000-10000=90000; re-anchors to actual=100000; month 1: 100000-10000=90000
     expect(snapshots[0].totalLiquid).toBe(90000);
-    expect(snapshots[1].totalLiquid).toBe(80000);
+    expect(snapshots[1].totalLiquid).toBe(90000);
   });
 });
 
@@ -172,18 +173,18 @@ describe("projectBalances - quarterly recurrence", () => {
       "2026-04"
     );
 
-    // Month 0: fires → 200000 - 30000 = 170000
+    // Month 0: fires → 200000 - 30000 = 170000 (projected; re-anchors to actual=200000)
     expect(snapshots[0].accounts["a1"].projected).toBe(170000);
-    // Month 1: no fire → stays 170000
-    expect(snapshots[1].accounts["a1"].projected).toBe(170000);
-    // Month 2: no fire → stays 170000
-    expect(snapshots[2].accounts["a1"].projected).toBe(170000);
-    // Month 3: fires → 170000 - 30000 = 140000
-    expect(snapshots[3].accounts["a1"].projected).toBe(140000);
-    // Month 4: no fire → stays 140000
-    expect(snapshots[4].accounts["a1"].projected).toBe(140000);
-    // Month 6: fires → 140000 - 30000 = 110000
-    expect(snapshots[6].accounts["a1"].projected).toBe(110000);
+    // Month 1: re-anchored 200000, no fire → 200000
+    expect(snapshots[1].accounts["a1"].projected).toBe(200000);
+    // Month 2: no fire → 200000
+    expect(snapshots[2].accounts["a1"].projected).toBe(200000);
+    // Month 3: fires → 200000 - 30000 = 170000
+    expect(snapshots[3].accounts["a1"].projected).toBe(170000);
+    // Month 4: no fire → 170000
+    expect(snapshots[4].accounts["a1"].projected).toBe(170000);
+    // Month 6: fires → 170000 - 30000 = 140000
+    expect(snapshots[6].accounts["a1"].projected).toBe(140000);
   });
 });
 
@@ -213,17 +214,17 @@ describe("projectBalances - annual recurrence", () => {
       "2026-04"
     );
 
-    // Month 0: fires → 500000 - 70000 = 430000
+    // Month 0: fires → 500000 - 70000 = 430000 (projected; re-anchors to actual=500000)
     expect(snapshots[0].accounts["a1"].projected).toBe(430000);
-    // Month 1-11: no change
-    expect(snapshots[1].accounts["a1"].projected).toBe(430000);
-    expect(snapshots[11].accounts["a1"].projected).toBe(430000);
-    // Month 12: fires → 430000 - 70000 = 360000
-    expect(snapshots[12].accounts["a1"].projected).toBe(360000);
+    // Month 1-11: no change (starts from re-anchored 500000)
+    expect(snapshots[1].accounts["a1"].projected).toBe(500000);
+    expect(snapshots[11].accounts["a1"].projected).toBe(500000);
+    // Month 12: fires → 500000 - 70000 = 430000
+    expect(snapshots[12].accounts["a1"].projected).toBe(430000);
     // Month 13-23: no change
-    expect(snapshots[13].accounts["a1"].projected).toBe(360000);
-    // Month 24: fires → 360000 - 70000 = 290000
-    expect(snapshots[24].accounts["a1"].projected).toBe(290000);
+    expect(snapshots[13].accounts["a1"].projected).toBe(430000);
+    // Month 24: fires → 430000 - 70000 = 360000
+    expect(snapshots[24].accounts["a1"].projected).toBe(360000);
   });
 });
 
@@ -355,9 +356,10 @@ describe("projectBalances - Sondertilgung", () => {
     expect(snapshots[0].accounts["mortgage"].projected).toBe(0);
     // Tagesgeld debited by actual 300000, not full 700000
     expect(snapshots[0].accounts["tagesgeld"].projected).toBe(700000);
-    // Month 12: Mortgage already at 0 — ST skipped, Tagesgeld unchanged
+    // Month 12: Mortgage already at 0 — ST skipped; Tagesgeld re-anchored to actual
+    // (1000000) after month 0 so it returns to opening balance at month 12
     expect(snapshots[12].accounts["mortgage"].projected).toBe(0);
-    expect(snapshots[12].accounts["tagesgeld"].projected).toBe(700000);
+    expect(snapshots[12].accounts["tagesgeld"].projected).toBe(1000000);
   });
 
   it("Restschuld never goes below zero across all projected months", () => {
@@ -526,10 +528,10 @@ describe("GET /projection", () => {
 
     const res = await request(app).get("/projection");
 
-    // Month 0: 500000 - 50000 = 450000
+    // Month 0: 500000 - 50000 = 450000 (projected; re-anchors to actual=500000)
     expect(res.body[0].accounts[accountId].projected).toBe(450000);
-    // Month 1: 450000 - 50000 = 400000
-    expect(res.body[1].accounts[accountId].projected).toBe(400000);
+    // Month 1: re-anchored 500000 - 50000 = 450000
+    expect(res.body[1].accounts[accountId].projected).toBe(450000);
   });
 });
 
@@ -675,10 +677,10 @@ describe("projectBalances - replay loop", () => {
     );
 
     // Starting balance after replay: 1000000 − 3×50000 = 850000
-    // Forward index 0 (April): 850000 − 50000 = 800000
+    // Forward index 0 (April): 850000 − 50000 = 800000 (re-anchors to actual=1000000)
     expect(snapshots[0].accounts["a1"].projected).toBe(800000);
-    // Forward index 1 (May): 800000 − 50000 = 750000
-    expect(snapshots[1].accounts["a1"].projected).toBe(750000);
+    // Forward index 1 (May): re-anchored 1000000 − 50000 = 950000
+    expect(snapshots[1].accounts["a1"].projected).toBe(950000);
   });
 
   it("account opened 13 months ago with annual ST (monthOfYear: 10) has the ST applied once when October is within the replay window", () => {
@@ -893,10 +895,11 @@ describe("projectBalances - ST with monthOfYear", () => {
     );
 
     // April (index 0): only monthly income fires — 100000 + 200000 = 300000
+    // (re-anchors to actual=100000 after snapshot)
     expect(snapshots[0].accounts["tagesgeld"].projected).toBe(300000);
-    // May (index 1): only monthly income fires — 300000 + 200000 = 500000
-    // Without monthOfYear the ST would have fired in April, leaving Tagesgeld at -200000
-    expect(snapshots[1].accounts["tagesgeld"].projected).toBe(500000);
+    // May (index 1): re-anchored 100000 + 200000 = 300000
+    // Without monthOfYear the ST would have fired in April, leaving Tagesgeld negative
+    expect(snapshots[1].accounts["tagesgeld"].projected).toBe(300000);
     expect(snapshots[1].accounts["tagesgeld"].projected).toBeGreaterThanOrEqual(
       0
     );
@@ -987,16 +990,16 @@ describe("projectBalances - correctness verification suite", () => {
     );
 
     // i=0 Apr: quarterly fires → 300000 +350000 −200000 −100000 −30000 = 320000
+    // (re-anchors giro to actual=300000 after snapshot)
     expect(snapshots[0].accounts["giro"].projected).toBe(320000);
-    // i=1 May: no quarterly → 320000 +50000 = 370000
-    expect(snapshots[1].accounts["giro"].projected).toBe(370000);
-    // i=3 Jul: quarterly fires → 420000 +350000 −200000 −100000 −30000 = 440000
-    expect(snapshots[3].accounts["giro"].projected).toBe(440000);
-    // i=6 Oct: quarterly fires, ST (savings→mortgage) does not affect giro
-    //   540000 +350000 −200000 −100000 −30000 = 560000
-    expect(snapshots[6].accounts["giro"].projected).toBe(560000);
-    // i=12 Apr 2027: quarterly fires → 800000
-    expect(snapshots[12].accounts["giro"].projected).toBe(800000);
+    // i=1 May: re-anchored 300000, no quarterly → 300000 +50000 = 350000
+    expect(snapshots[1].accounts["giro"].projected).toBe(350000);
+    // i=3 Jul: quarterly fires → 400000 +20000 = 420000
+    expect(snapshots[3].accounts["giro"].projected).toBe(420000);
+    // i=6 Oct: quarterly fires → 520000 +20000 = 540000
+    expect(snapshots[6].accounts["giro"].projected).toBe(540000);
+    // i=12 Apr 2027: quarterly fires → 780000
+    expect(snapshots[12].accounts["giro"].projected).toBe(780000);
   });
 
   it("Tagesgeld balance tracks monthly transfer income and dips by ST each October", () => {
@@ -1010,13 +1013,14 @@ describe("projectBalances - correctness verification suite", () => {
     );
 
     // i=0 Apr: +100000 transfer → 500000 +100000 = 600000
+    // (re-anchors savings to actual=500000 after snapshot)
     expect(snapshots[0].accounts["savings"].projected).toBe(600000);
-    // i=5 Sep: 5 months of +100000 → 600000 +5×100000 = 1100000
-    expect(snapshots[5].accounts["savings"].projected).toBe(1100000);
-    // i=6 Oct: transfer makes it 1200000, then ST fires → 1200000 −500000 = 700000
-    expect(snapshots[6].accounts["savings"].projected).toBe(700000);
-    // i=7 Nov: +100000 → 800000
-    expect(snapshots[7].accounts["savings"].projected).toBe(800000);
+    // i=5 Sep: re-anchored 500000 + 5×100000 = 1000000
+    expect(snapshots[5].accounts["savings"].projected).toBe(1000000);
+    // i=6 Oct: +100000 → 1100000, then ST fires → 1100000 −500000 = 600000
+    expect(snapshots[6].accounts["savings"].projected).toBe(600000);
+    // i=7 Nov: +100000 → 700000
+    expect(snapshots[7].accounts["savings"].projected).toBe(700000);
   });
 
   it("Mortgage balance decreases by exactly 500000 each October and never goes below zero", () => {
@@ -1055,10 +1059,10 @@ describe("projectBalances - correctness verification suite", () => {
       60
     );
 
-    // i=8 Dec 2026: giro=660000, savings=900000 → 1560000
-    expect(snapshots[8].totalLiquid).toBe(1560000);
-    // i=20 Dec 2027: giro=1140000, savings=1600000 → 2740000
-    expect(snapshots[20].totalLiquid).toBe(2740000);
+    // i=8 Dec 2026: giro=640000, savings=800000 → 1440000
+    expect(snapshots[8].totalLiquid).toBe(1440000);
+    // i=20 Dec 2027: giro=1120000, savings=1500000 → 2620000
+    expect(snapshots[20].totalLiquid).toBe(2620000);
   });
 
   it("netCashflow is 150000 on non-quarterly months and 120000 on quarterly months (transfers and ST excluded)", () => {
@@ -1112,8 +1116,8 @@ describe("projectBalances - correctness verification suite", () => {
     expect(snapshots[0].accounts["savings"].projected).toBe(0);
     // i=0: mortgage clamped to 0
     expect(snapshots[0].accounts["mortgage"].projected).toBe(0);
-    // i=12 Oct 2027: mortgage already 0 → ST skipped entirely, savings unchanged at 0
-    expect(snapshots[12].accounts["savings"].projected).toBe(0);
+    // i=12 Oct 2027: mortgage already 0 → ST skipped; savings re-anchored to actual=300000
+    expect(snapshots[12].accounts["savings"].projected).toBe(300000);
     expect(snapshots[12].accounts["mortgage"].projected).toBe(0);
   });
 });
@@ -1150,9 +1154,50 @@ describe("projectBalances - accepts DTO shape", () => {
     );
 
     // Month 0: 100000 - 25000 = 75000 — must be addressable by `id` "a1"
+    // (re-anchors to actual=100000 after snapshot)
     expect(snapshots[0].accounts["a1"]).toBeDefined();
     expect(snapshots[0].accounts["a1"].projected).toBe(75000);
-    // Month 1: 75000 - 25000 = 50000
-    expect(snapshots[1].accounts["a1"].projected).toBe(50000);
+    // Month 1: re-anchored 100000 - 25000 = 75000
+    expect(snapshots[1].accounts["a1"].projected).toBe(75000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pure function: transfer destination double-counting regression
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - transfer destination anchoring", () => {
+  it("a transfer-receiving account does not double-count the current month transfer in the next projected month", () => {
+    const accounts = [
+      { id: "main", kind: "Girokonto" as const, openingBalance: 300000 },
+      { id: "savings", kind: "Tagesgeld" as const, openingBalance: 31848 },
+    ];
+    const recurring = [
+      {
+        accountId: "main",
+        amount: 70000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "savings",
+      },
+    ];
+    // fromDate = currentDate → month 0 is the current month.
+    // savings should be re-anchored to actual (31848) after month 0 so that
+    // month 1 only adds one transfer instead of two.
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-05",
+      "2026-05"
+    );
+
+    // Month 0: transfer fires → 31848 + 70000 = 101848 (projected snapshot)
+    expect(snapshots[0].accounts["savings"].projected).toBe(101848);
+    // Month 1: re-anchored to actual (31848) + 1 transfer = 101848
+    expect(snapshots[1].accounts["savings"].projected).toBe(101848);
+    // Month 2: 101848 + 70000 = 171848
+    expect(snapshots[2].accounts["savings"].projected).toBe(171848);
   });
 });

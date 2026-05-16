@@ -1,7 +1,7 @@
 {
   "name": "horizon",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "electron/dist/main.js",
   "type": "module",
   "scripts": {
