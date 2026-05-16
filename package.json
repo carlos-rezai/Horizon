@@ -2,6 +2,7 @@
   "name": "horizon",
   "private": true,
   "version": "1.0.0",
+  "main": "electron/dist/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
