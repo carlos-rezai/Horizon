@@ -32,6 +32,7 @@ export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
       return inner.recurringTransactions;
     },
     close: () => inner.close(),
+    serialize: () => inner.serialize(),
     backup: (destPath: string) => inner.backup(destPath),
     restore: (srcPath: string) => inner.restore(srcPath),
     status: () => inner.status(),

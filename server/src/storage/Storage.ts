@@ -83,6 +83,7 @@ export interface Storage {
   categories: CategoriesRepo;
   recurringTransactions: RecurringTransactionsRepo;
   close(): Promise<void>;
+  serialize(): Buffer;
   backup(destPath: string): Promise<void>;
   restore(srcPath: string): Promise<void>;
   status(): Promise<StorageStatus>;

@@ -2,8 +2,6 @@ import { Router, type Request } from "express";
 import multer from "multer";
 import fs from "fs";
 import os from "os";
-import path from "path";
-import { randomUUID } from "crypto";
 import type { Storage } from "../storage/Storage.js";
 import { StorageIntegrityError } from "../storage/sqlite/errors.js";
 
@@ -17,10 +15,6 @@ const upload = multer({ dest: os.tmpdir() });
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
-}
-
-function makeTempPath(prefix: string): string {
-  return path.join(os.tmpdir(), `horizon-${prefix}-${randomUUID()}.db`);
 }
 
 async function safeUnlink(p: string): Promise<void> {
@@ -43,34 +37,17 @@ router.get("/status", async (req, res) => {
   res.json(status);
 });
 
-router.post("/backup", async (req, res, next) => {
-  const tempPath = makeTempPath("backup");
-
+router.post("/backup", (req, res, next) => {
   try {
-    await getStorage(req).backup(tempPath);
+    const buffer = getStorage(req).serialize();
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="horizon-backup.db"'
+    );
+    res.send(buffer);
   } catch (err) {
-    await safeUnlink(tempPath);
     next(err);
-    return;
-  }
-
-  res.setHeader("Content-Type", "application/octet-stream");
-  res.setHeader(
-    "Content-Disposition",
-    'attachment; filename="horizon-backup.db"'
-  );
-
-  const stream = fs.createReadStream(tempPath);
-  try {
-    await new Promise<void>((resolve, reject) => {
-      stream.on("error", reject);
-      res.on("error", reject);
-      res.on("close", resolve);
-      res.on("finish", resolve);
-      stream.pipe(res);
-    });
-  } finally {
-    await safeUnlink(tempPath);
   }
 });
 

@@ -89,6 +89,9 @@ export async function createSqliteStorage(
     async close() {
       closeConnection(db);
     },
+    serialize() {
+      return db.serialize();
+    },
     async backup(destPath: string) {
       await db.backup(destPath);
     },
