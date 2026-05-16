@@ -1,3 +1,4 @@
+import path from "node:path";
 import { app, utilityProcess, type UtilityProcess } from "electron";
 import { awaitExitOrKill } from "./awaitExitOrKill.js";
 import { resolveDbPath } from "./paths.js";
@@ -66,6 +67,14 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
         process.cwd()
       );
 
+      const unpackedNodeModules = app.isPackaged
+        ? path.join(
+            path.dirname(app.getAppPath()),
+            "app.asar.unpacked",
+            "node_modules"
+          )
+        : undefined;
+
       child = utilityProcess.fork(entry, [], {
         execArgv,
         stdio: "pipe",
@@ -73,6 +82,7 @@ export function createServerHandle(options: ServerHandleOptions): ServerHandle {
           ...process.env,
           PORT: "0",
           HORIZON_DB_PATH: resolveDbPath(),
+          ...(unpackedNodeModules && { NODE_PATH: unpackedNodeModules }),
         },
       });
 

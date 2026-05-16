@@ -17,7 +17,11 @@ export function buildConfig(env) {
     productName: "Horizon",
     icon: "src/assets/icon.ico",
     files: ["dist/**", "electron/dist/**", "server/dist/**"],
-    asarUnpack: ["**/*.node", "server/dist/**"],
+    asarUnpack: [
+      "**/*.node",
+      "server/dist/**",
+      "node_modules/better-sqlite3/**/*",
+    ],
     directories: { output: "release" },
     win,
     nsis: { oneClick: true, perMachine: false },

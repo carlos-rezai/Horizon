@@ -89,7 +89,8 @@
     ],
     "asarUnpack": [
       "**/*.node",
-      "server/dist/**"
+      "server/dist/**",
+      "node_modules/better-sqlite3/**/*"
     ],
     "directories": {
       "output": "release"
