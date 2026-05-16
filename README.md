@@ -146,6 +146,41 @@ npm run release
 
 Output: `release/Horizon-Setup-x.x.x.exe`
 
+### Commit message convention
+
+```
+<type>: <feature-slug> <description> issue #<n>
+```
+
+Examples:
+
+```
+feat: accounts add balance recalculation on delete issue #47
+fix: transactions correct negative amount display issue #51
+chore: bump version to 1.0.1
+refactor: mortgage extract amortisation helper issue #58
+```
+
+Types: `feat`, `fix`, `chore`, `refactor`, `test`, `docs`
+
+---
+
+### Releasing a new version
+
+```
+npm version patch   # bugfix:      1.0.0 → 1.0.1
+npm version minor   # new feature: 1.0.0 → 1.1.0
+npm version major   # breaking:    1.0.0 → 2.0.0
+```
+
+Each command runs tests, typecheck, and lint first — if any fail the version bump is aborted. On success it updates `package.json`, commits, tags, and pushes. Then:
+
+```
+npm run release
+```
+
+Builds the installer and publishes it to GitHub Releases automatically.
+
 ### Developer setup — self-signed code-signing certificate
 
 To build a locally-installable update that does not trigger a SmartScreen warning, generate a self-signed certificate and import it into the Windows Trusted Root store once per machine.
