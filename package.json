@@ -110,7 +110,6 @@
       "provider": "github",
       "owner": "carlos-rezai",
       "repo": "horizon"
-    },
-    "allowUncheckedUpdates": true
+    }
   }
 }

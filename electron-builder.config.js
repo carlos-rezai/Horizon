@@ -26,7 +26,6 @@ export function buildConfig(env) {
       owner: "carlos-rezai",
       repo: "horizon",
     },
-    allowUncheckedUpdates: true,
   };
 }
 
