@@ -182,7 +182,8 @@ DEBUG_SQL= # set to "1" to enable better-sqlite3 query tracing via console.info.
 - [x] Electron desktop shell
 - [x] Desktop packaging (Windows installer)
 - [x] UI Redesign — visual refresh of all views based on Google Stitch mockups
-- [ ] In-app auto-update — electron-updater + GitHub Releases, in-app banner on new version
+- [x] In-app auto-update — electron-updater + GitHub Releases, in-app banner on new version
+- [ ] Monthly Ledger — recurring transactions per account; month overview page reachable from dashboard and financial plan
 - [ ] Monthly digest (AI) — permanently deferred
 - [ ] Anomaly detection + Q&A (AI) — permanently deferred
 - [ ] Sondertilgung advisor (AI) — permanently deferred
