@@ -43,24 +43,24 @@
 
 ## Projections
 
-| Term                                | Definition                                                                                                                                                                                    | Aliases to avoid                     |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| **Projection Engine**               | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months)                                                | Forecast engine, planner             |
-| **Recurring-Only Projection Model** | The design constraint that recurring transactions own all regular financial flows; actual transactions exist only for variable one-off spending (new)                                         | —                                    |
-| **Recurring History**               | The set of recurring transactions that have already fired between an account's Opening Date and today — replayed by the engine to derive the correct starting balance (new)                   | Past recurring, historical recurring |
-| **Replay Loop**                     | The engine phase that simulates Recurring History from each account's Opening Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)   | Historical replay, backfill          |
-| **Forward Projection**              | The engine phase that applies recurring transactions from the current month into the future — runs after the Replay Loop has established the correct starting balance (new)                   | Projection loop, forecast            |
-| **monthOfYear**                     | The calendar month number (1–12) stored on a RecurringTransaction that anchors when annual or quarterly transactions fire — e.g. `monthOfYear: 10` fires in October every year (new)          | Month anchor, firing month           |
-| **Variable Spending**               | Irregular, one-off actual transactions that record real expenditure (food, dental, shopping, cat food) — the only category of actual transaction in the Recurring-Only Projection Model (new) | One-off spending, irregular expenses |
-| **MonthlySnapshot**                 | The projected state of all account balances for a given future month                                                                                                                          | Projection row, forecast entry       |
-| **TrajectoryDataPoint** (new)       | A chart-ready data shape derived from a MonthlySnapshot — includes totalLiquid, restschuld, netCashflow, isSTMonth, isPayoffMonth                                                             | Chart point, data point              |
-| **Plan**                            | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                                                                                     | Financial plan, budget plan          |
-| **Actual**                          | The real account balance derived from recorded Transactions                                                                                                                                   | Real balance                         |
-| **Variance**                        | The difference between a projected balance and the actual balance for a given account and month                                                                                               | Delta, difference                    |
-| **Payoff Month**                    | The first projected month in which a Mortgage account's balance reaches zero                                                                                                                  | Payoff date, payoff year             |
-| **Payoff Year** (new)               | The calendar year that contains the Payoff Month                                                                                                                                              | Payoff year, final year              |
-| **ST Month** (new)                  | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded                                                         | ST date, October payment             |
-| **Estimated Completion Month**      | The first projected month in which a Milestone's target balance is reached                                                                                                                    | Target date, goal date               |
+| Term                                | Definition                                                                                                                                                                                                                                        | Aliases to avoid                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **Projection Engine**               | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months)                                                                                                    | Forecast engine, planner             |
+| **Recurring-Only Projection Model** | The design constraint that recurring transactions own all regular financial flows; actual transactions exist only for variable one-off spending (new)                                                                                             | —                                    |
+| **Recurring History**               | The set of recurring transactions that have already fired between an account's Opening Date and today — replayed by the engine to derive the correct starting balance (new)                                                                       | Past recurring, historical recurring |
+| **Replay Loop**                     | The engine phase that simulates Recurring History from each account's Opening Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)                                                       | Historical replay, backfill          |
+| **Forward Projection**              | The engine phase that applies recurring transactions from the current month into the future — runs after the Replay Loop has established the correct starting balance (new)                                                                       | Projection loop, forecast            |
+| **monthOfYear**                     | The calendar month number (1–12) stored on a RecurringTransaction that anchors when annual or quarterly transactions fire — e.g. `monthOfYear: 10` fires in October every year (new)                                                              | Month anchor, firing month           |
+| **Variable Spending**               | Irregular, one-off actual transactions that record real expenditure (food, dental, shopping, cat food) — the only category of actual transaction in the Recurring-Only Projection Model; entered exclusively via the **Month Overview** (updated) | One-off spending, irregular expenses |
+| **MonthlySnapshot**                 | The projected state of all account balances for a given future month                                                                                                                                                                              | Projection row, forecast entry       |
+| **TrajectoryDataPoint** (new)       | A chart-ready data shape derived from a MonthlySnapshot — includes totalLiquid, restschuld, netCashflow, isSTMonth, isPayoffMonth                                                                                                                 | Chart point, data point              |
+| **Plan**                            | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                                                                                                                                         | Financial plan, budget plan          |
+| **Actual**                          | The real account balance derived from recorded Transactions                                                                                                                                                                                       | Real balance                         |
+| **Variance**                        | The difference between a projected balance and the actual balance for a given account and month                                                                                                                                                   | Delta, difference                    |
+| **Payoff Month**                    | The first projected month in which a Mortgage account's balance reaches zero                                                                                                                                                                      | Payoff date, payoff year             |
+| **Payoff Year** (new)               | The calendar year that contains the Payoff Month                                                                                                                                                                                                  | Payoff year, final year              |
+| **ST Month** (new)                  | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded                                                                                                             | ST date, October payment             |
+| **Estimated Completion Month**      | The first projected month in which a Milestone's target balance is reached                                                                                                                                                                        | Target date, goal date               |
 
 ## Dashboard
 
@@ -481,6 +481,54 @@
 > **Dev:** "Why is the Snackbar in `components/` but the Update Banner in `features/`?"
 >
 > **Domain expert:** "The Snackbar is a dumb UI atom — it knows nothing about updates, errors, or Electron. The Update Banner knows about Update State and the Preload Bridge. That business logic belongs in `features/updates/`. The Snackbar is just the visual shell."
+
+## Monthly Ledger (new)
+
+| Term                     | Definition                                                                                                                                                                              | Aliases to avoid                           |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Monthly Ledger**       | The feature set that introduces the Month Overview page and restructures transaction entry so one-off spending is recorded per month rather than per account                            | Month view, monthly transactions           |
+| **Month Overview**       | The page at `/months/YYYY-MM` that displays the balance summary, recurring commitments, and editable one-off transactions for a given month across all accounts                         | Month page, monthly page                   |
+| **Month Card**           | The dashboard widget that always shows the current month — displays month name, total one-off transaction amount, count, and a stacked category bar                                     | Month teaser, month widget                 |
+| **Category Bar**         | The stacked horizontal bar on the Month Card that breaks down one-off transaction totals by Category — uses the same per-kind color palette as other chart elements                     | Spending bar, category chart               |
+| **Recurring This Month** | The read-only section in the Month Overview that shows the selected account's RecurringTransactions for that month — visual reference only, never editable from here                    | Recurring section, standing orders section |
+| **Account Tabs**         | The tab row in the Month Overview that selects which account's transactions are displayed — one tab per account, defaults to the first                                                  | Account selector, account switcher         |
+| **Balance Summary Bar**  | The row above the Account Tabs in the Month Overview that shows the projected or actual balance for each account for that month — mirrors the data in the Projection Accordion row      | Account balance row, balance header        |
+| **DatePicker**           | The reusable `primitives/DatePicker/` component that replaces all `type="date"` inputs — displays in DD.MM.YYYY format, stores an ISO date string internally, opens a calendar on click | Date input, date field                     |
+| **Stepper**              | The `− / number / +` input primitive used for the `dayOfMonth` field in RecurringTransactionModal — constrained to 1–31                                                                 | Day picker, number stepper                 |
+| **Ordinal Day**          | The formatted display of `dayOfMonth` in RecurringTransactionList — rendered as 1st, 2nd, 15th, 22nd instead of a bare integer                                                          | Day number, day of month                   |
+| **Account Edit Mode**    | The state of AccountCreateModal when an existing `AccountWithBalance` is passed as a prop — fields are pre-populated and submit issues a PATCH instead of a POST                        | Edit account modal, account update         |
+
+## Relationships (Monthly Ledger additions)
+
+- A **Month Overview** is always scoped to one ISO month (`YYYY-MM`) and displays data for all accounts via **Account Tabs**
+- The **Balance Summary Bar** in the **Month Overview** derives its values from the **MonthlySnapshot** for that month — same source as the **Projection Accordion**
+- **Recurring This Month** shows the selected account's **RecurringTransactions** — they are read-only in this context; editing is done from **AccountDetailPage**
+- One-off transactions entered in the **Month Overview** are the only form of **Variable Spending** entry — the "Add transaction" and "Add transfer" flows no longer exist on **AccountDetailPage**
+- A **Transfer** entered from the **Month Overview** uses the optional linked account picker inside **TransactionCreateModal** — `TransferCreateModal` is removed
+- The **Month Card** on the dashboard always shows the current calendar month and navigates to the **Month Overview** on click
+- The month label cell in the **Projection Accordion** navigates to the **Month Overview** for that `YYYY-MM` on click
+- The **Month Overview** supports prev/next month navigation via arrows in the page header — `navigate(-1)` for back
+- The **DatePicker** primitive is used for every date input across the app — `openingDate` in **AccountCreateModal**, transaction date in **TransactionCreateModal** and **TransactionEditModal**, and the transaction date in **Month Overview**
+- **Account Edit Mode** replaces the two separate inline edit flows (name, opening balance) in `AccountDetailHeader` — icon and color become editable for the first time via the shared modal
+- The **Ordinal Day** is produced by a `toOrdinal(n)` utility in `src/utils/format/` — used by `RecurringTransactionList` for display
+
+## Example dialogue (Monthly Ledger)
+
+> **Dev:** "If I want to record that I spent €80 on groceries on the 14th, where do I go?"
+>
+> **Domain expert:** "The Month Overview for the current month. You pick the account tab, hit Add Transaction, enter the date, amount, and category. That's it — you can't do this from Account Detail anymore."
+>
+> **Dev:** "What if it was a transfer — moving money between two accounts?"
+>
+> **Domain expert:** "Same modal. There's an optional linked account picker. Leave it blank and it's a one-off transaction. Select a destination account and it becomes a Transfer — two linked Transactions sharing a TransferId. TransferCreateModal is gone."
+>
+> **Dev:** "On the Month Overview I can see my recurring transactions too — can I edit them there?"
+>
+> **Domain expert:** "No. The Recurring This Month section is read-only. It's there as a reference — you can see what's committed for the month. To change a RecurringTransaction you go to Account Detail."
+>
+> **Dev:** "The Month Card on the dashboard — does it update as I add transactions?"
+>
+> **Domain expert:** "Yes. The total and the Category Bar reflect the one-off transactions recorded for the current month. Add a grocery transaction and the food slice grows."
 
 ## Flagged ambiguities
 
