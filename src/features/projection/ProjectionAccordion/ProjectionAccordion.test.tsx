@@ -1,19 +1,31 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { MemoryRouter } from "react-router-dom";
 import { theme } from "../../../tokens";
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 import ProjectionAccordion from "./ProjectionAccordion";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 function renderWithTheme(ui: React.ReactElement) {
-  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </ThemeProvider>
+  );
 }
 
 const mortgageAccount: AccountWithBalance = {
@@ -130,41 +142,34 @@ describe("ProjectionAccordion — payoff month row", () => {
   });
 });
 
-describe("ProjectionAccordion — month cell links", () => {
-  it("renders each month cell as a link when the year is expanded", () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter>
-          <ProjectionAccordion
-            snapshots={snapshotsWithPayoff}
-            accounts={[giroAccount]}
-            initialYear={2026}
-          />
-        </MemoryRouter>
-      </ThemeProvider>
+describe("ProjectionAccordion — month row navigation", () => {
+  it("clicking a month row navigates to the correct /months/YYYY-MM route", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount]}
+        initialYear={2026}
+      />
     );
 
-    const links = screen.getAllByRole("link");
-    expect(links.length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByText("Oct 2026").closest("tr")!);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/months/2026-10");
   });
 
-  it("each month cell link points to the correct /months/YYYY-MM route", () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter>
-          <ProjectionAccordion
-            snapshots={snapshotsWithPayoff}
-            accounts={[giroAccount]}
-            initialYear={2026}
-          />
-        </MemoryRouter>
-      </ThemeProvider>
+  it("each month row navigates to its own route", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount]}
+        initialYear={2026}
+      />
     );
 
-    const links = screen.getAllByRole("link");
-    const hrefs = links.map((l) => l.getAttribute("href"));
-    expect(hrefs).toContain("/months/2026-10");
-    expect(hrefs).toContain("/months/2026-11");
-    expect(hrefs).toContain("/months/2026-12");
+    fireEvent.click(screen.getByText("Nov 2026").closest("tr")!);
+    expect(mockNavigate).toHaveBeenCalledWith("/months/2026-11");
+
+    fireEvent.click(screen.getByText("Dec 2026").closest("tr")!);
+    expect(mockNavigate).toHaveBeenCalledWith("/months/2026-12");
   });
 });

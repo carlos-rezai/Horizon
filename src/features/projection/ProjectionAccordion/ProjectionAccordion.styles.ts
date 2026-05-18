@@ -89,6 +89,8 @@ export const StyledTr = styled.tr<{
   $isSTMonth?: boolean;
   $isPayoffMonth?: boolean;
 }>`
+  cursor: pointer;
+
   &:not(:last-child) {
     border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   }

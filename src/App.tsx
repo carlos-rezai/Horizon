@@ -5,6 +5,7 @@ import {
   AccountDetailPage,
   PlanPage,
   SettingsStoragePage,
+  MonthPage,
 } from "./pages";
 
 export default function App() {
@@ -40,6 +41,14 @@ export default function App() {
           element={
             <AppLayout>
               <SettingsStoragePage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/months/:month"
+          element={
+            <AppLayout>
+              <MonthPage />
             </AppLayout>
           }
         />

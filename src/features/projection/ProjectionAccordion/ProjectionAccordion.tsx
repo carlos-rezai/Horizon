@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -73,6 +74,8 @@ export default function ProjectionAccordion({
   recurringTransactions = [],
   initialYear,
 }: Props) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const currentYear = new Date().getFullYear();
   const defaultExpanded = initialYear ?? currentYear;
 
@@ -186,6 +189,13 @@ export default function ProjectionAccordion({
                           data-testid={
                             isPayoffMonth ? "payoff-month-row" : undefined
                           }
+                          onClick={() => {
+                            navigate(location.pathname, {
+                              replace: true,
+                              state: { year },
+                            });
+                            navigate(`/months/${snapshot.month}`);
+                          }}
                         >
                           <StyledTd>{formatMonth(snapshot.month)}</StyledTd>
                           {columns.map((col) => {
