@@ -9,6 +9,7 @@ import {
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme, accountIconSet } from "../../../tokens";
+import type { AccountWithBalance } from "../../../types/account";
 import AccountCreateModal from "./AccountCreateModal";
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -290,6 +291,83 @@ describe("AccountCreateModal — color picker", () => {
         (calls[calls.length - 1][1] as RequestInit).body as string
       );
       expect(body.color).toBe(targetColor);
+    });
+  });
+});
+
+describe("AccountCreateModal — edit mode", () => {
+  const mockAccount: AccountWithBalance = {
+    id: "acc-1",
+    kind: "Girokonto",
+    name: "Main Account",
+    openingBalance: 100000,
+    openingDate: "2024-03-15",
+    balance: 120000,
+  };
+
+  it("pre-populates name, opening balance, opening date, and kind from the account prop", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={mockAccount}
+      />
+    );
+
+    expect(screen.getByLabelText(/name/i)).toHaveValue("Main Account");
+    expect(screen.getByLabelText(/opening balance/i)).toHaveValue(1000);
+    expect(screen.getByLabelText(/opening date/i)).toHaveValue("2024-03-15");
+    expect(screen.getByLabelText(/kind/i)).toHaveValue("Girokonto");
+  });
+
+  it("shows sondertilgung allowance pre-populated for a Mortgage account in edit mode", () => {
+    const mortgageAccount: AccountWithBalance = {
+      ...mockAccount,
+      kind: "Mortgage",
+      sondertilgungAllowance: 500000,
+    };
+
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={mortgageAccount}
+      />
+    );
+
+    expect(screen.getByLabelText(/sondertilgung allowance/i)).toHaveValue(5000);
+  });
+
+  it("shows 'Edit account' title and 'Save changes' submit button in edit mode", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={mockAccount}
+      />
+    );
+
+    expect(screen.getByText(/edit account/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /save changes/i })
+    ).toBeInTheDocument();
+  });
+
+  it("issues PATCH to /accounts/:id instead of POST on submit in edit mode", async () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={mockAccount}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0];
+      expect(String(url)).toMatch(/\/accounts\/acc-1/);
+      expect((init as RequestInit).method).toBe("PATCH");
     });
   });
 });
