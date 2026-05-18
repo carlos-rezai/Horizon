@@ -2,6 +2,7 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
+import { MemoryRouter } from "react-router-dom";
 import { theme } from "../../../tokens";
 import ProjectionAccordion from "./ProjectionAccordion";
 import type { MonthlySnapshot } from "../../../types/projection";
@@ -126,5 +127,44 @@ describe("ProjectionAccordion — payoff month row", () => {
     );
 
     expect(screen.queryByTestId("payoff-month-row")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProjectionAccordion — month cell links", () => {
+  it("renders each month cell as a link when the year is expanded", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ProjectionAccordion
+            snapshots={snapshotsWithPayoff}
+            accounts={[giroAccount]}
+            initialYear={2026}
+          />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+
+    const links = screen.getAllByRole("link");
+    expect(links.length).toBeGreaterThan(0);
+  });
+
+  it("each month cell link points to the correct /months/YYYY-MM route", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ProjectionAccordion
+            snapshots={snapshotsWithPayoff}
+            accounts={[giroAccount]}
+            initialYear={2026}
+          />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+
+    const links = screen.getAllByRole("link");
+    const hrefs = links.map((l) => l.getAttribute("href"));
+    expect(hrefs).toContain("/months/2026-10");
+    expect(hrefs).toContain("/months/2026-11");
+    expect(hrefs).toContain("/months/2026-12");
   });
 });
