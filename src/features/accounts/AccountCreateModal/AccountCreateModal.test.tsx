@@ -316,7 +316,7 @@ describe("AccountCreateModal — edit mode", () => {
 
     expect(screen.getByLabelText(/name/i)).toHaveValue("Main Account");
     expect(screen.getByLabelText(/opening balance/i)).toHaveValue(1000);
-    expect(screen.getByLabelText(/opening date/i)).toHaveValue("2024-03-15");
+    expect(screen.getByLabelText(/opening date/i)).toHaveValue("15.03.2024");
     expect(screen.getByLabelText(/kind/i)).toHaveValue("Girokonto");
   });
 

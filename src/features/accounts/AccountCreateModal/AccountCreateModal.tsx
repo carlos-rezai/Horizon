@@ -1,13 +1,14 @@
 import { useState } from "react";
 import * as LucideIcons from "lucide-react";
 import type { LucideProps } from "lucide-react";
-import type { AccountKind } from "../../../types/account";
+import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import { accountIconSet, theme as meridianTheme } from "../../../tokens";
 import { API_BASE } from "../../../utils/api/api";
-import { eurosToCents } from "../../../utils/currency/currency";
+import { eurosToCents, centsToEuros } from "../../../utils/currency/currency";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import Input from "../../../primitives/Input/Input";
+import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
 import {
@@ -23,6 +24,7 @@ import {
 interface Props {
   onClose: () => void;
   onSuccess: (accountId: string) => void;
+  account?: AccountWithBalance;
 }
 
 const ACCOUNT_KINDS: AccountKind[] = [
@@ -39,16 +41,29 @@ function randomPaletteColor(): string {
   return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
 }
 
-export default function AccountCreateModal({ onClose, onSuccess }: Props) {
-  const [kind, setKind] = useState<AccountKind>("Girokonto");
-  const [name, setName] = useState("");
-  const [openingBalance, setOpeningBalance] = useState("0.00");
-  const [openingDate, setOpeningDate] = useState("");
-  const [sondertilgungAllowance, setSondertilgungAllowance] = useState("");
+export default function AccountCreateModal({
+  onClose,
+  onSuccess,
+  account,
+}: Props) {
+  const isEditMode = account !== undefined;
+  const [kind, setKind] = useState<AccountKind>(account?.kind ?? "Girokonto");
+  const [name, setName] = useState(account?.name ?? "");
+  const [openingBalance, setOpeningBalance] = useState(
+    account ? centsToEuros(account.openingBalance) : "0.00"
+  );
+  const [openingDate, setOpeningDate] = useState(account?.openingDate ?? "");
+  const [sondertilgungAllowance, setSondertilgungAllowance] = useState(
+    account?.sondertilgungAllowance != null
+      ? centsToEuros(account.sondertilgungAllowance)
+      : ""
+  );
   const [error, setError] = useState<string | null>(null);
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string>(() =>
-    randomPaletteColor()
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(
+    account?.icon ?? null
+  );
+  const [selectedColor, setSelectedColor] = useState<string>(
+    account?.color ?? randomPaletteColor()
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,8 +83,13 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
       body.sondertilgungAllowance = eurosToCents(sondertilgungAllowance);
     }
 
-    const res = await fetch(`${API_BASE}/accounts`, {
-      method: "POST",
+    const url = isEditMode
+      ? `${API_BASE}/accounts/${account.id}`
+      : `${API_BASE}/accounts`;
+    const method = isEditMode ? "PATCH" : "POST";
+
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
@@ -81,12 +101,13 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
       return;
     }
 
-    onSuccess(data.id!);
+    onSuccess(data.id ?? account?.id ?? "");
   };
 
   return (
     <Modal onClose={onClose}>
       <StyledForm onSubmit={handleSubmit}>
+        <h2>{isEditMode ? "Edit account" : "Create account"}</h2>
         <FormField label="Kind" htmlFor="account-kind">
           <Select
             id="account-kind"
@@ -120,11 +141,10 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
         </FormField>
 
         <FormField label="Opening Date" htmlFor="opening-date">
-          <Input
-            id="opening-date"
-            type="date"
+          <DatePicker
+            aria-label="opening date"
             value={openingDate}
-            onChange={(e) => setOpeningDate(e.target.value)}
+            onChange={setOpeningDate}
           />
         </FormField>
 
@@ -180,7 +200,9 @@ export default function AccountCreateModal({ onClose, onSuccess }: Props) {
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
         <StyledActions>
-          <Button type="submit">Create account</Button>
+          <Button type="submit">
+            {isEditMode ? "Save changes" : "Create account"}
+          </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

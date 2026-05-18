@@ -1,4 +1,3 @@
-import React from "react";
 import { Wrapper, Value, StepButton } from "./Stepper.styles";
 
 interface StepperProps {
