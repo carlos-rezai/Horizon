@@ -6,6 +6,32 @@ export const StyledMonthOverview = styled.div`
   gap: ${({ theme }) => theme.spacing.space4}px;
 `;
 
+export const StyledBalanceSummaryBar = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.space4}px;
+  padding: ${({ theme }) => theme.spacing.space3}px
+    ${({ theme }) => theme.spacing.space4}px;
+  background: ${({ theme }) => theme.colors.surfaceVariant};
+  border-radius: 8px;
+`;
+
+export const StyledBalanceSummaryItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.space1}px;
+`;
+
+export const StyledBalanceLabel = styled.span`
+  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+`;
+
+export const StyledBalanceValue = styled.span`
+  font-size: ${({ theme }) => theme.typography.sizes.md}px;
+  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  color: ${({ theme }) => theme.colors.onSurface};
+`;
+
 export const StyledTabList = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.space2}px;
