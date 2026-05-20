@@ -406,3 +406,74 @@ describe("RecurringTransactionModal — overlay", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("RecurringTransactionModal — dayOfMonth Stepper", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("renders Increment and Decrement buttons for the day-of-month field", () => {
+    renderCreateModal();
+
+    expect(
+      screen.getByRole("button", { name: /increment/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /decrement/i })
+    ).toBeInTheDocument();
+  });
+
+  it("clicking Increment once increases the submitted dayOfMonth to 2", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fireEvent.click(screen.getByRole("button", { name: /increment/i }));
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: "-1200" },
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Rent" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ dayOfMonth: 2 })
+    );
+  });
+
+  it("clicking Decrement when dayOfMonth is 1 does not go below 1", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fireEvent.click(screen.getByRole("button", { name: /decrement/i }));
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: "-1200" },
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Rent" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ dayOfMonth: 1 })
+    );
+  });
+
+  it("clicking Increment when dayOfMonth is 31 does not go above 31", () => {
+    const onSaved = vi.fn();
+    renderEditModal({
+      onSaved,
+      transaction: { ...existingRt, dayOfMonth: 31 },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /increment/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ dayOfMonth: 31 })
+    );
+  });
+});

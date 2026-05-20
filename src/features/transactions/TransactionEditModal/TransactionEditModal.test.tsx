@@ -64,7 +64,7 @@ describe("TransactionEditModal — pre-population", () => {
     renderModal(regularTransaction);
 
     const dateInput = screen.getByLabelText(/date/i) as HTMLInputElement;
-    expect(dateInput.value).toBe("2026-03-01");
+    expect(dateInput.value).toBe("01.03.2026");
   });
 
   it("pre-populates the description field with the transaction's description", () => {
