@@ -9,6 +9,7 @@ interface DatePickerProps {
   onChange: (iso: string) => void;
   minDate?: string;
   maxDate?: string;
+  disabled?: boolean;
   "aria-label"?: string;
 }
 
@@ -34,6 +35,7 @@ export default function DatePicker({
   onChange,
   minDate,
   maxDate,
+  disabled,
   "aria-label": ariaLabel,
 }: DatePickerProps) {
   return (
@@ -46,6 +48,7 @@ export default function DatePicker({
         dateFormat="dd.MM.yyyy"
         minDate={minDate ? isoToDate(minDate) : undefined}
         maxDate={maxDate ? isoToDate(maxDate) : undefined}
+        disabled={disabled}
         customInput={<DateInput aria-label={ariaLabel} />}
         placeholderText="DD.MM.YYYY"
         popperPlacement="bottom-start"

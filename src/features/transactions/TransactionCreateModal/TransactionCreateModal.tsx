@@ -4,6 +4,7 @@ import { eurosToCents } from "../../../utils/currency/currency";
 import { API_BASE } from "../../../utils/api/api";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
+import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";
 import {
@@ -59,13 +60,7 @@ export default function TransactionCreateModal({
     <Modal onClose={onClose}>
       <StyledForm onSubmit={handleSubmit}>
         <FormField label="Date" htmlFor="txn-date">
-          <Input
-            id="txn-date"
-            type="date"
-            aria-label="Date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <DatePicker aria-label="Date" value={date} onChange={setDate} />
         </FormField>
 
         <FormField label="Amount" htmlFor="txn-amount">

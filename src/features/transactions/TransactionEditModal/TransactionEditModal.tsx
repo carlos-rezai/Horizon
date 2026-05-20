@@ -4,6 +4,7 @@ import { eurosToCents } from "../../../utils/currency/currency";
 import { API_BASE } from "../../../utils/api/api";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
+import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";
 import {
@@ -89,12 +90,10 @@ export default function TransactionEditModal({
         )}
 
         <FormField label="Date" htmlFor="edit-date">
-          <Input
-            id="edit-date"
-            type="date"
+          <DatePicker
             aria-label="Date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={setDate}
             disabled={isTransfer}
           />
         </FormField>

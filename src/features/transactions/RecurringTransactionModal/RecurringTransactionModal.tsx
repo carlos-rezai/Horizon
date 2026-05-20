@@ -10,6 +10,7 @@ import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import Input from "../../../primitives/Input/Input";
 import Select from "../../../primitives/Select/Select";
+import Stepper from "../../../primitives/Stepper/Stepper";
 import Button from "../../../primitives/Button/Button";
 import {
   StyledForm,
@@ -54,7 +55,7 @@ export default function RecurringTransactionModal({
     transaction?.frequency ?? "monthly"
   );
   const [dayOfMonth, setDayOfMonth] = useState(
-    transaction ? String(transaction.dayOfMonth) : "1"
+    transaction ? transaction.dayOfMonth : 1
   );
   const [linkedAccountId, setLinkedAccountId] = useState(
     transaction?.linkedAccountId ?? ""
@@ -90,7 +91,7 @@ export default function RecurringTransactionModal({
       description,
       category: categoryId,
       frequency,
-      dayOfMonth: parseInt(dayOfMonth, 10),
+      dayOfMonth,
       ...(linkedAccountId ? { linkedAccountId } : {}),
       ...(frequency === "annual" ? { monthOfYear } : {}),
     };
@@ -149,13 +150,11 @@ export default function RecurringTransactionModal({
         </FormField>
 
         <FormField label="Day of month" htmlFor="rt-day">
-          <Input
-            id="rt-day"
-            type="number"
+          <Stepper
             value={dayOfMonth}
-            onChange={(e) => setDayOfMonth(e.target.value)}
-            min="1"
-            max="31"
+            onChange={setDayOfMonth}
+            min={1}
+            max={31}
           />
         </FormField>
 
