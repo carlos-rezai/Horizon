@@ -23,6 +23,7 @@ const account: AccountWithBalance = {
 const renderHeader = (
   overrides: Partial<{
     hasTransactions: boolean;
+    onEdit: () => void;
     onRename: (name: string) => Promise<void>;
     onUpdateOpeningBalance: (openingBalance: number) => Promise<void>;
     onDelete: () => Promise<void>;
@@ -31,6 +32,7 @@ const renderHeader = (
   const props = {
     account,
     hasTransactions: false,
+    onEdit: vi.fn(),
     onRename: vi.fn().mockResolvedValue(undefined),
     onUpdateOpeningBalance: vi.fn().mockResolvedValue(undefined),
     onDelete: vi.fn().mockResolvedValue(undefined),
@@ -56,6 +58,22 @@ describe("AccountDetailHeader — display", () => {
     renderHeader();
     // 150000 cents = 1.500,00 € — match on the numeric part
     expect(screen.getByText(/1[.,]500/)).toBeInTheDocument();
+  });
+});
+
+describe("AccountDetailHeader — edit button", () => {
+  it("renders a single pencil button with aria-label 'Edit account'", () => {
+    renderHeader();
+    expect(
+      screen.getByRole("button", { name: "Edit account" })
+    ).toBeInTheDocument();
+  });
+
+  it("clicking the pencil button calls onEdit", () => {
+    const onEdit = vi.fn();
+    renderHeader({ onEdit });
+    fireEvent.click(screen.getByRole("button", { name: "Edit account" }));
+    expect(onEdit).toHaveBeenCalled();
   });
 });
 

@@ -91,6 +91,38 @@ describe("RecurringTransactionList — interactions", () => {
   });
 });
 
+describe("RecurringTransactionList — column headers", () => {
+  it("renders column headers: Name, Amount, Frequency, Day", () => {
+    renderRtList([rt]);
+
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("Amount")).toBeInTheDocument();
+    expect(screen.getByText("Frequency")).toBeInTheDocument();
+    expect(screen.getByText("Day")).toBeInTheDocument();
+  });
+});
+
+describe("RecurringTransactionList — ordinal day", () => {
+  it("renders dayOfMonth as an ordinal (5 → '5th')", () => {
+    renderRtList([rt]);
+
+    expect(screen.getByText("5th")).toBeInTheDocument();
+  });
+
+  it("renders ordinals for edge cases (1st, 2nd, 22nd)", () => {
+    const fixtures: RecurringTransaction[] = [
+      { ...rt, id: "rt-a", dayOfMonth: 1, description: "First" },
+      { ...rt, id: "rt-b", dayOfMonth: 2, description: "Second" },
+      { ...rt, id: "rt-c", dayOfMonth: 22, description: "TwentySecond" },
+    ];
+    renderRtList(fixtures);
+
+    expect(screen.getByText("1st")).toBeInTheDocument();
+    expect(screen.getByText("2nd")).toBeInTheDocument();
+    expect(screen.getByText("22nd")).toBeInTheDocument();
+  });
+});
+
 describe("RecurringTransactionList — empty state", () => {
   it("renders an empty state message when the list is empty", () => {
     renderRtList([]);

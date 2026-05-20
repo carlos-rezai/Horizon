@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  fireEvent,
+} from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
@@ -154,6 +160,33 @@ describe("AccountDetailPage — back navigation", () => {
     expect(
       await screen.findByRole("link", { name: /back/i })
     ).toBeInTheDocument();
+  });
+});
+
+describe("AccountDetailPage — transaction entry removed", () => {
+  beforeEach(mockAllSuccess);
+
+  it("does not render Add transaction or Add transfer buttons", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: /recurring/i });
+    expect(
+      screen.queryByRole("button", { name: /add transaction/i })
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /add transfer/i })).toBeNull();
+  });
+});
+
+describe("AccountDetailPage — account edit modal", () => {
+  beforeEach(mockAllSuccess);
+
+  it("clicking the pencil edit button opens AccountCreateModal pre-populated with the account name", async () => {
+    renderPage();
+    const pencil = await screen.findByRole("button", { name: "Edit account" });
+    fireEvent.click(pencil);
+    expect(
+      await screen.findByRole("heading", { name: /edit account/i })
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Main Checking")).toBeInTheDocument();
   });
 });
 
