@@ -21,6 +21,29 @@ vi.mock("../useMonthTransactions", () => ({
     mockUseMonthTransactions(...args),
 }));
 
+// Mutable ref so the rendered mock component can hand back its onDeleted callback
+// without hitting TDZ — the factory only stores the component fn; assignment happens
+// inside the React render (which runs after module initialisation).
+let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
+  null;
+
+vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
+  default: (props: {
+    transaction: Transaction;
+    onDeleted: (id: string, transferId?: string) => void;
+    onClose: () => void;
+    onSaved: (tx: Transaction) => void;
+  }) => {
+    capturedOnDeleted = props.onDeleted;
+    return (
+      <div
+        data-testid="transaction-edit-modal"
+        data-transaction-id={props.transaction.id}
+      />
+    );
+  },
+}));
+
 vi.mock("../../../primitives/DatePicker/DatePicker", () => ({
   default: ({
     minDate,
@@ -49,6 +72,7 @@ const emptyMonthTransactions = {
   create: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
+  removeTransfer: vi.fn(),
 };
 
 beforeEach(() => {
@@ -58,6 +82,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  capturedOnDeleted = null;
 });
 
 const mockAccounts: AccountWithBalance[] = [
@@ -378,5 +403,83 @@ describe("MonthOverview — add transaction form", () => {
     const datepicker = screen.getByTestId("datepicker");
     expect(datepicker).toHaveAttribute("data-min", "2026-05-01");
     expect(datepicker).toHaveAttribute("data-max", "2026-05-31");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MonthOverview — click to edit
+// ---------------------------------------------------------------------------
+
+describe("MonthOverview — click to edit", () => {
+  it("clicking a one-off transaction row opens TransactionEditModal", () => {
+    mockUseMonthTransactions.mockReturnValue({
+      ...emptyMonthTransactions,
+      transactions: [mockGiroTransaction],
+    });
+
+    renderMonthOverviewWithLedger();
+
+    fireEvent.click(screen.getByText("Supermarket"));
+
+    expect(screen.getByTestId("transaction-edit-modal")).toBeInTheDocument();
+  });
+
+  it("TransactionEditModal receives the clicked transaction as its transaction prop", () => {
+    mockUseMonthTransactions.mockReturnValue({
+      ...emptyMonthTransactions,
+      transactions: [mockGiroTransaction],
+    });
+
+    renderMonthOverviewWithLedger();
+
+    fireEvent.click(screen.getByText("Supermarket"));
+
+    expect(screen.getByTestId("transaction-edit-modal")).toHaveAttribute(
+      "data-transaction-id",
+      mockGiroTransaction.id
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MonthOverview — delete via edit modal
+// ---------------------------------------------------------------------------
+
+describe("MonthOverview — delete via edit modal", () => {
+  it("calls remove with the transaction id when onDeleted fires without a transferId", () => {
+    const removeMock = vi.fn();
+    mockUseMonthTransactions.mockReturnValue({
+      ...emptyMonthTransactions,
+      transactions: [mockGiroTransaction],
+      remove: removeMock,
+    });
+
+    renderMonthOverviewWithLedger();
+    fireEvent.click(screen.getByText("Supermarket"));
+
+    capturedOnDeleted?.(mockGiroTransaction.id);
+
+    expect(removeMock).toHaveBeenCalledWith(mockGiroTransaction.id);
+  });
+
+  it("calls removeTransfer with the transferId when onDeleted fires with one", () => {
+    const removeTransferMock = vi.fn();
+    const transferTx: Transaction = {
+      ...mockGiroTransaction,
+      id: "txn-tf",
+      transferId: "tf-abc",
+    };
+    mockUseMonthTransactions.mockReturnValue({
+      ...emptyMonthTransactions,
+      transactions: [transferTx],
+      removeTransfer: removeTransferMock,
+    });
+
+    renderMonthOverviewWithLedger();
+    fireEvent.click(screen.getByText("Supermarket"));
+
+    capturedOnDeleted?.(transferTx.id, transferTx.transferId);
+
+    expect(removeTransferMock).toHaveBeenCalledWith("tf-abc");
   });
 });
