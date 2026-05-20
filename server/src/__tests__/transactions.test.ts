@@ -266,6 +266,136 @@ describe("account balance derivation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /accounts/:id/transactions?month=YYYY-MM
+// ---------------------------------------------------------------------------
+
+describe("GET /accounts/:id/transactions?month", () => {
+  it("returns only transactions whose date falls within the specified month", async () => {
+    const account = await createAccount();
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-05-10",
+        amount: -5000,
+        description: "May grocery",
+        category: "Food",
+      });
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-04-28",
+        amount: -3000,
+        description: "April expense",
+        category: "Food",
+      });
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-06-03",
+        amount: -2000,
+        description: "June coffee",
+        category: "Food",
+      });
+
+    const res = await request(app).get(
+      `/accounts/${account.id}/transactions?month=2026-05`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].description).toBe("May grocery");
+  });
+
+  it("includes transactions on the first and last day of the month", async () => {
+    const account = await createAccount();
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-05-01",
+        amount: -1000,
+        description: "First day",
+        category: "Food",
+      });
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-05-31",
+        amount: -2000,
+        description: "Last day",
+        category: "Food",
+      });
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-04-30",
+        amount: -3000,
+        description: "Day before",
+        category: "Food",
+      });
+
+    const res = await request(app).get(
+      `/accounts/${account.id}/transactions?month=2026-05`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+  });
+
+  it("returns an empty array when no transactions fall in the specified month", async () => {
+    const account = await createAccount();
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-04-15",
+        amount: -5000,
+        description: "April only",
+        category: "Food",
+      });
+
+    const res = await request(app).get(
+      `/accounts/${account.id}/transactions?month=2026-05`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns all transactions when no month param is provided", async () => {
+    const account = await createAccount();
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-04-15",
+        amount: -5000,
+        description: "April",
+        category: "Food",
+      });
+
+    await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-05-15",
+        amount: -3000,
+        description: "May",
+        category: "Food",
+      });
+
+    const res = await request(app).get(`/accounts/${account.id}/transactions`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // DELETE /accounts/:id guard
 // ---------------------------------------------------------------------------
 
