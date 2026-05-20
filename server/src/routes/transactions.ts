@@ -38,6 +38,13 @@ router.get("/accounts/:id/transactions", async (req, res) => {
   }
 
   const txs = await getStorage(req).transactions.findByAccount(req.params.id);
+
+  const { month } = req.query;
+  if (typeof month === "string" && /^\d{4}-\d{2}$/.test(month)) {
+    res.json(txs.filter((tx) => tx.date.startsWith(month)));
+    return;
+  }
+
   res.json(txs);
 });
 

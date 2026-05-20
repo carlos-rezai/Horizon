@@ -50,3 +50,24 @@ export const StyledTab = styled.button<{ $isActive: boolean }>`
   color: ${({ theme, $isActive }) =>
     $isActive ? theme.colors.primary : theme.colors.onSurface};
 `;
+
+export const StyledSectionHeading = styled.h3`
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  margin: 0;
+`;
+
+export const StyledTransactionRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.space2}px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  color: ${({ theme }) => theme.colors.onSurface};
+`;
+
+export const StyledEmptyState = styled.p`
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  margin: 0;
+`;
