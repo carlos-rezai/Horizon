@@ -2,10 +2,12 @@ import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency/currency";
 import { API_BASE } from "../../../utils/api/api";
+import type { AccountWithBalance } from "../../../types/account";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Input from "../../../primitives/Input/Input";
+import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
 import {
   StyledForm,
@@ -15,12 +17,24 @@ import {
 
 interface Props {
   accountId: string;
+  accounts?: AccountWithBalance[];
+  month?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
+function getMonthBounds(month: string): { first: string; last: string } {
+  const [year, mon] = month.split("-").map(Number);
+  const lastDay = new Date(year, mon, 0).getDate();
+  const first = `${month}-01`;
+  const last = `${year}-${String(mon).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  return { first, last };
+}
+
 export default function TransactionCreateModal({
   accountId,
+  accounts,
+  month,
   onClose,
   onSuccess,
 }: Props) {
@@ -28,22 +42,48 @@ export default function TransactionCreateModal({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const { first: minDate, last: maxDate } = month
+    ? getMonthBounds(month)
+    : { first: undefined, last: undefined };
+
+  const destinationAccounts = accounts
+    ? accounts.filter((a) => a.id !== accountId)
+    : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !amount || !description) return;
 
-    const res = await fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date,
-        amount: eurosToCents(amount),
-        description,
-        category: categoryId,
-      }),
-    });
+    let res: Response;
+
+    if (toAccountId) {
+      res = await fetch(`${API_BASE}/transfers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromAccountId: accountId,
+          toAccountId,
+          amount: eurosToCents(amount),
+          date,
+          description,
+          category: categoryId,
+        }),
+      });
+    } else {
+      res = await fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date,
+          amount: eurosToCents(amount),
+          description,
+          category: categoryId,
+        }),
+      });
+    }
 
     const data = (await res.json()) as { error?: string };
 
@@ -60,7 +100,13 @@ export default function TransactionCreateModal({
     <Modal onClose={onClose}>
       <StyledForm onSubmit={handleSubmit}>
         <FormField label="Date" htmlFor="txn-date">
-          <DatePicker aria-label="Date" value={date} onChange={setDate} />
+          <DatePicker
+            aria-label="Date"
+            value={date}
+            onChange={setDate}
+            minDate={minDate}
+            maxDate={maxDate}
+          />
         </FormField>
 
         <FormField label="Amount" htmlFor="txn-amount">
@@ -84,6 +130,24 @@ export default function TransactionCreateModal({
         </FormField>
 
         <CategorySelect onChange={setCategoryId} />
+
+        {accounts !== undefined && (
+          <FormField label="To account" htmlFor="txn-to-account">
+            <Select
+              id="txn-to-account"
+              aria-label="To account"
+              value={toAccountId}
+              onChange={(e) => setToAccountId(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {destinationAccounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        )}
 
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 

@@ -23,6 +23,7 @@ interface UseMonthTransactionsResult {
   create: (payload: CreatePayload) => Promise<void>;
   update: (id: string, payload: UpdatePayload) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  removeTransfer: (transferId: string) => Promise<void>;
 }
 
 export function useMonthTransactions(
@@ -105,5 +106,28 @@ export function useMonthTransactions(
     setTransactions((prev) => prev.filter((tx) => tx.id !== id));
   }
 
-  return { transactions, isLoading, error, create, update, remove };
+  async function removeTransfer(transferId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/transfers/${transferId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      throw new Error(data.error ?? "Failed to delete transfer");
+    }
+
+    setTransactions((prev) =>
+      prev.filter((tx) => tx.transferId !== transferId)
+    );
+  }
+
+  return {
+    transactions,
+    isLoading,
+    error,
+    create,
+    update,
+    remove,
+    removeTransfer,
+  };
 }

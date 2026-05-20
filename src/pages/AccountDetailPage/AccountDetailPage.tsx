@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts";
 import AccountDetailHeader from "../../features/accounts/AccountDetailHeader/AccountDetailHeader";
 import TransactionCreateModal from "../../features/transactions/TransactionCreateModal/TransactionCreateModal";
-import TransferCreateModal from "../../features/transactions/TransferCreateModal/TransferCreateModal";
 import RecurringTransactionList from "../../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
 import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions";
@@ -117,8 +116,8 @@ export default function AccountDetailPage() {
             />
           )}
           {showAddTransfer && (
-            <TransferCreateModal
-              fromAccountId={account.id}
+            <TransactionCreateModal
+              accountId={account.id}
               accounts={accounts}
               onClose={() => setShowAddTransfer(false)}
               onSuccess={() => setShowAddTransfer(false)}

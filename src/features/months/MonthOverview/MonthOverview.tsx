@@ -3,10 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { RecurringTransaction } from "../../../types/recurring";
+import type { Transaction } from "../../../types/transaction";
 import { formatBalance } from "../../../utils/format/format";
 import Button from "../../../primitives/Button/Button";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import { useMonthTransactions } from "../useMonthTransactions";
+import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
 import {
   StyledMonthOverview,
   StyledBalanceSummaryBar,
@@ -44,12 +46,14 @@ export default function MonthOverview({
   const [activeIndex, setActiveIndex] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newDate, setNewDate] = useState(month ? `${month}-01` : "");
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
 
   const activeAccount = accounts[activeIndex];
   const snapshot = snapshots.find((s) => s.month === month);
   const monthStr = month ?? "";
 
-  const { transactions, create } = useMonthTransactions(
+  const { transactions, create, remove, removeTransfer } = useMonthTransactions(
     activeAccount?.id ?? "",
     monthStr
   );
@@ -64,6 +68,15 @@ export default function MonthOverview({
   async function handleCreate() {
     await create({ date: newDate, amount: 0, description: "", category: "" });
     setShowAddForm(false);
+  }
+
+  function handleDeleted(id: string, transferId?: string) {
+    if (transferId) {
+      void removeTransfer(transferId);
+    } else {
+      void remove(id);
+    }
+    setSelectedTransaction(null);
   }
 
   return (
@@ -118,7 +131,10 @@ export default function MonthOverview({
         <StyledEmptyState>No transactions this month</StyledEmptyState>
       ) : (
         transactions.map((tx) => (
-          <StyledTransactionRow key={tx.id}>
+          <StyledTransactionRow
+            key={tx.id}
+            onClick={() => setSelectedTransaction(tx)}
+          >
             <span>{tx.description}</span>
             <span>{formatBalance(tx.amount)}</span>
           </StyledTransactionRow>
@@ -142,6 +158,18 @@ export default function MonthOverview({
             aria-label="Date"
           />
         </form>
+      )}
+
+      {selectedTransaction && (
+        <TransactionEditModal
+          transaction={selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+          onSaved={(updated) => {
+            setSelectedTransaction(null);
+            void Promise.resolve(updated);
+          }}
+          onDeleted={handleDeleted}
+        />
       )}
     </StyledMonthOverview>
   );
