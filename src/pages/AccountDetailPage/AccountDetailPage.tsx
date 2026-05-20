@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts";
 import AccountDetailHeader from "../../features/accounts/AccountDetailHeader/AccountDetailHeader";
-import TransactionCreateModal from "../../features/transactions/TransactionCreateModal/TransactionCreateModal";
+import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import RecurringTransactionList from "../../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
 import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions";
@@ -29,8 +29,7 @@ export default function AccountDetailPage() {
   } = useRecurringTransactions(id ?? "");
   const navigate = useNavigate();
   const [hasTransactions, setHasTransactions] = useState(false);
-  const [showAddTransaction, setShowAddTransaction] = useState(false);
-  const [showAddTransfer, setShowAddTransfer] = useState(false);
+  const [showEditAccount, setShowEditAccount] = useState(false);
   const [showAddRecurring, setShowAddRecurring] = useState(false);
   const [editingRecurring, setEditingRecurring] =
     useState<RecurringTransaction | null>(null);
@@ -92,37 +91,25 @@ export default function AccountDetailPage() {
         <AccountDetailHeader
           account={account}
           hasTransactions={hasTransactions}
+          onEdit={() => setShowEditAccount(true)}
           onRename={handleRename}
           onUpdateOpeningBalance={handleUpdateOpeningBalance}
           onDelete={handleDelete}
         />
+        {showEditAccount && (
+          <AccountCreateModal
+            account={account}
+            onClose={() => setShowEditAccount(false)}
+            onSuccess={() => {
+              refresh();
+              setShowEditAccount(false);
+            }}
+          />
+        )}
       </Card>
       <StyledSection>
         <Card>
           <Heading level={2}>Transactions</Heading>
-          <StyledActions>
-            <Button type="button" onClick={() => setShowAddTransaction(true)}>
-              Add transaction
-            </Button>
-            <Button type="button" onClick={() => setShowAddTransfer(true)}>
-              Add transfer
-            </Button>
-          </StyledActions>
-          {showAddTransaction && (
-            <TransactionCreateModal
-              accountId={account.id}
-              onClose={() => setShowAddTransaction(false)}
-              onSuccess={() => setShowAddTransaction(false)}
-            />
-          )}
-          {showAddTransfer && (
-            <TransactionCreateModal
-              accountId={account.id}
-              accounts={accounts}
-              onClose={() => setShowAddTransfer(false)}
-              onSuccess={() => setShowAddTransfer(false)}
-            />
-          )}
         </Card>
       </StyledSection>
       <StyledSection>

@@ -85,36 +85,6 @@ function mockAllSuccess() {
     } as Response);
 }
 
-describe("AccountDetailPage — transfer button", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => accounts,
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [],
-      } as Response)
-      .mockResolvedValue({
-        ok: true,
-        json: async () => [],
-      } as Response);
-  });
-
-  it("shows both Add transaction and Add transfer buttons in the transactions section", async () => {
-    renderPage();
-
-    expect(
-      await screen.findByRole("button", { name: /add transaction/i })
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("button", { name: /add transfer/i })
-    ).toBeInTheDocument();
-  });
-});
-
 describe("AccountDetailPage — recurring transactions button", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch")
