@@ -17,6 +17,7 @@ import {
 interface Props {
   account: AccountWithBalance;
   hasTransactions: boolean;
+  onEdit?: () => void;
   onRename: (name: string) => Promise<void>;
   onUpdateOpeningBalance: (openingBalance: number) => Promise<void>;
   onDelete: () => Promise<void>;
@@ -25,6 +26,7 @@ interface Props {
 export default function AccountDetailHeader({
   account,
   hasTransactions,
+  onEdit,
   onRename,
   onUpdateOpeningBalance,
   onDelete,
@@ -75,6 +77,12 @@ export default function AccountDetailHeader({
 
   return (
     <StyledHeader>
+      {onEdit && (
+        <Button aria-label="Edit account" onClick={onEdit}>
+          <Pencil size={16} />
+        </Button>
+      )}
+
       {isEditingName ? (
         <StyledActions>
           <Input

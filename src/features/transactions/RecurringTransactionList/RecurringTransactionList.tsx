@@ -1,5 +1,5 @@
 import type { RecurringTransaction } from "../../../types/recurring";
-import { formatBalance } from "../../../utils/format/format";
+import { formatBalance, toOrdinal } from "../../../utils/format/format";
 import {
   StyledList,
   StyledRow,
@@ -8,6 +8,8 @@ import {
   StyledMeta,
   StyledLinkedIndicator,
   StyledEmptyState,
+  StyledHeaderRow,
+  StyledHeaderCell,
 } from "./RecurringTransactionList.styles";
 
 interface Props {
@@ -25,12 +27,18 @@ export default function RecurringTransactionList({
 
   return (
     <StyledList>
+      <StyledHeaderRow>
+        <StyledHeaderCell>Name</StyledHeaderCell>
+        <StyledHeaderCell>Amount</StyledHeaderCell>
+        <StyledHeaderCell>Frequency</StyledHeaderCell>
+        <StyledHeaderCell>Day</StyledHeaderCell>
+      </StyledHeaderRow>
       {recurringTransactions.map((rt) => (
         <StyledRow key={rt.id} onClick={() => onRowClick(rt)}>
           <StyledDescription>{rt.description}</StyledDescription>
           <StyledAmount>{formatBalance(rt.amount)}</StyledAmount>
           <StyledMeta>{rt.frequency}</StyledMeta>
-          <StyledMeta>{rt.dayOfMonth}</StyledMeta>
+          <StyledMeta>{toOrdinal(rt.dayOfMonth)}</StyledMeta>
           {rt.linkedAccountId && (
             <StyledLinkedIndicator data-testid="linked-account-indicator" />
           )}
