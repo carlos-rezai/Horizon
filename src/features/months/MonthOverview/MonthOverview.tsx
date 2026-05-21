@@ -112,6 +112,7 @@ export default function MonthOverview({
             role="tab"
             aria-selected={index === activeIndex}
             $isActive={index === activeIndex}
+            $color={account.color ?? undefined}
             onClick={() => setActiveIndex(index)}
           >
             {account.name}

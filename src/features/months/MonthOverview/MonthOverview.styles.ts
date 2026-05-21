@@ -38,17 +38,17 @@ export const StyledTabList = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
 
-export const StyledTab = styled.button<{ $isActive: boolean }>`
+export const StyledTab = styled.button<{ $isActive: boolean; $color?: string }>`
   background: none;
   border: none;
   border-bottom: 2px solid
-    ${({ theme, $isActive }) =>
-      $isActive ? theme.colors.primary : "transparent"};
+    ${({ theme, $isActive, $color }) =>
+      $isActive ? ($color ?? theme.colors.primary) : "transparent"};
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   cursor: pointer;
-  color: ${({ theme, $isActive }) =>
-    $isActive ? theme.colors.primary : theme.colors.onSurface};
+  color: ${({ theme, $isActive, $color }) =>
+    $isActive ? ($color ?? theme.colors.primary) : theme.colors.onSurface};
 `;
 
 export const StyledSectionHeading = styled.h3`

@@ -140,6 +140,27 @@ const mockAccounts: AccountWithBalance[] = [
   },
 ];
 
+const mockAccountsWithColor: AccountWithBalance[] = [
+  {
+    id: "g1",
+    kind: "Girokonto",
+    name: "Main Checking",
+    openingBalance: 100000,
+    openingDate: "2026-01-01",
+    balance: 150000,
+    color: "#cf6679",
+  },
+  {
+    id: "t1",
+    kind: "Tagesgeld",
+    name: "DKB Reserve",
+    openingBalance: 200000,
+    openingDate: "2026-01-01",
+    balance: 220000,
+    color: "#b5ccb8",
+  },
+];
+
 const mockSnapshots: MonthlySnapshot[] = [
   {
     month: "2026-05",
@@ -230,6 +251,48 @@ describe("MonthOverview — back navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
+});
+
+describe("MonthOverview — account tab coloring", () => {
+  it("active tab renders with the account's own color", () => {
+    render(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <MemoryRouter initialEntries={["/months/2026-05"]}>
+            <Routes>
+              <Route
+                path="/months/:month"
+                element={<MonthOverview accounts={mockAccountsWithColor} />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      </StyleSheetManager>
+    );
+
+    const activeTab = screen.getByRole("tab", { name: "Main Checking" });
+    expect(getCSSForElement(activeTab)).toContain("#cf6679");
+  });
+
+  it("active tab does not render with the generic primary color when account has its own color", () => {
+    render(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <MemoryRouter initialEntries={["/months/2026-05"]}>
+            <Routes>
+              <Route
+                path="/months/:month"
+                element={<MonthOverview accounts={mockAccountsWithColor} />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      </StyleSheetManager>
+    );
+
+    const activeTab = screen.getByRole("tab", { name: "Main Checking" });
+    expect(getCSSForElement(activeTab)).not.toContain(theme.colors.primary);
   });
 });
 
