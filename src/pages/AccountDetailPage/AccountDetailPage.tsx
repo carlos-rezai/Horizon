@@ -122,6 +122,7 @@ export default function AccountDetailPage() {
           </StyledActions>
           <RecurringTransactionList
             recurringTransactions={recurringTransactions}
+            accounts={accounts}
             onRowClick={(rt) => setEditingRecurring(rt)}
           />
           {showAddRecurring && (

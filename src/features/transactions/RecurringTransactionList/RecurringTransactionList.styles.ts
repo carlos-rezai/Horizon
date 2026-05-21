@@ -8,7 +8,7 @@ export const StyledList = styled.ul`
 
 export const StyledRow = styled.li`
   display: grid;
-  grid-template-columns: 1fr 120px 100px 60px auto;
+  grid-template-columns: 1fr 120px 100px 60px 160px;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space2}px
@@ -34,19 +34,22 @@ export const StyledAmount = styled.span`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
+export const StyledToAccount = styled.span`
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
 export const StyledMeta = styled.span`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
 `;
 
-export const StyledLinkedIndicator = styled.span`
-  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
-  color: ${({ theme }) => theme.colors.primary};
-`;
-
 export const StyledHeaderRow = styled.li`
   display: grid;
-  grid-template-columns: 1fr 120px 100px 60px auto;
+  grid-template-columns: 1fr 120px 100px 60px 160px;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space2}px

@@ -5,6 +5,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import RecurringTransactionList from "./RecurringTransactionList";
 import type { RecurringTransaction } from "../../../types/recurring";
+import type { AccountWithBalance } from "../../../types/account";
 
 afterEach(() => {
   cleanup();
@@ -32,9 +33,21 @@ const linkedRt: RecurringTransaction = {
   linkedAccountId: "acc-2",
 };
 
+const mockAccounts: AccountWithBalance[] = [
+  {
+    id: "acc-2",
+    kind: "Tagesgeld",
+    name: "Savings",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  },
+];
+
 const renderRtList = (
   recurringTransactions: RecurringTransaction[],
   overrides: Partial<{
+    accounts: AccountWithBalance[];
     onRowClick: (rt: RecurringTransaction) => void;
   }> = {}
 ) => {
@@ -67,12 +80,6 @@ describe("RecurringTransactionList — row content", () => {
     expect(screen.getByText(/-1[.,]200/)).toBeInTheDocument();
   });
 
-  it("renders a linked account indicator when linkedAccountId is set", () => {
-    renderRtList([linkedRt]);
-
-    expect(screen.getByTestId("linked-account-indicator")).toBeInTheDocument();
-  });
-
   it("does not render a checkbox column", () => {
     renderRtList([rt]);
 
@@ -92,13 +99,34 @@ describe("RecurringTransactionList — interactions", () => {
 });
 
 describe("RecurringTransactionList — column headers", () => {
-  it("renders column headers: Name, Amount, Frequency, Day", () => {
+  it("renders column headers: Name, Amount, Frequency, Day, To account", () => {
     renderRtList([rt]);
 
     expect(screen.getByText("Name")).toBeInTheDocument();
     expect(screen.getByText("Amount")).toBeInTheDocument();
     expect(screen.getByText("Frequency")).toBeInTheDocument();
     expect(screen.getByText("Day")).toBeInTheDocument();
+    expect(screen.getByText("To account")).toBeInTheDocument();
+  });
+});
+
+describe("RecurringTransactionList — To account column", () => {
+  it("shows the resolved destination account name for a linked row", () => {
+    renderRtList([linkedRt], { accounts: mockAccounts });
+
+    expect(screen.getByText("Savings")).toBeInTheDocument();
+  });
+
+  it("shows '—' for a non-linked row", () => {
+    renderRtList([rt]);
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("falls back to '—' when linkedAccountId has no matching account", () => {
+    renderRtList([linkedRt]);
+
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
 
