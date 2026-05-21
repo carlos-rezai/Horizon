@@ -1,11 +1,28 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ThemeProvider } from "styled-components";
+import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../../tokens";
 import RecurringTransactionList from "./RecurringTransactionList";
 import type { RecurringTransaction } from "../../../types/recurring";
 import type { AccountWithBalance } from "../../../types/account";
+
+function getInjectedCSS(): string {
+  return Array.from(document.querySelectorAll("style"))
+    .map((el) => el.textContent ?? "")
+    .join("\n");
+}
+
+function getCSSForElement(el: HTMLElement): string {
+  const classes = Array.from(el.classList);
+  const allCSS = getInjectedCSS();
+  return classes
+    .flatMap((cls) => {
+      const regex = new RegExp(`\\.${cls}\\b[^{]*\\{[^}]*\\}`, "g");
+      return allCSS.match(regex) ?? [];
+    })
+    .join("\n");
+}
 
 afterEach(() => {
   cleanup();
@@ -31,6 +48,16 @@ const linkedRt: RecurringTransaction = {
   frequency: "monthly",
   dayOfMonth: 25,
   linkedAccountId: "acc-2",
+};
+
+const positiveRt: RecurringTransaction = {
+  id: "rt-pos",
+  accountId: "acc-1",
+  amount: 323643,
+  description: "Salary",
+  category: "Income",
+  frequency: "monthly",
+  dayOfMonth: 1,
 };
 
 const mockAccounts: AccountWithBalance[] = [
@@ -156,5 +183,34 @@ describe("RecurringTransactionList — empty state", () => {
     renderRtList([]);
 
     expect(screen.getByText(/no recurring transactions/i)).toBeInTheDocument();
+  });
+});
+
+describe("RecurringTransactionList — amount coloring", () => {
+  function renderForCSS(recurringTransactions: RecurringTransaction[]) {
+    render(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <RecurringTransactionList
+            recurringTransactions={recurringTransactions}
+            onRowClick={vi.fn()}
+          />
+        </ThemeProvider>
+      </StyleSheetManager>
+    );
+  }
+
+  it("positive amount renders with secondary color", () => {
+    renderForCSS([positiveRt]);
+
+    const amountEl = screen.getByText(/3[.,]236/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.secondary);
+  });
+
+  it("negative amount renders with error color", () => {
+    renderForCSS([rt]);
+
+    const amountEl = screen.getByText(/-1[.,]200/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
   });
 });

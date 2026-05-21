@@ -28,10 +28,11 @@ export const StyledDescription = styled.span`
   white-space: nowrap;
 `;
 
-export const StyledAmount = styled.span`
+export const StyledAmount = styled.span<{ $isPositive: boolean }>`
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: ${({ theme }) => theme.colors.onSurface};
+  color: ${({ theme, $isPositive }) =>
+    $isPositive ? theme.colors.secondary : theme.colors.error};
 `;
 
 export const StyledToAccount = styled.span`

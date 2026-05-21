@@ -44,7 +44,9 @@ export default function RecurringTransactionList({
         return (
           <StyledRow key={rt.id} onClick={() => onRowClick(rt)}>
             <StyledDescription>{rt.description}</StyledDescription>
-            <StyledAmount>{formatBalance(rt.amount)}</StyledAmount>
+            <StyledAmount $isPositive={rt.amount >= 0}>
+              {formatBalance(rt.amount)}
+            </StyledAmount>
             <StyledMeta>{rt.frequency}</StyledMeta>
             <StyledMeta>{toOrdinal(rt.dayOfMonth)}</StyledMeta>
             <StyledToAccount>{toAccountName}</StyledToAccount>
