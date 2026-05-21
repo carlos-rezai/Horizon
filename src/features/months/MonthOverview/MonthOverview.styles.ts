@@ -91,3 +91,10 @@ export const StyledEmptyState = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   margin: 0;
 `;
+
+export const StyledSignedAmount = styled.span<{ $isPositive: boolean }>`
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme, $isPositive }) =>
+    $isPositive ? theme.colors.secondary : theme.colors.error};
+`;

@@ -23,6 +23,7 @@ import {
   StyledTransactionRow,
   StyledOneOffRow,
   StyledEmptyState,
+  StyledSignedAmount,
 } from "./MonthOverview.styles";
 
 const ONEOFF_GRID = "100px 1fr 160px 100px";
@@ -124,7 +125,9 @@ export default function MonthOverview({
           {recurringForAccount.map((rt) => (
             <StyledTransactionRow key={rt.id}>
               <span>{rt.description}</span>
-              <span>{formatBalance(rt.amount)}</span>
+              <StyledSignedAmount $isPositive={rt.amount >= 0}>
+                {formatBalance(rt.amount)}
+              </StyledSignedAmount>
             </StyledTransactionRow>
           ))}
         </>
@@ -146,7 +149,9 @@ export default function MonthOverview({
             <span>
               {getTransferTarget(tx, allMonthTransactions, accounts) ?? "—"}
             </span>
-            <span>{formatBalance(tx.amount)}</span>
+            <StyledSignedAmount $isPositive={tx.amount >= 0}>
+              {formatBalance(tx.amount)}
+            </StyledSignedAmount>
           </StyledOneOffRow>
         ))
       )}

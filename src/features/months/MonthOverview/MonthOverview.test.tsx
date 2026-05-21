@@ -1,9 +1,26 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { ThemeProvider } from "styled-components";
+import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { theme } from "../../../tokens";
+
+function getInjectedCSS(): string {
+  return Array.from(document.querySelectorAll("style"))
+    .map((el) => el.textContent ?? "")
+    .join("\n");
+}
+
+function getCSSForElement(el: HTMLElement): string {
+  const classes = Array.from(el.classList);
+  const allCSS = getInjectedCSS();
+  return classes
+    .flatMap((cls) => {
+      const regex = new RegExp(`\\.${cls}\\b[^{]*\\{[^}]*\\}`, "g");
+      return allCSS.match(regex) ?? [];
+    })
+    .join("\n");
+}
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -521,5 +538,85 @@ describe("MonthOverview — delete via edit modal", () => {
     capturedOnDeleted?.(transferTx.id, transferTx.transferId);
 
     expect(removeTransferMock).toHaveBeenCalledWith("tf-abc");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MonthOverview — amount coloring
+// ---------------------------------------------------------------------------
+
+function renderForCSS(
+  month = "2026-05",
+  accounts: AccountWithBalance[] = mockAccounts,
+  recurringTransactionsByAccount: Record<string, RecurringTransaction[]> = {}
+) {
+  return render(
+    <StyleSheetManager disableCSSOMInjection>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter initialEntries={[`/months/${month}`]}>
+          <Routes>
+            <Route
+              path="/months/:month"
+              element={
+                <MonthOverview
+                  accounts={accounts}
+                  recurringTransactionsByAccount={
+                    recurringTransactionsByAccount
+                  }
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>
+    </StyleSheetManager>
+  );
+}
+
+describe("MonthOverview — amount coloring — one-off transactions", () => {
+  it("positive one-off amount renders with secondary color", () => {
+    mockUseMonthTransactions.mockReturnValue({
+      ...emptyMonthTransactions,
+      transactions: [{ ...mockGiroTransaction, amount: 10000 }],
+    });
+
+    renderForCSS();
+
+    const amountEl = screen.getByText(/100/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.secondary);
+  });
+
+  it("negative one-off amount renders with error color", () => {
+    mockUseMonthTransactions.mockReturnValue({
+      ...emptyMonthTransactions,
+      transactions: [mockGiroTransaction], // amount: -5000
+    });
+
+    renderForCSS();
+
+    const amountEl = screen.getByText(/-50/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
+  });
+});
+
+describe("MonthOverview — amount coloring — recurring transactions", () => {
+  it("positive recurring amount renders with secondary color", () => {
+    renderForCSS("2026-05", mockAccounts, {
+      g1: [mockGiroRecurring], // amount: 323643 (positive)
+      t1: [],
+    });
+
+    const amountEl = screen.getByText(/3[.,]236/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.secondary);
+  });
+
+  it("negative recurring amount renders with error color", () => {
+    renderForCSS("2026-05", mockAccounts, {
+      g1: [mockTagRecurring], // amount: -70000 (negative)
+      t1: [],
+    });
+
+    const amountEl = screen.getByText(/-700/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
   });
 });
