@@ -6,9 +6,11 @@ import type { RecurringTransaction } from "../../../types/recurring";
 import type { Transaction } from "../../../types/transaction";
 import { formatBalance } from "../../../utils/format/format";
 import Button from "../../../primitives/Button/Button";
-import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import { useMonthTransactions } from "../useMonthTransactions";
+import { useAllMonthTransactions } from "../useAllMonthTransactions";
+import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
+import TableHeader from "../../../components/TableHeader/TableHeader";
 import {
   StyledMonthOverview,
   StyledBalanceSummaryBar,
@@ -19,21 +21,29 @@ import {
   StyledTab,
   StyledSectionHeading,
   StyledTransactionRow,
+  StyledOneOffRow,
   StyledEmptyState,
 } from "./MonthOverview.styles";
+
+const ONEOFF_GRID = "100px 1fr 160px 100px";
+const ONEOFF_COLUMNS = ["Date", "Description", "To account", "Amount"];
+
+function getTransferTarget(
+  tx: Transaction,
+  allTxs: Transaction[],
+  accounts: AccountWithBalance[]
+): string | null {
+  if (!tx.transferId) return null;
+  const otherLeg = allTxs.find(
+    (t) => t.transferId === tx.transferId && t.accountId !== tx.accountId
+  );
+  return accounts.find((a) => a.id === otherLeg?.accountId)?.name ?? null;
+}
 
 interface Props {
   accounts: AccountWithBalance[];
   snapshots?: MonthlySnapshot[];
   recurringTransactionsByAccount?: Record<string, RecurringTransaction[]>;
-}
-
-function getMonthBounds(month: string): { first: string; last: string } {
-  const [year, mon] = month.split("-").map(Number);
-  const lastDay = new Date(year, mon, 0).getDate();
-  const first = `${month}-01`;
-  const last = `${year}-${String(mon).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  return { first, last };
 }
 
 export default function MonthOverview({
@@ -44,8 +54,7 @@ export default function MonthOverview({
   const navigate = useNavigate();
   const { month } = useParams<{ month: string }>();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newDate, setNewDate] = useState(month ? `${month}-01` : "");
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
 
@@ -53,22 +62,16 @@ export default function MonthOverview({
   const snapshot = snapshots.find((s) => s.month === month);
   const monthStr = month ?? "";
 
-  const { transactions, create, remove, removeTransfer } = useMonthTransactions(
-    activeAccount?.id ?? "",
+  const { transactions, remove, removeTransfer, refetch } =
+    useMonthTransactions(activeAccount?.id ?? "", monthStr);
+
+  const { transactions: allMonthTransactions } = useAllMonthTransactions(
+    accounts.map((a) => a.id),
     monthStr
   );
 
   const recurringForAccount =
     recurringTransactionsByAccount?.[activeAccount?.id ?? ""] ?? [];
-
-  const { first: minDate, last: maxDate } = monthStr
-    ? getMonthBounds(monthStr)
-    : { first: "", last: "" };
-
-  async function handleCreate() {
-    await create({ date: newDate, amount: 0, description: "", category: "" });
-    setShowAddForm(false);
-  }
 
   function handleDeleted(id: string, transferId?: string) {
     if (transferId) {
@@ -127,37 +130,39 @@ export default function MonthOverview({
         </>
       )}
 
+      <TableHeader columns={ONEOFF_COLUMNS} gridTemplate={ONEOFF_GRID} />
+
       {transactions.length === 0 ? (
         <StyledEmptyState>No transactions this month</StyledEmptyState>
       ) : (
         transactions.map((tx) => (
-          <StyledTransactionRow
+          <StyledOneOffRow
             key={tx.id}
+            $gridTemplate={ONEOFF_GRID}
             onClick={() => setSelectedTransaction(tx)}
           >
+            <span>{tx.date}</span>
             <span>{tx.description}</span>
+            <span>
+              {getTransferTarget(tx, allMonthTransactions, accounts) ?? "—"}
+            </span>
             <span>{formatBalance(tx.amount)}</span>
-          </StyledTransactionRow>
+          </StyledOneOffRow>
         ))
       )}
 
-      <Button onClick={() => setShowAddForm((v) => !v)}>Add transaction</Button>
+      <Button onClick={() => setShowCreateModal(true)}>Add transaction</Button>
 
-      {showAddForm && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void handleCreate();
+      {showCreateModal && (
+        <TransactionCreateModal
+          accountId={activeAccount?.id ?? ""}
+          month={monthStr}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            refetch();
           }}
-        >
-          <DatePicker
-            value={newDate}
-            onChange={setNewDate}
-            minDate={minDate}
-            maxDate={maxDate}
-            aria-label="Date"
-          />
-        </form>
+        />
       )}
 
       {selectedTransaction && (

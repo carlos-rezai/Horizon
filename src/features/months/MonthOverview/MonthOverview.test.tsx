@@ -21,11 +21,38 @@ vi.mock("../useMonthTransactions", () => ({
     mockUseMonthTransactions(...args),
 }));
 
+const mockUseAllMonthTransactions = vi.fn();
+vi.mock("../useAllMonthTransactions", () => ({
+  useAllMonthTransactions: (...args: unknown[]) =>
+    mockUseAllMonthTransactions(...args),
+}));
+
 // Mutable ref so the rendered mock component can hand back its onDeleted callback
 // without hitting TDZ — the factory only stores the component fn; assignment happens
 // inside the React render (which runs after module initialisation).
 let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
   null;
+
+vi.mock(
+  "../../transactions/TransactionCreateModal/TransactionCreateModal",
+  () => ({
+    default: (props: {
+      accountId: string;
+      month?: string;
+      onClose: () => void;
+      onSuccess: () => void;
+    }) => (
+      <div
+        data-testid="transaction-create-modal"
+        data-account-id={props.accountId}
+        data-month={props.month}
+      >
+        <button onClick={props.onClose}>Cancel</button>
+        <button onClick={props.onSuccess}>Submit</button>
+      </div>
+    ),
+  })
+);
 
 vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
   default: (props: {
@@ -44,25 +71,6 @@ vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
   },
 }));
 
-vi.mock("../../../primitives/DatePicker/DatePicker", () => ({
-  default: ({
-    minDate,
-    maxDate,
-    "aria-label": ariaLabel,
-  }: {
-    minDate?: string;
-    maxDate?: string;
-    "aria-label"?: string;
-  }) => (
-    <input
-      data-testid="datepicker"
-      data-min={minDate}
-      data-max={maxDate}
-      aria-label={ariaLabel}
-    />
-  ),
-}));
-
 import MonthOverview from "./MonthOverview";
 
 const emptyMonthTransactions = {
@@ -73,10 +81,15 @@ const emptyMonthTransactions = {
   update: vi.fn(),
   remove: vi.fn(),
   removeTransfer: vi.fn(),
+  refetch: vi.fn(),
 };
 
 beforeEach(() => {
   mockUseMonthTransactions.mockReturnValue(emptyMonthTransactions);
+  mockUseAllMonthTransactions.mockReturnValue({
+    transactions: [],
+    isLoading: false,
+  });
 });
 
 afterEach(() => {
@@ -387,22 +400,33 @@ describe("MonthOverview — add transaction form", () => {
     ).toBeInTheDocument();
   });
 
-  it("reveals the add form when the 'Add transaction' button is clicked", () => {
+  it("opens TransactionCreateModal when the 'Add transaction' button is clicked", () => {
     renderMonthOverviewWithLedger();
 
     fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
 
-    expect(screen.getByTestId("datepicker")).toBeInTheDocument();
+    expect(screen.getByTestId("transaction-create-modal")).toBeInTheDocument();
   });
 
-  it("constrains the DatePicker to the first and last day of the selected month", () => {
+  it("passes the active account id and month to TransactionCreateModal", () => {
     renderMonthOverviewWithLedger("2026-05");
 
     fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
 
-    const datepicker = screen.getByTestId("datepicker");
-    expect(datepicker).toHaveAttribute("data-min", "2026-05-01");
-    expect(datepicker).toHaveAttribute("data-max", "2026-05-31");
+    const modal = screen.getByTestId("transaction-create-modal");
+    expect(modal).toHaveAttribute("data-account-id", "g1");
+    expect(modal).toHaveAttribute("data-month", "2026-05");
+  });
+
+  it("closes TransactionCreateModal when its onClose fires", () => {
+    renderMonthOverviewWithLedger("2026-05");
+
+    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(
+      screen.queryByTestId("transaction-create-modal")
+    ).not.toBeInTheDocument();
   });
 });
 

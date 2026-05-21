@@ -66,6 +66,26 @@ export const StyledTransactionRow = styled.div`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
+export const StyledOneOffRow = styled.div<{ $gridTemplate: string }>`
+  display: grid;
+  grid-template-columns: ${({ $gridTemplate }) => $gridTemplate};
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space4}px;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space4}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  color: ${({ theme }) => theme.colors.onSurface};
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceVariant};
+  }
+
+  & > span:last-child {
+    text-align: right;
+  }
+`;
+
 export const StyledEmptyState = styled.p`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;

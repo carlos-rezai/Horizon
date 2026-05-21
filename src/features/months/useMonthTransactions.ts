@@ -24,6 +24,7 @@ interface UseMonthTransactionsResult {
   update: (id: string, payload: UpdatePayload) => Promise<void>;
   remove: (id: string) => Promise<void>;
   removeTransfer: (transferId: string) => Promise<void>;
+  refetch: () => void;
 }
 
 export function useMonthTransactions(
@@ -33,8 +34,11 @@ export function useMonthTransactions(
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
 
   useEffect(() => {
+    if (!accountId) return;
+
     let cancelled = false;
 
     fetch(`${API_BASE}/accounts/${accountId}/transactions?month=${month}`)
@@ -59,7 +63,7 @@ export function useMonthTransactions(
     return () => {
       cancelled = true;
     };
-  }, [accountId, month]);
+  }, [accountId, month, fetchKey]);
 
   async function create(payload: CreatePayload): Promise<void> {
     const res = await fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
@@ -121,6 +125,10 @@ export function useMonthTransactions(
     );
   }
 
+  function refetch() {
+    setFetchKey((k) => k + 1);
+  }
+
   return {
     transactions,
     isLoading,
@@ -129,5 +137,6 @@ export function useMonthTransactions(
     update,
     remove,
     removeTransfer,
+    refetch,
   };
 }
