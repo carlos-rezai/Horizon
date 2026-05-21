@@ -183,7 +183,8 @@ DEBUG_SQL= # set to "1" to enable better-sqlite3 query tracing via console.info.
 - [x] Desktop packaging (Windows installer)
 - [x] UI Redesign — visual refresh of all views based on Google Stitch mockups
 - [x] In-app auto-update — electron-updater + GitHub Releases, in-app banner on new version
-- [ ] Monthly Ledger — recurring transactions per account; month overview page reachable from dashboard and financial plan
+- [x] Monthly Ledger — recurring transactions per account; month overview page reachable from dashboard and financial plan
+- [ ] Credit Card Auto-Settlement — link a CreditCard account to a funding account; negative end-of-month balance pulls automatically from the linked account
 - [ ] Monthly digest (AI) — permanently deferred
 - [ ] Anomaly detection + Q&A (AI) — permanently deferred
 - [ ] Sondertilgung advisor (AI) — permanently deferred
