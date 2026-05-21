@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { AccountWithBalance } from "../../../types/account";
+import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { RecurringTransaction } from "../../../types/recurring";
 import type { Transaction } from "../../../types/transaction";
@@ -25,6 +25,8 @@ import {
   StyledEmptyState,
   StyledSignedAmount,
 } from "./MonthOverview.styles";
+
+const LIABILITY_KINDS = new Set<AccountKind>(["Mortgage", "CreditCard"]);
 
 const ONEOFF_GRID = "100px 1fr 160px 100px";
 const ONEOFF_COLUMNS = ["Date", "Description", "To account", "Amount"];
@@ -97,7 +99,9 @@ export default function MonthOverview({
             return (
               <StyledBalanceSummaryItem key={account.id}>
                 <StyledBalanceLabel>{account.name}</StyledBalanceLabel>
-                <StyledBalanceValue>
+                <StyledBalanceValue
+                  $isLiability={LIABILITY_KINDS.has(account.kind)}
+                >
                   {balance !== null ? formatBalance(balance) : "—"}
                 </StyledBalanceValue>
               </StyledBalanceSummaryItem>

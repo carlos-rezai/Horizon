@@ -636,6 +636,95 @@ function renderForCSS(
   );
 }
 
+// ---------------------------------------------------------------------------
+// MonthOverview — balance value coloring
+// ---------------------------------------------------------------------------
+
+const mockAccountsMixed: AccountWithBalance[] = [
+  {
+    id: "g1",
+    kind: "Girokonto",
+    name: "Main Checking",
+    openingBalance: 100000,
+    openingDate: "2026-01-01",
+    balance: 150000,
+  },
+  {
+    id: "m1",
+    kind: "Mortgage",
+    name: "Home Loan",
+    openingBalance: 30000000,
+    openingDate: "2026-01-01",
+    balance: 29000000,
+  },
+];
+
+const mockSnapshotsMixed: MonthlySnapshot[] = [
+  {
+    month: "2026-05",
+    accounts: {
+      g1: { projected: 145000 },
+      m1: { projected: 29000000 },
+    },
+    netCashflow: 0,
+    totalLiquid: 145000,
+  },
+];
+
+describe("MonthOverview — balance value coloring", () => {
+  it("Mortgage balance renders with error color", () => {
+    render(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <MemoryRouter initialEntries={["/months/2026-05"]}>
+            <Routes>
+              <Route
+                path="/months/:month"
+                element={
+                  <MonthOverview
+                    accounts={mockAccountsMixed}
+                    snapshots={mockSnapshotsMixed}
+                  />
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      </StyleSheetManager>
+    );
+
+    // Mortgage balance: 29000000 cents = 290,000.00 €
+    const balanceEl = screen.getByText(/290[.,]000/);
+    expect(getCSSForElement(balanceEl)).toContain(theme.colors.error);
+  });
+
+  it("Girokonto balance renders with secondary color", () => {
+    render(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <MemoryRouter initialEntries={["/months/2026-05"]}>
+            <Routes>
+              <Route
+                path="/months/:month"
+                element={
+                  <MonthOverview
+                    accounts={mockAccountsMixed}
+                    snapshots={mockSnapshotsMixed}
+                  />
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      </StyleSheetManager>
+    );
+
+    // Girokonto balance: 145000 cents = 1,450.00 €
+    const balanceEl = screen.getByText(/1[.,]450/);
+    expect(getCSSForElement(balanceEl)).toContain(theme.colors.secondary);
+  });
+});
+
 describe("MonthOverview — amount coloring — one-off transactions", () => {
   it("positive one-off amount renders with secondary color", () => {
     mockUseMonthTransactions.mockReturnValue({

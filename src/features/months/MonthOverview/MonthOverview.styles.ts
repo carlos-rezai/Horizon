@@ -26,10 +26,11 @@ export const StyledBalanceLabel = styled.span`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
 `;
 
-export const StyledBalanceValue = styled.span`
+export const StyledBalanceValue = styled.span<{ $isLiability: boolean }>`
   font-size: ${({ theme }) => theme.typography.sizes.md}px;
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  color: ${({ theme }) => theme.colors.onSurface};
+  color: ${({ theme, $isLiability }) =>
+    $isLiability ? theme.colors.error : theme.colors.secondary};
 `;
 
 export const StyledTabList = styled.div`
