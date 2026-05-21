@@ -38,6 +38,7 @@ vi.mock(
   () => ({
     default: (props: {
       accountId: string;
+      accounts?: AccountWithBalance[];
       month?: string;
       onClose: () => void;
       onSuccess: () => void;
@@ -47,6 +48,11 @@ vi.mock(
         data-account-id={props.accountId}
         data-month={props.month}
       >
+        {props.accounts !== undefined && (
+          <select aria-label="To account">
+            <option value="">— None —</option>
+          </select>
+        )}
         <button onClick={props.onClose}>Cancel</button>
         <button onClick={props.onSuccess}>Submit</button>
       </div>
@@ -427,6 +433,16 @@ describe("MonthOverview — add transaction form", () => {
     expect(
       screen.queryByTestId("transaction-create-modal")
     ).not.toBeInTheDocument();
+  });
+
+  it("the 'To account' select is present when the modal opens", () => {
+    renderMonthOverviewWithLedger("2026-05");
+
+    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+
+    expect(
+      screen.getByRole("combobox", { name: /to account/i })
+    ).toBeInTheDocument();
   });
 });
 

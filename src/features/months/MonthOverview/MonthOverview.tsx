@@ -156,6 +156,7 @@ export default function MonthOverview({
       {showCreateModal && (
         <TransactionCreateModal
           accountId={activeAccount?.id ?? ""}
+          accounts={accounts}
           month={monthStr}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
