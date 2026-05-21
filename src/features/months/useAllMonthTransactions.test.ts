@@ -115,3 +115,21 @@ describe("useAllMonthTransactions — empty accounts", () => {
     expect(result.current.isLoading).toBe(false);
   });
 });
+
+describe("useAllMonthTransactions — refetch", () => {
+  it("re-fetches all accounts when refetch is called", async () => {
+    const { result } = renderHook(() =>
+      useAllMonthTransactions(ACCOUNT_IDS, MONTH)
+    );
+
+    await act(async () => {});
+
+    const callsBefore = vi.mocked(fetch).mock.calls.length;
+
+    await act(async () => {
+      result.current.refetch();
+    });
+
+    expect(vi.mocked(fetch).mock.calls.length).toBeGreaterThan(callsBefore);
+  });
+});

@@ -39,6 +39,7 @@ const transferTransaction: Transaction = {
 const renderModal = (
   transaction: Transaction,
   overrides: Partial<{
+    toAccountName: string;
     onClose: () => void;
     onSaved: (tx: Transaction) => void;
     onDeleted: (id: string, transferId?: string) => void;
@@ -332,6 +333,26 @@ describe("TransactionEditModal — transfer branch", () => {
     await waitFor(() => {
       expect(onDeleted).toHaveBeenCalledWith("txn-2", "transfer-abc");
     });
+  });
+});
+
+describe("TransactionEditModal — transfer destination", () => {
+  it("shows the destination account name when toAccountName is provided for a transfer", () => {
+    renderModal(transferTransaction, { toAccountName: "DKB Reserve" });
+
+    expect(screen.getByText("DKB Reserve")).toBeInTheDocument();
+  });
+
+  it("does not show a destination account when toAccountName is absent", () => {
+    renderModal(transferTransaction);
+
+    expect(screen.queryByText("DKB Reserve")).not.toBeInTheDocument();
+  });
+
+  it("does not show a destination account for a non-transfer transaction", () => {
+    renderModal(regularTransaction, { toAccountName: "DKB Reserve" });
+
+    expect(screen.queryByText("DKB Reserve")).not.toBeInTheDocument();
   });
 });
 

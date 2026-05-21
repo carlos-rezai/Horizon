@@ -20,6 +20,17 @@ export const StyledTransferNote = styled.p`
   margin: 0;
 `;
 
+export const StyledTransferDestination = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.onSurface};
+  margin: 0;
+
+  span {
+    color: ${({ theme }) => theme.colors.onSurfaceVariant};
+    margin-right: ${({ theme }) => theme.spacing.space2}px;
+  }
+`;
+
 export const StyledErrorText = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   color: ${({ theme }) => theme.colors.error};

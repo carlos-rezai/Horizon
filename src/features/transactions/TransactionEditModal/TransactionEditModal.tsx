@@ -11,11 +11,13 @@ import {
   StyledFields,
   StyledActions,
   StyledTransferNote,
+  StyledTransferDestination,
   StyledErrorText,
 } from "./TransactionEditModal.styles";
 
 interface Props {
   transaction: Transaction;
+  toAccountName?: string;
   onClose: () => void;
   onSaved: (tx: Transaction) => void;
   onDeleted: (id: string, transferId?: string) => void;
@@ -23,6 +25,7 @@ interface Props {
 
 export default function TransactionEditModal({
   transaction,
+  toAccountName,
   onClose,
   onSaved,
   onDeleted,
@@ -69,9 +72,9 @@ export default function TransactionEditModal({
       : `${API_BASE}/transactions/${transaction.id}`;
 
     const res = await fetch(url, { method: "DELETE" });
-    const data = (await res.json()) as { error?: string };
 
     if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
       setError(data.error ?? "Failed to delete transaction");
       return;
     }
@@ -87,6 +90,12 @@ export default function TransactionEditModal({
           <StyledTransferNote>
             This is one leg of a transfer — deleting it will remove both legs.
           </StyledTransferNote>
+        )}
+        {isTransfer && toAccountName && (
+          <StyledTransferDestination>
+            <span>Transfer to</span>
+            {toAccountName}
+          </StyledTransferDestination>
         )}
 
         <FormField label="Date" htmlFor="edit-date">
@@ -112,12 +121,12 @@ export default function TransactionEditModal({
         <FormField label="Amount" htmlFor="edit-amount">
           <Input
             id="edit-amount"
-            type="number"
+            type="text"
+            inputMode="decimal"
             aria-label="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             disabled={isTransfer}
-            step="0.01"
           />
         </FormField>
 

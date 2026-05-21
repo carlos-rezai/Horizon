@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  act,
+} from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
@@ -112,6 +118,7 @@ beforeEach(() => {
   mockUseAllMonthTransactions.mockReturnValue({
     transactions: [],
     isLoading: false,
+    refetch: vi.fn(),
   });
 });
 
@@ -566,12 +573,18 @@ describe("MonthOverview — click to edit", () => {
 // ---------------------------------------------------------------------------
 
 describe("MonthOverview — delete via edit modal", () => {
-  it("calls remove with the transaction id when onDeleted fires without a transferId", () => {
-    const removeMock = vi.fn();
+  it("refetches transactions when onDeleted fires", () => {
+    const refetchMock = vi.fn();
+    const refetchAllMock = vi.fn();
     mockUseMonthTransactions.mockReturnValue({
       ...emptyMonthTransactions,
       transactions: [mockGiroTransaction],
-      remove: removeMock,
+      refetch: refetchMock,
+    });
+    mockUseAllMonthTransactions.mockReturnValue({
+      transactions: [],
+      isLoading: false,
+      refetch: refetchAllMock,
     });
 
     renderMonthOverviewWithLedger();
@@ -579,28 +592,28 @@ describe("MonthOverview — delete via edit modal", () => {
 
     capturedOnDeleted?.(mockGiroTransaction.id);
 
-    expect(removeMock).toHaveBeenCalledWith(mockGiroTransaction.id);
+    expect(refetchMock).toHaveBeenCalled();
+    expect(refetchAllMock).toHaveBeenCalled();
   });
 
-  it("calls removeTransfer with the transferId when onDeleted fires with one", () => {
-    const removeTransferMock = vi.fn();
-    const transferTx: Transaction = {
-      ...mockGiroTransaction,
-      id: "txn-tf",
-      transferId: "tf-abc",
-    };
+  it("closes the edit modal when onDeleted fires", () => {
     mockUseMonthTransactions.mockReturnValue({
       ...emptyMonthTransactions,
-      transactions: [transferTx],
-      removeTransfer: removeTransferMock,
+      transactions: [mockGiroTransaction],
     });
 
     renderMonthOverviewWithLedger();
     fireEvent.click(screen.getByText("Supermarket"));
 
-    capturedOnDeleted?.(transferTx.id, transferTx.transferId);
+    expect(screen.getByTestId("transaction-edit-modal")).toBeInTheDocument();
 
-    expect(removeTransferMock).toHaveBeenCalledWith("tf-abc");
+    act(() => {
+      capturedOnDeleted?.(mockGiroTransaction.id);
+    });
+
+    expect(
+      screen.queryByTestId("transaction-edit-modal")
+    ).not.toBeInTheDocument();
   });
 });
 

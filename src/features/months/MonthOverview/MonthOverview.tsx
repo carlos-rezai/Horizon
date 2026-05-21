@@ -28,8 +28,8 @@ import {
 
 const LIABILITY_KINDS = new Set<AccountKind>(["Mortgage", "CreditCard"]);
 
-const ONEOFF_GRID = "100px 1fr 160px 100px";
-const ONEOFF_COLUMNS = ["Date", "Description", "To account", "Amount"];
+const ONEOFF_GRID = "100px 1fr 100px 160px";
+const ONEOFF_COLUMNS = ["Date", "Description", "Amount", "To account"];
 
 function getTransferTarget(
   tx: Transaction,
@@ -65,23 +65,23 @@ export default function MonthOverview({
   const snapshot = snapshots.find((s) => s.month === month);
   const monthStr = month ?? "";
 
-  const { transactions, remove, removeTransfer, refetch } =
-    useMonthTransactions(activeAccount?.id ?? "", monthStr);
-
-  const { transactions: allMonthTransactions } = useAllMonthTransactions(
-    accounts.map((a) => a.id),
+  const { transactions, refetch } = useMonthTransactions(
+    activeAccount?.id ?? "",
     monthStr
   );
+
+  const { transactions: allMonthTransactions, refetch: refetchAll } =
+    useAllMonthTransactions(
+      accounts.map((a) => a.id),
+      monthStr
+    );
 
   const recurringForAccount =
     recurringTransactionsByAccount?.[activeAccount?.id ?? ""] ?? [];
 
-  function handleDeleted(id: string, transferId?: string) {
-    if (transferId) {
-      void removeTransfer(transferId);
-    } else {
-      void remove(id);
-    }
+  function handleDeleted() {
+    refetch();
+    refetchAll();
     setSelectedTransaction(null);
   }
 
@@ -151,12 +151,12 @@ export default function MonthOverview({
           >
             <span>{tx.date}</span>
             <span>{tx.description}</span>
-            <span>
-              {getTransferTarget(tx, allMonthTransactions, accounts) ?? "—"}
-            </span>
             <StyledSignedAmount $isPositive={tx.amount >= 0}>
               {formatBalance(tx.amount)}
             </StyledSignedAmount>
+            <span>
+              {getTransferTarget(tx, allMonthTransactions, accounts) ?? "—"}
+            </span>
           </StyledOneOffRow>
         ))
       )}
@@ -172,6 +172,7 @@ export default function MonthOverview({
           onSuccess={() => {
             setShowCreateModal(false);
             refetch();
+            refetchAll();
           }}
         />
       )}
@@ -179,6 +180,13 @@ export default function MonthOverview({
       {selectedTransaction && (
         <TransactionEditModal
           transaction={selectedTransaction}
+          toAccountName={
+            getTransferTarget(
+              selectedTransaction,
+              allMonthTransactions,
+              accounts
+            ) ?? undefined
+          }
           onClose={() => setSelectedTransaction(null)}
           onSaved={(updated) => {
             setSelectedTransaction(null);

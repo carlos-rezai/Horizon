@@ -5,6 +5,7 @@ import { API_BASE } from "../../utils/api/api";
 interface UseAllMonthTransactionsResult {
   transactions: Transaction[];
   isLoading: boolean;
+  refetch: () => void;
 }
 
 export function useAllMonthTransactions(
@@ -13,6 +14,7 @@ export function useAllMonthTransactions(
 ): UseAllMonthTransactionsResult {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(accountIds.length > 0);
+  const [fetchKey, setFetchKey] = useState(0);
 
   const accountIdsKey = accountIds.join(",");
 
@@ -43,7 +45,11 @@ export function useAllMonthTransactions(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountIdsKey, month]);
+  }, [accountIdsKey, month, fetchKey]);
 
-  return { transactions, isLoading };
+  function refetch() {
+    setFetchKey((k) => k + 1);
+  }
+
+  return { transactions, isLoading, refetch };
 }

@@ -81,10 +81,6 @@ export const StyledOneOffRow = styled.div<{ $gridTemplate: string }>`
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceVariant};
   }
-
-  & > span:last-child {
-    text-align: right;
-  }
 `;
 
 export const StyledEmptyState = styled.p`

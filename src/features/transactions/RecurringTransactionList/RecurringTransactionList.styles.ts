@@ -8,7 +8,7 @@ export const StyledList = styled.ul`
 
 export const StyledRow = styled.li`
   display: grid;
-  grid-template-columns: 1fr 120px 100px 60px 160px;
+  grid-template-columns: 1fr 120px 160px 60px 100px;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space2}px
@@ -50,7 +50,7 @@ export const StyledMeta = styled.span`
 
 export const StyledHeaderRow = styled.li`
   display: grid;
-  grid-template-columns: 1fr 120px 100px 60px 160px;
+  grid-template-columns: 1fr 120px 160px 60px 100px;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space2}px

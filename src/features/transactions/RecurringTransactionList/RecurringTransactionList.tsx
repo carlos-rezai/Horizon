@@ -33,9 +33,9 @@ export default function RecurringTransactionList({
       <StyledHeaderRow>
         <StyledHeaderCell>Name</StyledHeaderCell>
         <StyledHeaderCell>Amount</StyledHeaderCell>
-        <StyledHeaderCell>Frequency</StyledHeaderCell>
-        <StyledHeaderCell>Day</StyledHeaderCell>
         <StyledHeaderCell>To account</StyledHeaderCell>
+        <StyledHeaderCell>Day</StyledHeaderCell>
+        <StyledHeaderCell>Frequency</StyledHeaderCell>
       </StyledHeaderRow>
       {recurringTransactions.map((rt) => {
         const toAccountName = rt.linkedAccountId
@@ -47,9 +47,9 @@ export default function RecurringTransactionList({
             <StyledAmount $isPositive={rt.amount >= 0}>
               {formatBalance(rt.amount)}
             </StyledAmount>
-            <StyledMeta>{rt.frequency}</StyledMeta>
-            <StyledMeta>{toOrdinal(rt.dayOfMonth)}</StyledMeta>
             <StyledToAccount>{toAccountName}</StyledToAccount>
+            <StyledMeta>{toOrdinal(rt.dayOfMonth)}</StyledMeta>
+            <StyledMeta>{rt.frequency}</StyledMeta>
           </StyledRow>
         );
       })}
