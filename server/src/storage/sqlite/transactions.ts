@@ -13,6 +13,7 @@ interface TransactionRow {
   category: string;
   transfer_id: string | null;
   recurring_transaction_id: string | null;
+  is_auto_settlement: number;
 }
 
 function toTransactionDTO(row: TransactionRow): Transaction {
@@ -28,6 +29,7 @@ function toTransactionDTO(row: TransactionRow): Transaction {
   if (row.recurring_transaction_id !== null) {
     dto.recurringTransactionId = row.recurring_transaction_id;
   }
+  if (row.is_auto_settlement === 1) dto.isAutoSettlement = true;
   return dto;
 }
 

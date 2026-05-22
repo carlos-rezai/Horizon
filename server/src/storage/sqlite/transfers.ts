@@ -11,8 +11,8 @@ export function createSqliteTransfersRepo(
   const insertTxStmt = db.prepare(
     `INSERT INTO transactions
        (id, account_id, date, amount, description, category,
-        transfer_id, recurring_transaction_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`
+        transfer_id, recurring_transaction_id, is_auto_settlement)
+     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)`
   );
   const deleteByTransferStmt = db.prepare(
     `DELETE FROM transactions WHERE transfer_id = ?`
@@ -31,6 +31,7 @@ export function createSqliteTransfersRepo(
       if (!from || !to) return null;
 
       const transferId = randomUUID();
+      const autoSettlement = input.isAutoSettlement ? 1 : 0;
       const apply = db.transaction(() => {
         insertTxStmt.run(
           randomUUID(),
@@ -39,7 +40,8 @@ export function createSqliteTransfersRepo(
           -input.amount,
           input.description,
           input.category,
-          transferId
+          transferId,
+          autoSettlement
         );
         insertTxStmt.run(
           randomUUID(),
@@ -48,7 +50,8 @@ export function createSqliteTransfersRepo(
           input.amount,
           input.description,
           input.category,
-          transferId
+          transferId,
+          autoSettlement
         );
       });
       apply();

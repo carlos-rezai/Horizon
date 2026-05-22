@@ -114,6 +114,10 @@ export default function AccountCreateModal({
       return;
     }
 
+    if (kind === "CreditCard") {
+      await fetch(`${API_BASE}/settlements/generate`, { method: "POST" });
+    }
+
     onSuccess(data.id ?? account?.id ?? "");
   };
 

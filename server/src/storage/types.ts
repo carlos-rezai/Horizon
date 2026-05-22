@@ -106,6 +106,7 @@ export interface Transaction {
   category: string;
   transferId?: string;
   recurringTransactionId?: string;
+  isAutoSettlement?: boolean;
 }
 
 export interface TransactionCreateInput {
@@ -129,4 +130,5 @@ export interface TransferCreateInput {
   date: string;
   description: string;
   category: string;
+  isAutoSettlement?: boolean;
 }

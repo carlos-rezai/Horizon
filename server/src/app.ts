@@ -12,6 +12,8 @@ import transfersRouter from "./routes/transfers.js";
 import recurringTransactionsRouter from "./routes/recurringTransactions.js";
 import projectionRouter from "./routes/projection.js";
 import storageRouter from "./routes/storage.js";
+import settlementsRouter from "./routes/settlements.js";
+import { generateSettlements } from "./services/settlementService.js";
 import type { Storage } from "./storage/Storage.js";
 
 function logUnhandledError(
@@ -28,7 +30,9 @@ function logUnhandledError(
   res.status(500).json({ error: "Internal server error" });
 }
 
-export function createApp(storage: Storage): Express {
+export async function createApp(storage: Storage): Promise<Express> {
+  await generateSettlements(storage);
+
   const app = express();
   app.locals.storage = storage;
 
@@ -42,6 +46,7 @@ export function createApp(storage: Storage): Express {
   app.use("/recurring-transactions", recurringTransactionsRouter);
   app.use("/projection", projectionRouter);
   app.use("/storage", storageRouter);
+  app.use("/settlements", settlementsRouter);
 
   app.use(logUnhandledError);
 

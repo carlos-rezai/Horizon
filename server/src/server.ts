@@ -14,7 +14,7 @@ async function main(): Promise<void> {
     path: resolveSqlitePath(process.env),
     ...resolveSqliteOptions(process.env),
   });
-  const app = createApp(storage);
+  const app = await createApp(storage);
 
   onShutdown(async () => {
     await storage.close();
