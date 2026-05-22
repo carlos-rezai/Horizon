@@ -371,3 +371,154 @@ describe("AccountCreateModal — edit mode", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// CreditCard settlement fields
+// ---------------------------------------------------------------------------
+
+describe("AccountCreateModal — CreditCard settlement fields", () => {
+  const mockGirokonto: AccountWithBalance = {
+    id: "g-1",
+    kind: "Girokonto",
+    name: "Main Girokonto",
+    openingBalance: 100000,
+    openingDate: "2026-01-01",
+    balance: 120000,
+  };
+
+  it("shows Funding Account dropdown when CreditCard kind is selected", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "CreditCard" },
+    });
+
+    expect(screen.getByLabelText(/funding account/i)).toBeInTheDocument();
+  });
+
+  it("shows Settlement Day input when CreditCard kind is selected", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "CreditCard" },
+    });
+
+    expect(screen.getByLabelText(/settlement day/i)).toBeInTheDocument();
+  });
+
+  it("hides Funding Account and Settlement Day for non-CreditCard kinds", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    expect(screen.queryByLabelText(/funding account/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/settlement day/i)).not.toBeInTheDocument();
+  });
+
+  it("hides both settlement fields after switching away from CreditCard", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "CreditCard" },
+    });
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "Girokonto" },
+    });
+
+    expect(screen.queryByLabelText(/funding account/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/settlement day/i)).not.toBeInTheDocument();
+  });
+
+  it("Settlement Day input enforces min=1 and max=28", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "CreditCard" },
+    });
+
+    const input = screen.getByLabelText(/settlement day/i);
+    expect(input).toHaveAttribute("min", "1");
+    expect(input).toHaveAttribute("max", "28");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Edit mode — CreditCard with settlement config
+// ---------------------------------------------------------------------------
+
+describe("AccountCreateModal — edit mode (CreditCard with settlement config)", () => {
+  const mockGirokonto: AccountWithBalance = {
+    id: "g-1",
+    kind: "Girokonto",
+    name: "Main Girokonto",
+    openingBalance: 100000,
+    openingDate: "2026-01-01",
+    balance: 120000,
+  };
+
+  const mockCreditCard = {
+    id: "cc-1",
+    kind: "CreditCard" as const,
+    name: "Visa",
+    openingBalance: 0,
+    openingDate: "2026-03-01",
+    balance: -45000,
+    linkedAccountId: "g-1",
+    settlementDay: 17,
+    linkedSince: "2026-03-01",
+  } as AccountWithBalance;
+
+  it("pre-fills Funding Account dropdown from account.linkedAccountId", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={mockCreditCard}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    expect(screen.getByLabelText(/funding account/i)).toHaveValue("g-1");
+  });
+
+  it("pre-fills Settlement Day input from account.settlementDay", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={mockCreditCard}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    expect(screen.getByLabelText(/settlement day/i)).toHaveValue(17);
+  });
+});

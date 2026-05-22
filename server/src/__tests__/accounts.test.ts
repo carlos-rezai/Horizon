@@ -342,3 +342,214 @@ describe("DELETE /accounts/:id", () => {
     expect(res.status).toBe(409);
   });
 });
+
+// ---------------------------------------------------------------------------
+// POST /accounts — CreditCard settlement configuration
+// ---------------------------------------------------------------------------
+
+describe("POST /accounts — CreditCard settlement configuration", () => {
+  it("saves full settlement config and sets linkedSince to openingDate", async () => {
+    const girokonto = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+
+    const res = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      linkedAccountId: girokonto.body.id,
+      settlementDay: 17,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.linkedAccountId).toBe(girokonto.body.id);
+    expect(res.body.settlementDay).toBe(17);
+    expect(res.body.linkedSince).toBe("2026-03-01");
+  });
+
+  it("returns 400 when only linkedAccountId is provided without settlementDay", async () => {
+    const girokonto = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+
+    const res = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      linkedAccountId: girokonto.body.id,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when only settlementDay is provided without linkedAccountId", async () => {
+    const res = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      settlementDay: 17,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("saves CreditCard with no settlement config and returns null for all settlement fields", async () => {
+    const res = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.linkedAccountId).toBeNull();
+    expect(res.body.settlementDay).toBeNull();
+    expect(res.body.linkedSince).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /accounts/:id — CreditCard settlement fields
+// ---------------------------------------------------------------------------
+
+describe("GET /accounts/:id — CreditCard settlement fields", () => {
+  it("returns linkedAccountId, settlementDay, and linkedSince for a configured CreditCard", async () => {
+    const girokonto = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+
+    const created = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      linkedAccountId: girokonto.body.id,
+      settlementDay: 17,
+    });
+
+    const res = await request(app).get(`/accounts/${created.body.id}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.linkedAccountId).toBe(girokonto.body.id);
+    expect(res.body.settlementDay).toBe(17);
+    expect(res.body.linkedSince).toBe("2026-03-01");
+  });
+
+  it("returns null for all settlement fields when CreditCard has no settlement config", async () => {
+    const created = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+    });
+
+    const res = await request(app).get(`/accounts/${created.body.id}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.linkedAccountId).toBeNull();
+    expect(res.body.settlementDay).toBeNull();
+    expect(res.body.linkedSince).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /accounts/:id — CreditCard settlement configuration
+// ---------------------------------------------------------------------------
+
+describe("PATCH /accounts/:id — CreditCard settlement configuration", () => {
+  it("resets linkedSince to today when settlementDay changes", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const girokonto = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+    const created = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2025-01-01",
+      linkedAccountId: girokonto.body.id,
+      settlementDay: 10,
+    });
+
+    const res = await request(app)
+      .patch(`/accounts/${created.body.id}`)
+      .send({ settlementDay: 20 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.settlementDay).toBe(20);
+    expect(res.body.linkedSince).toBe(today);
+  });
+
+  it("resets linkedSince to today when linkedAccountId changes", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const girokonto1 = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding 1",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+    const girokonto2 = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding 2",
+      openingBalance: 50000,
+      openingDate: "2026-01-01",
+    });
+    const created = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2025-01-01",
+      linkedAccountId: girokonto1.body.id,
+      settlementDay: 17,
+    });
+
+    const res = await request(app)
+      .patch(`/accounts/${created.body.id}`)
+      .send({ linkedAccountId: girokonto2.body.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.linkedAccountId).toBe(girokonto2.body.id);
+    expect(res.body.linkedSince).toBe(today);
+  });
+
+  it("clears all settlement fields when linkedAccountId is patched to null", async () => {
+    const girokonto = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Funding",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+    const created = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: 0,
+      openingDate: "2026-03-01",
+      linkedAccountId: girokonto.body.id,
+      settlementDay: 17,
+    });
+
+    const res = await request(app)
+      .patch(`/accounts/${created.body.id}`)
+      .send({ linkedAccountId: null });
+
+    expect(res.status).toBe(200);
+    expect(res.body.linkedAccountId).toBeNull();
+    expect(res.body.settlementDay).toBeNull();
+    expect(res.body.linkedSince).toBeNull();
+  });
+});
