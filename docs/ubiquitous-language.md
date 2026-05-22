@@ -530,6 +530,52 @@
 >
 > **Domain expert:** "Yes. The total and the Category Bar reflect the one-off transactions recorded for the current month. Add a grocery transaction and the food slice grows."
 
+## Credit Card Auto-Settlement (new)
+
+| Term                           | Definition                                                                                                                                                                        | Aliases to avoid                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Auto-Settlement**            | The mechanism that automatically creates a Settlement Transfer on `settlementDay` of month M+1, zeroing out a CreditCard account's month M closing balance                        | Auto-pay, direct debit, CC settlement  |
+| **Settlement Day**             | The day of the month (1–28) stored on a CreditCard account on which the Settlement Transfer fires in the following month — capped at 28 so it is valid in every calendar month    | Payment day, due date, billing date    |
+| **Settlement Transfer**        | The read-only Transfer pair created by Auto-Settlement — a debit on the Funding Account and a credit on the CreditCard, labelled "Auto-settlement" in the Monthly Ledger          | Auto-transfer, CC payment transfer     |
+| **Funding Account**            | The Girokonto account linked to a CreditCard for Auto-Settlement — the source of funds for each Settlement Transfer; only Girokonto accounts are eligible                         | Parent account, linked account, source |
+| **Linked Since**               | The ISO date stored on a CreditCard account marking when Auto-Settlement tracking begins — the Replay Loop only generates Settlement Transfers from this date forward             | Link date, settlement start date       |
+| **Billing Cycle**              | The calendar month M whose closing CreditCard balance is settled on `settlementDay` of month M+1 — mirrors real credit card direct debit timing                                   | Statement period, payment cycle        |
+| **Insufficient Funds Warning** | The error-variant Snackbar shown on app open when the Funding Account's projected balance on Settlement Day is less than the upcoming settlement amount — persists until resolved | Low balance warning, coverage alert    |
+
+## Relationships (Credit Card Auto-Settlement additions)
+
+- A **CreditCard** account may have exactly one **Funding Account** (`linkedAccountId`), one **Settlement Day**, and one **Linked Since** date — all three must be set together; partial configuration is not valid
+- **Auto-Settlement** only fires when the CreditCard's closing balance for month M is negative (i.e., there is debt) — a zero or positive balance produces no **Settlement Transfer**
+- A **Settlement Transfer** is a standard Transfer pair sharing a `transferId` — it is distinguished by a reserved description prefix and rendered read-only in the **Monthly Ledger**
+- The **Replay Loop** generates **Settlement Transfers** for all months from **Linked Since** forward, using the same month-by-month pass as all other RecurringTransactions
+- The **Forward Projection** applies the same settlement logic as the **Replay Loop** — no separate code path
+- **Linked Since** is set automatically: to `openingDate` when a new CreditCard is created with a Funding Account configured; to today when an existing CreditCard is linked or its settlement config is changed
+- Removing the **Funding Account** link stops future **Settlement Transfers** but leaves all existing ones intact as permanent history
+- Changing the **Settlement Day** or **Funding Account** resets **Linked Since** to today — past settlements are preserved as-is
+- The **Insufficient Funds Warning** compares the **Funding Account**'s projected balance on the **Settlement Day** of next month against the CreditCard's projected closing balance for the current month
+
+## Example dialogue (Credit Card Auto-Settlement)
+
+> **Dev:** "When does the Settlement Transfer actually get created?"
+>
+> **Domain expert:** "The Replay Loop creates it. When processing month M+1, the engine checks each CreditCard that has a Funding Account configured and a Linked Since date on or before the end of month M. If the CreditCard had a negative closing balance in month M, it creates a Settlement Transfer on Settlement Day of month M+1."
+>
+> **Dev:** "So if the user just linked their CC today, does it settle last month retroactively?"
+>
+> **Domain expert:** "No. Linked Since is set to today, so the Replay Loop only generates settlements from this month's billing cycle onward. Past months are untouched."
+>
+> **Dev:** "What if I change the Settlement Day from 17 to 20 next year?"
+>
+> **Domain expert:** "Linked Since resets to today. The Replay Loop preserves all existing Settlement Transfers as permanent history and uses day 20 going forward. You can't retroactively move them."
+>
+> **Dev:** "Is the Settlement Transfer editable in the Monthly Ledger?"
+>
+> **Domain expert:** "No. It's read-only, labelled 'Auto-settlement', and visually distinct. You can't change the amount or delete it directly — the only way to stop future ones is to unlink the Funding Account on the CreditCard."
+>
+> **Dev:** "What about the Insufficient Funds Warning — when does it clear?"
+>
+> **Domain expert:** "As soon as the Funding Account's projected balance on Settlement Day is enough to cover the upcoming settlement amount. If the user's salary lands before day 17, the projected balance accounts for that and the warning disappears."
+
 ## Flagged ambiguities
 
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
@@ -593,6 +639,8 @@
   (`PORT=0`); never assume `3001` or any fixed number. The authoritative port flows from
   the server through the **Ready Handshake** and reaches the **Renderer** via
   **API Base URL Injection**.
+- **"linked account"** (new) — `linkedAccountId` appears on two different entities with different meanings: on a **RecurringTransaction** it names the destination account of a **Recurring Transfer**; on a **CreditCard** Account it names the **Funding Account** for **Auto-Settlement**. Always qualify which entity is being discussed. In code, both use the field name `linkedAccountId` — this is intentional (same shape, different semantic); the distinction comes from the entity type, not the field name.
+- **"settlement"** (new) — do not use this word without the qualifier **Auto-Settlement** or **Settlement Transfer**. "Settlement" alone collides with general accounting usage (settling invoices, clearing) and with the ambiguous existing flag on "payment".
 - **"IPC"** (updated) — overloaded (Electron's renderer IPC, OS-level IPC, the parent-port
   channel between Electron Main and a utilityProcess). In the Desktop Shell, the Server Handle
   IPC consists of the **Ready Handshake**, **Shutdown Handshake**, and **Fatal Message** on
