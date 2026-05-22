@@ -13,6 +13,9 @@ interface AccountRow {
   sondertilgung_allowance: number | null;
   icon: string | null;
   color: string | null;
+  linked_account_id: string | null;
+  settlement_day: number | null;
+  linked_since: string | null;
 }
 
 interface AccountWithBalanceRow extends AccountRow {
@@ -28,6 +31,9 @@ function toAccountDTO(row: AccountRow): Account {
     openingDate: row.opening_date,
     icon: row.icon,
     color: row.color,
+    linkedAccountId: row.linked_account_id ?? null,
+    settlementDay: row.settlement_day ?? null,
+    linkedSince: row.linked_since ?? null,
   };
   if (row.sondertilgung_allowance !== null) {
     dto.sondertilgungAllowance = row.sondertilgung_allowance;
@@ -47,8 +53,9 @@ export function createSqliteAccountsRepo(
 ): AccountsRepo {
   const insertStmt = db.prepare(
     `INSERT INTO accounts
-       (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+       (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color,
+        linked_account_id, settlement_day, linked_since)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const selectAllStmt = db.prepare(`SELECT * FROM accounts`);
   const selectByIdStmt = db.prepare(`SELECT * FROM accounts WHERE id = ?`);
@@ -58,7 +65,10 @@ export function createSqliteAccountsRepo(
            opening_balance = COALESCE(?, opening_balance),
            sondertilgung_allowance = COALESCE(?, sondertilgung_allowance),
            icon = ?,
-           color = ?
+           color = ?,
+           linked_account_id = ?,
+           settlement_day = ?,
+           linked_since = ?
      WHERE id = ?`
   );
   const deleteStmt = db.prepare(`DELETE FROM accounts WHERE id = ?`);
@@ -69,6 +79,7 @@ export function createSqliteAccountsRepo(
   const selectAllWithBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance, a.icon, a.color,
+            a.linked_account_id, a.settlement_day, a.linked_since,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -77,6 +88,7 @@ export function createSqliteAccountsRepo(
   const selectByIdWithBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance, a.icon, a.color,
+            a.linked_account_id, a.settlement_day, a.linked_since,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -96,6 +108,8 @@ export function createSqliteAccountsRepo(
   return {
     async create(input) {
       const id = randomUUID();
+      const linkedSince =
+        input.linkedAccountId != null ? input.openingDate : null;
       insertStmt.run(
         id,
         input.kind,
@@ -104,7 +118,10 @@ export function createSqliteAccountsRepo(
         input.openingDate,
         input.sondertilgungAllowance ?? null,
         input.icon ?? null,
-        input.color ?? null
+        input.color ?? null,
+        input.linkedAccountId ?? null,
+        input.settlementDay ?? null,
+        linkedSince
       );
       const dto: Account = {
         id,
@@ -114,6 +131,9 @@ export function createSqliteAccountsRepo(
         openingDate: input.openingDate,
         icon: input.icon ?? null,
         color: input.color ?? null,
+        linkedAccountId: input.linkedAccountId ?? null,
+        settlementDay: input.settlementDay ?? null,
+        linkedSince,
       };
       if (input.sondertilgungAllowance !== undefined) {
         dto.sondertilgungAllowance = input.sondertilgungAllowance;
@@ -136,12 +156,52 @@ export function createSqliteAccountsRepo(
       if (!isValidUuid(id)) return null;
       const existing = selectByIdStmt.get(id) as AccountRow | undefined;
       if (!existing) return null;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const unlinking =
+        "linkedAccountId" in input && input.linkedAccountId === null;
+
+      let newLinkedAccountId: string | null;
+      let newSettlementDay: number | null;
+      let newLinkedSince: string | null;
+
+      if (unlinking) {
+        newLinkedAccountId = null;
+        newSettlementDay = null;
+        newLinkedSince = null;
+      } else {
+        const linkedAccountChanged =
+          "linkedAccountId" in input &&
+          input.linkedAccountId !== undefined &&
+          input.linkedAccountId !== existing.linked_account_id;
+        const settlementDayChanged =
+          "settlementDay" in input &&
+          input.settlementDay !== undefined &&
+          input.settlementDay !== existing.settlement_day;
+
+        newLinkedAccountId =
+          "linkedAccountId" in input && input.linkedAccountId !== undefined
+            ? input.linkedAccountId
+            : existing.linked_account_id;
+        newSettlementDay =
+          "settlementDay" in input && input.settlementDay !== undefined
+            ? input.settlementDay
+            : existing.settlement_day;
+        newLinkedSince =
+          linkedAccountChanged || settlementDayChanged
+            ? today
+            : existing.linked_since;
+      }
+
       updateStmt.run(
         input.name ?? null,
         input.openingBalance ?? null,
         input.sondertilgungAllowance ?? null,
         "icon" in input ? (input.icon ?? null) : existing.icon,
         "color" in input ? (input.color ?? null) : existing.color,
+        newLinkedAccountId,
+        newSettlementDay,
+        newLinkedSince,
         id
       );
       const updated = selectByIdStmt.get(id) as AccountRow;

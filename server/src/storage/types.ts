@@ -14,6 +14,9 @@ export interface Account {
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;
+  linkedAccountId?: string | null;
+  settlementDay?: number | null;
+  linkedSince?: string | null;
 }
 
 export interface AccountWithBalance extends Account {
@@ -28,6 +31,8 @@ export interface AccountCreateInput {
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;
+  linkedAccountId?: string | null;
+  settlementDay?: number | null;
 }
 
 export interface AccountUpdateInput {
@@ -36,6 +41,8 @@ export interface AccountUpdateInput {
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;
+  linkedAccountId?: string | null;
+  settlementDay?: number | null;
 }
 
 export type DeleteResult =

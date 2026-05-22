@@ -25,6 +25,7 @@ interface Props {
   onClose: () => void;
   onSuccess: (accountId: string) => void;
   account?: AccountWithBalance;
+  girokontoAccounts?: AccountWithBalance[];
 }
 
 const ACCOUNT_KINDS: AccountKind[] = [
@@ -45,6 +46,7 @@ export default function AccountCreateModal({
   onClose,
   onSuccess,
   account,
+  girokontoAccounts = [],
 }: Props) {
   const isEditMode = account !== undefined;
   const [kind, setKind] = useState<AccountKind>(account?.kind ?? "Girokonto");
@@ -57,6 +59,12 @@ export default function AccountCreateModal({
     account?.sondertilgungAllowance != null
       ? centsToEuros(account.sondertilgungAllowance)
       : ""
+  );
+  const [linkedAccountId, setLinkedAccountId] = useState<string>(
+    account?.linkedAccountId ?? ""
+  );
+  const [settlementDay, setSettlementDay] = useState<string>(
+    account?.settlementDay != null ? String(account.settlementDay) : ""
   );
   const [error, setError] = useState<string | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(
@@ -81,6 +89,11 @@ export default function AccountCreateModal({
 
     if (kind === "Mortgage" && sondertilgungAllowance) {
       body.sondertilgungAllowance = eurosToCents(sondertilgungAllowance);
+    }
+
+    if (kind === "CreditCard") {
+      if (linkedAccountId) body.linkedAccountId = linkedAccountId;
+      if (settlementDay) body.settlementDay = Number(settlementDay);
     }
 
     const url = isEditMode
@@ -161,6 +174,36 @@ export default function AccountCreateModal({
               onChange={(e) => setSondertilgungAllowance(e.target.value)}
             />
           </FormField>
+        )}
+
+        {kind === "CreditCard" && (
+          <>
+            <FormField label="Funding Account" htmlFor="funding-account">
+              <Select
+                id="funding-account"
+                value={linkedAccountId}
+                onChange={(e) => setLinkedAccountId(e.target.value)}
+              >
+                <option value="">— none —</option>
+                {girokontoAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+
+            <FormField label="Settlement Day" htmlFor="settlement-day">
+              <Input
+                id="settlement-day"
+                type="number"
+                min="1"
+                max="28"
+                value={settlementDay}
+                onChange={(e) => setSettlementDay(e.target.value)}
+              />
+            </FormField>
+          </>
         )}
 
         <StyledIconGrid>
