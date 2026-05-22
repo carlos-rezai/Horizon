@@ -29,6 +29,17 @@ const transferTransaction: Transaction = {
   transferId: "transfer-abc",
 };
 
+const autoSettlementTransaction: Transaction = {
+  id: "txn-3",
+  accountId: "cc-1",
+  date: "2026-02-15",
+  amount: 10000,
+  description: "Auto-settlement",
+  category: "Transfer",
+  transferId: "transfer-settlement-xyz",
+  isAutoSettlement: true,
+};
+
 const renderList = (
   transactions: Transaction[],
   onTransactionClick?: (tx: Transaction) => void
@@ -99,5 +110,29 @@ describe("TransactionList — row click", () => {
     fireEvent.click(screen.getByText("Groceries"));
 
     expect(onTransactionClick).toHaveBeenCalledWith(regularTransaction);
+  });
+});
+
+describe("TransactionList — auto-settlement rows", () => {
+  it("renders an 'Auto-settlement' label for isAutoSettlement: true rows", () => {
+    renderList([autoSettlementTransaction]);
+
+    expect(screen.getByLabelText(/auto-settlement/i)).toBeInTheDocument();
+  });
+
+  it("does not render the standard Transfer badge for auto-settlement rows", () => {
+    renderList([autoSettlementTransaction]);
+
+    expect(screen.queryByTestId("transfer-indicator")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^transfer$/i)).not.toBeInTheDocument();
+  });
+
+  it("does not call onTransactionClick when an auto-settlement row is clicked", () => {
+    const onTransactionClick = vi.fn();
+    renderList([autoSettlementTransaction], onTransactionClick);
+
+    fireEvent.click(screen.getByText("2026-02-15"));
+
+    expect(onTransactionClick).not.toHaveBeenCalled();
   });
 });

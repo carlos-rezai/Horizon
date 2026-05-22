@@ -7,4 +7,5 @@ export interface Transaction {
   category: string;
   transferId?: string;
   recurringTransactionId?: string;
+  isAutoSettlement?: boolean;
 }
