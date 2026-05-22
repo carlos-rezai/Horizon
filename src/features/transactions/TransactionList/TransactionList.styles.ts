@@ -48,6 +48,15 @@ export const StyledTransferBadge = styled.span`
   padding: 2px 6px;
 `;
 
+export const StyledAutoSettlementBadge = styled.span`
+  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  background: ${({ theme }) => theme.colors.surfaceContainerHigh};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: 4px;
+  padding: 2px 6px;
+`;
+
 export const StyledEmptyState = styled.p`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   text-align: center;

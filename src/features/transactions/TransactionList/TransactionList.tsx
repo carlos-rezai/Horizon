@@ -7,6 +7,7 @@ import {
   StyledAmount,
   StyledDescription,
   StyledTransferBadge,
+  StyledAutoSettlementBadge,
   StyledEmptyState,
 } from "./TransactionList.styles";
 
@@ -26,18 +27,28 @@ export default function TransactionList({
   return (
     <StyledList>
       {transactions.map((tx) => (
-        <StyledRow key={tx.id} onClick={() => onTransactionClick?.(tx)}>
+        <StyledRow
+          key={tx.id}
+          onClick={
+            tx.isAutoSettlement ? undefined : () => onTransactionClick?.(tx)
+          }
+          style={tx.isAutoSettlement ? { cursor: "default" } : undefined}
+        >
           <StyledDate>{tx.date}</StyledDate>
           <StyledDescription>{tx.description}</StyledDescription>
           <StyledAmount>{centsToEuros(tx.amount)}</StyledAmount>
-          {tx.transferId && (
+          {tx.isAutoSettlement ? (
+            <StyledAutoSettlementBadge aria-label="auto-settlement">
+              Auto-settlement
+            </StyledAutoSettlementBadge>
+          ) : tx.transferId ? (
             <StyledTransferBadge
               data-testid="transfer-indicator"
               aria-label="transfer"
             >
               Transfer
             </StyledTransferBadge>
-          )}
+          ) : null}
         </StyledRow>
       ))}
     </StyledList>
