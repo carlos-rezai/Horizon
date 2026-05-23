@@ -11,6 +11,7 @@ import Input from "../../../primitives/Input/Input";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
+import CreditCardSettlementFields from "../../settlements/CreditCardSettlementFields/CreditCardSettlementFields";
 import {
   StyledForm,
   StyledActions,
@@ -181,33 +182,13 @@ export default function AccountCreateModal({
         )}
 
         {kind === "CreditCard" && (
-          <>
-            <FormField label="Funding Account" htmlFor="funding-account">
-              <Select
-                id="funding-account"
-                value={linkedAccountId}
-                onChange={(e) => setLinkedAccountId(e.target.value)}
-              >
-                <option value="">— none —</option>
-                {girokontoAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-
-            <FormField label="Settlement Day" htmlFor="settlement-day">
-              <Input
-                id="settlement-day"
-                type="number"
-                min="1"
-                max="28"
-                value={settlementDay}
-                onChange={(e) => setSettlementDay(e.target.value)}
-              />
-            </FormField>
-          </>
+          <CreditCardSettlementFields
+            girokontoAccounts={girokontoAccounts}
+            linkedAccountId={linkedAccountId}
+            settlementDay={settlementDay}
+            onLinkedAccountChange={setLinkedAccountId}
+            onSettlementDayChange={setSettlementDay}
+          />
         )}
 
         <StyledIconGrid>
