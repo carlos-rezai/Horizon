@@ -189,11 +189,26 @@ export function projectBalances(
 
   const snapshots: MonthlySnapshot[] = [];
 
+  // Pending CC settlement to apply at the start of the next month.
+  // Key: CC account ID → { giroId, amount (positive cents to deduct from giro) }
+  type PendingSettlement = { giroId: string; amount: number };
+  const pendingSettlements = new Map<string, PendingSettlement>();
+
   for (let i = 0; i < months; i++) {
     const month = addMonths(fromDate, i);
     const calendarMonth = parseInt(month.split("-")[1], 10);
 
     let netCashflow = 0;
+
+    // Apply settlements queued from the previous month BEFORE variable spending
+    // for this month (month M+1 settlement depends on month M CC closing balance;
+    // variable spending for month M must be applied before that check).
+    for (const [ccId, { giroId, amount }] of pendingSettlements) {
+      runningBalances.set(giroId, (runningBalances.get(giroId) ?? 0) - amount);
+      runningBalances.set(ccId, 0);
+      netCashflow -= amount;
+    }
+    pendingSettlements.clear();
 
     for (const r of activeRecurring) {
       if (!firesInMonth(r.frequency, i, calendarMonth, r.monthOfYear)) continue;
@@ -249,6 +264,21 @@ export function projectBalances(
               )
               .reduce((sum, tx) => sum + tx.amount, 0)
         );
+      }
+    }
+
+    // After variable spending and optional re-anchoring, check each linked
+    // CreditCard's closing balance. If negative, queue a settlement for the
+    // next month (no DB writes — projection only).
+    for (const a of accounts) {
+      if (a.kind !== "CreditCard") continue;
+      if (!a.linkedAccountId || !a.settlementDay || !a.linkedSince) continue;
+      const ccBalance = runningBalances.get(a.id) ?? 0;
+      if (ccBalance < 0) {
+        pendingSettlements.set(a.id, {
+          giroId: a.linkedAccountId,
+          amount: -ccBalance,
+        });
       }
     }
 

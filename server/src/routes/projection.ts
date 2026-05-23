@@ -26,6 +26,9 @@ router.get("/", async (req, res) => {
     kind: a.kind,
     openingBalance: a.openingBalance,
     openingDate: a.openingDate,
+    ...(a.linkedAccountId != null && { linkedAccountId: a.linkedAccountId }),
+    ...(a.settlementDay != null && { settlementDay: a.settlementDay }),
+    ...(a.linkedSince != null && { linkedSince: a.linkedSince }),
   }));
 
   const transactionEntries = transactions.map((tx) => ({
