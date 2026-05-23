@@ -3,10 +3,19 @@ import type {
   Transaction,
   TransferCreateInput,
 } from "../storage/types.js";
+import type { MonthlySnapshot } from "./projection.js";
 
 export type SettlementTransferInput = TransferCreateInput & {
   isAutoSettlement: true;
 };
+
+export interface InsufficientFundsWarning {
+  ccAccountId: string;
+  fundingAccountId: string;
+  settlementAmount: number;
+  settlementMonth: string;
+  settlementDay: number;
+}
 
 function parseYearMonth(date: string): { year: number; month: number } {
   const [y, m] = date.split("-");
@@ -97,4 +106,38 @@ export function computeMissingSettlements(
   }
 
   return result;
+}
+
+export function detectInsufficientFunds(
+  accounts: Account[],
+  projection: MonthlySnapshot[]
+): InsufficientFundsWarning[] {
+  const warnings: InsufficientFundsWarning[] = [];
+
+  for (const cc of accounts) {
+    if (cc.kind !== "CreditCard") continue;
+    if (!cc.linkedAccountId || !cc.settlementDay || !cc.linkedSince) continue;
+
+    for (let i = 0; i < projection.length - 1; i++) {
+      const current = projection[i];
+      const next = projection[i + 1];
+      const ccBalance = current.accounts[cc.id]?.projected ?? 0;
+
+      if (ccBalance >= 0) continue;
+
+      const giroBalance = next.accounts[cc.linkedAccountId]?.projected ?? 0;
+      if (giroBalance < 0) {
+        warnings.push({
+          ccAccountId: cc.id,
+          fundingAccountId: cc.linkedAccountId,
+          settlementAmount: -ccBalance,
+          settlementMonth: next.month,
+          settlementDay: cc.settlementDay,
+        });
+      }
+      break;
+    }
+  }
+
+  return warnings;
 }
