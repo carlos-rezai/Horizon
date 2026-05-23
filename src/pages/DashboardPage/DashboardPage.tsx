@@ -67,6 +67,7 @@ export default function DashboardPage() {
             <AccountCreateModal
               onClose={() => setShowCreateModal(false)}
               onSuccess={(accountId) => navigate(`/accounts/${accountId}`)}
+              girokontoAccounts={accounts.filter((a) => a.kind === "Girokonto")}
             />
           )}
         </StyledSection>

@@ -104,6 +104,7 @@ export default function AccountDetailPage() {
               refresh();
               setShowEditAccount(false);
             }}
+            girokontoAccounts={accounts.filter((a) => a.kind === "Girokonto")}
           />
         )}
       </Card>
