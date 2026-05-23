@@ -510,3 +510,112 @@ describe("AccountCreateModal — edit mode (CreditCard with settlement config)",
     expect(screen.getByText("17")).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// CreditCard integration — settlement generation trigger
+// ---------------------------------------------------------------------------
+
+describe("AccountCreateModal — CreditCard settlement generation", () => {
+  const mockGirokonto: AccountWithBalance = {
+    id: "g-1",
+    kind: "Girokonto",
+    name: "Main Girokonto",
+    openingBalance: 100000,
+    openingDate: "2026-01-01",
+    balance: 120000,
+  };
+
+  async function submitCreditCardForm() {
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "CreditCard" },
+    });
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Visa" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+  }
+
+  it("renders CreditCardSettlementFields when kind is CreditCard", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "CreditCard" },
+    });
+
+    expect(screen.getByLabelText(/funding account/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /increment/i })
+    ).toBeInTheDocument();
+  });
+
+  it("does not render settlement fields when kind is not CreditCard", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    expect(screen.queryByLabelText(/funding account/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /increment/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls POST /settlements/generate once after a successful CreditCard account save", async () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    await submitCreditCardForm();
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const generateCall = calls.find(([url]) =>
+        String(url).includes("/settlements/generate")
+      );
+      expect(generateCall).toBeDefined();
+      expect((generateCall![1] as RequestInit).method).toBe("POST");
+    });
+  });
+
+  it("shows the warning Snackbar when POST /settlements/generate fails", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: "new-account-id" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: "Generation failed" }),
+      } as Response);
+
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        girokontoAccounts={[mockGirokonto]}
+      />
+    );
+
+    await submitCreditCardForm();
+
+    expect(
+      await screen.findByText(/settlement generation failed/i)
+    ).toBeInTheDocument();
+  });
+});
