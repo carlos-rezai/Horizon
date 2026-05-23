@@ -1201,3 +1201,298 @@ describe("projectBalances - transfer destination anchoring", () => {
     expect(snapshots[2].accounts["savings"].projected).toBe(171848);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function: CreditCard settlement
+//
+// Common setup for tests 1–4:
+//   giro  (Girokonto): openingBalance 500000
+//   cc    (CreditCard): openingBalance -50000 (debt from opening, no recurring)
+//                       linkedAccountId "giro", settlementDay 15,
+//                       linkedSince "2026-05-01"
+//
+// fromDate "2026-05", currentDate "2026-04" → all months are future, no re-anchoring.
+// Month 0 (May):  CC = -50000, Giro = 500000 — settlement of 50000 queued for June
+// Month 1 (June): settlement fires → Giro 500000−50000=450000, CC 0
+// Month 2 (July): CC = 0, no further settlement — Giro stays 450000
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - CreditCard settlement", () => {
+  const baseAccounts = [
+    { id: "giro", kind: "Girokonto" as const, openingBalance: 500000 },
+    {
+      id: "cc",
+      kind: "CreditCard" as const,
+      openingBalance: -50000,
+      linkedAccountId: "giro",
+      settlementDay: 15,
+      linkedSince: "2026-05-01",
+    },
+  ];
+
+  it("Funding Account projected balance is reduced by the settlement amount in month M+1 when CC closes negative", () => {
+    const snapshots = projectBalances(
+      baseAccounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    // Month 0 (May): no settlement yet — Giro unchanged
+    expect(snapshots[0].accounts["giro"].projected).toBe(500000);
+    // Month 1 (June): settlement of 50000 fires — Giro 500000−50000=450000
+    expect(snapshots[1].accounts["giro"].projected).toBe(450000);
+    // Month 2 (July): CC balance is now 0 — no further settlement, Giro stays 450000
+    expect(snapshots[2].accounts["giro"].projected).toBe(450000);
+  });
+
+  it("CreditCard projected balance is zeroed after settlement fires in month M+1", () => {
+    const snapshots = projectBalances(
+      baseAccounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    // Month 0 (May): CC still at opening debt
+    expect(snapshots[0].accounts["cc"].projected).toBe(-50000);
+    // Month 1 (June): settlement fires → CC zeroed (no recurring CC spending to re-add debt)
+    expect(snapshots[1].accounts["cc"].projected).toBe(0);
+    // Month 2 (July): CC remains at 0
+    expect(snapshots[2].accounts["cc"].projected).toBe(0);
+  });
+
+  it("totalLiquid correctly accounts for the Funding Account drawdown after settlement", () => {
+    const snapshots = projectBalances(
+      baseAccounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    // CreditCard is always excluded from totalLiquid
+    // Month 0: totalLiquid = Giro only = 500000
+    expect(snapshots[0].totalLiquid).toBe(500000);
+    // Month 1: Giro drawn down by settlement → 450000
+    expect(snapshots[1].totalLiquid).toBe(450000);
+    // Month 2: no further settlement → still 450000
+    expect(snapshots[2].totalLiquid).toBe(450000);
+  });
+
+  it("netCashflow reflects the settlement deduction in the settlement month", () => {
+    const snapshots = projectBalances(
+      baseAccounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    // Month 0 (May): no transactions — netCashflow is 0
+    expect(snapshots[0].netCashflow).toBe(0);
+    // Month 1 (June): settlement deducts 50000 from Giro — netCashflow reflects this
+    expect(snapshots[1].netCashflow).toBe(-50000);
+    // Month 2 (July): no settlement — netCashflow 0
+    expect(snapshots[2].netCashflow).toBe(0);
+  });
+
+  it("no settlement fires when CreditCard projected closing balance is zero", () => {
+    const accounts = [
+      { id: "giro", kind: "Girokonto" as const, openingBalance: 500000 },
+      {
+        id: "cc",
+        kind: "CreditCard" as const,
+        openingBalance: 0,
+        linkedAccountId: "giro",
+        settlementDay: 15,
+        linkedSince: "2026-05-01",
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    // CC closes at 0 — no settlement should fire in any month
+    snapshots.forEach((s) => {
+      expect(s.accounts["giro"].projected).toBe(500000);
+    });
+  });
+
+  it("no settlement fires when CreditCard projected closing balance is positive", () => {
+    const accounts = [
+      { id: "giro", kind: "Girokonto" as const, openingBalance: 500000 },
+      {
+        id: "cc",
+        kind: "CreditCard" as const,
+        openingBalance: 10000,
+        linkedAccountId: "giro",
+        settlementDay: 15,
+        linkedSince: "2026-05-01",
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    // CC closes positive — no settlement should fire in any month
+    snapshots.forEach((s) => {
+      expect(s.accounts["giro"].projected).toBe(500000);
+    });
+  });
+
+  it("settlement fires repeatedly each month when CC continuously accumulates debt via monthly recurring spending", () => {
+    // giro starts with 600000; CC accumulates -50000 each month via recurring spending
+    const accounts = [
+      { id: "giro", kind: "Girokonto" as const, openingBalance: 600000 },
+      {
+        id: "cc",
+        kind: "CreditCard" as const,
+        openingBalance: 0,
+        linkedAccountId: "giro",
+        settlementDay: 15,
+        linkedSince: "2026-05-01",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "cc",
+        amount: -50000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+        isActive: true,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-05",
+      "2026-04",
+      4
+    );
+
+    // Month 0 (May):  CC 0−50000=−50000; Giro 600000 (no settlement yet)
+    expect(snapshots[0].accounts["giro"].projected).toBe(600000);
+    // Month 1 (June): settlement of 50000 fires → Giro 600000−50000=550000;
+    //                  then CC spending fires: CC 0−50000=−50000
+    expect(snapshots[1].accounts["giro"].projected).toBe(550000);
+    // Month 2 (July): settlement fires again → Giro 550000−50000=500000
+    expect(snapshots[2].accounts["giro"].projected).toBe(500000);
+    // Month 3 (Aug):  settlement fires again → Giro 500000−50000=450000
+    expect(snapshots[3].accounts["giro"].projected).toBe(450000);
+  });
+
+  it("no settlement fires when CreditCard has no settlement configuration", () => {
+    // CC has a negative balance but no linkedAccountId — settlement must not fire
+    const accounts = [
+      { id: "giro", kind: "Girokonto" as const, openingBalance: 500000 },
+      {
+        id: "cc",
+        kind: "CreditCard" as const,
+        openingBalance: -50000,
+        // no linkedAccountId, settlementDay, or linkedSince
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      [],
+      "2026-05",
+      "2026-04",
+      3
+    );
+
+    snapshots.forEach((s) => {
+      expect(s.accounts["giro"].projected).toBe(500000);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// API: GET /projection — CreditCard settlement (route integration)
+// ---------------------------------------------------------------------------
+
+describe("GET /projection - CreditCard settlement", () => {
+  it("reflects the settlement deduction in the Funding Account projected balance", async () => {
+    // Opening date in the current month so the replay covers 0 months;
+    // the test asserts only that the forward projection applies settlement.
+    const now = new Date();
+    const openingMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const openingDate = `${openingMonth}-01`;
+
+    const giroRes = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 500000,
+      openingDate,
+    });
+    const giroId = giroRes.body.id as string;
+
+    await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: -50000,
+      openingDate,
+      linkedAccountId: giroId,
+      settlementDay: 15,
+    });
+
+    const res = await request(app).get("/projection");
+
+    expect(res.status).toBe(200);
+    // Month 0 is the current month (CC closes at -50000, re-anchored to actual).
+    // Month 1 is the first future month — settlement of 50000 fires.
+    // Giro projected balance in month 1 must be 500000 − 50000 = 450000.
+    expect(res.body[1].accounts[giroId].projected).toBe(450000);
+  });
+
+  it("does not write any rows to the transactions table during a projection run", async () => {
+    const now = new Date();
+    const openingDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+    const giroRes = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 500000,
+      openingDate,
+    });
+    const giroId = giroRes.body.id as string;
+
+    const ccRes = await request(app).post("/accounts").send({
+      kind: "CreditCard",
+      name: "Visa",
+      openingBalance: -50000,
+      openingDate,
+      linkedAccountId: giroId,
+      settlementDay: 15,
+    });
+    const ccId = ccRes.body.id as string;
+
+    const beforeRes = await request(app).get(`/accounts/${ccId}/transactions`);
+    const countBefore = (beforeRes.body as unknown[]).length;
+
+    // Call GET /projection multiple times — must not write any rows
+    await request(app).get("/projection");
+    await request(app).get("/projection");
+
+    const afterRes = await request(app).get(`/accounts/${ccId}/transactions`);
+    expect((afterRes.body as unknown[]).length).toBe(countBefore);
+  });
+});
