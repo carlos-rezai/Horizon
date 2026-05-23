@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
@@ -155,5 +155,33 @@ describe("AppLayout — active nav state", () => {
     renderAtRoute("/");
     const link = screen.getByRole("link", { name: /financial plan/i });
     expect(link).not.toHaveAttribute("aria-current", "page");
+  });
+});
+
+describe("AppLayout — InsufficientFundsWarnings", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          ccAccountId: "cc-1",
+          fundingAccountId: "g-1",
+          settlementAmount: 45000,
+          settlementMonth: "2026-05",
+          settlementDay: 17,
+        },
+      ],
+    } as Response);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("renders an insufficient funds warning when the hook returns a non-empty array", async () => {
+    renderAtRoute("/");
+    await waitFor(() => {
+      expect(screen.getByText(/insufficient funds/i)).toBeInTheDocument();
+    });
   });
 });

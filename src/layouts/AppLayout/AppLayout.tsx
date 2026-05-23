@@ -3,6 +3,10 @@ import { NavLink } from "react-router-dom";
 import { LayoutDashboard, TrendingUp, Settings } from "lucide-react";
 import UpdateBanner from "../../features/updates/UpdateBanner/UpdateBanner";
 import {
+  useSettlementWarnings,
+  InsufficientFundsWarnings,
+} from "../../features/settlements";
+import {
   StyledWrapper,
   StyledSidebar,
   StyledWordmark,
@@ -18,6 +22,8 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
+  const warnings = useSettlementWarnings();
+
   return (
     <StyledWrapper>
       <StyledSidebar>
@@ -42,6 +48,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <StyledContent>{children}</StyledContent>
       </StyledMain>
       <UpdateBanner />
+      <InsufficientFundsWarnings warnings={warnings} />
     </StyledWrapper>
   );
 }
