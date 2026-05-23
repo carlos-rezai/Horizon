@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeMissingSettlements } from "../lib/settlement.js";
+import {
+  computeMissingSettlements,
+  detectInsufficientFunds,
+} from "../lib/settlement.js";
 import type { Account, Transaction } from "../storage/types.js";
+import type { MonthlySnapshot } from "../lib/projection.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -205,5 +209,102 @@ describe("computeMissingSettlements", () => {
     expect(result[0].date).toBe("2026-02-15");
     expect(result[1].amount).toBe(3000);
     expect(result[1].date).toBe("2026-03-15");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectInsufficientFunds
+// ---------------------------------------------------------------------------
+
+function makeSnapshot(
+  month: string,
+  balances: Record<string, number>
+): MonthlySnapshot {
+  const accounts: MonthlySnapshot["accounts"] = {};
+  for (const [id, projected] of Object.entries(balances)) {
+    accounts[id] = { projected };
+  }
+  return { month, accounts, netCashflow: 0, totalLiquid: 0 };
+}
+
+describe("detectInsufficientFunds", () => {
+  it("returns a warning when Giro projected balance in the settlement month is negative", () => {
+    // Month M (May): CC closes at −50000 → settlement of 50000 queued for June
+    // Month M+1 (June): Giro 10000 − 50000 settlement = −40000 (insufficient)
+    const accounts: Account[] = [makeGiro("giro1"), makeCc({ id: "cc1" })];
+    const projection = [
+      makeSnapshot("2026-05", { giro1: 10000, cc1: -50000 }),
+      makeSnapshot("2026-06", { giro1: -40000, cc1: 0 }),
+    ];
+
+    const warnings = detectInsufficientFunds(accounts, projection);
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].ccAccountId).toBe("cc1");
+    expect(warnings[0].fundingAccountId).toBe("giro1");
+    expect(warnings[0].settlementAmount).toBe(50000);
+  });
+
+  it("returns no warning when Giro projected balance in the settlement month is exactly zero", () => {
+    // Giro 50000 − 50000 settlement = 0 (exactly meets threshold)
+    const accounts: Account[] = [makeGiro("giro1"), makeCc({ id: "cc1" })];
+    const projection = [
+      makeSnapshot("2026-05", { giro1: 50000, cc1: -50000 }),
+      makeSnapshot("2026-06", { giro1: 0, cc1: 0 }),
+    ];
+
+    const warnings = detectInsufficientFunds(accounts, projection);
+
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("returns no warning when a projected inflow before Settlement Day raises the balance above the threshold", () => {
+    // Month M: Giro 10000 (not enough alone), CC −50000
+    // Month M+1: salary +100000 arrives on day 1 (before Settlement Day 15)
+    //   → Giro 10000 − 50000 settlement + 100000 salary = 60000 (positive)
+    const accounts: Account[] = [makeGiro("giro1"), makeCc({ id: "cc1" })];
+    const projection = [
+      makeSnapshot("2026-05", { giro1: 10000, cc1: -50000 }),
+      makeSnapshot("2026-06", { giro1: 60000, cc1: 0 }),
+    ];
+
+    const warnings = detectInsufficientFunds(accounts, projection);
+
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("returns no warning when CC has no settlement configuration", () => {
+    const accounts: Account[] = [
+      makeGiro("giro1"),
+      {
+        id: "cc1",
+        kind: "CreditCard",
+        name: "Credit Card",
+        openingBalance: -50000,
+        openingDate: "2026-01-01",
+        // no linkedAccountId, settlementDay, or linkedSince
+      },
+    ];
+    const projection = [
+      makeSnapshot("2026-05", { giro1: 10000, cc1: -50000 }),
+      makeSnapshot("2026-06", { giro1: -40000, cc1: 0 }),
+    ];
+
+    const warnings = detectInsufficientFunds(accounts, projection);
+
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("returns no warning when CC closing balance is zero", () => {
+    // CC has zero balance — no debt to settle
+    const accounts: Account[] = [makeGiro("giro1"), makeCc({ id: "cc1" })];
+    const projection = [
+      makeSnapshot("2026-05", { giro1: 500000, cc1: 0 }),
+      makeSnapshot("2026-06", { giro1: 500000, cc1: 0 }),
+    ];
+
+    const warnings = detectInsufficientFunds(accounts, projection);
+
+    expect(warnings).toHaveLength(0);
   });
 });
