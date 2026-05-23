@@ -11,6 +11,7 @@ import Input from "../../../primitives/Input/Input";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
+import Snackbar from "../../../components/Snackbar/Snackbar";
 import CreditCardSettlementFields from "../../settlements/CreditCardSettlementFields/CreditCardSettlementFields";
 import {
   StyledForm,
@@ -68,6 +69,7 @@ export default function AccountCreateModal({
     account?.settlementDay != null ? String(account.settlementDay) : ""
   );
   const [error, setError] = useState<string | null>(null);
+  const [settlementGenFailed, setSettlementGenFailed] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(
     account?.icon ?? null
   );
@@ -116,7 +118,14 @@ export default function AccountCreateModal({
     }
 
     if (kind === "CreditCard") {
-      await fetch(`${API_BASE}/settlements/generate`, { method: "POST" });
+      try {
+        const genRes = await fetch(`${API_BASE}/settlements/generate`, {
+          method: "POST",
+        });
+        if (!genRes.ok) setSettlementGenFailed(true);
+      } catch {
+        setSettlementGenFailed(true);
+      }
     }
 
     onSuccess(data.id ?? account?.id ?? "");
@@ -235,6 +244,14 @@ export default function AccountCreateModal({
             Cancel
           </Button>
         </StyledActions>
+
+        {settlementGenFailed && (
+          <Snackbar
+            variant="warning"
+            message="Account saved. Settlement generation failed — balances may be out of date. Restart the app to retry."
+            onClose={() => setSettlementGenFailed(false)}
+          />
+        )}
       </StyledForm>
     </Modal>
   );
