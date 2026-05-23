@@ -1,7 +1,9 @@
 import type { AccountWithBalance } from "../../../types/account";
 import FormField from "../../../components/FormField/FormField";
-import Input from "../../../primitives/Input/Input";
 import Select from "../../../primitives/Select/Select";
+import Stepper from "../../../primitives/Stepper/Stepper";
+
+const DEFAULT_SETTLEMENT_DAY = 1;
 
 interface Props {
   girokontoAccounts: AccountWithBalance[];
@@ -18,6 +20,10 @@ export default function CreditCardSettlementFields({
   onLinkedAccountChange,
   onSettlementDayChange,
 }: Props) {
+  const dayValue = settlementDay
+    ? Number(settlementDay)
+    : DEFAULT_SETTLEMENT_DAY;
+
   return (
     <>
       <FormField label="Funding Account" htmlFor="funding-account">
@@ -35,14 +41,12 @@ export default function CreditCardSettlementFields({
         </Select>
       </FormField>
 
-      <FormField label="Settlement Day" htmlFor="settlement-day">
-        <Input
-          id="settlement-day"
-          type="number"
-          min="1"
-          max="28"
-          value={settlementDay}
-          onChange={(e) => onSettlementDayChange(e.target.value)}
+      <FormField label="Settlement Day">
+        <Stepper
+          value={dayValue}
+          onChange={(v) => onSettlementDayChange(String(v))}
+          min={1}
+          max={28}
         />
       </FormField>
     </>

@@ -47,9 +47,14 @@ describe("CreditCardSettlementFields — rendering", () => {
     expect(screen.getByLabelText(/funding account/i)).toBeInTheDocument();
   });
 
-  it("renders the Settlement Day input", () => {
+  it("renders Increment and Decrement buttons for the settlement day field", () => {
     renderFields();
-    expect(screen.getByLabelText(/settlement day/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /increment/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /decrement/i })
+    ).toBeInTheDocument();
   });
 
   it("lists each girokonto account as an option in the dropdown", () => {
@@ -67,6 +72,11 @@ describe("CreditCardSettlementFields — rendering", () => {
     );
     expect(options.some((o) => o.value === "")).toBe(true);
   });
+
+  it("displays a pre-filled settlement day value", () => {
+    renderFields({ settlementDay: "17" });
+    expect(screen.getByText("17")).toBeInTheDocument();
+  });
 });
 
 describe("CreditCardSettlementFields — callbacks", () => {
@@ -78,12 +88,22 @@ describe("CreditCardSettlementFields — callbacks", () => {
     expect(onLinkedAccountChange).toHaveBeenCalledWith("g-1");
   });
 
-  it("calls onSettlementDayChange with the entered day string", () => {
-    const { onSettlementDayChange } = renderFields();
-    fireEvent.change(screen.getByLabelText(/settlement day/i), {
-      target: { value: "17" },
-    });
-    expect(onSettlementDayChange).toHaveBeenCalledWith("17");
+  it("calls onSettlementDayChange with a string when Increment is clicked", () => {
+    const { onSettlementDayChange } = renderFields({ settlementDay: "1" });
+    fireEvent.click(screen.getByRole("button", { name: /increment/i }));
+    expect(onSettlementDayChange).toHaveBeenCalledWith("2");
+  });
+
+  it("calls onSettlementDayChange with '1' when Decrement is clicked at the minimum", () => {
+    const { onSettlementDayChange } = renderFields({ settlementDay: "1" });
+    fireEvent.click(screen.getByRole("button", { name: /decrement/i }));
+    expect(onSettlementDayChange).toHaveBeenCalledWith("1");
+  });
+
+  it("calls onSettlementDayChange with '28' when Increment is clicked at the maximum", () => {
+    const { onSettlementDayChange } = renderFields({ settlementDay: "28" });
+    fireEvent.click(screen.getByRole("button", { name: /increment/i }));
+    expect(onSettlementDayChange).toHaveBeenCalledWith("28");
   });
 });
 

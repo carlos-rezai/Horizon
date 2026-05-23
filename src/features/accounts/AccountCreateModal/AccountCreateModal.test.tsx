@@ -402,7 +402,7 @@ describe("AccountCreateModal — CreditCard settlement fields", () => {
     expect(screen.getByLabelText(/funding account/i)).toBeInTheDocument();
   });
 
-  it("shows Settlement Day input when CreditCard kind is selected", () => {
+  it("shows Settlement Day stepper when CreditCard kind is selected", () => {
     renderWithTheme(
       <AccountCreateModal
         onClose={vi.fn()}
@@ -415,10 +415,12 @@ describe("AccountCreateModal — CreditCard settlement fields", () => {
       target: { value: "CreditCard" },
     });
 
-    expect(screen.getByLabelText(/settlement day/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /increment/i })
+    ).toBeInTheDocument();
   });
 
-  it("hides Funding Account and Settlement Day for non-CreditCard kinds", () => {
+  it("hides Funding Account and Settlement Day stepper for non-CreditCard kinds", () => {
     renderWithTheme(
       <AccountCreateModal
         onClose={vi.fn()}
@@ -428,7 +430,9 @@ describe("AccountCreateModal — CreditCard settlement fields", () => {
     );
 
     expect(screen.queryByLabelText(/funding account/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/settlement day/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /increment/i })
+    ).not.toBeInTheDocument();
   });
 
   it("hides both settlement fields after switching away from CreditCard", () => {
@@ -448,25 +452,9 @@ describe("AccountCreateModal — CreditCard settlement fields", () => {
     });
 
     expect(screen.queryByLabelText(/funding account/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/settlement day/i)).not.toBeInTheDocument();
-  });
-
-  it("Settlement Day input enforces min=1 and max=28", () => {
-    renderWithTheme(
-      <AccountCreateModal
-        onClose={vi.fn()}
-        onSuccess={vi.fn()}
-        girokontoAccounts={[mockGirokonto]}
-      />
-    );
-
-    fireEvent.change(screen.getByLabelText(/kind/i), {
-      target: { value: "CreditCard" },
-    });
-
-    const input = screen.getByLabelText(/settlement day/i);
-    expect(input).toHaveAttribute("min", "1");
-    expect(input).toHaveAttribute("max", "28");
+    expect(
+      screen.queryByRole("button", { name: /increment/i })
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -509,7 +497,7 @@ describe("AccountCreateModal — edit mode (CreditCard with settlement config)",
     expect(screen.getByLabelText(/funding account/i)).toHaveValue("g-1");
   });
 
-  it("pre-fills Settlement Day input from account.settlementDay", () => {
+  it("pre-fills Settlement Day stepper from account.settlementDay", () => {
     renderWithTheme(
       <AccountCreateModal
         onClose={vi.fn()}
@@ -519,6 +507,6 @@ describe("AccountCreateModal — edit mode (CreditCard with settlement config)",
       />
     );
 
-    expect(screen.getByLabelText(/settlement day/i)).toHaveValue(17);
+    expect(screen.getByText("17")).toBeInTheDocument();
   });
 });
