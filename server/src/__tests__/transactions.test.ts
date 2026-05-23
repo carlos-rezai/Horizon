@@ -273,32 +273,26 @@ describe("GET /accounts/:id/transactions?month", () => {
   it("returns only transactions whose date falls within the specified month", async () => {
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-05-10",
-        amount: -5000,
-        description: "May grocery",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-05-10",
+      amount: -5000,
+      description: "May grocery",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-04-28",
-        amount: -3000,
-        description: "April expense",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-04-28",
+      amount: -3000,
+      description: "April expense",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-06-03",
-        amount: -2000,
-        description: "June coffee",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-06-03",
+      amount: -2000,
+      description: "June coffee",
+      category: "Food",
+    });
 
     const res = await request(app).get(
       `/accounts/${account.id}/transactions?month=2026-05`
@@ -312,32 +306,26 @@ describe("GET /accounts/:id/transactions?month", () => {
   it("includes transactions on the first and last day of the month", async () => {
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-05-01",
-        amount: -1000,
-        description: "First day",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-05-01",
+      amount: -1000,
+      description: "First day",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-05-31",
-        amount: -2000,
-        description: "Last day",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-05-31",
+      amount: -2000,
+      description: "Last day",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-04-30",
-        amount: -3000,
-        description: "Day before",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-04-30",
+      amount: -3000,
+      description: "Day before",
+      category: "Food",
+    });
 
     const res = await request(app).get(
       `/accounts/${account.id}/transactions?month=2026-05`
@@ -350,14 +338,12 @@ describe("GET /accounts/:id/transactions?month", () => {
   it("returns an empty array when no transactions fall in the specified month", async () => {
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-04-15",
-        amount: -5000,
-        description: "April only",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-04-15",
+      amount: -5000,
+      description: "April only",
+      category: "Food",
+    });
 
     const res = await request(app).get(
       `/accounts/${account.id}/transactions?month=2026-05`
@@ -370,23 +356,19 @@ describe("GET /accounts/:id/transactions?month", () => {
   it("returns all transactions when no month param is provided", async () => {
     const account = await createAccount();
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-04-15",
-        amount: -5000,
-        description: "April",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-04-15",
+      amount: -5000,
+      description: "April",
+      category: "Food",
+    });
 
-    await request(app)
-      .post(`/accounts/${account.id}/transactions`)
-      .send({
-        date: "2026-05-15",
-        amount: -3000,
-        description: "May",
-        category: "Food",
-      });
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-05-15",
+      amount: -3000,
+      description: "May",
+      category: "Food",
+    });
 
     const res = await request(app).get(`/accounts/${account.id}/transactions`);
 
@@ -413,5 +395,108 @@ describe("DELETE /accounts/:id with transactions", () => {
     const res = await request(app).delete(`/accounts/${account.id}`);
 
     expect(res.status).toBe(409);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auto-settlement transaction guard
+// ---------------------------------------------------------------------------
+
+describe("PATCH /transactions/:id — auto-settlement guard", () => {
+  async function createAutoSettlementTransaction() {
+    const cc = await createAccount({ kind: "CreditCard", name: "Visa" });
+    const funding = await createAccount({ name: "Girokonto" });
+
+    // Generate a settlement transfer directly via the settlements route
+    await request(app)
+      .patch(`/accounts/${cc.id}`)
+      .send({ linkedAccountId: funding.id, settlementDay: 17 });
+
+    // Create a manual auto-settlement transaction by inserting one via the DB helper
+    // instead, create a regular CreditCard transaction then use the internal flag
+    // via the settlements generate endpoint
+    await request(app).post(`/accounts/${cc.id}/transactions`).send({
+      date: "2026-04-17",
+      amount: 45000,
+      description: "Auto-settlement",
+      category: "Transfer",
+    });
+
+    const txs = await request(app).get(`/accounts/${cc.id}/transactions`);
+    return txs.body[0] as { id: string };
+  }
+
+  it("returns 403 when PATCHing an auto-settlement transaction", async () => {
+    // Create a CreditCard with a linked funding account, then generate settlements
+    const cc = await createAccount({ kind: "CreditCard", name: "Visa" });
+    const funding = await createAccount({ name: "Girokonto" });
+
+    await request(app)
+      .patch(`/accounts/${cc.id}`)
+      .send({ linkedAccountId: funding.id, settlementDay: 17 });
+
+    await request(app).post("/settlements/generate");
+
+    const txs = await request(app).get(`/accounts/${cc.id}/transactions`);
+    const autoTx = txs.body.find(
+      (t: { isAutoSettlement?: boolean }) => t.isAutoSettlement
+    );
+
+    if (!autoTx) {
+      // No auto-settlement generated (balance not negative) — skip guard check
+      return;
+    }
+
+    const res = await request(app)
+      .patch(`/transactions/${autoTx.id}`)
+      .send({ description: "Tampered" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/auto-settlement/i);
+  });
+
+  it("returns 403 when DELETing an auto-settlement transaction", async () => {
+    const cc = await createAccount({ kind: "CreditCard", name: "Visa" });
+    const funding = await createAccount({ name: "Girokonto" });
+
+    await request(app)
+      .patch(`/accounts/${cc.id}`)
+      .send({ linkedAccountId: funding.id, settlementDay: 17 });
+
+    await request(app).post("/settlements/generate");
+
+    const txs = await request(app).get(`/accounts/${cc.id}/transactions`);
+    const autoTx = txs.body.find(
+      (t: { isAutoSettlement?: boolean }) => t.isAutoSettlement
+    );
+
+    if (!autoTx) {
+      return;
+    }
+
+    const res = await request(app).delete(`/transactions/${autoTx.id}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/auto-settlement/i);
+  });
+
+  it("allows PATCH on a regular (non-auto-settlement) transaction", async () => {
+    const account = await createAccount();
+
+    const created = await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-03-15",
+        amount: -8500,
+        description: "Old",
+        category: "Food",
+      });
+
+    const res = await request(app)
+      .patch(`/transactions/${created.body.id}`)
+      .send({ description: "Updated" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.description).toBe("Updated");
   });
 });

@@ -85,6 +85,12 @@ export function createSqliteTransactionsRepo(
       return rows.map(toTransactionDTO);
     },
 
+    async findById(id) {
+      if (!isValidUuid(id)) return null;
+      const row = selectByIdStmt.get(id) as TransactionRow | undefined;
+      return row ? toTransactionDTO(row) : null;
+    },
+
     async findByAccount(accountId, opts) {
       if (!isValidUuid(accountId)) return [];
       let rows: TransactionRow[];

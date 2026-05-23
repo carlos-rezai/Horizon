@@ -55,6 +55,18 @@ router.patch("/transactions/:id", async (req, res) => {
     return;
   }
 
+  const existing = await getStorage(req).transactions.findById(req.params.id);
+  if (!existing) {
+    res.status(404).json({ error: "Transaction not found" });
+    return;
+  }
+  if (existing.isAutoSettlement) {
+    res
+      .status(403)
+      .json({ error: "Auto-settlement transactions cannot be modified" });
+    return;
+  }
+
   const updated = await getStorage(req).transactions.update(
     req.params.id,
     parsed.data
@@ -68,6 +80,18 @@ router.patch("/transactions/:id", async (req, res) => {
 });
 
 router.delete("/transactions/:id", async (req, res) => {
+  const existing = await getStorage(req).transactions.findById(req.params.id);
+  if (!existing) {
+    res.status(404).json({ error: "Transaction not found" });
+    return;
+  }
+  if (existing.isAutoSettlement) {
+    res
+      .status(403)
+      .json({ error: "Auto-settlement transactions cannot be modified" });
+    return;
+  }
+
   const result = await getStorage(req).transactions.delete(req.params.id);
   if (result === null) {
     res.status(404).json({ error: "Transaction not found" });

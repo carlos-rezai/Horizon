@@ -28,6 +28,7 @@ export interface AccountsRepo {
 
 export interface TransactionsRepo {
   findAll(): Promise<Transaction[]>;
+  findById(id: string): Promise<Transaction | null>;
   findByAccount(
     accountId: string,
     opts?: { month?: string }
