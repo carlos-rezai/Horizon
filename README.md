@@ -246,7 +246,10 @@ The generated installer will be signed with your local certificate and will inst
 | In-app auto-update (electron-updater)     | ✅ Complete |
 | Monthly Ledger                            | ✅ Complete |
 | Credit Card Auto-Settlement               | ✅ Complete |
+| Account Color Identity                    | 🔜 Planned  |
 | Native Application Menu                   | 🔜 Planned  |
+| Monthly Spending Breakdown Chart          | 🔜 Planned  |
+| Dashboard Clock                           | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
