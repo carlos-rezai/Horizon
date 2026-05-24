@@ -184,7 +184,8 @@ DEBUG_SQL= # set to "1" to enable better-sqlite3 query tracing via console.info.
 - [x] UI Redesign — visual refresh of all views based on Google Stitch mockups
 - [x] In-app auto-update — electron-updater + GitHub Releases, in-app banner on new version
 - [x] Monthly Ledger — recurring transactions per account; month overview page reachable from dashboard and financial plan
-- [ ] Credit Card Auto-Settlement — link a CreditCard account to a funding account; negative end-of-month balance pulls automatically from the linked account
+- [x] Credit Card Auto-Settlement — link a CreditCard account to a funding account; negative end-of-month balance pulls automatically from the linked account
+- [ ] Native Application Menu — surface app settings (database info, backup/restore, autoupdate, versions) in the Electron native title bar menu alongside File, Edit, View, Window, and Help
 - [ ] Monthly digest (AI) — permanently deferred
 - [ ] Anomaly detection + Q&A (AI) — permanently deferred
 - [ ] Sondertilgung advisor (AI) — permanently deferred
