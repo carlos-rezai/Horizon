@@ -4,7 +4,7 @@ import { generateSettlements } from "../services/settlementService.js";
 import {
   detectInsufficientFunds,
   type InsufficientFundsWarning,
-} from "../lib/settlement.js";
+} from "../lib/settlement/settlement.js";
 import { projectBalances } from "../lib/projection/projection.js";
 
 const router = Router();

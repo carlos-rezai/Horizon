@@ -1,5 +1,5 @@
 import type { Storage } from "../storage/Storage.js";
-import { computeMissingSettlements } from "../lib/settlement.js";
+import { computeMissingSettlements } from "../lib/settlement/settlement.js";
 
 export async function generateSettlements(storage: Storage): Promise<number> {
   const [accounts, transactions] = await Promise.all([
