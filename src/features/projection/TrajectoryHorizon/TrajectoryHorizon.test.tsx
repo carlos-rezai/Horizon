@@ -23,6 +23,27 @@ const giroAccount: AccountWithBalance = {
   openingBalance: 0,
   openingDate: "2026-01-01",
   balance: 0,
+  color: null,
+};
+
+const giroAccountWithColor: AccountWithBalance = {
+  id: "g1",
+  kind: "Girokonto",
+  name: "Main",
+  openingBalance: 0,
+  openingDate: "2026-01-01",
+  balance: 0,
+  color: "#FF6600",
+};
+
+const giroAccount2WithColor: AccountWithBalance = {
+  id: "g2",
+  kind: "Girokonto",
+  name: "Secondary",
+  openingBalance: 0,
+  openingDate: "2026-01-01",
+  balance: 0,
+  color: "#0088FF",
 };
 
 const snapshots: MonthlySnapshot[] = [
@@ -37,6 +58,21 @@ const snapshots: MonthlySnapshot[] = [
     accounts: { g1: { projected: 105000 } },
     netCashflow: 5000,
     totalLiquid: 105000,
+  },
+];
+
+const snapshotsTwoGiro: MonthlySnapshot[] = [
+  {
+    month: "2026-04",
+    accounts: { g1: { projected: 100000 }, g2: { projected: 50000 } },
+    netCashflow: 5000,
+    totalLiquid: 150000,
+  },
+  {
+    month: "2026-05",
+    accounts: { g1: { projected: 105000 }, g2: { projected: 55000 } },
+    netCashflow: 5000,
+    totalLiquid: 160000,
   },
 ];
 
@@ -201,7 +237,7 @@ describe("TrajectoryHorizon", () => {
   });
 
   describe("chart kind color mapping", () => {
-    it("renders a chart-line marker for each non-mortgage account, keyed by kind", () => {
+    it("renders a chart-line marker for each non-mortgage account, keyed by account id", () => {
       renderWithTheme(
         <TrajectoryHorizon
           snapshots={snapshots}
@@ -211,10 +247,10 @@ describe("TrajectoryHorizon", () => {
         />
       );
 
-      expect(screen.getByTestId("chart-line-Girokonto")).toBeInTheDocument();
+      expect(screen.getByTestId("chart-line-g1")).toBeInTheDocument();
     });
 
-    it("Girokonto chart line marker carries the chartColors.Girokonto color from the theme", () => {
+    it("Girokonto chart line marker with null color carries the chartColors.Girokonto fallback color", () => {
       renderWithTheme(
         <TrajectoryHorizon
           snapshots={snapshots}
@@ -224,7 +260,7 @@ describe("TrajectoryHorizon", () => {
         />
       );
 
-      expect(screen.getByTestId("chart-line-Girokonto")).toHaveAttribute(
+      expect(screen.getByTestId("chart-line-g1")).toHaveAttribute(
         "data-color",
         theme.colors.chartColors.Girokonto
       );
@@ -240,9 +276,77 @@ describe("TrajectoryHorizon", () => {
         />
       );
 
+      expect(screen.queryByTestId("chart-line-g1")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("account color identity", () => {
+    it("hidden color-marker testid is chart-line-{account.id}, not chart-line-{kind}", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccountWithColor]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByTestId("chart-line-g1")).toBeInTheDocument();
       expect(
         screen.queryByTestId("chart-line-Girokonto")
       ).not.toBeInTheDocument();
+    });
+
+    it("account with explicit color uses that hex as data-color on the marker", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccountWithColor]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByTestId("chart-line-g1")).toHaveAttribute(
+        "data-color",
+        "#FF6600"
+      );
+    });
+
+    it("account with null color falls back to chartColors[kind] on the marker", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByTestId("chart-line-g1")).toHaveAttribute(
+        "data-color",
+        theme.colors.chartColors.Girokonto
+      );
+    });
+
+    it("two same-kind accounts with different colors produce different data-color values on their markers", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshotsTwoGiro}
+          accounts={[giroAccountWithColor, giroAccount2WithColor]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(screen.getByTestId("chart-line-g1")).toHaveAttribute(
+        "data-color",
+        "#FF6600"
+      );
+      expect(screen.getByTestId("chart-line-g2")).toHaveAttribute(
+        "data-color",
+        "#0088FF"
+      );
     });
   });
 });
