@@ -2,8 +2,8 @@ import { Router, type Request } from "express";
 import multer from "multer";
 import fs from "fs";
 import os from "os";
-import type { Storage } from "../storage/Storage.js";
-import { StorageIntegrityError } from "../storage/sqlite/errors.js";
+import type { Storage } from "../../storage/Storage.js";
+import { StorageIntegrityError } from "../../storage/sqlite/errors.js";
 
 const router = Router();
 

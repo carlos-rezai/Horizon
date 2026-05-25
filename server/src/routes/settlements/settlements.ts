@@ -1,11 +1,11 @@
 import { Router, type Request } from "express";
-import type { Storage } from "../storage/Storage.js";
-import { generateSettlements } from "../services/settlementService/settlementService.js";
+import type { Storage } from "../../storage/Storage.js";
+import { generateSettlements } from "../../services/settlementService/settlementService.js";
 import {
   detectInsufficientFunds,
   type InsufficientFundsWarning,
-} from "../lib/settlement/settlement.js";
-import { projectBalances } from "../lib/projection/projection.js";
+} from "../../lib/settlement/settlement.js";
+import { projectBalances } from "../../lib/projection/projection.js";
 
 const router = Router();
 

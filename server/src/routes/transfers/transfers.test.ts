@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
-import { createSqliteAppHandle } from "../testing/sqliteApp.js";
+import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
 
 let app: Express;
 let reset: () => Promise<void>;

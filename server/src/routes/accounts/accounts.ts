@@ -2,9 +2,12 @@ import { Router, type Request } from "express";
 import {
   AccountCreateSchema,
   AccountUpdateSchema,
-} from "../schemas/account.js";
-import { calcNetCashflow, calcFreeCashflow } from "../lib/cashflow/cashflow.js";
-import type { Storage } from "../storage/Storage.js";
+} from "../../schemas/account.js";
+import {
+  calcNetCashflow,
+  calcFreeCashflow,
+} from "../../lib/cashflow/cashflow.js";
+import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
 

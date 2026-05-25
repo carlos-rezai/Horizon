@@ -2,8 +2,8 @@ import { Router, type Request } from "express";
 import {
   TransactionCreateSchema,
   TransactionUpdateSchema,
-} from "../schemas/transaction.js";
-import type { Storage } from "../storage/Storage.js";
+} from "../../schemas/transaction.js";
+import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
 

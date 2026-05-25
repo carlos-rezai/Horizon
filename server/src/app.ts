@@ -5,14 +5,14 @@ import express, {
   type NextFunction,
 } from "express";
 import cors from "cors";
-import accountsRouter from "./routes/accounts.js";
-import transactionsRouter from "./routes/transactions.js";
-import categoriesRouter from "./routes/categories.js";
-import transfersRouter from "./routes/transfers.js";
-import recurringTransactionsRouter from "./routes/recurringTransactions.js";
-import projectionRouter from "./routes/projection.js";
-import storageRouter from "./routes/storage.js";
-import settlementsRouter from "./routes/settlements.js";
+import accountsRouter from "./routes/accounts/accounts.js";
+import transactionsRouter from "./routes/transactions/transactions.js";
+import categoriesRouter from "./routes/categories/categories.js";
+import transfersRouter from "./routes/transfers/transfers.js";
+import recurringTransactionsRouter from "./routes/recurringTransactions/recurringTransactions.js";
+import projectionRouter from "./routes/projection/projection.js";
+import storageRouter from "./routes/storage/storage.js";
+import settlementsRouter from "./routes/settlements/settlements.js";
 import { generateSettlements } from "./services/settlementService/settlementService.js";
 import type { Storage } from "./storage/Storage.js";
 
