@@ -13,7 +13,11 @@ function listSourceFiles(dir: string): string[] {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...listSourceFiles(full));
-    } else if (entry.isFile() && entry.name.endsWith(".ts")) {
+    } else if (
+      entry.isFile() &&
+      entry.name.endsWith(".ts") &&
+      !entry.name.endsWith(".test.ts")
+    ) {
       out.push(full);
     }
   }

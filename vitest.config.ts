@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     include: [
-      "server/src/**/__tests__/**/*.test.ts",
+      "server/src/**/*.test.ts",
       "src/**/*.test.{ts,tsx}",
       "electron/**/*.test.ts",
     ],
