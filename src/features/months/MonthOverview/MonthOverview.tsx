@@ -7,7 +7,7 @@ import type { Transaction } from "../../../types/transaction";
 import { formatBalance } from "../../../utils/format/format";
 import Button from "../../../primitives/Button/Button";
 import Chip from "../../../primitives/Chip/Chip";
-import { chartColors } from "../../../tokens/colors";
+import { resolveAccountColor } from "../../../utils/color/color";
 import { useMonthTransactions } from "../useMonthTransactions";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
@@ -100,10 +100,7 @@ export default function MonthOverview({
               entry !== undefined ? (entry.actual ?? entry.projected) : null;
             return (
               <StyledBalanceSummaryItem key={account.id}>
-                <Chip
-                  size="sm"
-                  color={account.color ?? chartColors[account.kind]}
-                />
+                <Chip size="sm" color={resolveAccountColor(account)} />
                 <StyledBalanceLabel>{account.name}</StyledBalanceLabel>
                 <StyledBalanceValue
                   $isLiability={LIABILITY_KINDS.has(account.kind)}
