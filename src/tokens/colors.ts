@@ -79,6 +79,7 @@ export const colors = {
   tertiaryFixedDim: "#ffb786",
   onTertiaryFixed: "#311400",
   onTertiaryFixedVariant: "#723600",
+  restschuldStrokeColor: "#8a9bab",
   primaryTint: "rgba(173, 198, 255, 0.15)",
   secondaryTint: "rgba(78, 222, 163, 0.15)",
   errorTint: "rgba(255, 180, 171, 0.15)",

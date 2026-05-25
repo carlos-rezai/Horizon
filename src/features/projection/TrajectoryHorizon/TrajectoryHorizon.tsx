@@ -288,7 +288,9 @@ export default function TrajectoryHorizon({
                   dataKey="restschuld"
                   name="Restschuld"
                   dot={false}
-                  stroke={theme.colors.tertiary}
+                  stroke={theme.colors.restschuldStrokeColor}
+                  strokeDasharray="6 3"
+                  strokeWidth={1.5}
                   connectNulls={false}
                 />
               </ComposedChart>
