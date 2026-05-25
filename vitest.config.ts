@@ -10,7 +10,7 @@ export default defineConfig({
       "electron/**/*.test.ts",
     ],
     environment: "node",
-    setupFiles: ["./src/test-setup.ts"],
+    setupFiles: ["./vitest.setup.ts"],
     globals: false,
     pool: "forks",
   },
