@@ -114,10 +114,10 @@ describe("AccountDetailPage — recurring transactions button", () => {
 describe("AccountDetailPage — card surfaces", () => {
   beforeEach(mockAllSuccess);
 
-  it("renders at least 3 card surfaces — header, transactions, and recurring transactions", async () => {
+  it("renders at least 2 card surfaces — header and recurring transactions", async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(3);
+      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(2);
     });
   });
 });

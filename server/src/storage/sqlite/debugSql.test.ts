@@ -3,14 +3,11 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createSqliteStorage } from "./SqliteStorage.js";
-import {
-  openConnection,
-  closeConnection,
-} from "../storage/sqlite/connection.js";
+import { openConnection, closeConnection } from "./connection.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SQLITE_DIR = path.resolve(__dirname, "../storage/sqlite");
+const SQLITE_DIR = path.resolve(__dirname);
 
 describe("DEBUG_SQL query tracing switch (issue #58)", () => {
   describe("createSqliteStorage — verbose option", () => {
@@ -128,6 +125,7 @@ describe("DEBUG_SQL query tracing switch (issue #58)", () => {
             continue;
           }
           if (!/\.(ts|js|mjs|cjs)$/.test(entry.name)) continue;
+          if (entry.name.endsWith(".test.ts")) continue;
           const contents = fs.readFileSync(full, "utf8");
           if (/process\s*\.\s*env/.test(contents)) {
             offenders.push(full);

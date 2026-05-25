@@ -5,7 +5,7 @@ import os from "os";
 import path from "path";
 import { migrate } from "./migrate.js";
 import { openConnection, closeConnection } from "./connection.js";
-import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
+import { DEFAULT_CATEGORY_NAMES } from "../defaultCategories.js";
 
 interface SchemaRow {
   type: string;

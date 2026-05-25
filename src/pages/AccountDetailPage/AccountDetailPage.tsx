@@ -5,7 +5,6 @@ import AccountDetailHeader from "../../features/accounts/AccountDetailHeader/Acc
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import RecurringTransactionList from "../../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
-import TransactionCreateModal from "../../features/transactions/TransactionCreateModal/TransactionCreateModal";
 import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions";
 import Card from "../../components/Card/Card";
 import Heading from "../../primitives/Heading/Heading";
@@ -31,7 +30,6 @@ export default function AccountDetailPage() {
   const navigate = useNavigate();
   const [hasTransactions, setHasTransactions] = useState(false);
   const [showEditAccount, setShowEditAccount] = useState(false);
-  const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddRecurring, setShowAddRecurring] = useState(false);
   const [editingRecurring, setEditingRecurring] =
     useState<RecurringTransaction | null>(null);
@@ -110,27 +108,6 @@ export default function AccountDetailPage() {
           />
         )}
       </Card>
-      <StyledSection>
-        <Card>
-          <Heading level={2}>Transactions</Heading>
-          <StyledActions>
-            <Button type="button" onClick={() => setShowAddTransaction(true)}>
-              Add transaction
-            </Button>
-          </StyledActions>
-          {showAddTransaction && (
-            <TransactionCreateModal
-              accountId={account.id}
-              accounts={accounts}
-              onClose={() => setShowAddTransaction(false)}
-              onSuccess={() => {
-                setShowAddTransaction(false);
-                setHasTransactions(true);
-              }}
-            />
-          )}
-        </Card>
-      </StyledSection>
       <StyledSection>
         <Card>
           <Heading level={2}>Recurring Transactions</Heading>
