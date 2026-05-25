@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createSqliteStorage } from "../storage/sqlite/SqliteStorage.js";
+import { createSqliteStorage } from "./SqliteStorage.js";
 import {
   openConnection,
   closeConnection,

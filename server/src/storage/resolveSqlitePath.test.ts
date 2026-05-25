@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveSqlitePath } from "../storage/resolveSqlitePath.js";
+import { resolveSqlitePath } from "./resolveSqlitePath.js";
 
 describe("resolveSqlitePath — entrypoint env reader (issue #61)", () => {
   it("returns HORIZON_DB_PATH when it is set to a path", () => {

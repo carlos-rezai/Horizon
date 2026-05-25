@@ -16,5 +16,10 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/__tests__/**", "dist"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.parity.ts",
+    "src/testing/**",
+    "dist"
+  ]
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveSqliteOptions } from "../storage/resolveSqliteOptions.js";
+import { resolveSqliteOptions } from "./resolveSqliteOptions.js";
 
 describe("resolveSqliteOptions — entrypoint env reader (issue #58)", () => {
   it("returns a verbose callback when DEBUG_SQL=1", () => {

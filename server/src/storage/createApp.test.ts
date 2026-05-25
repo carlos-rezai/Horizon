@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "../../app.js";
-import { createStorage } from "../index.js";
-import type { Storage } from "../Storage.js";
+import { createApp } from "../app.js";
+import { createStorage } from "./index.js";
+import type { Storage } from "./Storage.js";
 
 let storage: Storage;
 

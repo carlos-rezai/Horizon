@@ -3,13 +3,10 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import {
-  openConnection,
-  closeConnection,
-} from "../storage/sqlite/connection.js";
-import { migrate } from "../storage/sqlite/migrate.js";
-import { StorageIntegrityError } from "../storage/sqlite/errors.js";
-import { createSqliteStorage } from "../storage/sqlite/SqliteStorage.js";
+import { openConnection, closeConnection } from "./connection.js";
+import { migrate } from "./migrate.js";
+import { StorageIntegrityError } from "./errors.js";
+import { createSqliteStorage } from "./SqliteStorage.js";
 
 function makeTempDbPath(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-conn-"));

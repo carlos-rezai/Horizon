@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "events";
-import {
-  postReady,
-  postFatal,
-  onShutdown,
-} from "../parentPort.js";
+import { postReady, postFatal, onShutdown } from "./parentPort.js";
 
 // `process.parentPort` is the Electron utilityProcess parent channel — only
 // present when the Express server is forked by the Server Handle. In the

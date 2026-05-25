@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createStorage } from "../index.js";
-import type { Storage } from "../Storage.js";
+import { createStorage } from "./index.js";
+import type { Storage } from "./Storage.js";
 
 describe("createStorage", () => {
   it("returns a working Storage when called with a path", async () => {

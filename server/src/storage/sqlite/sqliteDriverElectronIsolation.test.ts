@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SQLITE_DIR = path.resolve(__dirname, "..", "storage", "sqlite");
+const SQLITE_DIR = path.resolve(__dirname);
 
 function listSourceFiles(dir: string): string[] {
   const out: string[] = [];
@@ -20,17 +20,20 @@ function listSourceFiles(dir: string): string[] {
   return out;
 }
 
-describe("SQLite driver env isolation (issue #61 AC #2)", () => {
-  it("no file under server/src/storage/sqlite/ reads process.env", () => {
-    // The driver takes `path` as its only argument. The env-var seam lives at
-    // the entrypoint (server.ts) so Electron main can set HORIZON_DB_PATH
-    // before spawning the Express child without the driver knowing anything
-    // about the environment it runs in. A regression here would re-couple the
-    // driver to its host process.
+describe("SQLite driver Electron isolation (issue #68 AC #9)", () => {
+  it("no file under server/src/storage/sqlite/ imports from 'electron'", () => {
+    // The seam established in design log 09 Q2 — and reaffirmed by user
+    // story 30 — is that the SQLite Driver knows nothing about Electron.
+    // Electron Main is the only producer of HORIZON_DB_PATH; the driver
+    // takes a `path` argument and stays unit-testable in isolation.
+    // Importing 'electron' anywhere inside the driver would re-couple it
+    // to the host process and break test runs on the Cloud Build.
+    const importPattern =
+      /from\s+["']electron(?:\/[^"']*)?["']|require\(\s*["']electron(?:\/[^"']*)?["']\s*\)/;
     const offenders: string[] = [];
     for (const file of listSourceFiles(SQLITE_DIR)) {
       const contents = fs.readFileSync(file, "utf8");
-      if (contents.includes("process.env")) {
+      if (importPattern.test(contents)) {
         offenders.push(path.relative(SQLITE_DIR, file));
       }
     }

@@ -1,10 +1,16 @@
-import { describe } from "vitest";
+import type { Express } from "express";
+import { createApp } from "../app.js";
 import { createStorage } from "../storage/index.js";
 import type { Storage } from "../storage/Storage.js";
-import { runStorageSpec } from "./storage.parity.js";
 
-describe("SQLite Storage Driver — parity", () => {
-  let inner: Storage;
+export interface SqliteAppHandle {
+  app: Express;
+  reset: () => Promise<void>;
+  cleanup: () => Promise<void>;
+}
+
+export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
+  let inner = await createStorage({ path: ":memory:" });
 
   const wrapped: Storage = {
     get accounts() {
@@ -26,23 +32,22 @@ describe("SQLite Storage Driver — parity", () => {
       return inner.recurringTransactions;
     },
     close: () => inner.close(),
+    serialize: () => inner.serialize(),
     backup: (destPath: string) => inner.backup(destPath),
     restore: (srcPath: string) => inner.restore(srcPath),
     status: () => inner.status(),
   };
 
-  runStorageSpec(async () => {
-    inner = await createStorage({ path: ":memory:" });
+  const app = await createApp(wrapped);
 
-    return {
-      storage: wrapped,
-      reset: async () => {
-        await inner.close();
-        inner = await createStorage({ path: ":memory:" });
-      },
-      cleanup: async () => {
-        await inner.close();
-      },
-    };
-  });
-});
+  return {
+    app,
+    reset: async () => {
+      await inner.close();
+      inner = await createStorage({ path: ":memory:" });
+    },
+    cleanup: async () => {
+      await inner.close();
+    },
+  };
+}

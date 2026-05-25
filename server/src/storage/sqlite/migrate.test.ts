@@ -3,11 +3,8 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { migrate } from "../storage/sqlite/migrate.js";
-import {
-  openConnection,
-  closeConnection,
-} from "../storage/sqlite/connection.js";
+import { migrate } from "./migrate.js";
+import { openConnection, closeConnection } from "./connection.js";
 import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
 
 interface SchemaRow {

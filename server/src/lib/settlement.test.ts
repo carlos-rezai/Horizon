@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeMissingSettlements,
   detectInsufficientFunds,
-} from "../lib/settlement.js";
+} from "./settlement.js";
 import type { Account, Transaction } from "../storage/types.js";
 import type { MonthlySnapshot } from "../lib/projection.js";
 

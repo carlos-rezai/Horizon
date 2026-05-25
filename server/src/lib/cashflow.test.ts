@@ -6,7 +6,7 @@ import {
   calcFreeCashflow,
   calcTotalLiquid,
 } from "../lib/cashflow.js";
-import { createSqliteAppHandle } from "./helpers/sqliteApp.js";
+import { createSqliteAppHandle } from "../testing/sqliteApp.js";
 
 let app: Express;
 let reset: () => Promise<void>;
