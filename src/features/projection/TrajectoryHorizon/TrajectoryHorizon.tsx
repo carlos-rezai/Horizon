@@ -22,6 +22,7 @@ import {
   findMortgagePayoffMonth,
 } from "../../../utils/projection/projection";
 import { formatBalance } from "../../../utils/format/format";
+import { resolveAccountColor } from "../../../utils/color/color";
 import {
   StyledSection,
   StyledChartWrapper,
@@ -168,15 +169,6 @@ export default function TrajectoryHorizon({
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
 
-  function accountColor(account: AccountWithBalance): string {
-    if (account.color) return account.color;
-    const mapped =
-      theme.colors.chartColors[
-        account.kind as keyof typeof theme.colors.chartColors
-      ];
-    return mapped ?? theme.colors.onSurfaceVariant;
-  }
-
   const dataMax = data.reduce((max, p) => {
     const candidates: number[] = [];
     if (typeof p.restschuld === "number") candidates.push(p.restschuld);
@@ -215,7 +207,7 @@ export default function TrajectoryHorizon({
             <span
               key={a.id}
               data-testid={`chart-line-${a.id}`}
-              data-color={accountColor(a)}
+              data-color={resolveAccountColor(a)}
               aria-hidden="true"
               style={{ display: "none" }}
             />
@@ -279,7 +271,7 @@ export default function TrajectoryHorizon({
                     dataKey={a.id}
                     name={a.name}
                     dot={false}
-                    stroke={accountColor(a)}
+                    stroke={resolveAccountColor(a)}
                   />
                 ))}
                 <Line
