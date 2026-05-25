@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { parseApiBaseUrlArg } from "./parseApiBaseUrlArg.js";
+import { parseApiBaseUrlArg } from "./parseApiBaseUrlArg/parseApiBaseUrlArg.js";
 
 const apiBaseUrl = parseApiBaseUrlArg(process.argv) ?? "";
 
