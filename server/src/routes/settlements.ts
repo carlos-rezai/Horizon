@@ -5,7 +5,7 @@ import {
   detectInsufficientFunds,
   type InsufficientFundsWarning,
 } from "../lib/settlement.js";
-import { projectBalances } from "../lib/projection.js";
+import { projectBalances } from "../lib/projection/projection.js";
 
 const router = Router();
 

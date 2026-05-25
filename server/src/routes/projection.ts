@@ -1,5 +1,5 @@
 import { Router, type Request } from "express";
-import { projectBalances } from "../lib/projection.js";
+import { projectBalances } from "../lib/projection/projection.js";
 import type { Storage } from "../storage/Storage.js";
 
 const router = Router();

@@ -3,7 +3,7 @@ import type {
   Transaction,
   TransferCreateInput,
 } from "../storage/types.js";
-import type { MonthlySnapshot } from "./projection.js";
+import type { MonthlySnapshot } from "./projection/projection.js";
 
 export type SettlementTransferInput = TransferCreateInput & {
   isAutoSettlement: true;

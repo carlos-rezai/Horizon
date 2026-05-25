@@ -4,7 +4,7 @@ import {
   detectInsufficientFunds,
 } from "./settlement.js";
 import type { Account, Transaction } from "../storage/types.js";
-import type { MonthlySnapshot } from "../lib/projection.js";
+import type { MonthlySnapshot } from "./projection/projection.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
