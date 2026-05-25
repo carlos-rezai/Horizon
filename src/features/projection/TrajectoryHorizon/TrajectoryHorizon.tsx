@@ -68,7 +68,7 @@ interface ChartTooltipProps {
   active?: boolean;
   payload?: readonly { payload?: TrajectoryDataPoint }[];
   nonMortgageAccounts: AccountWithBalance[];
-  getColor: (kind: string) => string;
+  getColor: (account: AccountWithBalance) => string;
 }
 
 function ChartTooltip({
@@ -91,7 +91,7 @@ function ChartTooltip({
         const value = point[a.id];
         if (typeof value !== "number") return null;
         return (
-          <StyledTooltipRowMuted key={a.id} style={{ color: getColor(a.kind) }}>
+          <StyledTooltipRowMuted key={a.id} style={{ color: getColor(a) }}>
             {a.name}: {formatBalance(value)}
           </StyledTooltipRowMuted>
         );
@@ -168,9 +168,12 @@ export default function TrajectoryHorizon({
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
 
-  function kindColor(kind: string): string {
+  function accountColor(account: AccountWithBalance): string {
+    if (account.color) return account.color;
     const mapped =
-      theme.colors.chartColors[kind as keyof typeof theme.colors.chartColors];
+      theme.colors.chartColors[
+        account.kind as keyof typeof theme.colors.chartColors
+      ];
     return mapped ?? theme.colors.onSurfaceVariant;
   }
 
@@ -210,9 +213,9 @@ export default function TrajectoryHorizon({
           )}
           {nonMortgageAccounts.map((a) => (
             <span
-              key={a.kind}
-              data-testid={`chart-line-${a.kind}`}
-              data-color={kindColor(a.kind)}
+              key={a.id}
+              data-testid={`chart-line-${a.id}`}
+              data-color={accountColor(a)}
               aria-hidden="true"
               style={{ display: "none" }}
             />
@@ -250,7 +253,7 @@ export default function TrajectoryHorizon({
                     <ChartTooltip
                       {...props}
                       nonMortgageAccounts={nonMortgageAccounts}
-                      getColor={kindColor}
+                      getColor={accountColor}
                     />
                   )}
                 />
@@ -276,7 +279,7 @@ export default function TrajectoryHorizon({
                     dataKey={a.id}
                     name={a.name}
                     dot={false}
-                    stroke={kindColor(a.kind)}
+                    stroke={accountColor(a)}
                   />
                 ))}
                 <Line
