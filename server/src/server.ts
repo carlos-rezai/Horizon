@@ -5,7 +5,7 @@ import { createStorage } from "./storage/index.js";
 import { resolveSqliteOptions } from "./storage/resolveSqliteOptions.js";
 import { resolveSqlitePath } from "./storage/resolveSqlitePath.js";
 import { StorageIntegrityError } from "./storage/sqlite/errors.js";
-import { onShutdown, postFatal, postReady } from "./parentPort.js";
+import { onShutdown, postFatal, postReady } from "./parentPort/parentPort.js";
 
 const PORT = Number(process.env.PORT ?? 3001);
 
