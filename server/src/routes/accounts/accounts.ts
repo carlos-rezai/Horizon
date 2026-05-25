@@ -1,8 +1,5 @@
 import { Router, type Request } from "express";
-import {
-  AccountCreateSchema,
-  AccountUpdateSchema,
-} from "../../schemas/account.js";
+import { AccountCreateSchema, AccountUpdateSchema } from "./account.js";
 import {
   calcNetCashflow,
   calcFreeCashflow,

@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 import {
   TransactionCreateSchema,
   TransactionUpdateSchema,
-} from "../../schemas/transaction.js";
+} from "./transaction.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();

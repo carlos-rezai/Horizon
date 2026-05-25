@@ -1,5 +1,5 @@
 import { Router, type Request } from "express";
-import { CategoryCreateSchema } from "../../schemas/category.js";
+import { CategoryCreateSchema } from "./category.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();

@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 import {
   RecurringTransactionCreateSchema,
   RecurringTransactionUpdateSchema,
-} from "../../schemas/recurringTransaction.js";
+} from "./recurringTransaction.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
