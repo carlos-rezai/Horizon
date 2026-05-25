@@ -18,6 +18,7 @@ export const StyledBalanceSummaryBar = styled.div`
 export const StyledBalanceSummaryItem = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 

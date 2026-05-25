@@ -6,6 +6,8 @@ import type { RecurringTransaction } from "../../../types/recurring";
 import type { Transaction } from "../../../types/transaction";
 import { formatBalance } from "../../../utils/format/format";
 import Button from "../../../primitives/Button/Button";
+import Chip from "../../../primitives/Chip/Chip";
+import { chartColors } from "../../../tokens/colors";
 import { useMonthTransactions } from "../useMonthTransactions";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
@@ -98,6 +100,10 @@ export default function MonthOverview({
               entry !== undefined ? (entry.actual ?? entry.projected) : null;
             return (
               <StyledBalanceSummaryItem key={account.id}>
+                <Chip
+                  size="sm"
+                  color={account.color ?? chartColors[account.kind]}
+                />
                 <StyledBalanceLabel>{account.name}</StyledBalanceLabel>
                 <StyledBalanceValue
                   $isLiability={LIABILITY_KINDS.has(account.kind)}
