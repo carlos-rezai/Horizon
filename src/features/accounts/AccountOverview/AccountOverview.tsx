@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { useTheme } from "styled-components";
 import * as LucideIcons from "lucide-react";
 import type { LucideProps } from "lucide-react";
 import type { AccountWithBalance, AccountKind } from "../../../types/account";
 import Badge from "../../../primitives/Badge/Badge";
+import { resolveAccountColor } from "../../../utils/color/color";
 import {
   StyledList,
   StyledAccountLink,
@@ -36,8 +36,7 @@ function AccountIcon({
   color: string | null | undefined;
   kind: AccountKind;
 }) {
-  const theme = useTheme();
-  const avatarColor = color ?? theme.colors.chartColors[kind];
+  const avatarColor = resolveAccountColor({ color, kind });
 
   if (!icon) {
     return (
