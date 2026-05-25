@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { createRequire } from "module";
 
-const ROOT = resolve(__dirname, "../..");
+const ROOT = resolve(__dirname, "..");
 const req = createRequire(import.meta.url);
 
 type WinConfig = {
