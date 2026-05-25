@@ -3,7 +3,7 @@ import {
   AccountCreateSchema,
   AccountUpdateSchema,
 } from "../schemas/account.js";
-import { calcNetCashflow, calcFreeCashflow } from "../lib/cashflow.js";
+import { calcNetCashflow, calcFreeCashflow } from "../lib/cashflow/cashflow.js";
 import type { Storage } from "../storage/Storage.js";
 
 const router = Router();
