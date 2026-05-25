@@ -12,7 +12,7 @@ import {
 } from "electron";
 import electronUpdaterPkg from "electron-updater";
 import ElectronStore from "electron-store";
-import { resolveDbPath } from "./paths.js";
+import { resolveDbPath } from "./paths/paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig/resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle/serverHandle.js";
 const devAppVersion = (

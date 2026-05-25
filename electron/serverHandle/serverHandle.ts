@@ -1,6 +1,6 @@
 import { app, utilityProcess, type UtilityProcess } from "electron";
 import { awaitExitOrKill } from "../awaitExitOrKill/awaitExitOrKill.js";
-import { resolveDbPath } from "../paths.js";
+import { resolveDbPath } from "../paths/paths.js";
 import { resolveServerEntry } from "../resolveServerEntry/resolveServerEntry.js";
 
 const READY_TIMEOUT_MS = 10_000;
