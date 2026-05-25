@@ -27,6 +27,7 @@ function getCSSForElement(el: HTMLElement): string {
     })
     .join("\n");
 }
+import { chartColors } from "../../../tokens/colors";
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -82,6 +83,12 @@ vi.mock(
     ),
   })
 );
+
+vi.mock("../../../primitives/Chip/Chip", () => ({
+  default: (props: { color: string; size?: string }) => (
+    <span data-testid="chip" data-color={props.color} />
+  ),
+}));
 
 vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
   default: (props: {
@@ -783,5 +790,44 @@ describe("MonthOverview — amount coloring — recurring transactions", () => {
 
     const amountEl = screen.getByText(/-700/);
     expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MonthOverview — balance summary bar Chips (issue #114)
+// ---------------------------------------------------------------------------
+
+describe("MonthOverview — balance summary bar Chips", () => {
+  it("renders one Chip per account in the Balance Summary Bar", () => {
+    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
+    expect(screen.getAllByTestId("chip")).toHaveLength(mockAccounts.length);
+  });
+
+  it("each Chip receives account.color when the account has a color set", () => {
+    renderMonthOverview("2026-05", mockAccountsWithColor, mockSnapshots);
+    const chips = screen.getAllByTestId("chip");
+    expect(chips[0]).toHaveAttribute(
+      "data-color",
+      mockAccountsWithColor[0].color
+    );
+    expect(chips[1]).toHaveAttribute(
+      "data-color",
+      mockAccountsWithColor[1].color
+    );
+  });
+
+  it("each Chip falls back to chartColors[kind] when account.color is null", () => {
+    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
+    const chips = screen.getAllByTestId("chip");
+    expect(chips[0]).toHaveAttribute("data-color", chartColors.Girokonto);
+    expect(chips[1]).toHaveAttribute("data-color", chartColors.Tagesgeld);
+  });
+
+  it("Chip appears before the account name in each Balance Summary Item", () => {
+    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
+    const chips = screen.getAllByTestId("chip");
+    chips.forEach((chip) => {
+      expect(chip.parentElement?.firstElementChild).toBe(chip);
+    });
   });
 });
