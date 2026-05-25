@@ -13,7 +13,7 @@ import recurringTransactionsRouter from "./routes/recurringTransactions.js";
 import projectionRouter from "./routes/projection.js";
 import storageRouter from "./routes/storage.js";
 import settlementsRouter from "./routes/settlements.js";
-import { generateSettlements } from "./services/settlementService.js";
+import { generateSettlements } from "./services/settlementService/settlementService.js";
 import type { Storage } from "./storage/Storage.js";
 
 function logUnhandledError(

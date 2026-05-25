@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import type { Storage } from "../storage/Storage.js";
-import { generateSettlements } from "../services/settlementService.js";
+import { generateSettlements } from "../services/settlementService/settlementService.js";
 import {
   detectInsufficientFunds,
   type InsufficientFundsWarning,
