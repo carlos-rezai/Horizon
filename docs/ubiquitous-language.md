@@ -90,6 +90,10 @@
 
 - An **Account** has exactly one **AccountKind**
 - An **Account** may have one **Account Icon** and one **Account Color** — both optional; the UI pre-fills a random **Account Color** from the **Account Color Palette** as a default
+- **Account Color Identity** is expressed across: account avatar (AccountOverview), tab underline/text (Month Overview Account Tabs), chart line color (Trajectory Horizon), and **Chip** in the **Balance Summary Bar** — the same color is used in all four surfaces
+- When **Account Color** is `null`, all surfaces fall back to the **Per-kind Color Map** entry for that account's **AccountKind**
+- A **Chip** in the **Balance Summary Bar** is always paired with the account name directly to its right — it is never used as a standalone element without a label nearby
+- **Chip** is a domain-agnostic primitive — it knows nothing about accounts or AccountKind; callers supply the resolved hex color including any fallback logic
 - An **Account** has exactly one **Opening Date** — the date its **Opening Balance** was captured in Horizon
 - A **Current Balance** is always derived, never stored: **Opening Balance** + **Recurring History** replayed from **Opening Date** + **Variable Spending** actuals — never stored directly (updated)
 - A **Transfer** is always composed of exactly two **Transactions** sharing a **TransferId**
@@ -177,18 +181,20 @@
 
 ## Design System (updated)
 
-| Term                            | Definition                                                                                                                                                                 | Aliases to avoid                |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| **Meridian**                    | The custom design system for Horizon — defines visual tokens, primitives, and components                                                                                   | "the design system", "theme"    |
-| **Stitch** (new)                | The Google design reference (`src/assets/DESIGN.md`) used as the visual target for the UI redesign — defines the MD3 color token set, dual-font system, and shape language | Reference design, Google design |
-| **MD3 Tokens** (new)            | The Material Design 3 color token set adopted wholesale from the Stitch reference — replaces the original Meridian color names                                             | Material tokens, design tokens  |
-| **Tonal Layering** (new)        | The elevation model that uses progressively lighter surface tints (not shadows) to convey depth — Level 0 base, Level 1 cards, Level 2 modals                              | Shadow elevation, drop shadows  |
-| **Sidebar** (new)               | The fixed 220px left-side navigation shell that replaced the top bar in the UI redesign — contains the wordmark, Dashboard, Outlook, and Settings links                    | Nav bar, side nav, top bar      |
-| **Per-kind Color Map** (new)    | A `Record<AccountKind, string>` defined in tokens that maps each account kind to a deterministic chart line color — ensures the same kind always renders the same color    | Color palette, chart colors     |
-| **Account Icon** (new)          | A lucide-react icon name string chosen by the user at account creation from the curated icon set — stored as `TEXT` in the database, nullable                              | Account image, account avatar   |
-| **Account Color** (new)         | A hex color string chosen by the user at account creation from the curated palette — stored as `TEXT` in the database, nullable; random default pre-filled in the modal    | Account tint, account theme     |
-| **Account Color Palette** (new) | The curated set of 10 MD3-derived hex values available for **Account Color** selection — chosen to be visually distinct on dark surfaces                                   | Color picker, color wheel       |
-| **Account Icon Set** (new)      | The curated set of 8 lucide-react icon names available for **Account Icon** selection (Wallet, Home, PiggyBank, TrendingUp, CreditCard, Landmark, Building2, Banknote)     | Icon library, icon picker       |
+| Term                             | Definition                                                                                                                                                                 | Aliases to avoid                |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Meridian**                     | The custom design system for Horizon — defines visual tokens, primitives, and components                                                                                   | "the design system", "theme"    |
+| **Stitch** (new)                 | The Google design reference (`src/assets/DESIGN.md`) used as the visual target for the UI redesign — defines the MD3 color token set, dual-font system, and shape language | Reference design, Google design |
+| **MD3 Tokens** (new)             | The Material Design 3 color token set adopted wholesale from the Stitch reference — replaces the original Meridian color names                                             | Material tokens, design tokens  |
+| **Tonal Layering** (new)         | The elevation model that uses progressively lighter surface tints (not shadows) to convey depth — Level 0 base, Level 1 cards, Level 2 modals                              | Shadow elevation, drop shadows  |
+| **Sidebar** (new)                | The fixed 220px left-side navigation shell that replaced the top bar in the UI redesign — contains the wordmark, Dashboard, Outlook, and Settings links                    | Nav bar, side nav, top bar      |
+| **Per-kind Color Map** (new)     | A `Record<AccountKind, string>` defined in tokens that maps each account kind to a deterministic chart line color — ensures the same kind always renders the same color    | Color palette, chart colors     |
+| **Account Icon** (new)           | A lucide-react icon name string chosen by the user at account creation from the curated icon set — stored as `TEXT` in the database, nullable                              | Account image, account avatar   |
+| **Account Color** (new)          | A hex color string chosen by the user at account creation from the curated palette — stored as `TEXT` in the database, nullable; random default pre-filled in the modal    | Account tint, account theme     |
+| **Account Color Palette** (new)  | The curated set of 10 MD3-derived hex values available for **Account Color** selection — chosen to be visually distinct on dark surfaces                                   | Color picker, color wheel       |
+| **Account Icon Set** (new)       | The curated set of 8 lucide-react icon names available for **Account Icon** selection (Wallet, Home, PiggyBank, TrendingUp, CreditCard, Landmark, Building2, Banknote)     | Icon library, icon picker       |
+| **Chip** (new)                   | A pill-shaped, text-free color indicator primitive in `src/primitives/Chip/` — takes an explicit `color` hex prop and a `size` (sm\|md) prop; domain-agnostic              | Badge, dot, swatch, color badge |
+| **Account Color Identity** (new) | The design principle that an account's **Account Color** is applied consistently across every UI surface where that account appears — charts, tabs, balance bars           | Color theme, account theming    |
 
 ## Example dialogue (Financial Projection Dashboard)
 
@@ -639,6 +645,7 @@
   (`PORT=0`); never assume `3001` or any fixed number. The authoritative port flows from
   the server through the **Ready Handshake** and reaches the **Renderer** via
   **API Base URL Injection**.
+- **"Chip" vs "Badge"** (new) — visually similar (both pill-shaped) but different contracts. **Badge** is kind-semantic: it derives its color from **AccountKind** and always carries a text label ("Girokonto", "CreditCard"). **Chip** is color-explicit: the caller passes a raw hex string and there is no text. Never use Badge as a color-only swatch, and never add an AccountKind prop to Chip.
 - **"linked account"** (new) — `linkedAccountId` appears on two different entities with different meanings: on a **RecurringTransaction** it names the destination account of a **Recurring Transfer**; on a **CreditCard** Account it names the **Funding Account** for **Auto-Settlement**. Always qualify which entity is being discussed. In code, both use the field name `linkedAccountId` — this is intentional (same shape, different semantic); the distinction comes from the entity type, not the field name.
 - **"settlement"** (new) — do not use this word without the qualifier **Auto-Settlement** or **Settlement Transfer**. "Settlement" alone collides with general accounting usage (settling invoices, clearing) and with the ambiguous existing flag on "payment".
 - **"IPC"** (updated) — overloaded (Electron's renderer IPC, OS-level IPC, the parent-port
