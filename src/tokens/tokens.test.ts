@@ -142,8 +142,8 @@ describe("theme.colors.accountColorPalette", () => {
     expect(theme.colors).toHaveProperty("accountColorPalette");
   });
 
-  it("has exactly 10 entries", () => {
-    expect(theme.colors.accountColorPalette).toHaveLength(10);
+  it("has exactly 20 entries", () => {
+    expect(theme.colors.accountColorPalette).toHaveLength(20);
   });
 });
 

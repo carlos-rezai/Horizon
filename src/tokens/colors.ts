@@ -19,6 +19,16 @@ export const accountColorPalette: string[] = [
   "#ffdcc6",
   "#ffdad6",
   "#4d8eff",
+  "#cf9fff",
+  "#ffe566",
+  "#7eddff",
+  "#ff85c8",
+  "#c2f07d",
+  "#ff7272",
+  "#ffc04a",
+  "#3fcfb3",
+  "#e87eff",
+  "#e88070",
 ];
 
 export const colors = {
