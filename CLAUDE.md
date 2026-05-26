@@ -186,9 +186,9 @@ DEBUG_SQL= # set to "1" to enable better-sqlite3 query tracing via console.info.
 - [x] Monthly Ledger — recurring transactions per account; month overview page reachable from dashboard and financial plan
 - [x] Credit Card Auto-Settlement — link a CreditCard account to a funding account; negative end-of-month balance pulls automatically from the linked account
 - [x] Account Color Identity — each account has a user-configured color applied consistently across all UI surfaces where that account appears (charts, monthly overview tabs, balance cards, transaction lists)
-- [ ] Dashboard Clock — live date and time widget displayed on the dashboard
-- [ ] Native Application Menu — surface app settings (database info, backup/restore, autoupdate, versions) in the Electron native title bar menu alongside File, Edit, View, Window, and Help
+- [x] Dashboard Clock — live date and time widget displayed on the dashboard
 - [ ] Monthly Spending Breakdown Chart — chart in the monthly overview showing transaction totals grouped by category
+- [ ] Native Application Menu — surface app settings (database info, backup/restore, autoupdate, versions) in the Electron native title bar menu alongside File, Edit, View, Window, and Help
 - [ ] Monthly digest (AI) — permanently deferred
 - [ ] Anomaly detection + Q&A (AI) — permanently deferred
 - [ ] Sondertilgung advisor (AI) — permanently deferred

@@ -247,9 +247,9 @@ The generated installer will be signed with your local certificate and will inst
 | Monthly Ledger                            | ✅ Complete |
 | Credit Card Auto-Settlement               | ✅ Complete |
 | Account Color Identity                    | ✅ Complete |
-| Dashboard Clock                           | 🔜 Planned  |
-| Native Application Menu                   | 🔜 Planned  |
+| Dashboard Clock                           | ✅ Complete |
 | Monthly Spending Breakdown Chart          | 🔜 Planned  |
+| Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
