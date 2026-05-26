@@ -49,39 +49,61 @@ describe("Clock — zero-padding", () => {
 });
 
 describe("Clock — live interval", () => {
-  it("updates the displayed time after 60 000ms have elapsed", () => {
+  it("does not update the display before the next minute boundary", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2025-01-15T15:30:00"));
+    vi.setSystemTime(new Date("2025-01-15T15:30:30"));
     renderWithTheme(<Clock />);
     expect(screen.getByText("15:30")).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(60_000);
+      vi.advanceTimersByTime(29_999);
+    });
+
+    expect(screen.getByText("15:30")).toBeInTheDocument();
+  });
+
+  it("updates the display at the next minute boundary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:30:30"));
+    renderWithTheme(<Clock />);
+    expect(screen.getByText("15:30")).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(30_000);
     });
 
     expect(screen.getByText("15:31")).toBeInTheDocument();
   });
 
-  it("does not update the displayed time before 60 000ms have elapsed", () => {
+  it("continues updating every 60 000ms after the initial sync", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2025-01-15T15:30:00"));
+    vi.setSystemTime(new Date("2025-01-15T15:30:30"));
     renderWithTheme(<Clock />);
 
     act(() => {
-      vi.advanceTimersByTime(59_999);
+      vi.advanceTimersByTime(30_000);
     });
 
-    expect(screen.getByText("15:30")).toBeInTheDocument();
+    expect(screen.getByText("15:31")).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(screen.getByText("15:32")).toBeInTheDocument();
   });
 });
 
 describe("Clock — cleanup", () => {
-  it("calls clearInterval when the component unmounts", () => {
+  it("calls clearTimeout and clearInterval when the component unmounts", () => {
     vi.useFakeTimers();
+    const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
     const clearIntervalSpy = vi.spyOn(window, "clearInterval");
     const { unmount } = renderWithTheme(<Clock />);
     unmount();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
     expect(clearIntervalSpy).toHaveBeenCalled();
+    clearTimeoutSpy.mockRestore();
     clearIntervalSpy.mockRestore();
   });
 });
