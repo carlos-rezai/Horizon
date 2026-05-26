@@ -158,6 +158,16 @@ describe("AppLayout — active nav state", () => {
   });
 });
 
+describe("AppLayout — sidebar clock", () => {
+  it("renders the Clock in the sidebar", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:30:00"));
+    renderAtRoute("/");
+    expect(screen.getByText("15:30")).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+});
+
 describe("AppLayout — InsufficientFundsWarnings", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
