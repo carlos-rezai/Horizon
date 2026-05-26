@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
@@ -45,5 +45,45 @@ describe("Clock — zero-padding", () => {
     vi.setSystemTime(new Date("2025-06-15T12:00:00"));
     renderWithTheme(<Clock />);
     expect(screen.getByText("12:00")).toBeInTheDocument();
+  });
+});
+
+describe("Clock — live interval", () => {
+  it("updates the displayed time after 60 000ms have elapsed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:30:00"));
+    renderWithTheme(<Clock />);
+    expect(screen.getByText("15:30")).toBeInTheDocument();
+
+    vi.setSystemTime(new Date("2025-01-15T15:31:00"));
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    expect(screen.getByText("15:31")).toBeInTheDocument();
+  });
+
+  it("does not update the displayed time before 60 000ms have elapsed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:30:00"));
+    renderWithTheme(<Clock />);
+
+    vi.setSystemTime(new Date("2025-01-15T15:31:00"));
+    act(() => {
+      vi.advanceTimersByTime(59_999);
+    });
+
+    expect(screen.getByText("15:30")).toBeInTheDocument();
+  });
+});
+
+describe("Clock — cleanup", () => {
+  it("calls clearInterval when the component unmounts", () => {
+    vi.useFakeTimers();
+    const clearIntervalSpy = vi.spyOn(window, "clearInterval");
+    const { unmount } = renderWithTheme(<Clock />);
+    unmount();
+    expect(clearIntervalSpy).toHaveBeenCalled();
+    clearIntervalSpy.mockRestore();
   });
 });
