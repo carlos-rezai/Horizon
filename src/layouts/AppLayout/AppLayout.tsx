@@ -6,6 +6,7 @@ import {
   useSettlementWarnings,
   InsufficientFundsWarnings,
 } from "../../features/settlements";
+import Clock from "../../components/Clock/Clock";
 import {
   StyledWrapper,
   StyledSidebar,
@@ -39,6 +40,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </StyledNavLink>
         </StyledNav>
         <StyledSpacer />
+        <Clock />
         <StyledNavLink as={NavLink} to="/settings/storage">
           <Settings size={16} />
           Settings
