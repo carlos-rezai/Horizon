@@ -245,7 +245,7 @@ export default function TrajectoryHorizon({
                     <ChartTooltip
                       {...props}
                       nonMortgageAccounts={nonMortgageAccounts}
-                      getColor={accountColor}
+                      getColor={resolveAccountColor}
                     />
                   )}
                 />
