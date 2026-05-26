@@ -55,7 +55,6 @@ describe("Clock — live interval", () => {
     renderWithTheme(<Clock />);
     expect(screen.getByText("15:30")).toBeInTheDocument();
 
-    vi.setSystemTime(new Date("2025-01-15T15:31:00"));
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
@@ -68,7 +67,6 @@ describe("Clock — live interval", () => {
     vi.setSystemTime(new Date("2025-01-15T15:30:00"));
     renderWithTheme(<Clock />);
 
-    vi.setSystemTime(new Date("2025-01-15T15:31:00"));
     act(() => {
       vi.advanceTimersByTime(59_999);
     });

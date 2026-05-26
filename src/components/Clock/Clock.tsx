@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { StyledClock, StyledTime, StyledDate } from "./Clock.styles";
 
 const WEEKDAYS = [
@@ -26,7 +27,12 @@ const MONTHS = [
 ] as const;
 
 export default function Clock() {
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const hours = String(now.getHours()).padStart(2, "0");
   const minutes = String(now.getMinutes()).padStart(2, "0");
