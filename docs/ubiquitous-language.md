@@ -76,6 +76,7 @@
 | **Trajectory Horizon** (new)   | The 20-year chart widget on the Dashboard showing Total Liquid, Restschuld, and Net Cashflow as three lines over 240 months                                   | Projection chart, plan chart     |
 | **Payoff Marker** (new)        | The vertical dashed reference line on the Trajectory Horizon chart that marks the Payoff Month                                                                | Payoff line, payoff indicator    |
 | **Freedom Phase** (new)        | The post-payoff period in the Trajectory Horizon chart where Restschuld is zero and Total Liquid accelerates — the second act of the 20-year arc              | Post-payoff phase, savings phase |
+| **Sidebar Clock** (new)        | The live date and time widget rendered in the sidebar, always visible across all pages — displays HH:MM (24-hour) and the current weekday and date            | Dashboard clock, clock widget    |
 
 ## Derived Metrics
 
@@ -112,6 +113,7 @@
 - ~~The **Estimated Completion Month** of a **Milestone** is derived from the **Plan** — never stored~~ (removed)
 - The **Payoff Month** of a **Mortgage** account is derived from the **Plan** — never stored
 - The **Payoff Year** is the calendar year that contains the **Payoff Month** — used to visually distinguish the payoff year in the **Projection Accordion**
+- The **Sidebar Clock** is rendered in the **Sidebar** between the spacer and the Settings nav link — it is always visible across all pages
 - The **Mortgage Countdown** displays one entry per **Mortgage** account
 - The **Plan Summary** displays one **Year Summary Row** per projected year-end, derived from the December **MonthlySnapshot** of each year
 - The **Projection Accordion** on the **Plan Page** contains one expandable section per projected year — each section's expanded state shows 12 **MonthlySnapshot** rows
@@ -645,6 +647,7 @@
   (`PORT=0`); never assume `3001` or any fixed number. The authoritative port flows from
   the server through the **Ready Handshake** and reaches the **Renderer** via
   **API Base URL Injection**.
+- **"Dashboard Clock" vs "Sidebar Clock"** (new) — the build status entry uses "Dashboard Clock" (the original feature name), but the widget lives in the **Sidebar**, not on the Dashboard page. The canonical term is **Sidebar Clock**. The feature slug `dashboard-clock` is retained for commit and issue tracking only — never use "Dashboard Clock" in code identifiers or UX copy.
 - **"Chip" vs "Badge"** (new) — visually similar (both pill-shaped) but different contracts. **Badge** is kind-semantic: it derives its color from **AccountKind** and always carries a text label ("Girokonto", "CreditCard"). **Chip** is color-explicit: the caller passes a raw hex string and there is no text. Never use Badge as a color-only swatch, and never add an AccountKind prop to Chip.
 - **"linked account"** (new) — `linkedAccountId` appears on two different entities with different meanings: on a **RecurringTransaction** it names the destination account of a **Recurring Transfer**; on a **CreditCard** Account it names the **Funding Account** for **Auto-Settlement**. Always qualify which entity is being discussed. In code, both use the field name `linkedAccountId` — this is intentional (same shape, different semantic); the distinction comes from the entity type, not the field name.
 - **"settlement"** (new) — do not use this word without the qualifier **Auto-Settlement** or **Settlement Transfer**. "Settlement" alone collides with general accounting usage (settling invoices, clearing) and with the ambiguous existing flag on "payment".
