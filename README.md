@@ -248,6 +248,7 @@ The generated installer will be signed with your local certificate and will inst
 | Credit Card Auto-Settlement               | ✅ Complete |
 | Account Color Identity                    | ✅ Complete |
 | Dashboard Clock                           | ✅ Complete |
+| Claude Design Handover                    | 🔜 Planned  |
 | Monthly Spending Breakdown Chart          | 🔜 Planned  |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
