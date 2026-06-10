@@ -89,6 +89,7 @@ horizon/
     ├── design-logs/    # Immutable feature design snapshots
     ├── PRDs/           # Product requirements and implementation plans
     ├── refactor-plans/ # Refactor RFCs filed as work items
+    ├── handoff/        # Canonical design prototype — spec, screens, brand
     ├── ubiquitous-language.md
     └── dev-journal.md
 ```
@@ -149,16 +150,17 @@ Output: `release/Horizon-Setup-x.x.x.exe`
 ### Commit message convention
 
 ```
-<type>: <feature-slug> <description> issue #<n>
+<type>: [<initiative>] issue #<n> <description>
 ```
+
+`<initiative>` is the PRD/feature initiative name (e.g. `profile-wizard`, `pdf-generation`) — not the issue title.
 
 Examples:
 
 ```
-feat: accounts add balance recalculation on delete issue #47
-fix: transactions correct negative amount display issue #51
-chore: bump version to 1.0.1
-refactor: mortgage extract amortisation helper issue #58
+feat: [profile-wizard] issue #3 add feeding-schedule step
+fix: [pdf-generation] issue #7 correct chart slice alignment
+refactor: [profile-wizard] issue #9 extract storage hook
 ```
 
 Types: `feat`, `fix`, `chore`, `refactor`, `test`, `docs`
@@ -249,7 +251,8 @@ The generated installer will be signed with your local certificate and will inst
 | Account Color Identity                    | ✅ Complete |
 | Dashboard Clock                           | ✅ Complete |
 | Claude Design Handover                    | 🔜 Planned  |
-| Monthly Spending Breakdown Chart          | 🔜 Planned  |
+| CSV / Bank Statement Import (backend)     | 🔜 Planned  |
+| Monthly Spending Breakdown Chart          | ➡ Folded in |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
@@ -263,6 +266,7 @@ The generated installer will be signed with your local certificate and will inst
 - [Design Logs](./docs/design-logs/)
 - [PRDs](./docs/PRDs/)
 - [Refactor Plans](./docs/refactor-plans/)
+- [Design Handoff](./docs/handoff/HANDOFF.md)
 - [Dev Journal](./docs/dev-journal.md)
 
 ---

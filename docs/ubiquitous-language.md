@@ -584,8 +584,97 @@
 >
 > **Domain expert:** "As soon as the Funding Account's projected balance on Settlement Day is enough to cover the upcoming settlement amount. If the user's salary lands before day 17, the projected balance accounts for that and the warning disappears."
 
+## Claude Design Handover — Design System (new)
+
+| Term                          | Definition                                                                                                                                                                                | Aliases to avoid                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Claude Design Handover**    | The full visual rebuild of Horizon from the canonical `docs/handoff/` prototype — token re-palette, new primitives/components, reskinned screens, and the Import UI shell                 | Redesign 2, Stitch v2, reskin     |
+| **Prototype**                 | The runnable design artifact under `docs/handoff/` — the single source of truth for visual and interaction spec; it is mock end-to-end and is translated, never redesigned                | Mockup, reference app, demo       |
+| **Horizon Gold**              | The single signature accent `#E6B559` — held by the `primary` token role; used for Payoff, Freedom Phase, and primary actions; the only brand hue                                         | Yellow, amber, accent color       |
+| **Ink Surface Ladder**        | The tonal-elevation surfaces — the existing MD3 `surfaceContainerLowest`–`surfaceContainerHighest` ladder re-paletted to the prototype's `ink0`–`ink5`, depth by tint not shadow          | Surface levels, grays, elevation  |
+| **Money** (primitive)         | The `primitives/Money` atom — renders a cents integer as de-DE € in tabular IBM Plex Mono with optional sign-colouring; the canonical way to display any monetary value                   | Currency text, formatBalance span |
+| **Delta** (primitive)         | The `primitives/Delta` atom — a ▲/▼ percentage pill coloured pos/neg; used for KPI trend indicators                                                                                       | Trend pill, percent badge         |
+| **Avatar** (primitive)        | The `primitives/Avatar` atom — an account-kind icon tinted in the account's colour                                                                                                        | Account icon, account image       |
+| **DataRow** (component)       | The `components/DataRow` grid table row with hover and `minmax(0,…)` columns — the shared row used in every list                                                                          | Table row, list item, ListRow     |
+| **StatBlock / SectionHead**   | Layout components — `StatBlock` is a label + figure stat; `SectionHead` is an in-card label/title header with optional right slot                                                         | Stat card, header                 |
+| **Tabs** (component)          | The `components/Tabs` underline tab row with optional count and colour dot per tab — used for account tabs and import account filters                                                     | Tab bar, segmented control        |
+| **Notify**                    | The global `notify({ variant, action })` call exposed by the **Snackbar Provider** — the single app-wide way to raise a **Snackbar** (info/success/warning/error)                         | Toast, alert, flash message       |
+| **Snackbar Provider**         | The `AppLayout`-owned context that queues and renders **Snackbars** and exposes **Notify** — replaces the per-consumer ad-hoc Snackbar rendering                                          | Toast manager, snackbar host      |
+| **Capture-and-Recreate Undo** | The Undo mechanism where a delete **Notify** holds the deleted entity's payload and re-creates it on Undo — used for Transaction, One-off Transfer, and RecurringTransaction deletes only | Soft-delete, restore, trash       |
+| **Total Liquid Line**         | The gold "SUM" series on the **Trajectory Horizon** — Total Liquid plotted as a hero line; **default hidden** (its value lives in the tooltip)                                            | Sum line, liquid total line       |
+| **Trajectory Legend**         | The custom interactive legend on the **Trajectory Horizon** — toggle chips that show/hide each series; hidden series drop from the Y-axis domain (auto-rescale)                           | Chart legend, series toggles      |
+| **Isolate** (Solo)            | The Trajectory Legend gesture (double-click a chip) that hides all series except the chosen one; "Show all" resets visibility                                                             | Solo, focus, filter               |
+| **Show in Trajectory**        | The per-Account boolean (`showInTrajectory`, default true, not applicable to Mortgage) that sets a line's **default** visibility on the **Trajectory Horizon**                            | Chart visibility, plot toggle     |
+| **Freedom Phase Area**        | The shaded gold region + gradient under the **Total Liquid Line** spanning the **Freedom Phase** (Payoff Month → horizon end) — the visual of post-payoff acceleration                    | Shaded region, freedom fill       |
+| **Post-Payoff**               | The code-level name for the **Freedom Phase** condition on a data point (renamed from the prototype's internal `freedom`/`freedomNow`)                                                    | freedom, freedomNow               |
+| **TODAY Marker**              | The vertical dashed reference line on the **Trajectory Horizon** at the current month, labelled "TODAY"                                                                                   | Now line, current marker          |
+| **Mortgage Origination**      | The originating facts of a Mortgage captured for accuracy: **Original Principal**, **Mortgage Start Date**, and **Term** — edited via the **Mortgage Modal**                              | Loan setup, origination details   |
+| **Original Principal**        | The Mortgage's loan amount at origination (`originalPrincipal`, ≥ current Restschuld) — the denominator "% paid off" is measured against, so pre-Horizon payments count                   | Loan amount, starting debt        |
+| **Mortgage Start Date**       | The calendar date the Mortgage originated (`startDate`) — distinct from the Account's Opening Date in Horizon                                                                             | Loan start, origination date      |
+| **Term**                      | The Mortgage's full duration in years (`termYears`) — used to show "year X of N" in the Mortgage Countdown                                                                                | Laufzeit, duration                |
+| **Mortgage Modal**            | The edit modal on the Mortgage Countdown card for **Mortgage Origination** — shows a live "% paid off" preview                                                                            | Mortgage edit, origination modal  |
+| **Account Sort Order**        | The user-arranged display order of accounts (`sortOrder`), set by drag-to-reorder on the dashboard Accounts card and persisted in the DB                                                  | Account order, ranking            |
+| **Category Color**            | The nullable hex `color` on a Category, auto-seeded from the **Account Color Palette** on insert (per-name fallback) — drives the **Breakdown Donut** and category Badges                 | Category tint, tag color          |
+| **Breakdown Donut**           | The Month Overview donut that splits the month's Variable Spending by Category, coloured by **Category Color** — supersedes the standalone "Monthly Spending Breakdown Chart"             | Spending donut, category chart    |
+| **Year Comparison**           | The Month Overview "Planned" placeholder card for future year-over-year (YoY) category spending — rendered as honest empty, never with fabricated numbers                                 | YoY card, comparison chart        |
+
+## CSV / Bank Statement Import (new)
+
+| Term                     | Definition                                                                                                                                                                            | Aliases to avoid                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| **Import**               | The feature (sidebar nav + `features/import`) for bringing bank statements into Horizon — the **UI** ships with the Handover; the parsing/detection engine is a deferred backend epic | Upload, sync, ingest                      |
+| **Statement**            | A single imported bank CSV file, recorded in **Import History** with its account, bank, date range, and transaction count                                                             | Bank file, CSV, export                    |
+| **Import Wizard**        | The 3-step modal flow: **Account & file → Map columns → Review & categorize** — the only path to create an Import                                                                     | Import flow, upload wizard                |
+| **Column Mapping**       | The mapping from a bank CSV's columns to Horizon's Date / Description / Amount fields, set in the wizard's Map-columns step                                                           | Field mapping, schema map                 |
+| **Bank Preset**          | A per-bank remembered **Column Mapping** re-applied automatically when a Statement from that bank is imported again                                                                   | Bank profile, saved mapping               |
+| **Duplicate Detection**  | The wizard heuristic that flags an imported row as a likely duplicate of an existing Transaction — flagged rows are **pre-unchecked**                                                 | Dedup, duplicate check                    |
+| **Recurring Detection**  | The wizard heuristic that flags an imported row as matching a known RecurringTransaction — flagged rows are **pre-unchecked** to avoid double-counting                                | Recurring match, standing-order detection |
+| **Imported Transaction** | A row confirmed in the wizard's Review step — it lands as **Variable Spending** on the chosen account                                                                                 | Import row, parsed transaction            |
+| **Import History**       | The year-grouped accordion of past **Statements** on the Import page, with Preview / Re-categorize / Re-download / Delete per file                                                    | Import list, upload history               |
+| **Import Preview**       | The read-only modal showing the transactions of an already-imported **Statement**                                                                                                     | File preview, statement view              |
+
+## Relationships (Claude Design Handover additions)
+
+- The **Prototype** is the single source of truth — every fabricated figure in it is wired to real **Projection Engine** / **Storage** data; the only sanctioned placeholder is the **Year Comparison** card
+- **Money** is the only sanctioned way to render a monetary value in the UI — raw `formatBalance` text spans are replaced by it
+- **Notify** is the only way to raise a **Snackbar** — the **Snackbar Provider** owns rendering; features never mount their own Snackbar
+- **Capture-and-Recreate Undo** is offered for Transaction, One-off Transfer, and RecurringTransaction deletes only — account deletion shows a plain confirmation with no Undo
+- An **Account** has exactly one **Show in Trajectory** flag (except **Mortgage**, where it does not apply) and exactly one **Account Sort Order**
+- The **Total Liquid Line** defaults hidden; each account line defaults to its **Show in Trajectory** flag; **Restschuld** defaults visible and terminates at the **Payoff Month**
+- The **Freedom Phase Area** spans the **Freedom Phase** — Payoff Month to the end of the 240-month horizon — under the **Total Liquid Line**
+- A **Mortgage** Account has exactly one **Mortgage Origination** (**Original Principal**, **Mortgage Start Date**, **Term**); **Original Principal** ≥ current **Restschuld**
+- A **Category** has at most one **Category Color**, auto-seeded from the **Account Color Palette**; the **Breakdown Donut** and category **Badges** read it
+- An **Import** produces one **Statement** per file; a **Statement** produces zero or more **Imported Transactions**, each recorded as **Variable Spending**
+- A **Bank Preset** is keyed by bank and holds one **Column Mapping** — re-applied on the next **Statement** from that bank
+- **Duplicate Detection** and **Recurring Detection** only pre-uncheck rows in the **Import Wizard** — they never delete or merge anything
+
+## Example dialogue (Claude Design Handover)
+
+> **Dev:** "The dashboard KPI shows Total Liquid `▲6.8%`. Where does that delta come from now?"
+>
+> **Domain expert:** "Not from the prototype's hardcoded number — that was mock. The **Delta** is the projected 12-month change from the **Projection Engine**: Total Liquid now vs the snapshot twelve months out. Every figure traces to real engine output."
+>
+> **Dev:** "On the Trajectory Horizon, the gold line isn't showing by default."
+>
+> **Domain expert:** "Correct — the **Total Liquid Line** is the SUM series and it defaults hidden; its value lives in the tooltip. Each account line follows its **Show in Trajectory** flag, and Restschuld shows by default and stops at the **Payoff Month**. Toggle any of them from the **Trajectory Legend**; double-click to **Isolate** one."
+>
+> **Dev:** "Why does the Mortgage Countdown say 38% paid off when the account was added last month?"
+>
+> **Domain expert:** "Because **% paid off** is measured against **Original Principal**, not the Opening Balance. The **Mortgage Origination** captures the loan amount and **Mortgage Start Date** at origination, so payments made before Horizon existed are reflected — never a false 0%."
+>
+> **Dev:** "I imported a Sparkasse CSV and my salary row was unchecked."
+>
+> **Domain expert:** "**Recurring Detection** flagged it — Horizon already models salary as a RecurringTransaction, so importing it would double-count. It's pre-unchecked. Same with **Duplicate Detection**. Everything you do confirm becomes an **Imported Transaction** in **Variable Spending**, and the CSV is recorded as a **Statement** in **Import History**."
+
 ## Flagged ambiguities
 
+- **"ink" / "accent" vs MD3 token names"** (new) — the **Prototype** names colors
+  `ink0`–`ink5` / `accent` / `textDim`; the real token layer keeps the **MD3
+  vocabulary** (`surfaceContainer*`, `primary`, `onSurfaceVariant`) and remaps
+  values onto it. `ink*`/`accent` are **prototype-source names only** — never
+  introduce them as token keys in `src/tokens/`. Translate via the documented
+  ink↔MD3 mapping table. The token names are semantic (role), not hue — a
+  `primary` token holding **Horizon Gold** is correct, not a mismatch.
 - **"balance"** is overloaded — always qualify: **Opening Balance**,
   **Current Balance**, or **Restschuld**. Never use "balance" alone in code or docs.
 - **"plan"** was used informally during design to mean both the user's
