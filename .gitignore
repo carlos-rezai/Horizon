@@ -53,3 +53,10 @@ release/
 horizon.db
 horizon.db-shm
 horizon.db-wal
+
+# Understand-Anything — keep only the committed demo snapshot (knowledge-graph.json,
+# meta.json, .understandignore); ignore scratch + regenerable fingerprints
+.understand-anything/.trash-*/
+.understand-anything/intermediate/
+.understand-anything/tmp/
+.understand-anything/fingerprints.json
