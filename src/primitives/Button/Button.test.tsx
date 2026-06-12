@@ -117,3 +117,45 @@ describe("Button — styles", () => {
     expect(getInjectedCSS()).toContain(theme.colors.outlineVariant);
   });
 });
+
+describe("Button — variants, sizes & icons (Phase 2)", () => {
+  it("renders the new ghost variant with the muted (onSurfaceVariant) tone", () => {
+    renderForCSS(<Button variant="ghost">Skip</Button>);
+    expect(getInjectedCSS()).toContain(theme.colors.onSurfaceVariant);
+  });
+
+  it("renders a leading icon as an svg before the label", () => {
+    const { container } = renderWithTheme(<Button icon="Plus">Add</Button>);
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("renders a trailing icon as an svg", () => {
+    const { container } = renderWithTheme(
+      <Button iconRight="ArrowRight">Next</Button>
+    );
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("renders the small size with a distinct (32px) height", () => {
+    renderForCSS(
+      <Button size="sm" aria-label="Small">
+        S
+      </Button>
+    );
+    expect(getInjectedCSS()).toContain("32px");
+  });
+
+  it("renders the large size with a distinct (44px) height", () => {
+    renderForCSS(
+      <Button size="lg" aria-label="Large">
+        L
+      </Button>
+    );
+    expect(getInjectedCSS()).toContain("44px");
+  });
+
+  it("centres an icon-only button by removing horizontal padding", () => {
+    renderForCSS(<Button icon="Plus" aria-label="Add" />);
+    expect(getInjectedCSS()).toContain("padding:0");
+  });
+});

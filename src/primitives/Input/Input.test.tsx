@@ -80,3 +80,15 @@ describe("Input — styles", () => {
     expect(getInjectedCSS()).toContain("0 0 0 2px");
   });
 });
+
+describe("Input — prefix (Phase 2)", () => {
+  it("renders the prefix text alongside the input", () => {
+    renderWithTheme(<Input prefix="€" aria-label="Amount" />);
+    expect(screen.getByText("€")).toBeInTheDocument();
+  });
+
+  it("renders the prefix in the mono figure font", () => {
+    renderForCSS(<Input prefix="€" aria-label="Amount" />);
+    expect(getInjectedCSS()).toContain("IBM Plex Mono");
+  });
+});
