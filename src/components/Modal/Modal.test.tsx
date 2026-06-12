@@ -73,6 +73,48 @@ function getInjectedCSS(): string {
     .join("\n");
 }
 
+describe("Modal — header slot", () => {
+  it("renders a title in the header when one is provided", () => {
+    renderWithTheme(
+      <Modal onClose={vi.fn()} title="Edit account">
+        <p>Content</p>
+      </Modal>
+    );
+    expect(screen.getByText("Edit account")).toBeInTheDocument();
+  });
+
+  it("renders a close button in the header that calls onClose", () => {
+    const onClose = vi.fn();
+    renderWithTheme(
+      <Modal onClose={onClose} title="Edit account">
+        <p>Content</p>
+      </Modal>
+    );
+    fireEvent.click(screen.getByTestId("modal-close"));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("renders no header close button when no title is given", () => {
+    renderWithTheme(
+      <Modal onClose={vi.fn()}>
+        <p>Content</p>
+      </Modal>
+    );
+    expect(screen.queryByTestId("modal-close")).not.toBeInTheDocument();
+  });
+});
+
+describe("Modal — footer slot", () => {
+  it("renders footer content when a footer is provided", () => {
+    renderWithTheme(
+      <Modal onClose={vi.fn()} footer={<button>Save</button>}>
+        <p>Content</p>
+      </Modal>
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+});
+
 describe("Modal — styles", () => {
   it("dialog is elevated above card surfaces with a drop shadow", () => {
     renderForCSS(
