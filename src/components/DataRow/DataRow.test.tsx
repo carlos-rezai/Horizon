@@ -79,7 +79,7 @@ describe("DataRow", () => {
         <span>Row</span>
       </DataRow>
     );
-    expect(getInjectedCSS()).toContain("border-bottom: none");
+    expect(getInjectedCSS()).toContain("border-bottom:none");
   });
 });
 

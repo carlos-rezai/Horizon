@@ -1,14 +1,36 @@
+import React from "react";
 import Heading from "../../primitives/Heading/Heading";
-import { StyledPageHeader } from "./PageHeader.styles";
+import {
+  StyledPageHeader,
+  StyledOverline,
+  StyledSubtitle,
+  StyledActions,
+} from "./PageHeader.styles";
 
 interface Props {
-  text: string;
+  text?: string;
+  title?: string;
+  overline?: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
 }
 
-export default function PageHeader({ text }: Props) {
+export default function PageHeader({
+  text,
+  title,
+  overline,
+  subtitle,
+  actions,
+}: Props) {
+  const headingText = title ?? text;
   return (
     <StyledPageHeader>
-      <Heading level={1}>{text}</Heading>
+      <div>
+        {overline && <StyledOverline>{overline}</StyledOverline>}
+        <Heading level={1}>{headingText}</Heading>
+        {subtitle && <StyledSubtitle>{subtitle}</StyledSubtitle>}
+      </div>
+      {actions && <StyledActions>{actions}</StyledActions>}
     </StyledPageHeader>
   );
 }

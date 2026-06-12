@@ -62,7 +62,7 @@ describe("StatBlock", () => {
         <span>250.000,00 €</span>
       </StatBlock>
     );
-    expect(getInjectedCSS()).toContain("text-align: right");
+    expect(getInjectedCSS()).toContain("text-align:right");
   });
 });
 
