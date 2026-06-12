@@ -26,3 +26,16 @@ export const StyledInput = styled.input`
     cursor: not-allowed;
   }
 `;
+
+export const StyledInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+`;
+
+export const StyledPrefix = styled.span`
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  flex-shrink: 0;
+`;

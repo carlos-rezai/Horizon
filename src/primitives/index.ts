@@ -1,10 +1,15 @@
+export { default as Avatar } from "./Avatar/Avatar";
 export { default as Badge } from "./Badge/Badge";
 export { default as Chip } from "./Chip/Chip";
 export { default as Button } from "./Button/Button";
 export { default as DatePicker } from "./DatePicker/DatePicker";
+export { default as Delta } from "./Delta/Delta";
 export { default as Heading } from "./Heading/Heading";
 export { default as Input } from "./Input/Input";
+export { default as Money } from "./Money/Money";
+export { default as ProgressBar } from "./ProgressBar/ProgressBar";
 export { default as Select } from "./Select/Select";
 export { default as Spinner } from "./Spinner/Spinner";
 export { default as Stepper } from "./Stepper/Stepper";
+export { default as Tabs } from "./Tabs/Tabs";
 export { default as Text } from "./Text/Text";

@@ -1,13 +1,31 @@
 import styled, { css } from "styled-components";
 
-type Variant = "primary" | "secondary" | "danger";
+type Variant = "primary" | "secondary" | "danger" | "ghost";
+type Size = "sm" | "md" | "lg";
 
-export const StyledButton = styled.button<{ $variant: Variant }>`
+const sizeHeights: Record<Size, number> = {
+  sm: 32,
+  md: 40,
+  lg: 44,
+};
+
+export const StyledButton = styled.button<{
+  $variant: Variant;
+  $size: Size;
+  $iconOnly: boolean;
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing.space2}px
-    ${({ theme }) => theme.spacing.space4}px;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+  height: ${({ $size }) => sizeHeights[$size]}px;
+  padding: ${({ $iconOnly, theme }) =>
+    $iconOnly ? "0" : `0 ${theme.spacing.space4}px`};
+  ${({ $iconOnly, $size }) =>
+    $iconOnly &&
+    css`
+      width: ${sizeHeights[$size]}px;
+    `}
   border-radius: ${({ theme }) => theme.radius.button}px;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-weight: ${({ theme }) => theme.typography.weights.medium};
@@ -38,6 +56,14 @@ export const StyledButton = styled.button<{ $variant: Variant }>`
       background-color: ${theme.colors.error};
       color: ${theme.colors.onError};
       border-color: ${theme.colors.error};
+    `}
+
+  ${({ $variant, theme }) =>
+    $variant === "ghost" &&
+    css`
+      background-color: transparent;
+      color: ${theme.colors.onSurfaceVariant};
+      border-color: transparent;
     `}
 
   &:focus-visible {
