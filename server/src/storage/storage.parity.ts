@@ -351,6 +351,148 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Accounts — mortgage origination (setMortgageOrigination)
+  // -------------------------------------------------------------------------
+
+  describe("AccountsRepo mortgage origination", () => {
+    // A Mortgage with no transactions has a current Restschuld equal to its
+    // opening balance.
+    async function makeMortgage(restschuld = 30000000): Promise<Account> {
+      return storage.accounts.create({
+        kind: "Mortgage",
+        name: "Haus",
+        openingBalance: restschuld,
+        openingDate: "2026-01-01",
+      });
+    }
+
+    it("persists originalPrincipal/startDate/termYears and round-trips through findById", async () => {
+      const mortgage = await makeMortgage(30000000);
+
+      const result = await storage.accounts.setMortgageOrigination(
+        mortgage.id,
+        {
+          originalPrincipal: 45000000,
+          startDate: "2020-06-01",
+          termYears: 25,
+        }
+      );
+
+      expect(result).not.toBeNull();
+      expect(result!.ok).toBe(true);
+      if (result!.ok) {
+        expect(result!.account.originalPrincipal).toBe(45000000);
+        expect(result!.account.startDate).toBe("2020-06-01");
+        expect(result!.account.termYears).toBe(25);
+      }
+
+      const found = await storage.accounts.findById(mortgage.id);
+      expect(found?.originalPrincipal).toBe(45000000);
+      expect(found?.startDate).toBe("2020-06-01");
+      expect(found?.termYears).toBe(25);
+    });
+
+    it("includes origination fields in findAll and findAllWithBalance DTOs", async () => {
+      const mortgage = await makeMortgage(30000000);
+      await storage.accounts.setMortgageOrigination(mortgage.id, {
+        originalPrincipal: 50000000,
+        startDate: "2019-03-01",
+        termYears: 30,
+      });
+
+      const all = await storage.accounts.findAll();
+      const fromAll = all.find((a) => a.id === mortgage.id);
+      expect(fromAll?.originalPrincipal).toBe(50000000);
+      expect(fromAll?.startDate).toBe("2019-03-01");
+      expect(fromAll?.termYears).toBe(30);
+
+      const withBalance = await storage.accounts.findAllWithBalance();
+      const fromBalance = withBalance.find((a) => a.id === mortgage.id);
+      expect(fromBalance?.originalPrincipal).toBe(50000000);
+    });
+
+    it("accepts an originalPrincipal exactly equal to the current Restschuld (boundary)", async () => {
+      const mortgage = await makeMortgage(30000000);
+
+      const result = await storage.accounts.setMortgageOrigination(
+        mortgage.id,
+        { originalPrincipal: 30000000, startDate: "2021-01-01", termYears: 20 }
+      );
+
+      expect(result?.ok).toBe(true);
+    });
+
+    it("rejects an originalPrincipal below the current Restschuld and persists nothing", async () => {
+      const mortgage = await makeMortgage(30000000);
+
+      const result = await storage.accounts.setMortgageOrigination(
+        mortgage.id,
+        { originalPrincipal: 29999999, startDate: "2021-01-01", termYears: 20 }
+      );
+
+      expect(result).toEqual({ ok: false, reason: "below_restschuld" });
+
+      const found = await storage.accounts.findById(mortgage.id);
+      expect(found?.originalPrincipal == null).toBe(true);
+      expect(found?.startDate == null).toBe(true);
+      expect(found?.termYears == null).toBe(true);
+    });
+
+    it("returns null for a non-Mortgage account", async () => {
+      const giro = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "Main",
+        openingBalance: 100000,
+        openingDate: "2026-01-01",
+      });
+
+      const result = await storage.accounts.setMortgageOrigination(giro.id, {
+        originalPrincipal: 100000,
+        startDate: "2021-01-01",
+        termYears: 20,
+      });
+
+      expect(result).toBeNull();
+    });
+
+    it("returns null for an unknown account id", async () => {
+      const result = await storage.accounts.setMortgageOrigination(
+        "00000000-0000-4000-8000-999999999999",
+        { originalPrincipal: 100000, startDate: "2021-01-01", termYears: 20 }
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("origination fields survive a backup and reopen", async () => {
+      const mortgage = await makeMortgage(30000000);
+      await storage.accounts.setMortgageOrigination(mortgage.id, {
+        originalPrincipal: 45000000,
+        startDate: "2020-06-01",
+        termYears: 25,
+      });
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-mortgage-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        const restored = await createStorage({ path: destPath });
+        try {
+          const found = await restored.accounts.findById(mortgage.id);
+          expect(found?.originalPrincipal).toBe(45000000);
+          expect(found?.startDate).toBe("2020-06-01");
+          expect(found?.termYears).toBe(25);
+        } finally {
+          await restored.close();
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Accounts — delete
   // -------------------------------------------------------------------------
 

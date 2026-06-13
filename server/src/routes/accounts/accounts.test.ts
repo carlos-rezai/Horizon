@@ -362,6 +362,94 @@ describe("PATCH /accounts/reorder", () => {
 });
 
 // ---------------------------------------------------------------------------
+// PATCH /accounts/:id/mortgage
+// ---------------------------------------------------------------------------
+
+describe("PATCH /accounts/:id/mortgage", () => {
+  async function createMortgage(openingBalance = 30000000): Promise<string> {
+    const res = await request(app).post("/accounts").send({
+      kind: "Mortgage",
+      name: "Haus",
+      openingBalance,
+      openingDate: "2026-01-01",
+    });
+    return res.body.id;
+  }
+
+  it("sets origination fields and returns the updated account", async () => {
+    const id = await createMortgage(30000000);
+
+    const res = await request(app).patch(`/accounts/${id}/mortgage`).send({
+      originalPrincipal: 45000000,
+      startDate: "2020-06-01",
+      termYears: 25,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.originalPrincipal).toBe(45000000);
+    expect(res.body.startDate).toBe("2020-06-01");
+    expect(res.body.termYears).toBe(25);
+  });
+
+  it("returns 400 with an error body when originalPrincipal is below the current Restschuld", async () => {
+    const id = await createMortgage(30000000);
+
+    const res = await request(app).patch(`/accounts/${id}/mortgage`).send({
+      originalPrincipal: 29999999,
+      startDate: "2020-06-01",
+      termYears: 25,
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/restschuld|principal/i);
+  });
+
+  it("returns 400 with issues when the body is invalid", async () => {
+    const id = await createMortgage(30000000);
+
+    const res = await request(app)
+      .patch(`/accounts/${id}/mortgage`)
+      .send({ originalPrincipal: "lots", termYears: 25 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issues).toBeDefined();
+  });
+
+  it("returns 404 with an error body for an unknown account id", async () => {
+    const res = await request(app)
+      .patch("/accounts/00000000-0000-4000-8000-999999999999/mortgage")
+      .send({
+        originalPrincipal: 45000000,
+        startDate: "2020-06-01",
+        termYears: 25,
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it("returns 404 with an error body when the account is not a Mortgage", async () => {
+    const giro = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+    });
+
+    const res = await request(app)
+      .patch(`/accounts/${giro.body.id}/mortgage`)
+      .send({
+        originalPrincipal: 100000,
+        startDate: "2020-06-01",
+        termYears: 25,
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // DELETE /accounts/:id
 // ---------------------------------------------------------------------------
 
