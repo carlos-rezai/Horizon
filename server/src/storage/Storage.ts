@@ -6,9 +6,11 @@ import type {
   Category,
   CategoryCreateInput,
   DeleteResult,
+  MortgageOriginationInput,
   RecurringTransaction,
   RecurringTransactionCreateInput,
   RecurringTransactionUpdateInput,
+  SetMortgageOriginationResult,
   Transaction,
   TransactionCreateInput,
   TransactionUpdateInput,
@@ -22,6 +24,10 @@ export interface AccountsRepo {
   update(id: string, input: AccountUpdateInput): Promise<Account | null>;
   delete(id: string): Promise<DeleteResult | null>;
   reorder(orderedIds: string[]): Promise<Account[]>;
+  setMortgageOrigination(
+    id: string,
+    input: MortgageOriginationInput
+  ): Promise<SetMortgageOriginationResult | null>;
   findAllWithBalance(): Promise<AccountWithBalance[]>;
   findByIdWithBalance(id: string): Promise<AccountWithBalance | null>;
   getTotalLiquid(): Promise<number>;

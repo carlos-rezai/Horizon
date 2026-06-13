@@ -18,11 +18,24 @@ export interface Account {
   settlementDay?: number | null;
   linkedSince?: string | null;
   showInTrajectory: boolean;
+  originalPrincipal?: number;
+  startDate?: string;
+  termYears?: number;
 }
 
 export interface AccountWithBalance extends Account {
   balance: number;
 }
+
+export interface MortgageOriginationInput {
+  originalPrincipal: number;
+  startDate: string;
+  termYears: number;
+}
+
+export type SetMortgageOriginationResult =
+  | { ok: true; account: Account }
+  | { ok: false; reason: "below_restschuld" };
 
 export interface AccountCreateInput {
   kind: AccountKind;

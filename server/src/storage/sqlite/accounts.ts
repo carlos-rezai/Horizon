@@ -18,6 +18,9 @@ interface AccountRow {
   linked_since: string | null;
   show_in_trajectory: number;
   sort_order: number;
+  original_principal: number | null;
+  start_date: string | null;
+  term_years: number | null;
 }
 
 interface AccountWithBalanceRow extends AccountRow {
@@ -40,6 +43,15 @@ function toAccountDTO(row: AccountRow): Account {
   };
   if (row.sondertilgung_allowance !== null) {
     dto.sondertilgungAllowance = row.sondertilgung_allowance;
+  }
+  if (row.original_principal !== null) {
+    dto.originalPrincipal = row.original_principal;
+  }
+  if (row.start_date !== null) {
+    dto.startDate = row.start_date;
+  }
+  if (row.term_years !== null) {
+    dto.termYears = row.term_years;
   }
   return dto;
 }
@@ -83,6 +95,11 @@ export function createSqliteAccountsRepo(
            show_in_trajectory = ?
      WHERE id = ?`
   );
+  const setMortgageStmt = db.prepare(
+    `UPDATE accounts
+       SET original_principal = ?, start_date = ?, term_years = ?
+     WHERE id = ?`
+  );
   const deleteStmt = db.prepare(`DELETE FROM accounts WHERE id = ?`);
   const countRecurringByAccountStmt = db.prepare(
     `SELECT COUNT(*) AS n FROM recurring_transactions
@@ -92,7 +109,8 @@ export function createSqliteAccountsRepo(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
-            a.show_in_trajectory,
+            a.show_in_trajectory, a.sort_order,
+            a.original_principal, a.start_date, a.term_years,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -103,7 +121,8 @@ export function createSqliteAccountsRepo(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
-            a.show_in_trajectory,
+            a.show_in_trajectory, a.sort_order,
+            a.original_principal, a.start_date, a.term_years,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -265,6 +284,31 @@ export function createSqliteAccountsRepo(
         return reordered;
       });
       return apply(orderedIds);
+    },
+
+    async setMortgageOrigination(id, input) {
+      if (!isValidUuid(id)) return null;
+      const existing = selectByIdStmt.get(id) as AccountRow | undefined;
+      if (!existing || existing.kind !== "Mortgage") return null;
+
+      const balanceRow = selectByIdWithBalanceStmt.get(id) as
+        | AccountWithBalanceRow
+        | undefined;
+      const restschuld = balanceRow
+        ? balanceRow.balance
+        : existing.opening_balance;
+      if (input.originalPrincipal < restschuld) {
+        return { ok: false, reason: "below_restschuld" };
+      }
+
+      setMortgageStmt.run(
+        input.originalPrincipal,
+        input.startDate,
+        input.termYears,
+        id
+      );
+      const updated = selectByIdStmt.get(id) as AccountRow;
+      return { ok: true, account: toAccountDTO(updated) };
     },
 
     async findAllWithBalance() {

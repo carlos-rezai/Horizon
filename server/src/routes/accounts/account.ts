@@ -37,6 +37,12 @@ export const AccountReorderSchema = z.object({
   orderedIds: z.array(z.string()),
 });
 
+export const MortgageOriginationSchema = z.object({
+  originalPrincipal: z.number().int().positive(),
+  startDate: z.string().min(1),
+  termYears: z.number().int().positive(),
+});
+
 export const AccountUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   openingBalance: z.number().int().optional(),

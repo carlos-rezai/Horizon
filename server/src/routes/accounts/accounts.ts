@@ -3,6 +3,7 @@ import {
   AccountCreateSchema,
   AccountReorderSchema,
   AccountUpdateSchema,
+  MortgageOriginationSchema,
 } from "./account.js";
 import {
   calcNetCashflow,
@@ -83,6 +84,34 @@ router.patch("/reorder", async (req, res) => {
     parsed.data.orderedIds
   );
   res.json(reordered);
+});
+
+router.patch("/:id/mortgage", async (req, res) => {
+  const parsed = MortgageOriginationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
+    return;
+  }
+
+  const result = await getStorage(req).accounts.setMortgageOrigination(
+    req.params.id,
+    parsed.data
+  );
+  if (result === null) {
+    res.status(404).json({ error: "Mortgage account not found" });
+    return;
+  }
+  if (!result.ok) {
+    res.status(400).json({
+      error: "originalPrincipal cannot be below the current Restschuld",
+    });
+    return;
+  }
+
+  const withBalance = await getStorage(req).accounts.findByIdWithBalance(
+    result.account.id
+  );
+  res.json(withBalance ?? result.account);
 });
 
 router.patch("/:id", async (req, res) => {
