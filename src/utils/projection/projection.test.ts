@@ -5,6 +5,7 @@ import {
   buildAccountColumns,
   deriveSTMonths,
   deriveYearSummaries,
+  deriveOutlookSummary,
   buildTrajectoryData,
 } from "./projection";
 import type { MonthlySnapshot } from "../../types/projection";
@@ -433,6 +434,191 @@ describe("deriveYearSummaries", () => {
     const rows = deriveYearSummaries([], [], new Map());
 
     expect(rows).toEqual([]);
+  });
+});
+
+// A snapshot helper that lets each month carry its own netCashflow, so the
+// year-level summing behaviour can be asserted directly.
+const cashflowSnap = (
+  month: string,
+  totalLiquid: number,
+  netCashflow: number
+): MonthlySnapshot => ({
+  month,
+  totalLiquid,
+  netCashflow,
+  accounts: {},
+});
+
+describe("deriveYearSummaries — netCashflow", () => {
+  it("returns netCashflow as the sum of every month's netCashflow in that year", () => {
+    const snapshots = [
+      cashflowSnap("2026-10", 10000, 1380),
+      cashflowSnap("2026-11", 11000, 1432),
+      cashflowSnap("2026-12", 12000, 1484),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows[0].netCashflow).toBe(1380 + 1432 + 1484);
+  });
+
+  it("sums netCashflow independently for each projected year", () => {
+    const snapshots = [
+      cashflowSnap("2026-11", 11000, 1000),
+      cashflowSnap("2026-12", 12000, 2000),
+      cashflowSnap("2027-11", 21000, 500),
+      cashflowSnap("2027-12", 22000, 1500),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows[0].netCashflow).toBe(3000);
+    expect(rows[1].netCashflow).toBe(2000);
+  });
+
+  it("returns netCashflow of 0 for a year whose months all net to zero", () => {
+    const snapshots = [
+      cashflowSnap("2026-11", 11000, 0),
+      cashflowSnap("2026-12", 12000, 0),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows[0].netCashflow).toBe(0);
+  });
+
+  it("sums negative monthly netCashflow values correctly", () => {
+    const snapshots = [
+      cashflowSnap("2026-11", 11000, -500),
+      cashflowSnap("2026-12", 12000, -1500),
+    ];
+
+    const rows = deriveYearSummaries(snapshots, [], new Map());
+
+    expect(rows[0].netCashflow).toBe(-2000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deriveOutlookSummary
+// ---------------------------------------------------------------------------
+
+const summarySnap = (
+  month: string,
+  totalLiquid: number,
+  mortgageBalances: Record<string, number> = {}
+): MonthlySnapshot => ({
+  month,
+  totalLiquid,
+  netCashflow: 0,
+  accounts: Object.fromEntries(
+    Object.entries(mortgageBalances).map(([id, projected]) => [
+      id,
+      { projected },
+    ])
+  ),
+});
+
+describe("deriveOutlookSummary", () => {
+  it("returns null when snapshots is empty", () => {
+    expect(deriveOutlookSummary([], [], new Map())).toBeNull();
+  });
+
+  it("reports finalTotalLiquid and finalYear from the last snapshot", () => {
+    const snapshots = [
+      summarySnap("2026-12", 12000),
+      summarySnap("2045-12", 69713540),
+    ];
+
+    const summary = deriveOutlookSummary(snapshots, [], new Map());
+
+    expect(summary?.finalTotalLiquid).toBe(69713540);
+    expect(summary?.finalYear).toBe(2045);
+  });
+
+  it("reports the payoff month as the first month all mortgage balances reach zero", () => {
+    const snapshots = [
+      summarySnap("2031-09", 100000, { "mortgage-1": 1800000 }),
+      summarySnap("2031-10", 100000, { "mortgage-1": 0 }),
+      summarySnap("2031-11", 100000, { "mortgage-1": 0 }),
+    ];
+
+    const summary = deriveOutlookSummary(snapshots, ["mortgage-1"], new Map());
+
+    expect(summary?.payoffMonth).toBe("2031-10");
+  });
+
+  it("treats the payoff month as the month the summed Restschuld across all mortgages reaches zero", () => {
+    const snapshots = [
+      summarySnap("2031-09", 100000, {
+        "mortgage-1": 500000,
+        "mortgage-2": 300000,
+      }),
+      summarySnap("2031-10", 100000, {
+        "mortgage-1": 0,
+        "mortgage-2": 200000,
+      }),
+      summarySnap("2031-11", 100000, {
+        "mortgage-1": 0,
+        "mortgage-2": 0,
+      }),
+    ];
+
+    const summary = deriveOutlookSummary(
+      snapshots,
+      ["mortgage-1", "mortgage-2"],
+      new Map()
+    );
+
+    expect(summary?.payoffMonth).toBe("2031-11");
+  });
+
+  it("reports a null payoff month when the mortgage never reaches zero", () => {
+    const snapshots = [
+      summarySnap("2031-09", 100000, { "mortgage-1": 1800000 }),
+      summarySnap("2031-10", 100000, { "mortgage-1": 1700000 }),
+    ];
+
+    const summary = deriveOutlookSummary(snapshots, ["mortgage-1"], new Map());
+
+    expect(summary?.payoffMonth).toBeNull();
+  });
+
+  it("reports a null payoff month when there are no mortgage accounts", () => {
+    const snapshots = [summarySnap("2031-09", 100000)];
+
+    const summary = deriveOutlookSummary(snapshots, [], new Map());
+
+    expect(summary?.payoffMonth).toBeNull();
+  });
+
+  it("sums total Sondertilgung and counts the annual payments from the stMonths map", () => {
+    const stMonths = new Map([
+      ["2026-10", 1800000],
+      ["2027-10", 1800000],
+      ["2028-10", 1800000],
+    ]);
+
+    const summary = deriveOutlookSummary(
+      [summarySnap("2026-12", 12000)],
+      [],
+      stMonths
+    );
+
+    expect(summary?.totalSondertilgung).toBe(5400000);
+    expect(summary?.sondertilgungCount).toBe(3);
+  });
+
+  it("reports zero total Sondertilgung and zero count when no ST events fire", () => {
+    const summary = deriveOutlookSummary(
+      [summarySnap("2026-12", 12000)],
+      [],
+      new Map()
+    );
+
+    expect(summary?.totalSondertilgung).toBe(0);
+    expect(summary?.sondertilgungCount).toBe(0);
   });
 });
 
