@@ -7,6 +7,7 @@ export {
   findMilestoneMonth,
   deriveSTMonths,
   deriveYearSummaries,
+  deriveOutlookSummary,
   buildTrajectoryData,
   findMortgagePayoffMonth,
 } from "./projection/projection";

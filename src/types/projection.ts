@@ -15,6 +15,15 @@ export interface YearSummaryRow {
   totalLiquid: number;
   restschuld: number | null;
   stAmount: number | null;
+  netCashflow: number;
+}
+
+export interface OutlookSummary {
+  finalTotalLiquid: number;
+  finalYear: number;
+  payoffMonth: string | null;
+  totalSondertilgung: number;
+  sondertilgungCount: number;
 }
 
 export interface TrajectoryDataPoint {

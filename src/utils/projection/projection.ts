@@ -1,5 +1,6 @@
 import type {
   MonthlySnapshot,
+  OutlookSummary,
   TrajectoryDataPoint,
   YearSummaryRow,
 } from "../../types/projection";
@@ -131,10 +132,56 @@ export function deriveYearSummaries(
       }
     }
 
-    rows.push({ year, totalLiquid: yearEnd.totalLiquid, restschuld, stAmount });
+    const netCashflow = yearSnaps.reduce((sum, s) => sum + s.netCashflow, 0);
+
+    rows.push({
+      year,
+      totalLiquid: yearEnd.totalLiquid,
+      restschuld,
+      stAmount,
+      netCashflow,
+    });
   }
 
   return rows;
+}
+
+export function deriveOutlookSummary(
+  snapshots: MonthlySnapshot[],
+  mortgageAccountIds: string[],
+  stMonths: Map<string, number>
+): OutlookSummary | null {
+  if (snapshots.length === 0) return null;
+
+  const last = snapshots[snapshots.length - 1];
+  const finalYear = parseInt(last.month.slice(0, 4), 10);
+
+  let payoffMonth: string | null = null;
+  if (mortgageAccountIds.length > 0) {
+    for (const snapshot of snapshots) {
+      const restschuld = mortgageAccountIds.reduce(
+        (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
+        0
+      );
+      if (restschuld <= 0) {
+        payoffMonth = snapshot.month;
+        break;
+      }
+    }
+  }
+
+  let totalSondertilgung = 0;
+  for (const amount of stMonths.values()) {
+    totalSondertilgung += amount;
+  }
+
+  return {
+    finalTotalLiquid: last.totalLiquid,
+    finalYear,
+    payoffMonth,
+    totalSondertilgung,
+    sondertilgungCount: stMonths.size,
+  };
 }
 
 export function buildTrajectoryData(
