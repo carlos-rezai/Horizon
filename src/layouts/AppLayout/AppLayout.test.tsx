@@ -28,6 +28,22 @@ function renderAtRoute(path: string) {
             }
           />
           <Route
+            path="/months/:month"
+            element={
+              <AppLayout>
+                <p>Month content</p>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/import"
+            element={
+              <AppLayout>
+                <p>Import content</p>
+              </AppLayout>
+            }
+          />
+          <Route
             path="/accounts/:id"
             element={
               <AppLayout>
@@ -49,24 +65,34 @@ function renderAtRoute(path: string) {
   );
 }
 
+// The Month nav points at the current calendar month. Compute it the same way
+// here so the assertion stays correct across month boundaries.
+function currentMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 afterEach(() => {
   cleanup();
+  // Guard against fake-timer leakage from a test that throws before its own
+  // vi.useRealTimers() call (keeps later real-timer tests honest).
+  vi.useRealTimers();
 });
 
-describe("AppLayout — wordmark", () => {
-  it("renders the Horizon wordmark on the dashboard route", () => {
+describe("AppLayout — branding", () => {
+  it("renders the sun-arc brand mark as an accessible graphic", () => {
     renderAtRoute("/");
-    expect(screen.getByText("Horizon")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /horizon/i })).toBeInTheDocument();
   });
 
-  it("renders the Horizon wordmark on the account detail route", () => {
+  it("renders the HORIZON wordmark", () => {
+    renderAtRoute("/");
+    expect(screen.getByText("HORIZON")).toBeInTheDocument();
+  });
+
+  it("renders the brand mark on the account detail route", () => {
     renderAtRoute("/accounts/abc123");
-    expect(screen.getByText("Horizon")).toBeInTheDocument();
-  });
-
-  it("renders the Horizon wordmark on the plan route", () => {
-    renderAtRoute("/plan");
-    expect(screen.getByText("Horizon")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /horizon/i })).toBeInTheDocument();
   });
 });
 
@@ -93,68 +119,125 @@ describe("AppLayout — content", () => {
   });
 });
 
-describe("AppLayout — settings navigation", () => {
-  it("exposes a Settings link that targets /settings/storage", () => {
+describe("AppLayout — nav set", () => {
+  it("renders the five nav links in order: Dashboard, Outlook, Month, Import, Settings", () => {
     renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /settings/i });
-    expect(link).toHaveAttribute("href", "/settings/storage");
-  });
-});
-
-describe("AppLayout — sidebar nav links", () => {
-  it("renders a Dashboard link targeting /", () => {
-    renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /dashboard/i });
-    expect(link).toHaveAttribute("href", "/");
-  });
-
-  it("renders a Financial Plan link targeting /plan", () => {
-    renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /financial plan/i });
-    expect(link).toHaveAttribute("href", "/plan");
+    const names = screen
+      .getAllByRole("link")
+      .map((link) => link.textContent?.trim());
+    expect(names).toEqual([
+      "Dashboard",
+      "Outlook",
+      "Month",
+      "Import",
+      "Settings",
+    ]);
   });
 
-  it("renders a Settings link targeting /settings/storage", () => {
+  it("Dashboard link targets /", () => {
     renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /settings/i });
-    expect(link).toHaveAttribute("href", "/settings/storage");
+    expect(screen.getByRole("link", { name: /dashboard/i })).toHaveAttribute(
+      "href",
+      "/"
+    );
   });
 
-  it("all three nav links are present on the plan route", () => {
-    renderAtRoute("/plan");
+  it("Outlook link targets /plan", () => {
+    renderAtRoute("/");
+    expect(screen.getByRole("link", { name: /outlook/i })).toHaveAttribute(
+      "href",
+      "/plan"
+    );
+  });
+
+  it("Month link targets the current month", () => {
+    renderAtRoute("/");
+    expect(screen.getByRole("link", { name: /month/i })).toHaveAttribute(
+      "href",
+      `/months/${currentMonth()}`
+    );
+  });
+
+  it("Import link targets /import", () => {
+    renderAtRoute("/");
+    expect(screen.getByRole("link", { name: /import/i })).toHaveAttribute(
+      "href",
+      "/import"
+    );
+  });
+
+  it("Settings link targets /settings/storage", () => {
+    renderAtRoute("/");
+    expect(screen.getByRole("link", { name: /settings/i })).toHaveAttribute(
+      "href",
+      "/settings/storage"
+    );
+  });
+
+  it("no longer renders a 'Financial Plan' nav label", () => {
+    renderAtRoute("/");
     expect(
-      screen.getByRole("link", { name: /dashboard/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /financial plan/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
+      screen.queryByRole("link", { name: /financial plan/i })
+    ).not.toBeInTheDocument();
   });
 });
 
 describe("AppLayout — active nav state", () => {
-  it("Dashboard link has aria-current='page' when at /", () => {
+  it("Dashboard is active at /", () => {
     renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /dashboard/i });
-    expect(link).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /dashboard/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
   });
 
-  it("Dashboard link does not have aria-current='page' when at /plan", () => {
+  it("Dashboard is not active at /plan", () => {
     renderAtRoute("/plan");
-    const link = screen.getByRole("link", { name: /dashboard/i });
-    expect(link).not.toHaveAttribute("aria-current", "page");
+    expect(
+      screen.getByRole("link", { name: /dashboard/i })
+    ).not.toHaveAttribute("aria-current", "page");
   });
 
-  it("Financial Plan link has aria-current='page' when at /plan", () => {
+  it("Outlook is active at /plan", () => {
     renderAtRoute("/plan");
-    const link = screen.getByRole("link", { name: /financial plan/i });
-    expect(link).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /outlook/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
   });
 
-  it("Financial Plan link does not have aria-current='page' when at /", () => {
+  it("Month is active on any /months/:month route", () => {
+    // Deliberately a month different from the link's current-month href, to
+    // prove highlighting matches the route family, not an exact href.
+    renderAtRoute("/months/2026-05");
+    expect(screen.getByRole("link", { name: /month/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("Import is active at /import", () => {
+    renderAtRoute("/import");
+    expect(screen.getByRole("link", { name: /import/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("Settings is active at /settings/storage", () => {
+    renderAtRoute("/settings/storage");
+    expect(screen.getByRole("link", { name: /settings/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("Import is not active at /", () => {
     renderAtRoute("/");
-    const link = screen.getByRole("link", { name: /financial plan/i });
-    expect(link).not.toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /import/i })).not.toHaveAttribute(
+      "aria-current",
+      "page"
+    );
   });
 });
 
@@ -164,6 +247,25 @@ describe("AppLayout — sidebar clock", () => {
     vi.setSystemTime(new Date("2025-01-15T15:30:00"));
     renderAtRoute("/");
     expect(screen.getByText("15:30")).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("positions the Clock between the Import and Settings nav items", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:30:00"));
+    renderAtRoute("/");
+    const importLink = screen.getByRole("link", { name: /import/i });
+    const clock = screen.getByText("15:30");
+    const settingsLink = screen.getByRole("link", { name: /settings/i });
+    // Import precedes Clock, Clock precedes Settings in document order.
+    expect(
+      importLink.compareDocumentPosition(clock) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      clock.compareDocumentPosition(settingsLink) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
     vi.useRealTimers();
   });
 });
