@@ -190,6 +190,73 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Accounts — show_in_trajectory
+  // -------------------------------------------------------------------------
+
+  describe("AccountsRepo show_in_trajectory", () => {
+    it("defaults showInTrajectory to true when not provided", async () => {
+      const created = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "Main",
+        openingBalance: 100000,
+        openingDate: "2026-03-01",
+      });
+
+      expect(created.showInTrajectory).toBe(true);
+    });
+
+    it("persists showInTrajectory: false from the create input", async () => {
+      const created = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "Hidden",
+        openingBalance: 100000,
+        openingDate: "2026-03-01",
+        showInTrajectory: false,
+      });
+
+      expect(created.showInTrajectory).toBe(false);
+
+      const found = await storage.accounts.findById(created.id);
+      expect(found?.showInTrajectory).toBe(false);
+    });
+
+    it("toggles showInTrajectory via update and round-trips through findById", async () => {
+      const created = await storage.accounts.create({
+        kind: "Tagesgeld",
+        name: "Reserve",
+        openingBalance: 100000,
+        openingDate: "2026-03-01",
+      });
+
+      const updated = await storage.accounts.update(created.id, {
+        showInTrajectory: false,
+      });
+      expect(updated?.showInTrajectory).toBe(false);
+
+      const found = await storage.accounts.findById(created.id);
+      expect(found?.showInTrajectory).toBe(false);
+    });
+
+    it("includes showInTrajectory in findAll and findAllWithBalance DTOs", async () => {
+      await storage.accounts.create({
+        kind: "Girokonto",
+        name: "Hidden",
+        openingBalance: 100000,
+        openingDate: "2026-03-01",
+        showInTrajectory: false,
+      });
+
+      const all = await storage.accounts.findAll();
+      expect(all).toHaveLength(1);
+      expect(all[0].showInTrajectory).toBe(false);
+
+      const withBalance = await storage.accounts.findAllWithBalance();
+      expect(withBalance).toHaveLength(1);
+      expect(withBalance[0].showInTrajectory).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Accounts — delete
   // -------------------------------------------------------------------------
 

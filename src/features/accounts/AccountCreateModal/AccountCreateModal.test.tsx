@@ -619,3 +619,98 @@ describe("AccountCreateModal — CreditCard settlement generation", () => {
     ).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Display in Trajectory Horizon toggle
+// ---------------------------------------------------------------------------
+
+describe("AccountCreateModal — Display in Trajectory Horizon toggle", () => {
+  it("shows the toggle for the default (non-Mortgage) kind", () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    expect(screen.getByLabelText(/display in trajectory/i)).toBeInTheDocument();
+  });
+
+  it("hides the toggle when kind is changed to Mortgage", () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.change(screen.getByLabelText(/kind/i), {
+      target: { value: "Mortgage" },
+    });
+
+    expect(
+      screen.queryByLabelText(/display in trajectory/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("defaults the toggle on, submitting showInTrajectory: true for a new account", async () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Main" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const body = JSON.parse(
+        (calls[calls.length - 1][1] as RequestInit).body as string
+      );
+      expect(body.showInTrajectory).toBe(true);
+    });
+  });
+
+  it("submits showInTrajectory: false after the toggle is turned off", async () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByLabelText(/display in trajectory/i));
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "Main" },
+    });
+    fireEvent.change(screen.getByLabelText(/opening date/i), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
+
+    await waitFor(() => {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      const body = JSON.parse(
+        (calls[calls.length - 1][1] as RequestInit).body as string
+      );
+      expect(body.showInTrajectory).toBe(false);
+    });
+  });
+
+  it("pre-populates the toggle from account.showInTrajectory in edit mode", () => {
+    const hiddenAccount: AccountWithBalance = {
+      id: "acc-9",
+      kind: "Girokonto",
+      name: "Hidden",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+      balance: 100000,
+      showInTrajectory: false,
+    };
+
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={hiddenAccount}
+      />
+    );
+
+    expect(screen.getByLabelText(/display in trajectory/i)).not.toBeChecked();
+  });
+});
