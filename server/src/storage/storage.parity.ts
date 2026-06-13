@@ -257,6 +257,100 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Accounts — sort_order / reorder
+  // -------------------------------------------------------------------------
+
+  describe("AccountsRepo sort_order / reorder", () => {
+    async function makeThree(): Promise<[Account, Account, Account]> {
+      const a = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "A",
+        openingBalance: 100000,
+        openingDate: "2026-03-01",
+      });
+      const b = await storage.accounts.create({
+        kind: "Tagesgeld",
+        name: "B",
+        openingBalance: 200000,
+        openingDate: "2026-03-01",
+      });
+      const c = await storage.accounts.create({
+        kind: "Investment",
+        name: "C",
+        openingBalance: 300000,
+        openingDate: "2026-03-01",
+      });
+      return [a, b, c];
+    }
+
+    it("reorder returns the accounts in the requested order", async () => {
+      const [a, b, c] = await makeThree();
+
+      const reordered = await storage.accounts.reorder([c.id, a.id, b.id]);
+
+      expect(reordered.map((acc) => acc.id)).toEqual([c.id, a.id, b.id]);
+    });
+
+    it("findAll reflects the persisted order after a reorder", async () => {
+      const [a, b, c] = await makeThree();
+
+      await storage.accounts.reorder([b.id, c.id, a.id]);
+      const all = await storage.accounts.findAll();
+
+      expect(all.map((acc) => acc.id)).toEqual([b.id, c.id, a.id]);
+    });
+
+    it("findAllWithBalance reflects the same order as findAll (consistent across surfaces)", async () => {
+      const [a, b, c] = await makeThree();
+
+      await storage.accounts.reorder([c.id, b.id, a.id]);
+      const withBalance = await storage.accounts.findAllWithBalance();
+
+      expect(withBalance.map((acc) => acc.id)).toEqual([c.id, b.id, a.id]);
+    });
+
+    it("a newly created account appends to the end of the existing order", async () => {
+      const [a, b, c] = await makeThree();
+
+      await storage.accounts.reorder([c.id, b.id, a.id]);
+      const d = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "D",
+        openingBalance: 400000,
+        openingDate: "2026-03-01",
+      });
+
+      const all = await storage.accounts.findAll();
+      expect(all.map((acc) => acc.id)).toEqual([c.id, b.id, a.id, d.id]);
+    });
+
+    it("the persisted order survives repeated reads (re-read after reorder is stable)", async () => {
+      const [a, b, c] = await makeThree();
+
+      await storage.accounts.reorder([b.id, a.id, c.id]);
+
+      const first = (await storage.accounts.findAll()).map((acc) => acc.id);
+      const second = (await storage.accounts.findAll()).map((acc) => acc.id);
+
+      expect(first).toEqual([b.id, a.id, c.id]);
+      expect(second).toEqual(first);
+    });
+
+    it("ignores ids that reference no existing account", async () => {
+      const [a, b] = await makeThree();
+      const unknownId = "00000000-0000-4000-8000-999999999999";
+
+      await storage.accounts.reorder([b.id, unknownId, a.id]);
+      const all = await storage.accounts.findAll();
+      const knownOrder = all
+        .map((acc) => acc.id)
+        .filter((id) => id === a.id || id === b.id);
+
+      expect(knownOrder).toEqual([b.id, a.id]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Accounts — delete
   // -------------------------------------------------------------------------
 

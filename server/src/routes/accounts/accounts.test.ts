@@ -296,6 +296,72 @@ describe("PATCH /accounts/:id", () => {
 });
 
 // ---------------------------------------------------------------------------
+// PATCH /accounts/reorder
+// ---------------------------------------------------------------------------
+
+describe("PATCH /accounts/reorder", () => {
+  async function createThree(): Promise<[string, string, string]> {
+    const a = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "A",
+      openingBalance: 100000,
+      openingDate: "2026-03-01",
+    });
+    const b = await request(app).post("/accounts").send({
+      kind: "Tagesgeld",
+      name: "B",
+      openingBalance: 200000,
+      openingDate: "2026-03-01",
+    });
+    const c = await request(app).post("/accounts").send({
+      kind: "Investment",
+      name: "C",
+      openingBalance: 300000,
+      openingDate: "2026-03-01",
+    });
+    return [a.body.id, b.body.id, c.body.id];
+  }
+
+  it("reorders accounts and GET /accounts reflects the new order", async () => {
+    const [a, b, c] = await createThree();
+
+    const res = await request(app)
+      .patch("/accounts/reorder")
+      .send({ orderedIds: [c, a, b] });
+
+    expect(res.status).toBe(200);
+
+    const list = await request(app).get("/accounts");
+    expect(list.body.map((acc: { id: string }) => acc.id)).toEqual([c, a, b]);
+  });
+
+  it("returns the reordered accounts in the response body", async () => {
+    const [a, b, c] = await createThree();
+
+    const res = await request(app)
+      .patch("/accounts/reorder")
+      .send({ orderedIds: [b, c, a] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.map((acc: { id: string }) => acc.id)).toEqual([b, c, a]);
+  });
+
+  it("returns 400 when orderedIds is missing", async () => {
+    const res = await request(app).patch("/accounts/reorder").send({});
+
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when orderedIds is not an array of strings", async () => {
+    const res = await request(app)
+      .patch("/accounts/reorder")
+      .send({ orderedIds: "not-an-array" });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // DELETE /accounts/:id
 // ---------------------------------------------------------------------------
 
