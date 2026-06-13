@@ -78,6 +78,33 @@ describe("DashboardPage — card surfaces", () => {
   });
 });
 
+describe("DashboardPage — composition", () => {
+  beforeEach(mockAllSuccess);
+
+  it("composes the KPI strip", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId("kpi-strip")).toBeInTheDocument();
+    });
+  });
+
+  it("composes the Trajectory Horizon", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("trajectory-horizon-chart")
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("composes the Plan Summary", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("View full plan →")).toBeInTheDocument();
+    });
+  });
+});
+
 describe("DashboardPage — error states", () => {
   it("shows error-colored text when the accounts fetch fails", async () => {
     vi.spyOn(globalThis, "fetch")

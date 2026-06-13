@@ -104,6 +104,16 @@ describe("PlanSummary — row click navigation", () => {
       state: { year: 2026 },
     });
   });
+
+  it("carries the clicked row's own year into the Outlook deep-link state", () => {
+    renderSummary();
+
+    fireEvent.click(screen.getAllByTestId("year-summary-row")[1]);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/plan#2027", {
+      state: { year: 2027 },
+    });
+  });
 });
 
 describe("PlanSummary — column headers", () => {

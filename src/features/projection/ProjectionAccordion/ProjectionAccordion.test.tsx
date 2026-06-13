@@ -142,6 +142,43 @@ describe("ProjectionAccordion — payoff month row", () => {
   });
 });
 
+describe("ProjectionAccordion — deep-link expand & scroll", () => {
+  it("expands only the deep-linked year, leaving other years collapsed", () => {
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount, mortgageAccount]}
+        initialYear={2027}
+      />
+    );
+
+    const header2027 = document
+      .getElementById("year-2027")!
+      .querySelector("button")!;
+    const header2026 = document
+      .getElementById("year-2026")!
+      .querySelector("button")!;
+
+    expect(header2027).toHaveAttribute("aria-expanded", "true");
+    expect(header2026).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("scrolls the deep-linked year into view", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderWithTheme(
+      <ProjectionAccordion
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount, mortgageAccount]}
+        initialYear={2027}
+      />
+    );
+
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
+});
+
 describe("ProjectionAccordion — month row navigation", () => {
   it("clicking a month row navigates to the correct /months/YYYY-MM route", () => {
     renderWithTheme(
