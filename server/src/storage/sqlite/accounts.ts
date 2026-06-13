@@ -17,6 +17,7 @@ interface AccountRow {
   settlement_day: number | null;
   linked_since: string | null;
   show_in_trajectory: number;
+  sort_order: number;
 }
 
 interface AccountWithBalanceRow extends AccountRow {
@@ -56,10 +57,18 @@ export function createSqliteAccountsRepo(
   const insertStmt = db.prepare(
     `INSERT INTO accounts
        (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color,
-        linked_account_id, settlement_day, linked_since, show_in_trajectory)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        linked_account_id, settlement_day, linked_since, show_in_trajectory, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  const selectAllStmt = db.prepare(`SELECT * FROM accounts`);
+  const nextSortOrderStmt = db.prepare(
+    `SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM accounts`
+  );
+  const updateSortOrderStmt = db.prepare(
+    `UPDATE accounts SET sort_order = ? WHERE id = ?`
+  );
+  const selectAllStmt = db.prepare(
+    `SELECT * FROM accounts ORDER BY sort_order`
+  );
   const selectByIdStmt = db.prepare(`SELECT * FROM accounts WHERE id = ?`);
   const updateStmt = db.prepare(
     `UPDATE accounts
@@ -87,7 +96,8 @@ export function createSqliteAccountsRepo(
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
-      GROUP BY a.id`
+      GROUP BY a.id
+      ORDER BY a.sort_order`
   );
   const selectByIdWithBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
@@ -116,6 +126,7 @@ export function createSqliteAccountsRepo(
       const linkedSince =
         input.linkedAccountId != null ? input.openingDate : null;
       const showInTrajectory = input.showInTrajectory ?? true;
+      const nextSortOrder = (nextSortOrderStmt.get() as { next: number }).next;
       insertStmt.run(
         id,
         input.kind,
@@ -128,7 +139,8 @@ export function createSqliteAccountsRepo(
         input.linkedAccountId ?? null,
         input.settlementDay ?? null,
         linkedSince,
-        showInTrajectory ? 1 : 0
+        showInTrajectory ? 1 : 0,
+        nextSortOrder
       );
       const dto: Account = {
         id,
@@ -236,6 +248,23 @@ export function createSqliteAccountsRepo(
       if (recurringCount > 0) return { ok: false, reason: "in_use" };
       deleteStmt.run(id);
       return { ok: true };
+    },
+
+    async reorder(orderedIds) {
+      const apply = db.transaction((ids: string[]): Account[] => {
+        const reordered: Account[] = [];
+        let position = 0;
+        for (const id of ids) {
+          if (!isValidUuid(id)) continue;
+          const row = selectByIdStmt.get(id) as AccountRow | undefined;
+          if (!row) continue;
+          updateSortOrderStmt.run(position, id);
+          position += 1;
+          reordered.push(toAccountDTO(row));
+        }
+        return reordered;
+      });
+      return apply(orderedIds);
     },
 
     async findAllWithBalance() {

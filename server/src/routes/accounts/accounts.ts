@@ -1,5 +1,9 @@
 import { Router, type Request } from "express";
-import { AccountCreateSchema, AccountUpdateSchema } from "./account.js";
+import {
+  AccountCreateSchema,
+  AccountReorderSchema,
+  AccountUpdateSchema,
+} from "./account.js";
 import {
   calcNetCashflow,
   calcFreeCashflow,
@@ -66,6 +70,19 @@ router.get("/:id", async (req, res) => {
     return;
   }
   res.json(account);
+});
+
+router.patch("/reorder", async (req, res) => {
+  const parsed = AccountReorderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
+    return;
+  }
+
+  const reordered = await getStorage(req).accounts.reorder(
+    parsed.data.orderedIds
+  );
+  res.json(reordered);
 });
 
 router.patch("/:id", async (req, res) => {

@@ -21,6 +21,7 @@ export interface AccountsRepo {
   findById(id: string): Promise<Account | null>;
   update(id: string, input: AccountUpdateInput): Promise<Account | null>;
   delete(id: string): Promise<DeleteResult | null>;
+  reorder(orderedIds: string[]): Promise<Account[]>;
   findAllWithBalance(): Promise<AccountWithBalance[]>;
   findByIdWithBalance(id: string): Promise<AccountWithBalance | null>;
   getTotalLiquid(): Promise<number>;

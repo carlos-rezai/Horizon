@@ -33,6 +33,10 @@ export const AccountCreateSchema = z
     }
   });
 
+export const AccountReorderSchema = z.object({
+  orderedIds: z.array(z.string()),
+});
+
 export const AccountUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   openingBalance: z.number().int().optional(),
