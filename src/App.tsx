@@ -6,6 +6,7 @@ import {
   PlanPage,
   SettingsStoragePage,
   MonthPage,
+  ImportPage,
 } from "./pages";
 
 export default function App() {
@@ -49,6 +50,14 @@ export default function App() {
           element={
             <AppLayout>
               <MonthPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/import"
+          element={
+            <AppLayout>
+              <ImportPage />
             </AppLayout>
           }
         />

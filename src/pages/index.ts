@@ -3,3 +3,4 @@ export { default as AccountDetailPage } from "./AccountDetailPage/AccountDetailP
 export { default as PlanPage } from "./PlanPage/PlanPage";
 export { default as SettingsStoragePage } from "./SettingsStoragePage/SettingsStoragePage";
 export { default as MonthPage } from "./MonthPage/MonthPage";
+export { default as ImportPage } from "./ImportPage/ImportPage";

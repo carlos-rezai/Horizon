@@ -19,12 +19,34 @@ export const StyledSidebar = styled.aside`
   border-right: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
 
+export const StyledBrand = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space3}px;
+  margin-bottom: ${({ theme }) => theme.spacing.space6}px;
+`;
+
+export const StyledBrandMark = styled.svg`
+  flex-shrink: 0;
+
+  .ring {
+    stroke: ${({ theme }) => theme.colors.outlineVariant};
+  }
+
+  .arc {
+    stroke: ${({ theme }) => theme.colors.primary};
+  }
+
+  .sun {
+    fill: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 export const StyledWordmark = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.md}px;
   font-weight: ${({ theme }) => theme.typography.weights.semibold};
   color: ${({ theme }) => theme.colors.onSurface};
-  letter-spacing: 0.02em;
-  margin-bottom: ${({ theme }) => theme.spacing.space6}px;
+  letter-spacing: 0.16em;
 `;
 
 export const StyledNav = styled.nav`
