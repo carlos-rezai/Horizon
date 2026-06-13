@@ -17,6 +17,7 @@ export interface Account {
   linkedAccountId?: string | null;
   settlementDay?: number | null;
   linkedSince?: string | null;
+  showInTrajectory: boolean;
 }
 
 export interface AccountWithBalance extends Account {
@@ -33,6 +34,7 @@ export interface AccountCreateInput {
   color?: string | null;
   linkedAccountId?: string | null;
   settlementDay?: number | null;
+  showInTrajectory?: boolean;
 }
 
 export interface AccountUpdateInput {
@@ -43,6 +45,7 @@ export interface AccountUpdateInput {
   color?: string | null;
   linkedAccountId?: string | null;
   settlementDay?: number | null;
+  showInTrajectory?: boolean;
 }
 
 export type DeleteResult =

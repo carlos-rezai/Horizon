@@ -21,6 +21,7 @@ import {
   StyledIconButton,
   StyledColorRow,
   StyledColorSwatch,
+  StyledToggleRow,
 } from "./AccountCreateModal.styles";
 
 interface Props {
@@ -76,6 +77,9 @@ export default function AccountCreateModal({
   const [selectedColor, setSelectedColor] = useState<string>(
     account?.color ?? randomPaletteColor()
   );
+  const [showInTrajectory, setShowInTrajectory] = useState<boolean>(
+    account?.showInTrajectory ?? true
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +101,10 @@ export default function AccountCreateModal({
     if (kind === "CreditCard") {
       if (linkedAccountId) body.linkedAccountId = linkedAccountId;
       if (settlementDay) body.settlementDay = Number(settlementDay);
+    }
+
+    if (kind !== "Mortgage") {
+      body.showInTrajectory = showInTrajectory;
     }
 
     const url = isEditMode
@@ -233,6 +241,17 @@ export default function AccountCreateModal({
             />
           ))}
         </StyledColorRow>
+
+        {kind !== "Mortgage" && (
+          <StyledToggleRow>
+            <input
+              type="checkbox"
+              checked={showInTrajectory}
+              onChange={(e) => setShowInTrajectory(e.target.checked)}
+            />
+            Display in Trajectory Horizon
+          </StyledToggleRow>
+        )}
 
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 

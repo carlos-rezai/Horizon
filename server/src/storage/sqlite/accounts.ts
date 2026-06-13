@@ -16,6 +16,7 @@ interface AccountRow {
   linked_account_id: string | null;
   settlement_day: number | null;
   linked_since: string | null;
+  show_in_trajectory: number;
 }
 
 interface AccountWithBalanceRow extends AccountRow {
@@ -34,6 +35,7 @@ function toAccountDTO(row: AccountRow): Account {
     linkedAccountId: row.linked_account_id ?? null,
     settlementDay: row.settlement_day ?? null,
     linkedSince: row.linked_since ?? null,
+    showInTrajectory: row.show_in_trajectory !== 0,
   };
   if (row.sondertilgung_allowance !== null) {
     dto.sondertilgungAllowance = row.sondertilgung_allowance;
@@ -54,8 +56,8 @@ export function createSqliteAccountsRepo(
   const insertStmt = db.prepare(
     `INSERT INTO accounts
        (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color,
-        linked_account_id, settlement_day, linked_since)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        linked_account_id, settlement_day, linked_since, show_in_trajectory)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   const selectAllStmt = db.prepare(`SELECT * FROM accounts`);
   const selectByIdStmt = db.prepare(`SELECT * FROM accounts WHERE id = ?`);
@@ -68,7 +70,8 @@ export function createSqliteAccountsRepo(
            color = ?,
            linked_account_id = ?,
            settlement_day = ?,
-           linked_since = ?
+           linked_since = ?,
+           show_in_trajectory = ?
      WHERE id = ?`
   );
   const deleteStmt = db.prepare(`DELETE FROM accounts WHERE id = ?`);
@@ -80,6 +83,7 @@ export function createSqliteAccountsRepo(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
+            a.show_in_trajectory,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -89,6 +93,7 @@ export function createSqliteAccountsRepo(
     `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
+            a.show_in_trajectory,
             a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
@@ -110,6 +115,7 @@ export function createSqliteAccountsRepo(
       const id = randomUUID();
       const linkedSince =
         input.linkedAccountId != null ? input.openingDate : null;
+      const showInTrajectory = input.showInTrajectory ?? true;
       insertStmt.run(
         id,
         input.kind,
@@ -121,7 +127,8 @@ export function createSqliteAccountsRepo(
         input.color ?? null,
         input.linkedAccountId ?? null,
         input.settlementDay ?? null,
-        linkedSince
+        linkedSince,
+        showInTrajectory ? 1 : 0
       );
       const dto: Account = {
         id,
@@ -134,6 +141,7 @@ export function createSqliteAccountsRepo(
         linkedAccountId: input.linkedAccountId ?? null,
         settlementDay: input.settlementDay ?? null,
         linkedSince,
+        showInTrajectory,
       };
       if (input.sondertilgungAllowance !== undefined) {
         dto.sondertilgungAllowance = input.sondertilgungAllowance;
@@ -193,6 +201,13 @@ export function createSqliteAccountsRepo(
             : existing.linked_since;
       }
 
+      const newShowInTrajectory =
+        input.showInTrajectory !== undefined
+          ? input.showInTrajectory
+            ? 1
+            : 0
+          : existing.show_in_trajectory;
+
       updateStmt.run(
         input.name ?? null,
         input.openingBalance ?? null,
@@ -202,6 +217,7 @@ export function createSqliteAccountsRepo(
         newLinkedAccountId,
         newSettlementDay,
         newLinkedSince,
+        newShowInTrajectory,
         id
       );
       const updated = selectByIdStmt.get(id) as AccountRow;

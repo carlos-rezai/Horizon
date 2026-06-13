@@ -1,0 +1,131 @@
+import type { AccountKind } from "../../types/account";
+import type { TrajectoryDataPoint } from "../../types/projection";
+
+/**
+ * Maps a series key (per-account id, "restschuld", or "totalLiquid") to whether
+ * its line is currently rendered in the Trajectory Horizon chart.
+ */
+export type SeriesVisibility = Record<string, boolean>;
+
+/** The minimal account shape needed to derive default series visibility. */
+export interface VisibilityAccount {
+  id: string;
+  kind: AccountKind;
+  showInTrajectory: boolean;
+}
+
+/** Storage abstraction so persistence can be tested without a real DOM. */
+export interface VisibilityStore {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+/** Y-axis ticks step in cents (€25,000) — the chart rounds its domain to this. */
+const TICK_STEP = 2_500_000;
+
+const RESTSCHULD_KEY = "restschuld";
+const TOTAL_LIQUID_KEY = "totalLiquid";
+
+/**
+ * Default visibility: each non-Mortgage account follows its own
+ * showInTrajectory flag, the Restschuld series is on (only when a Mortgage
+ * exists), and the Total Liquid (SUM) series is off. Mortgage accounts never
+ * get their own per-account series — they are represented by Restschuld.
+ */
+export function deriveDefaultVisibility(
+  accounts: VisibilityAccount[]
+): SeriesVisibility {
+  const visibility: SeriesVisibility = {};
+  let hasMortgage = false;
+
+  for (const account of accounts) {
+    if (account.kind === "Mortgage") {
+      hasMortgage = true;
+      continue;
+    }
+    visibility[account.id] = account.showInTrajectory;
+  }
+
+  if (hasMortgage) {
+    visibility[RESTSCHULD_KEY] = true;
+  }
+  visibility[TOTAL_LIQUID_KEY] = false;
+
+  return visibility;
+}
+
+/** Flip a single series, leaving every other series untouched. */
+export function toggleSeries(
+  visibility: SeriesVisibility,
+  key: string
+): SeriesVisibility {
+  return { ...visibility, [key]: !visibility[key] };
+}
+
+/** Show only the chosen series and hide every other series. */
+export function isolateSeries(
+  keys: string[],
+  target: string
+): SeriesVisibility {
+  const visibility: SeriesVisibility = {};
+  for (const key of keys) {
+    visibility[key] = key === target;
+  }
+  return visibility;
+}
+
+/** Show every series. */
+export function showAllSeries(keys: string[]): SeriesVisibility {
+  const visibility: SeriesVisibility = {};
+  for (const key of keys) {
+    visibility[key] = true;
+  }
+  return visibility;
+}
+
+/**
+ * Compute the Y-axis domain from the visible series only, so hidden lines drop
+ * out and the remaining lines rescale. The domain rounds up to the next tick
+ * step, falling back to a single step when nothing visible has a value.
+ */
+export function computeVisibleYDomain(
+  data: TrajectoryDataPoint[],
+  visibility: SeriesVisibility
+): [number, number] {
+  let max = 0;
+  for (const point of data) {
+    for (const [key, visible] of Object.entries(visibility)) {
+      if (!visible) continue;
+      const value = point[key];
+      if (typeof value === "number" && value > max) {
+        max = value;
+      }
+    }
+  }
+
+  const steps = Math.max(1, Math.ceil(max / TICK_STEP));
+  return [0, steps * TICK_STEP];
+}
+
+/** Load a persisted visibility map, returning null when absent or malformed. */
+export function loadVisibility(
+  store: VisibilityStore,
+  key: string
+): SeriesVisibility | null {
+  const raw = store.getItem(key);
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw) as SeriesVisibility;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist a visibility map. */
+export function saveVisibility(
+  store: VisibilityStore,
+  key: string,
+  visibility: SeriesVisibility
+): void {
+  store.setItem(key, JSON.stringify(visibility));
+}

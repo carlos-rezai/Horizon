@@ -19,6 +19,7 @@ export const AccountCreateSchema = z
     color: z.string().nullable().optional(),
     linkedAccountId: z.string().optional(),
     settlementDay: z.number().int().min(1).max(28).optional(),
+    showInTrajectory: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const hasLinked = data.linkedAccountId !== undefined;
@@ -40,4 +41,5 @@ export const AccountUpdateSchema = z.object({
   color: z.string().nullable().optional(),
   linkedAccountId: z.string().nullable().optional(),
   settlementDay: z.number().int().min(1).max(28).optional(),
+  showInTrajectory: z.boolean().optional(),
 });

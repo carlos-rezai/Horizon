@@ -52,6 +52,15 @@ export const StyledIconButton = styled.button<StyledIconButtonProps>`
   }
 `;
 
+export const StyledToggleRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.onSurface};
+  cursor: pointer;
+`;
+
 export const StyledColorRow = styled.div`
   display: flex;
   flex-wrap: wrap;

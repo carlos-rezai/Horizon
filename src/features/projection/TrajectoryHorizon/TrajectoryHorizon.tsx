@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "styled-components";
 import {
+  Area,
   CartesianGrid,
   ComposedChart,
   Legend,
@@ -7,6 +9,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
@@ -21,6 +24,17 @@ import {
   deriveSTMonths,
   findMortgagePayoffMonth,
 } from "../../../utils/projection/projection";
+import {
+  computeVisibleYDomain,
+  deriveDefaultVisibility,
+  isolateSeries,
+  loadVisibility,
+  saveVisibility,
+  showAllSeries,
+  toggleSeries,
+  type SeriesVisibility,
+  type VisibilityAccount,
+} from "../../../utils/trajectory/trajectory";
 import { formatBalance } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
@@ -34,7 +48,25 @@ import {
   StyledTooltipRowPositive,
   StyledTooltipRowWarning,
   StyledTooltipRowMuted,
+  StyledLegend,
+  StyledChip,
+  StyledChipSwatch,
+  StyledSumBadge,
+  StyledShowAllButton,
 } from "./TrajectoryHorizon.styles";
+
+const VISIBILITY_KEY = "horizon.trajectory.visibility.v2";
+
+const TOTAL_LIQUID_KEY = "totalLiquid";
+const RESTSCHULD_KEY = "restschuld";
+
+interface TrajectorySeries {
+  key: string;
+  name: string;
+  color: string;
+  kind: "liquid" | "account" | "debt";
+  dashed: boolean;
+}
 
 const MONTH_NAMES = [
   "Jan",
@@ -106,6 +138,56 @@ function ChartTooltip({
   );
 }
 
+interface TrajectoryLegendProps {
+  series: TrajectorySeries[];
+  visibility: SeriesVisibility;
+  onToggle: (key: string) => void;
+  onIsolate: (key: string) => void;
+  onShowAll: () => void;
+}
+
+function TrajectoryLegend({
+  series,
+  visibility,
+  onToggle,
+  onIsolate,
+  onShowAll,
+}: TrajectoryLegendProps) {
+  const hiddenCount = series.filter((s) => !visibility[s.key]).length;
+
+  return (
+    <StyledLegend data-testid="trajectory-legend">
+      {series.map((s) => {
+        const on = visibility[s.key] === true;
+        return (
+          <StyledChip
+            key={s.key}
+            type="button"
+            $on={on}
+            aria-pressed={on}
+            onClick={() => onToggle(s.key)}
+            onDoubleClick={() => onIsolate(s.key)}
+            title={
+              on ? `Hide ${s.name} (double-click to isolate)` : `Show ${s.name}`
+            }
+          >
+            <StyledChipSwatch $color={s.color} $on={on} $dashed={s.dashed} />
+            {s.name}
+            {s.kind === "liquid" && (
+              <StyledSumBadge $on={on}>SUM</StyledSumBadge>
+            )}
+          </StyledChip>
+        );
+      })}
+      {hiddenCount > 0 && (
+        <StyledShowAllButton type="button" onClick={onShowAll}>
+          Show all
+        </StyledShowAllButton>
+      )}
+    </StyledLegend>
+  );
+}
+
 interface YearTickProps {
   x?: number;
   y?: number;
@@ -168,23 +250,85 @@ export default function TrajectoryHorizon({
   );
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
+  const hasMortgage = mortgageIds.length > 0;
 
-  const dataMax = data.reduce((max, p) => {
-    const candidates: number[] = [];
-    if (typeof p.restschuld === "number") candidates.push(p.restschuld);
-    for (const a of nonMortgageAccounts) {
-      const v = p[a.id];
-      if (typeof v === "number") candidates.push(v);
+  // Series rendered in the chart and listed in the interactive legend. Account
+  // and debt lines first; the gold Total Liquid "SUM" hero line renders last
+  // (on top).
+  const series = useMemo<TrajectorySeries[]>(() => {
+    const list: TrajectorySeries[] = nonMortgageAccounts.map((a) => ({
+      key: a.id,
+      name: a.name,
+      color: resolveAccountColor(a),
+      kind: "account",
+      dashed: false,
+    }));
+    if (hasMortgage) {
+      list.push({
+        key: RESTSCHULD_KEY,
+        name: "Restschuld",
+        color: theme.colors.restschuldStrokeColor,
+        kind: "debt",
+        dashed: true,
+      });
     }
-    return Math.max(max, ...candidates);
-  }, 0);
+    list.push({
+      key: TOTAL_LIQUID_KEY,
+      name: "Total Liquid",
+      color: theme.colors.liquid,
+      kind: "liquid",
+      dashed: false,
+    });
+    return list;
+  }, [nonMortgageAccounts, hasMortgage, theme]);
 
+  const visibilityAccounts: VisibilityAccount[] = accounts.map((a) => ({
+    id: a.id,
+    kind: a.kind,
+    showInTrajectory: a.showInTrajectory ?? true,
+  }));
+
+  const [visibility, setVisibility] = useState<SeriesVisibility>(() => {
+    const defaults = deriveDefaultVisibility(visibilityAccounts);
+    const persisted =
+      typeof window !== "undefined"
+        ? loadVisibility(window.localStorage, VISIBILITY_KEY)
+        : null;
+    return persisted ? { ...defaults, ...persisted } : defaults;
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      saveVisibility(window.localStorage, VISIBILITY_KEY, visibility);
+    }
+  }, [visibility]);
+
+  const seriesKeys = series.map((s) => s.key);
+  const handleToggle = (key: string) =>
+    setVisibility((v) => toggleSeries(v, key));
+  const handleIsolate = (key: string) =>
+    setVisibility(isolateSeries(seriesKeys, key));
+  const handleShowAll = () => setVisibility(showAllSeries(seriesKeys));
+
+  const [, yMax] = computeVisibleYDomain(data, visibility);
   const TICK_STEP_CENTS = 2_500_000;
-  const yMax =
-    Math.ceil(Math.max(dataMax, TICK_STEP_CENTS) / TICK_STEP_CENTS) *
-    TICK_STEP_CENTS;
   const yTicks: number[] = [];
   for (let v = 0; v <= yMax; v += TICK_STEP_CENTS) yTicks.push(v);
+
+  const payoffIndex = payoffMonth
+    ? data.findIndex((p) => p.label === payoffMonth)
+    : -1;
+  const liquidVisible = visibility[TOTAL_LIQUID_KEY] === true;
+
+  // Post-payoff portion of the Total Liquid line, used to shade the freedom
+  // gradient only after the mortgage is gone.
+  const freedomData: TrajectoryDataPoint[] = data.map((p, i) => ({
+    ...p,
+    freedomLiquid: payoffIndex >= 0 && i >= payoffIndex ? p.totalLiquid : null,
+  }));
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const todayIndex = data.findIndex((p) => p.label === currentMonth);
 
   return (
     <StyledSection>
@@ -215,9 +359,23 @@ export default function TrajectoryHorizon({
           <StyledChartWrapper data-testid="trajectory-horizon-chart">
             <ResponsiveContainer width="100%" height={360}>
               <ComposedChart
-                data={data}
+                data={freedomData}
                 margin={{ top: 8, right: 70, left: 70, bottom: 8 }}
               >
+                <defs>
+                  <linearGradient id="freedomGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor={theme.colors.liquid}
+                      stopOpacity={0.2}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={theme.colors.liquid}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid
                   stroke={theme.colors.outlineVariant}
                   strokeDasharray="3 3"
@@ -251,16 +409,66 @@ export default function TrajectoryHorizon({
                 />
                 <Legend
                   verticalAlign="bottom"
-                  wrapperStyle={{ paddingTop: 12 }}
-                  iconType="plainline"
+                  content={() => (
+                    <TrajectoryLegend
+                      series={series}
+                      visibility={visibility}
+                      onToggle={handleToggle}
+                      onIsolate={handleIsolate}
+                      onShowAll={handleShowAll}
+                    />
+                  )}
                 />
-                {payoffMonth && (
+                {payoffIndex >= 0 && (
+                  <ReferenceArea
+                    yAxisId="left"
+                    x1={payoffIndex}
+                    x2={data.length - 1}
+                    fill={theme.colors.primary}
+                    fillOpacity={0.04}
+                  />
+                )}
+                {payoffIndex >= 0 && (
                   <ReferenceLine
                     yAxisId="left"
-                    x={data.findIndex((p) => p.label === payoffMonth)}
+                    x={payoffIndex}
+                    stroke={theme.colors.primary}
+                    strokeDasharray="4 4"
+                    strokeWidth={1.5}
+                    label={{
+                      value: "Payoff",
+                      position: "insideTopRight",
+                      fill: theme.colors.primary,
+                      fontSize: 10,
+                    }}
+                  />
+                )}
+                {todayIndex >= 0 && (
+                  <ReferenceLine
+                    yAxisId="left"
+                    x={todayIndex}
                     stroke={theme.colors.onSurface}
-                    strokeDasharray="2 6"
+                    strokeDasharray="3 4"
                     strokeWidth={1}
+                    label={{
+                      value: "TODAY",
+                      position: "insideTopLeft",
+                      fill: theme.colors.onSurfaceVariant,
+                      fontSize: 10,
+                    }}
+                  />
+                )}
+                {liquidVisible && (
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="freedomLiquid"
+                    stroke="none"
+                    fill="url(#freedomGrad)"
+                    connectNulls={false}
+                    isAnimationActive={false}
+                    legendType="none"
+                    tooltipType="none"
                   />
                 )}
                 {nonMortgageAccounts.map((a) => (
@@ -272,6 +480,7 @@ export default function TrajectoryHorizon({
                     name={a.name}
                     dot={false}
                     stroke={resolveAccountColor(a)}
+                    hide={visibility[a.id] !== true}
                   />
                 ))}
                 <Line
@@ -284,6 +493,17 @@ export default function TrajectoryHorizon({
                   strokeDasharray="6 3"
                   strokeWidth={1.5}
                   connectNulls={false}
+                  hide={visibility[RESTSCHULD_KEY] !== true}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="totalLiquid"
+                  name="Total Liquid"
+                  dot={false}
+                  stroke={theme.colors.liquid}
+                  strokeWidth={3}
+                  hide={!liquidVisible}
                 />
               </ComposedChart>
             </ResponsiveContainer>

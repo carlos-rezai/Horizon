@@ -18,4 +18,5 @@ export interface AccountWithBalance {
   linkedAccountId?: string | null;
   settlementDay?: number | null;
   linkedSince?: string | null;
+  showInTrajectory?: boolean;
 }
