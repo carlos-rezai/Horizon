@@ -4,6 +4,8 @@ import { useAccounts } from "../../features/accounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection";
 import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
 import PlanSummary from "../../features/projection/PlanSummary/PlanSummary";
+import KpiStrip from "../../features/projection/KpiStrip/KpiStrip";
+import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import AccountOverview from "../../features/accounts/AccountOverview/AccountOverview";
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
@@ -51,6 +53,13 @@ export default function DashboardPage() {
   return (
     <StyledDashboard>
       <PageHeader text="Dashboard" />
+      <KpiStrip snapshots={snapshots} accounts={accounts} />
+      <TrajectoryHorizon
+        snapshots={snapshots}
+        accounts={accounts}
+        recurringTransactions={recurringTransactions}
+        isLoading={false}
+      />
       <StyledGrid>
         <StyledSection $gridArea="accounts">
           <StyledAccountsHeader>
