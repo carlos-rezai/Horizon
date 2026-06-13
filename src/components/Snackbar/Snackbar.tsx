@@ -17,6 +17,7 @@ interface SnackbarProps {
   variant: Variant;
   onClose: () => void;
   action?: SnackbarAction;
+  positioned?: boolean;
 }
 
 export default function Snackbar({
@@ -24,12 +25,23 @@ export default function Snackbar({
   variant,
   onClose,
   action,
+  positioned = true,
 }: SnackbarProps) {
   return (
-    <StyledSnackbar $variant={variant} role="status">
+    <StyledSnackbar
+      $variant={variant}
+      $positioned={positioned}
+      role="status"
+      data-variant={variant}
+    >
       <StyledMessage>{message}</StyledMessage>
       {action && (
-        <StyledActionButton onClick={action.onClick}>
+        <StyledActionButton
+          onClick={() => {
+            action.onClick();
+            onClose();
+          }}
+        >
           {action.label}
         </StyledActionButton>
       )}

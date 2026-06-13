@@ -2,10 +2,21 @@ import styled, { css } from "styled-components";
 
 type Variant = "info" | "success" | "warning" | "error";
 
-export const StyledSnackbar = styled.div<{ $variant: Variant }>`
-  position: fixed;
-  bottom: ${({ theme }) => theme.spacing.space6}px;
-  right: ${({ theme }) => theme.spacing.space6}px;
+export const StyledSnackbar = styled.div<{
+  $variant: Variant;
+  $positioned?: boolean;
+}>`
+  ${({ $positioned = true, theme }) =>
+    $positioned
+      ? css`
+          position: fixed;
+          bottom: ${theme.spacing.space6}px;
+          right: ${theme.spacing.space6}px;
+          z-index: 1000;
+        `
+      : css`
+          position: relative;
+        `}
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space3}px;
@@ -13,7 +24,6 @@ export const StyledSnackbar = styled.div<{ $variant: Variant }>`
     ${({ theme }) => theme.spacing.space4}px;
   border-radius: ${({ theme }) => theme.radius.card}px;
   border: 1px solid;
-  z-index: 1000;
   min-width: 280px;
   max-width: 480px;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;

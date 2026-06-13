@@ -7,6 +7,7 @@ import {
   InsufficientFundsWarnings,
 } from "../../features/settlements";
 import Clock from "../../components/Clock/Clock";
+import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
 import {
   StyledWrapper,
   StyledSidebar,
@@ -26,31 +27,33 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const warnings = useSettlementWarnings();
 
   return (
-    <StyledWrapper>
-      <StyledSidebar>
-        <StyledWordmark>Horizon</StyledWordmark>
-        <StyledNav>
-          <StyledNavLink as={NavLink} to="/" end>
-            <LayoutDashboard size={16} />
-            Dashboard
+    <SnackbarProvider>
+      <StyledWrapper>
+        <StyledSidebar>
+          <StyledWordmark>Horizon</StyledWordmark>
+          <StyledNav>
+            <StyledNavLink as={NavLink} to="/" end>
+              <LayoutDashboard size={16} />
+              Dashboard
+            </StyledNavLink>
+            <StyledNavLink as={NavLink} to="/plan">
+              <TrendingUp size={16} />
+              Financial Plan
+            </StyledNavLink>
+          </StyledNav>
+          <StyledSpacer />
+          <Clock />
+          <StyledNavLink as={NavLink} to="/settings/storage">
+            <Settings size={16} />
+            Settings
           </StyledNavLink>
-          <StyledNavLink as={NavLink} to="/plan">
-            <TrendingUp size={16} />
-            Financial Plan
-          </StyledNavLink>
-        </StyledNav>
-        <StyledSpacer />
-        <Clock />
-        <StyledNavLink as={NavLink} to="/settings/storage">
-          <Settings size={16} />
-          Settings
-        </StyledNavLink>
-      </StyledSidebar>
-      <StyledMain>
-        <StyledContent>{children}</StyledContent>
-      </StyledMain>
-      <UpdateBanner />
-      <InsufficientFundsWarnings warnings={warnings} />
-    </StyledWrapper>
+        </StyledSidebar>
+        <StyledMain>
+          <StyledContent>{children}</StyledContent>
+        </StyledMain>
+        <UpdateBanner />
+        <InsufficientFundsWarnings warnings={warnings} />
+      </StyledWrapper>
+    </SnackbarProvider>
   );
 }
