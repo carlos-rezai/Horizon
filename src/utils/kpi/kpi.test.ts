@@ -155,6 +155,63 @@ describe("deriveKpiStrip — Net Cashflow", () => {
   });
 });
 
+describe("deriveKpiStrip — To Payoff", () => {
+  it("reports months-to-payoff and the debt-free month when the mortgage pays off in horizon", () => {
+    const points: KpiPoint[] = [
+      { month: "2026-04", totalLiquid: 0, restschuld: 300_000, netCashflow: 0 },
+      { month: "2026-05", totalLiquid: 0, restschuld: 225_000, netCashflow: 0 },
+      { month: "2026-06", totalLiquid: 0, restschuld: 150_000, netCashflow: 0 },
+      { month: "2026-07", totalLiquid: 0, restschuld: 75_000, netCashflow: 0 },
+      { month: "2026-08", totalLiquid: 0, restschuld: 0, netCashflow: 0 },
+    ];
+
+    const { toPayoff } = deriveKpiStrip(points);
+
+    expect(toPayoff).not.toBeNull();
+    expect(toPayoff?.months).toBe(4); // index 0 is the current month
+    expect(toPayoff?.payoffMonth).toBe("2026-08");
+  });
+
+  it("detects payoff via a post-payoff null restschuld entry", () => {
+    const points: KpiPoint[] = [
+      { month: "2026-04", totalLiquid: 0, restschuld: 100_000, netCashflow: 0 },
+      { month: "2026-05", totalLiquid: 0, restschuld: 50_000, netCashflow: 0 },
+      { month: "2026-06", totalLiquid: 0, restschuld: null, netCashflow: 0 },
+    ];
+
+    const { toPayoff } = deriveKpiStrip(points);
+
+    expect(toPayoff?.months).toBe(2);
+    expect(toPayoff?.payoffMonth).toBe("2026-06");
+  });
+
+  it("returns null when there is no mortgage (restschuld null throughout)", () => {
+    const points: KpiPoint[] = [
+      { month: "2026-04", totalLiquid: 0, restschuld: null, netCashflow: 0 },
+      { month: "2026-05", totalLiquid: 0, restschuld: null, netCashflow: 0 },
+    ];
+
+    expect(deriveKpiStrip(points).toPayoff).toBeNull();
+  });
+
+  it("returns null when the mortgage never pays off within the horizon", () => {
+    const points: KpiPoint[] = [
+      { month: "2026-04", totalLiquid: 0, restschuld: 300_000, netCashflow: 0 },
+      { month: "2026-05", totalLiquid: 0, restschuld: 295_000, netCashflow: 0 },
+    ];
+
+    expect(deriveKpiStrip(points).toPayoff).toBeNull();
+  });
+
+  it("returns null when the mortgage is already paid off at the current month", () => {
+    const points: KpiPoint[] = [
+      { month: "2026-04", totalLiquid: 0, restschuld: 0, netCashflow: 0 },
+    ];
+
+    expect(deriveKpiStrip(points).toPayoff).toBeNull();
+  });
+});
+
 describe("deriveKpiStrip — edge cases", () => {
   it("returns zero values, null deltas, and empty sparklines for an empty projection", () => {
     const result = deriveKpiStrip([]);
