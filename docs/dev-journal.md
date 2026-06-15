@@ -1,5 +1,32 @@
 # Dev Journal
 
+## 2026-06-16 — #138 Phase 3: Month Overview acceptance pass (1:1 with prototype)
+
+Drove the real app (seeded with the prototype's Nov-2026 accounts + variable
+spending) and diffed the render against `screens/03-month-overview.png`. Three
+fidelity gaps closed; the screen now matches the prototype:
+
+- **Spending list order.** Rows were grouped by account then descending (a side
+  effect of `useAllMonthTransactions` concatenating per-account API results).
+  The prototype lists a month oldest-first, interleaving accounts — so
+  `SpendingList` now sorts the visible rows by ISO date ascending (presentation
+  only; the shared hook is unchanged).
+- **Category colours pinned to the prototype.** Colour was purely name-hashed
+  (#134), so the donut + badges rendered arbitrary hues. Added a fixed
+  name→colour map for the seven canonical breakdown categories
+  (Groceries=sage, Dining=clay, Transport=steel, Shopping=lilac, Health=teal,
+  Cat=ochre, Misc=slate), hash fallback for any other name. Applied identically
+  to the frontend util and its server mirror; every fixed value is still a
+  member of `categoryColorPalette`.
+- **Donut centre rounded.** Added an opt-in `whole` option to `Money` and a
+  `wholeCenter` prop on `Donut`; the breakdown centre now reads `776 €` like
+  the prototype while the legend keeps cents.
+
+**Developer decisions (this session).** Avg/day stays `daysInMonth` (the
+functionally-correct -25,87 €, not the prototype's hard-coded /28 = -27,72 €).
+Category colours moved from pure-hash to fixed-map for the known categories
+(reversing the #134 "purely from name" stance for these seven, by request).
+
 ## 2026-06-15 — #138 Phase 3: Month Overview recomposed to the prototype
 
 The Month Overview screen was rebuilt from the old per-account ledger into the
