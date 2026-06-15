@@ -1,17 +1,25 @@
+import { ArrowRight } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
-import { formatBalance, toOrdinal } from "../../../utils/format/format";
+import { toOrdinal } from "../../../utils/format/format";
+import { resolveAccountColor } from "../../../utils/color/color";
+import DataRow from "../../../components/DataRow/DataRow";
+import Badge from "../../../primitives/Badge/Badge";
+import Money from "../../../primitives/Money/Money";
+import Chip from "../../../primitives/Chip/Chip";
 import {
   StyledList,
-  StyledRow,
-  StyledDescription,
-  StyledAmount,
-  StyledToAccount,
-  StyledMeta,
-  StyledEmptyState,
   StyledHeaderRow,
   StyledHeaderCell,
+  StyledName,
+  StyledLinkedLine,
+  StyledLinkedName,
+  StyledRight,
+  StyledDay,
+  StyledEmptyState,
 } from "./RecurringTransactionList.styles";
+
+const ROW_COLUMNS = ["1fr", "150px", "120px", "110px"];
 
 interface Props {
   recurringTransactions: RecurringTransaction[];
@@ -32,25 +40,39 @@ export default function RecurringTransactionList({
     <StyledList>
       <StyledHeaderRow>
         <StyledHeaderCell>Name</StyledHeaderCell>
-        <StyledHeaderCell>Amount</StyledHeaderCell>
-        <StyledHeaderCell>To account</StyledHeaderCell>
-        <StyledHeaderCell>Day</StyledHeaderCell>
-        <StyledHeaderCell>Frequency</StyledHeaderCell>
+        <StyledHeaderCell $right>Amount</StyledHeaderCell>
+        <StyledHeaderCell $right>Day</StyledHeaderCell>
+        <StyledHeaderCell $right>Frequency</StyledHeaderCell>
       </StyledHeaderRow>
-      {recurringTransactions.map((rt) => {
-        const toAccountName = rt.linkedAccountId
-          ? (accounts.find((a) => a.id === rt.linkedAccountId)?.name ?? "—")
-          : "—";
+      {recurringTransactions.map((rt, i) => {
+        const linked = rt.linkedAccountId
+          ? accounts.find((a) => a.id === rt.linkedAccountId)
+          : undefined;
         return (
-          <StyledRow key={rt.id} onClick={() => onRowClick(rt)}>
-            <StyledDescription>{rt.description}</StyledDescription>
-            <StyledAmount $isPositive={rt.amount >= 0}>
-              {formatBalance(rt.amount)}
-            </StyledAmount>
-            <StyledToAccount>{toAccountName}</StyledToAccount>
-            <StyledMeta>{toOrdinal(rt.dayOfMonth)}</StyledMeta>
-            <StyledMeta>{rt.frequency}</StyledMeta>
-          </StyledRow>
+          <DataRow
+            key={rt.id}
+            columns={ROW_COLUMNS}
+            last={i === recurringTransactions.length - 1}
+            onClick={() => onRowClick(rt)}
+          >
+            <div>
+              <StyledName>{rt.description}</StyledName>
+              {linked && (
+                <StyledLinkedLine>
+                  <ArrowRight size={12} />
+                  <Chip color={resolveAccountColor(linked)} size="sm" />
+                  <StyledLinkedName>{linked.name}</StyledLinkedName>
+                </StyledLinkedLine>
+              )}
+            </div>
+            <StyledRight>
+              <Money cents={rt.amount} sign />
+            </StyledRight>
+            <StyledDay>{toOrdinal(rt.dayOfMonth)}</StyledDay>
+            <StyledRight>
+              <Badge>{rt.frequency}</Badge>
+            </StyledRight>
+          </DataRow>
         );
       })}
     </StyledList>

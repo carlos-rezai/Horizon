@@ -126,34 +126,39 @@ describe("RecurringTransactionList — interactions", () => {
 });
 
 describe("RecurringTransactionList — column headers", () => {
-  it("renders column headers: Name, Amount, Frequency, Day, To account", () => {
+  it("renders column headers: Name, Amount, Day, Frequency", () => {
     renderRtList([rt]);
 
     expect(screen.getByText("Name")).toBeInTheDocument();
     expect(screen.getByText("Amount")).toBeInTheDocument();
-    expect(screen.getByText("Frequency")).toBeInTheDocument();
     expect(screen.getByText("Day")).toBeInTheDocument();
-    expect(screen.getByText("To account")).toBeInTheDocument();
+    expect(screen.getByText("Frequency")).toBeInTheDocument();
+  });
+
+  it("does not render a separate 'To account' column header", () => {
+    renderRtList([rt]);
+
+    expect(screen.queryByText("To account")).toBeNull();
   });
 });
 
-describe("RecurringTransactionList — To account column", () => {
-  it("shows the resolved destination account name for a linked row", () => {
+describe("RecurringTransactionList — linked account indicator", () => {
+  it("shows the destination account name as a sub-line for a linked transfer", () => {
     renderRtList([linkedRt], { accounts: mockAccounts });
 
     expect(screen.getByText("Savings")).toBeInTheDocument();
   });
 
-  it("shows '—' for a non-linked row", () => {
-    renderRtList([rt]);
+  it("renders a colour dot beside the linked account name", () => {
+    renderRtList([linkedRt], { accounts: mockAccounts });
 
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByTestId("chip")).toBeInTheDocument();
   });
 
-  it("falls back to '—' when linkedAccountId has no matching account", () => {
-    renderRtList([linkedRt]);
+  it("shows no linked indicator for a non-linked row", () => {
+    renderRtList([rt]);
 
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.queryByTestId("chip")).toBeNull();
   });
 });
 
