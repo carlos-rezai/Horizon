@@ -2,6 +2,7 @@ import { useLocation } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection";
 import { ProjectionAccordion } from "../../features/projection";
+import OutlookSummary from "../../features/projection/OutlookSummary/OutlookSummary";
 import Card from "../../components/Card/Card";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
@@ -51,6 +52,7 @@ export default function PlanPage() {
           </Button>
         }
       />
+      <OutlookSummary snapshots={snapshots} accounts={accounts} />
       <Card>
         <ProjectionAccordion
           snapshots={snapshots}
