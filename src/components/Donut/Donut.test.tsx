@@ -55,6 +55,16 @@ describe("Donut", () => {
     );
     expect(getByTestId("donut-center")).toHaveTextContent("Spent");
   });
+
+  it("rounds the centre total to whole euros when wholeCenter is set", () => {
+    // 30000 + 20000 + 10000 = 60000 cents → 600 € (no cents), legend unchanged.
+    const { getByTestId } = renderWithTheme(
+      <Donut segments={segments} wholeCenter />
+    );
+    const center = getByTestId("donut-center");
+    expect(center).toHaveTextContent("600");
+    expect(center).not.toHaveTextContent("600,00");
+  });
 });
 
 describe("Donut — export", () => {

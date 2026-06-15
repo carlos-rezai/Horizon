@@ -27,6 +27,8 @@ interface DonutProps {
   size?: number;
   /** Ring thickness in px. */
   thickness?: number;
+  /** When set, the centre total is rounded to whole euros (the legend keeps cents). */
+  wholeCenter?: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export default function Donut({
   centerLabel = "Total",
   size = 164,
   thickness = 20,
+  wholeCenter = false,
 }: DonutProps) {
   const total = segments.reduce((sum, s) => sum + s.amount, 0);
   const outerRadius = size / 2;
@@ -69,7 +72,7 @@ export default function Donut({
         </PieChart>
         <StyledCenter data-testid="donut-center">
           <StyledCenterLabel>{centerLabel}</StyledCenterLabel>
-          <Money cents={total} />
+          <Money cents={total} whole={wholeCenter} />
         </StyledCenter>
       </StyledChartWrap>
 

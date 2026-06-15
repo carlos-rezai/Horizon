@@ -20,7 +20,7 @@ export default function MonthBreakdown({ transactions }: Props) {
     <Card>
       <SectionHead label="Breakdown" title="By category" />
       {segments.length > 0 ? (
-        <Donut segments={segments} centerLabel="Total" />
+        <Donut segments={segments} centerLabel="Total" wholeCenter />
       ) : (
         <StyledEmpty>No spending to break down this month.</StyledEmpty>
       )}

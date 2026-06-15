@@ -58,6 +58,15 @@ describe("Money — formatting", () => {
     renderWithTheme(<Money cents={0} sign />);
     expect(screen.getByTestId("money").textContent).not.toContain("+");
   });
+
+  it("rounds to whole euros with no cents when whole is set", () => {
+    renderWithTheme(<Money cents={77616} whole />);
+    // 77616 cents → 776 € (rounded, no decimal)
+    const text = screen.getByTestId("money").textContent ?? "";
+    expect(text).toContain("776");
+    expect(text).not.toContain(",");
+    expect(text).toContain("€");
+  });
 });
 
 describe("Money — styles", () => {
