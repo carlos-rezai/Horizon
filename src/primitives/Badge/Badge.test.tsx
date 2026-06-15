@@ -62,3 +62,25 @@ describe("Badge — styles", () => {
     expect(getInjectedCSS()).toContain("9999");
   });
 });
+
+describe("Badge — generic colour/tone mode", () => {
+  it("renders its children as the label", () => {
+    renderWithTheme(<Badge color="#7FA7D9">Groceries</Badge>);
+    expect(screen.getByText("Groceries")).toBeInTheDocument();
+  });
+
+  it("tints text with the provided colour", () => {
+    renderForCSS(<Badge color="#7FA7D9">Groceries</Badge>);
+    expect(getInjectedCSS()).toContain("#7FA7D9");
+  });
+
+  it("renders a tone label without requiring a colour", () => {
+    renderWithTheme(<Badge tone="accent">Planned</Badge>);
+    expect(screen.getByText("Planned")).toBeInTheDocument();
+  });
+
+  it("renders as a pill in generic mode too", () => {
+    renderForCSS(<Badge tone="accent">Planned</Badge>);
+    expect(getInjectedCSS()).toContain("999px");
+  });
+});
