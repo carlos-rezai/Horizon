@@ -1,5 +1,42 @@
 # Dev Journal
 
+## 2026-06-15 — #138 Phase 3: Month Overview recomposed to the prototype
+
+The Month Overview screen was rebuilt from the old per-account ledger into the
+canonical prototype layout: PageHeader + month stepper, a 4-card stat strip
+(`MonthStatStrip`), the `SpendingList` (All-accounts + per-account tabs with
+counts, day-number rows, category badges, account dots), the `MonthBreakdown`
+donut, and an honest `YearComparison` "Planned" placeholder (no fabricated
+bars, per design-log decision #6). New pure utils: `deriveMonthStats`,
+`deriveBreakdown`, and a frontend `colorForCategoryName`.
+
+**Category colour — pure util, not a /categories fetch.** Every category colour
+in the system is `colorForCategoryName(name)`: SQL-seeded defaults fall back to
+it at read time and user-created categories persist exactly that value on
+insert (the server never stores a custom colour — there is no colour picker).
+Resolving colour from the transaction's category name on the frontend is
+therefore provably identical to reading the `color` column, with no network
+round-trip for a purely visual concern. The palette mirrors the server's.
+
+**Variable Spending excludes transfers + auto-settlement.** The spending list
+and all stat/breakdown figures filter out one-off transfer legs (`transferId`)
+and credit-card auto-settlement (`isAutoSettlement`) — they are bookkeeping
+movements, not spending. Consequence: a one-off transfer created from the Month
+Overview no longer appears in its list (the prototype's "Add expense" is
+expense-only; the create modal still exposes the transfer picker, unchanged).
+
+**Deliberate deviation — Avg / day denominator.** The prototype hard-codes
+`totalSpend / 28`; `deriveMonthStats` divides by the actual calendar days in
+the month (`daysInMonth`). On the prototype-calibrated seed this is the one
+figure that differs from the reference screenshot (June: -25,87 € vs the
+prototype's -27,72 €). The seed reproduces every other number to the cent. This
+is the functionally-correct choice; flagged for the developer to veto.
+
+**Minor known difference.** The shared `Donut` centre renders cents
+("776,16 €") where the prototype shows a rounded "776 €". The per-slice legend
+matches the prototype exactly (cents shown). Left as-is rather than changing the
+phase-0 `Donut` API.
+
 ## 2026-05-04 — SQLite Driver refactor close-out (issue #65)
 
 Eight leaks plus the missing-other-half restore feature from the SQLite
