@@ -16,17 +16,33 @@ interface AvatarProps {
   size?: number;
 }
 
+// Per-kind default icon, used when the account has no valid custom icon — so
+// the avatar always shows a meaningful glyph in the account colour.
+const KIND_ICON: Record<AccountKind, string> = {
+  Girokonto: "Landmark",
+  Tagesgeld: "PiggyBank",
+  Mortgage: "Home",
+  CreditCard: "CreditCard",
+  Investment: "TrendingUp",
+};
+
 export default function Avatar({ account, size = 36 }: AvatarProps) {
   const color = resolveAccountColor({
     color: account.color,
     kind: account.kind,
   });
 
-  const Icon = account.icon
-    ? (LucideIcons[account.icon as keyof typeof LucideIcons] as
-        | React.ComponentType<LucideProps>
-        | undefined)
-    : undefined;
+  const customIcon =
+    account.icon &&
+    (LucideIcons[account.icon as keyof typeof LucideIcons] as
+      | React.ComponentType<LucideProps>
+      | undefined);
+  const Icon = (customIcon ||
+    (LucideIcons[
+      KIND_ICON[account.kind] as keyof typeof LucideIcons
+    ] as React.ComponentType<LucideProps>)) as
+    | React.ComponentType<LucideProps>
+    | undefined;
 
   return (
     <StyledAvatar data-testid="avatar" $color={color} $size={size}>

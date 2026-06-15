@@ -12,19 +12,15 @@ import MortgageCountdown from "../../features/mortgage/MortgageCountdown/Mortgag
 import Card from "../../components/Card/Card";
 import CardHeader from "../../components/CardHeader/CardHeader";
 import PageHeader from "../../components/PageHeader/PageHeader";
+import SectionHead from "../../components/SectionHead/SectionHead";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
 import Spinner from "../../primitives/Spinner/Spinner";
-import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
-import { computeTotalLiquid } from "../../utils/accounts/accounts";
-import { formatBalance } from "../../utils/format/format";
 import { downloadBackup } from "../../features/settings/downloadBackup";
 import {
   StyledDashboard,
   StyledGrid,
   StyledSection,
-  StyledAccountsHeader,
-  StyledAccountsHeaderInfo,
   StyledErrorText,
 } from "./DashboardPage.styles";
 
@@ -60,8 +56,6 @@ export default function DashboardPage() {
   if (projectionError)
     return <StyledErrorText>{`Error: ${projectionError}`}</StyledErrorText>;
 
-  const totalLiquid = computeTotalLiquid(accounts);
-
   return (
     <StyledDashboard>
       <PageHeader
@@ -96,13 +90,10 @@ export default function DashboardPage() {
       />
       <StyledGrid>
         <StyledSection $gridArea="accounts">
-          <StyledAccountsHeader>
-            <StyledAccountsHeaderInfo>
-              <Heading level={2}>Accounts Summary</Heading>
-              <span>Total Liquid: {formatBalance(totalLiquid)}</span>
-            </StyledAccountsHeaderInfo>
-          </StyledAccountsHeader>
-          <AccountOverview accounts={accounts} />
+          <Card>
+            <SectionHead label="Accounts" title="Accounts" />
+            <AccountOverview accounts={accounts} />
+          </Card>
           {showCreateModal && (
             <AccountCreateModal
               onClose={() => setShowCreateModal(false)}

@@ -107,33 +107,20 @@ describe("AccountOverview", () => {
   });
 });
 
-describe("AccountOverview — icon rendering", () => {
-  it("renders the account icon when icon is set", () => {
-    const accounts: AccountWithBalance[] = [
-      {
-        id: "1",
-        kind: "Girokonto",
-        name: "Main Checking",
-        openingBalance: 100000,
-        openingDate: "2026-01-01",
-        balance: 150000,
-        icon: "Wallet",
-        color: "#adc6ff",
-      },
-    ];
-
+describe("AccountOverview — avatar rendering", () => {
+  it("renders an Avatar for each account", () => {
     render(
       <ThemeProvider theme={theme}>
         <MemoryRouter>
-          <AccountOverview accounts={accounts} />
+          <AccountOverview accounts={mockAccounts} />
         </MemoryRouter>
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId("account-icon")).toBeInTheDocument();
+    expect(screen.getAllByTestId("avatar")).toHaveLength(mockAccounts.length);
   });
 
-  it("renders a neutral fallback when icon is null", () => {
+  it("renders a kind-icon avatar even when icon and color are null", () => {
     const accounts: AccountWithBalance[] = [
       {
         id: "1",
@@ -147,7 +134,7 @@ describe("AccountOverview — icon rendering", () => {
       },
     ];
 
-    render(
+    const { container } = render(
       <ThemeProvider theme={theme}>
         <MemoryRouter>
           <AccountOverview accounts={accounts} />
@@ -155,6 +142,7 @@ describe("AccountOverview — icon rendering", () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId("account-icon-fallback")).toBeInTheDocument();
+    expect(screen.getByTestId("avatar")).toBeInTheDocument();
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 });

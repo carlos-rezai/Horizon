@@ -38,13 +38,22 @@ describe("Avatar", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("renders without throwing when the account has no icon", () => {
-    expect(() =>
-      renderWithTheme(
-        <Avatar account={{ kind: "Girokonto", icon: null, color: "#7FA7D9" }} />
-      )
-    ).not.toThrow();
+  it("falls back to the per-kind icon when the account has no custom icon", () => {
+    const { container } = renderWithTheme(
+      <Avatar account={{ kind: "Mortgage", icon: null, color: "#7FA7D9" }} />
+    );
+    // The kind icon (Home for Mortgage) renders as an svg even without a custom icon.
+    expect(container.querySelector("svg")).toBeInTheDocument();
     expect(screen.getByTestId("avatar")).toBeInTheDocument();
+  });
+
+  it("falls back to the per-kind icon when the custom icon name is invalid", () => {
+    const { container } = renderWithTheme(
+      <Avatar
+        account={{ kind: "Tagesgeld", icon: "not-a-real-icon", color: null }}
+      />
+    );
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
   it("tints the avatar with the account's own colour", () => {

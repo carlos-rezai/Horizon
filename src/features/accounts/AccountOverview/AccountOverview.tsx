@@ -1,17 +1,19 @@
 import { Link } from "react-router-dom";
-import * as LucideIcons from "lucide-react";
-import type { LucideProps } from "lucide-react";
 import type { AccountWithBalance, AccountKind } from "../../../types/account";
+import Avatar from "../../../primitives/Avatar/Avatar";
 import Badge from "../../../primitives/Badge/Badge";
+import Chip from "../../../primitives/Chip/Chip";
+import Money from "../../../primitives/Money/Money";
+import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
   StyledList,
-  StyledAccountLink,
-  StyledAccountName,
+  StyledMain,
+  StyledNameLine,
+  StyledName,
+  StyledRight,
   StyledBalance,
   StyledEmptyState,
-  StyledIconWrapper,
-  StyledAccountAvatar,
 } from "./AccountOverview.styles";
 
 interface Props {
@@ -20,49 +22,7 @@ interface Props {
 
 const LIABILITY_KINDS = new Set<AccountKind>(["Mortgage", "CreditCard"]);
 
-function formatBalance(cents: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
-}
-
-function AccountIcon({
-  icon,
-  color,
-  kind,
-}: {
-  icon: string | null | undefined;
-  color: string | null | undefined;
-  kind: AccountKind;
-}) {
-  const avatarColor = resolveAccountColor({ color, kind });
-
-  if (!icon) {
-    return (
-      <StyledAccountAvatar
-        $color={avatarColor}
-        data-testid="account-icon-fallback"
-      />
-    );
-  }
-  const Icon = LucideIcons[icon as keyof typeof LucideIcons] as
-    | React.ComponentType<LucideProps>
-    | undefined;
-  if (!Icon) {
-    return (
-      <StyledAccountAvatar
-        $color={avatarColor}
-        data-testid="account-icon-fallback"
-      />
-    );
-  }
-  return (
-    <StyledIconWrapper data-testid="account-icon" $color={color ?? undefined}>
-      <Icon size={18} />
-    </StyledIconWrapper>
-  );
-}
+const ROW_COLUMNS = ["38px", "1fr", "auto"];
 
 export default function AccountOverview({ accounts }: Props) {
   if (accounts.length === 0) {
@@ -71,23 +31,30 @@ export default function AccountOverview({ accounts }: Props) {
 
   return (
     <StyledList>
-      {accounts.map((account) => {
+      {accounts.map((account, i) => {
         const isLiability = LIABILITY_KINDS.has(account.kind);
         return (
-          <li key={account.id}>
-            <StyledAccountLink as={Link} to={`/accounts/${account.id}`}>
-              <AccountIcon
-                icon={account.icon}
-                color={account.color}
-                kind={account.kind}
-              />
-              <StyledAccountName>{account.name}</StyledAccountName>
-              <Badge kind={account.kind} />
+          <DataRow
+            key={account.id}
+            as={Link}
+            to={`/accounts/${account.id}`}
+            columns={ROW_COLUMNS}
+            last={i === accounts.length - 1}
+          >
+            <Avatar account={account} />
+            <StyledMain>
+              <StyledNameLine>
+                <StyledName>{account.name}</StyledName>
+                <Chip color={resolveAccountColor(account)} size="sm" />
+              </StyledNameLine>
+            </StyledMain>
+            <StyledRight>
               <StyledBalance $isLiability={isLiability}>
-                {formatBalance(account.balance)}
+                <Money cents={account.balance} />
               </StyledBalance>
-            </StyledAccountLink>
-          </li>
+              <Badge kind={account.kind} />
+            </StyledRight>
+          </DataRow>
         );
       })}
     </StyledList>
