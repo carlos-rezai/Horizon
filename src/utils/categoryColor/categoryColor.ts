@@ -20,7 +20,23 @@ export const categoryColorPalette = [
   "#9FBF6F", // olive
 ] as const;
 
+// The canonical breakdown categories carry hand-authored swatches (from the
+// handoff prototype) so the Month Overview donut + badges read 1:1. Every value
+// is a member of categoryColorPalette, so categories and accounts still share
+// one visual language. Any name outside this map hashes deterministically.
+export const fixedCategoryColors: Record<string, string> = {
+  Groceries: "#74C29B", // sage
+  Dining: "#E0A86B", // clay
+  Transport: "#7FA7D9", // steel
+  Shopping: "#B79CE0", // lilac
+  Health: "#5FB8C0", // teal
+  Cat: "#C7AE57", // ochre
+  Misc: "#909AAE", // slate
+};
+
 export function colorForCategoryName(name: string): string {
+  const fixed = fixedCategoryColors[name];
+  if (fixed !== undefined) return fixed;
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
