@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 
 export const StyledPage = styled.div`
   display: flex;
@@ -12,35 +13,21 @@ export const StyledSection = styled.section`
   gap: ${({ theme }) => theme.spacing.space3}px;
 `;
 
-export const StyledActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.space2}px;
+export const StyledBackLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-weight: 500;
+  text-decoration: none;
+  width: fit-content;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.onSurface};
+  }
 `;
 
-export const StyledStatStrip = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: ${({ theme }) => theme.spacing.space4}px;
-`;
-
-export const StyledStat = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.space1}px;
-`;
-
-export const StyledStatLabel = styled.span`
-  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
-  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
-  font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
-  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-`;
-
-export const StyledStatValue = styled.span`
-  font-family: ${({ theme }) => theme.typography.scale.monoMd.fontFamily};
-  font-size: ${({ theme }) => theme.typography.scale.monoMd.fontSize};
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.onSurface};
+export const StyledErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.error};
 `;

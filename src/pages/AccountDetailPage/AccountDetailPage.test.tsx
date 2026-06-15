@@ -102,11 +102,11 @@ describe("AccountDetailPage — recurring transactions button", () => {
       } as Response);
   });
 
-  it("shows the Add recurring transaction button in the recurring transactions section", async () => {
+  it("shows the Add recurring button in the recurring transactions section", async () => {
     renderPage();
 
     expect(
-      await screen.findByRole("button", { name: /add recurring transaction/i })
+      await screen.findByRole("button", { name: /add recurring/i })
     ).toBeInTheDocument();
   });
 });
@@ -138,7 +138,7 @@ describe("AccountDetailPage — transaction entry removed", () => {
 
   it("does not render Add transaction or Add transfer buttons", async () => {
     renderPage();
-    await screen.findByRole("heading", { name: /recurring/i });
+    await screen.findByRole("button", { name: /add recurring/i });
     expect(
       screen.queryByRole("button", { name: /add transaction/i })
     ).toBeNull();

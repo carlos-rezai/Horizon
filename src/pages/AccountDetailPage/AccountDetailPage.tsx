@@ -1,32 +1,33 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useAccounts } from "../../features/accounts/useAccounts";
-import AccountDetailHeader from "../../features/accounts/AccountDetailHeader/AccountDetailHeader";
+import { useProjection } from "../../features/projection/useProjection";
+import AccountHero from "../../features/accounts/AccountHero/AccountHero";
+import AccountStatStrip from "../../features/accounts/AccountStatStrip/AccountStatStrip";
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import RecurringTransactionList from "../../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
 import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions";
 import Card from "../../components/Card/Card";
-import Heading from "../../primitives/Heading/Heading";
+import SectionHead from "../../components/SectionHead/SectionHead";
 import Button from "../../primitives/Button/Button";
 import { API_BASE } from "../../utils/api/api";
 import { recurringNetPerMonth } from "../../utils/recurring/recurring";
-import { formatBalance } from "../../utils/format/format";
+import { accountBalanceSeries } from "../../utils/accountSeries/accountSeries";
 import type { Transaction } from "../../types/transaction";
 import type { RecurringTransaction } from "../../types/recurring";
 import {
   StyledPage,
   StyledSection,
-  StyledActions,
-  StyledStatStrip,
-  StyledStat,
-  StyledStatLabel,
-  StyledStatValue,
+  StyledBackLink,
+  StyledErrorText,
 } from "./AccountDetailPage.styles";
 
 export default function AccountDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { accounts, isLoading, error, refresh } = useAccounts();
+  const { snapshots } = useProjection();
   const {
     recurringTransactions,
     remove: removeRecurring,
@@ -49,40 +50,13 @@ export default function AccountDetailPage() {
   }, [id]);
 
   if (isLoading) return <p>Loading…</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (error) return <StyledErrorText>{`Error: ${error}`}</StyledErrorText>;
 
   const account = accounts.find((a) => a.id === id);
   if (!account) return <p>Account not found.</p>;
 
-  const handleRename = async (name: string) => {
-    const res = await fetch(`${API_BASE}/accounts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to rename account");
-    }
-  };
-
-  const handleUpdateOpeningBalance = async (openingBalance: number) => {
-    const res = await fetch(`${API_BASE}/accounts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ openingBalance }),
-    });
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to update opening balance");
-    }
-    refresh();
-  };
-
   const handleDelete = async () => {
-    const res = await fetch(`${API_BASE}/accounts/${id}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`${API_BASE}/accounts/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = (await res.json()) as { error?: string };
       throw new Error(data.error ?? "Failed to delete account");
@@ -92,99 +66,91 @@ export default function AccountDetailPage() {
 
   return (
     <StyledPage>
-      <Card>
-        <Link to="/">← Back</Link>
-        <AccountDetailHeader
-          account={account}
-          hasTransactions={hasTransactions}
-          onEdit={() => setShowEditAccount(true)}
-          onRename={handleRename}
-          onUpdateOpeningBalance={handleUpdateOpeningBalance}
-          onDelete={handleDelete}
-        />
-        {showEditAccount && (
-          <AccountCreateModal
-            account={account}
-            onClose={() => setShowEditAccount(false)}
-            onSuccess={() => {
-              refresh();
-              setShowEditAccount(false);
-            }}
-            girokontoAccounts={accounts.filter((a) => a.kind === "Girokonto")}
-          />
-        )}
-      </Card>
-      <Card>
-        <StyledStatStrip>
-          <StyledStat>
-            <StyledStatLabel>Opening Balance</StyledStatLabel>
-            <StyledStatValue>
-              {formatBalance(account.openingBalance)}
-            </StyledStatValue>
-          </StyledStat>
-          <StyledStat>
-            <StyledStatLabel>Opening Date</StyledStatLabel>
-            <StyledStatValue>
-              {new Date(account.openingDate).toLocaleDateString("de-DE")}
-            </StyledStatValue>
-          </StyledStat>
-          <StyledStat>
-            <StyledStatLabel>Recurring</StyledStatLabel>
-            <StyledStatValue>{recurringTransactions.length}</StyledStatValue>
-          </StyledStat>
-          <StyledStat>
-            <StyledStatLabel>Recurring net / mo</StyledStatLabel>
-            <StyledStatValue>
-              {formatBalance(
-                recurringNetPerMonth(recurringTransactions, account.id)
-              )}
-            </StyledStatValue>
-          </StyledStat>
-        </StyledStatStrip>
-      </Card>
+      <StyledBackLink to="/">
+        <ArrowLeft size={16} /> Back to Dashboard
+      </StyledBackLink>
+
+      <AccountHero
+        account={account}
+        accounts={accounts}
+        balanceSeries={accountBalanceSeries(snapshots, account.id)}
+        hasTransactions={hasTransactions}
+        onEdit={() => setShowEditAccount(true)}
+        onDelete={handleDelete}
+      />
+
+      <AccountStatStrip
+        openingBalance={account.openingBalance}
+        openingDate={account.openingDate}
+        recurringCount={recurringTransactions.length}
+        recurringNet={recurringNetPerMonth(recurringTransactions, account.id)}
+      />
+
       <StyledSection>
         <Card>
-          <Heading level={2}>Recurring Transactions</Heading>
-          <StyledActions>
-            <Button type="button" onClick={() => setShowAddRecurring(true)}>
-              Add recurring transaction
-            </Button>
-          </StyledActions>
+          <SectionHead
+            label="Recurring"
+            title="Recurring transactions"
+            right={
+              <Button
+                variant="primary"
+                size="sm"
+                icon="Plus"
+                onClick={() => setShowAddRecurring(true)}
+              >
+                Add recurring
+              </Button>
+            }
+          />
           <RecurringTransactionList
             recurringTransactions={recurringTransactions}
             accounts={accounts}
             onRowClick={(rt) => setEditingRecurring(rt)}
           />
-          {showAddRecurring && (
-            <RecurringTransactionModal
-              accountId={account.id}
-              otherAccounts={accounts.filter((a) => a.id !== account.id)}
-              onClose={() => setShowAddRecurring(false)}
-              onSaved={(formData) => {
-                void createRecurring(formData);
-                setShowAddRecurring(false);
-              }}
-              onDeleted={() => setShowAddRecurring(false)}
-            />
-          )}
-          {editingRecurring && (
-            <RecurringTransactionModal
-              accountId={account.id}
-              transaction={editingRecurring}
-              otherAccounts={accounts.filter((a) => a.id !== account.id)}
-              onClose={() => setEditingRecurring(null)}
-              onSaved={(formData) => {
-                void updateRecurring(editingRecurring.id, formData);
-                setEditingRecurring(null);
-              }}
-              onDeleted={() => {
-                void removeRecurring(editingRecurring.id);
-                setEditingRecurring(null);
-              }}
-            />
-          )}
         </Card>
       </StyledSection>
+
+      {showEditAccount && (
+        <AccountCreateModal
+          account={account}
+          onClose={() => setShowEditAccount(false)}
+          onSuccess={() => {
+            refresh();
+            setShowEditAccount(false);
+          }}
+          girokontoAccounts={accounts.filter((a) => a.kind === "Girokonto")}
+        />
+      )}
+
+      {showAddRecurring && (
+        <RecurringTransactionModal
+          accountId={account.id}
+          otherAccounts={accounts.filter((a) => a.id !== account.id)}
+          onClose={() => setShowAddRecurring(false)}
+          onSaved={(formData) => {
+            void createRecurring(formData);
+            setShowAddRecurring(false);
+          }}
+          onDeleted={() => setShowAddRecurring(false)}
+        />
+      )}
+
+      {editingRecurring && (
+        <RecurringTransactionModal
+          accountId={account.id}
+          transaction={editingRecurring}
+          otherAccounts={accounts.filter((a) => a.id !== account.id)}
+          onClose={() => setEditingRecurring(null)}
+          onSaved={(formData) => {
+            void updateRecurring(editingRecurring.id, formData);
+            setEditingRecurring(null);
+          }}
+          onDeleted={() => {
+            void removeRecurring(editingRecurring.id);
+            setEditingRecurring(null);
+          }}
+        />
+      )}
     </StyledPage>
   );
 }
