@@ -60,3 +60,7 @@ horizon.db-wal
 .understand-anything/intermediate/
 .understand-anything/tmp/
 .understand-anything/fingerprints.json
+
+horizon-handoff-seed.db
+horizon-handoff-seed.db-shm
+horizon-handoff-seed.db-wal

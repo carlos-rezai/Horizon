@@ -5,13 +5,14 @@ import {
   type KpiPoint,
   type Kpi,
 } from "../../../utils/kpi/kpi";
-import { formatBalance } from "../../../utils/format/format";
+import Money from "../../../primitives/Money/Money";
+import Delta from "../../../primitives/Delta/Delta";
 import {
   StyledStrip,
   StyledTile,
+  StyledTileHead,
   StyledLabel,
   StyledValue,
-  StyledDelta,
 } from "./KpiStrip.styles";
 
 interface Props {
@@ -30,16 +31,24 @@ function restschuldOf(
   }, 0);
 }
 
-function Tile({ label, kpi }: { label: string; kpi: Kpi }) {
+function Tile({
+  label,
+  kpi,
+  sign = false,
+}: {
+  label: string;
+  kpi: Kpi;
+  sign?: boolean;
+}) {
   return (
     <StyledTile data-testid="kpi-tile">
-      <StyledLabel>{label}</StyledLabel>
-      <StyledValue data-testid="money">{formatBalance(kpi.value)}</StyledValue>
-      {kpi.delta !== null && (
-        <StyledDelta data-testid="delta" $positive={kpi.delta >= 0}>
-          {kpi.delta >= 0 ? "▲" : "▼"} {Math.abs(kpi.delta).toFixed(1)}%
-        </StyledDelta>
-      )}
+      <StyledTileHead>
+        <StyledLabel>{label}</StyledLabel>
+        {kpi.delta !== null && <Delta value={kpi.delta} />}
+      </StyledTileHead>
+      <StyledValue>
+        <Money cents={kpi.value} sign={sign} />
+      </StyledValue>
     </StyledTile>
   );
 }
@@ -61,7 +70,7 @@ export default function KpiStrip({ snapshots, accounts }: Props) {
     <StyledStrip data-testid="kpi-strip">
       <Tile label="Total Liquid" kpi={strip.totalLiquid} />
       <Tile label="Restschuld" kpi={strip.restschuld} />
-      <Tile label="Net Cashflow" kpi={strip.netCashflow} />
+      <Tile label="Net Cashflow" kpi={strip.netCashflow} sign />
     </StyledStrip>
   );
 }
