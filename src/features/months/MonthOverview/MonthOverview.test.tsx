@@ -1,36 +1,10 @@
 // @vitest-environment jsdom
-import {
-  render,
-  screen,
-  cleanup,
-  fireEvent,
-  act,
-} from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { ThemeProvider, StyleSheetManager } from "styled-components";
+import { ThemeProvider } from "styled-components";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { theme } from "../../../tokens";
-
-function getInjectedCSS(): string {
-  return Array.from(document.querySelectorAll("style"))
-    .map((el) => el.textContent ?? "")
-    .join("\n");
-}
-
-function getCSSForElement(el: HTMLElement): string {
-  const classes = Array.from(el.classList);
-  const allCSS = getInjectedCSS();
-  return classes
-    .flatMap((cls) => {
-      const regex = new RegExp(`\\.${cls}\\b[^{]*\\{[^}]*\\}`, "g");
-      return allCSS.match(regex) ?? [];
-    })
-    .join("\n");
-}
-import { chartColors } from "../../../tokens/colors";
 import type { AccountWithBalance } from "../../../types/account";
-import type { MonthlySnapshot } from "../../../types/projection";
-import type { RecurringTransaction } from "../../../types/recurring";
 import type { Transaction } from "../../../types/transaction";
 
 const mockNavigate = vi.fn();
@@ -39,63 +13,33 @@ vi.mock("react-router-dom", async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-const mockUseMonthTransactions = vi.fn();
-vi.mock("../useMonthTransactions", () => ({
-  useMonthTransactions: (...args: unknown[]) =>
-    mockUseMonthTransactions(...args),
-}));
-
 const mockUseAllMonthTransactions = vi.fn();
 vi.mock("../useAllMonthTransactions", () => ({
   useAllMonthTransactions: (...args: unknown[]) =>
     mockUseAllMonthTransactions(...args),
 }));
 
-// Mutable ref so the rendered mock component can hand back its onDeleted callback
-// without hitting TDZ — the factory only stores the component fn; assignment happens
-// inside the React render (which runs after module initialisation).
 let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
   null;
 
 vi.mock(
   "../../transactions/TransactionCreateModal/TransactionCreateModal",
   () => ({
-    default: (props: {
-      accountId: string;
-      accounts?: AccountWithBalance[];
-      month?: string;
-      onClose: () => void;
-      onSuccess: () => void;
-    }) => (
+    default: (props: { accountId: string; onClose: () => void }) => (
       <div
         data-testid="transaction-create-modal"
         data-account-id={props.accountId}
-        data-month={props.month}
       >
-        {props.accounts !== undefined && (
-          <select aria-label="To account">
-            <option value="">— None —</option>
-          </select>
-        )}
         <button onClick={props.onClose}>Cancel</button>
-        <button onClick={props.onSuccess}>Submit</button>
       </div>
     ),
   })
 );
 
-vi.mock("../../../primitives/Chip/Chip", () => ({
-  default: (props: { color: string; size?: string }) => (
-    <span data-testid="chip" data-color={props.color} />
-  ),
-}));
-
 vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
   default: (props: {
     transaction: Transaction;
     onDeleted: (id: string, transferId?: string) => void;
-    onClose: () => void;
-    onSaved: (tx: Transaction) => void;
   }) => {
     capturedOnDeleted = props.onDeleted;
     return (
@@ -109,107 +53,87 @@ vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
 
 import MonthOverview from "./MonthOverview";
 
-const emptyMonthTransactions = {
-  transactions: [] as Transaction[],
-  isLoading: false,
-  error: null,
-  create: vi.fn(),
-  update: vi.fn(),
-  remove: vi.fn(),
-  removeTransfer: vi.fn(),
-  refetch: vi.fn(),
-};
+const accounts: AccountWithBalance[] = [
+  {
+    id: "main",
+    kind: "Girokonto",
+    name: "Main",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+    color: "#7FA7D9",
+  },
+  {
+    id: "visa",
+    kind: "CreditCard",
+    name: "Visa",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+    color: "#C9897F",
+  },
+  {
+    id: "mortgage",
+    kind: "Mortgage",
+    name: "Mortgage",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  },
+];
+
+const transactions: Transaction[] = [
+  {
+    id: "t1",
+    accountId: "main",
+    date: "2026-06-09",
+    amount: -3420,
+    description: "Cat food",
+    category: "Cat",
+  },
+  {
+    id: "t2",
+    accountId: "visa",
+    date: "2026-06-07",
+    amount: -11930,
+    description: "Zalando",
+    category: "Shopping",
+  },
+  {
+    id: "t3",
+    accountId: "main",
+    date: "2026-06-12",
+    amount: -50000,
+    description: "Move to savings",
+    category: "Transfer",
+    transferId: "tr-1",
+  },
+];
+
+const refetch = vi.fn();
 
 beforeEach(() => {
-  mockUseMonthTransactions.mockReturnValue(emptyMonthTransactions);
   mockUseAllMonthTransactions.mockReturnValue({
-    transactions: [],
+    transactions,
     isLoading: false,
-    refetch: vi.fn(),
+    refetch,
   });
 });
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
   capturedOnDeleted = null;
 });
 
-const mockAccounts: AccountWithBalance[] = [
-  {
-    id: "g1",
-    kind: "Girokonto",
-    name: "Main Checking",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
-    balance: 150000,
-  },
-  {
-    id: "t1",
-    kind: "Tagesgeld",
-    name: "DKB Reserve",
-    openingBalance: 200000,
-    openingDate: "2026-01-01",
-    balance: 220000,
-  },
-];
-
-const mockAccountsWithColor: AccountWithBalance[] = [
-  {
-    id: "g1",
-    kind: "Girokonto",
-    name: "Main Checking",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
-    balance: 150000,
-    color: "#cf6679",
-  },
-  {
-    id: "t1",
-    kind: "Tagesgeld",
-    name: "DKB Reserve",
-    openingBalance: 200000,
-    openingDate: "2026-01-01",
-    balance: 220000,
-    color: "#b5ccb8",
-  },
-];
-
-const mockSnapshots: MonthlySnapshot[] = [
-  {
-    month: "2026-05",
-    accounts: {
-      g1: { projected: 145000 },
-      t1: { projected: 215000, actual: 218000 },
-    },
-    netCashflow: 0,
-    totalLiquid: 363000,
-  },
-  {
-    month: "2026-06",
-    accounts: {
-      g1: { projected: 148000 },
-      t1: { projected: 221000 },
-    },
-    netCashflow: 0,
-    totalLiquid: 369000,
-  },
-];
-
-function renderMonthOverview(
-  month = "2026-05",
-  accounts: AccountWithBalance[] = mockAccounts,
-  snapshots: MonthlySnapshot[] = []
-) {
+function renderOverview(month = "2026-06") {
   return render(
     <ThemeProvider theme={theme}>
       <MemoryRouter initialEntries={[`/months/${month}`]}>
         <Routes>
           <Route
             path="/months/:month"
-            element={
-              <MonthOverview accounts={accounts} snapshots={snapshots} />
-            }
+            element={<MonthOverview accounts={accounts} />}
           />
         </Routes>
       </MemoryRouter>
@@ -217,617 +141,111 @@ function renderMonthOverview(
   );
 }
 
-describe("MonthOverview — rendering", () => {
-  it("renders without crashing for a given month param", () => {
-    expect(() => renderMonthOverview("2026-05")).not.toThrow();
-  });
-});
-
-describe("MonthOverview — account tabs", () => {
-  it("renders one tab per account", () => {
-    renderMonthOverview();
-
+describe("MonthOverview — header", () => {
+  it("renders the Month Overview title and subtitle", () => {
+    renderOverview();
     expect(
-      screen.getByRole("tab", { name: "Main Checking" })
+      screen.getByRole("heading", { name: "Month Overview" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("tab", { name: "DKB Reserve" })
+      screen.getByText("Variable spending · Recurring-Only Model")
     ).toBeInTheDocument();
   });
 
-  it("first account tab is selected by default", () => {
-    renderMonthOverview();
-
-    const firstTab = screen.getByRole("tab", { name: "Main Checking" });
-    expect(firstTab).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("clicking a tab makes it the active tab", () => {
-    renderMonthOverview();
-
-    fireEvent.click(screen.getByRole("tab", { name: "DKB Reserve" }));
-
-    expect(screen.getByRole("tab", { name: "DKB Reserve" })).toHaveAttribute(
-      "aria-selected",
-      "true"
-    );
-    expect(screen.getByRole("tab", { name: "Main Checking" })).toHaveAttribute(
-      "aria-selected",
-      "false"
-    );
+  it("renders the month overline", () => {
+    renderOverview();
+    expect(screen.getByText("June 2026")).toBeInTheDocument();
   });
 });
 
-describe("MonthOverview — back navigation", () => {
-  it("clicking the back button calls navigate(-1)", () => {
-    renderMonthOverview();
+describe("MonthOverview — month stepper", () => {
+  it("steps back a month", () => {
+    renderOverview("2026-06");
+    fireEvent.click(screen.getByRole("button", { name: /previous month/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/months/2026-05");
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: /back/i }));
+  it("steps forward a month", () => {
+    renderOverview("2026-06");
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/months/2026-07");
+  });
 
-    expect(mockNavigate).toHaveBeenCalledWith(-1);
+  it("wraps the year at December", () => {
+    renderOverview("2026-12");
+    fireEvent.click(screen.getByRole("button", { name: /next month/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/months/2027-01");
   });
 });
 
-describe("MonthOverview — account tab coloring", () => {
-  it("active tab renders with the account's own color", () => {
-    render(
-      <StyleSheetManager disableCSSOMInjection>
-        <ThemeProvider theme={theme}>
-          <MemoryRouter initialEntries={["/months/2026-05"]}>
-            <Routes>
-              <Route
-                path="/months/:month"
-                element={<MonthOverview accounts={mockAccountsWithColor} />}
-              />
-            </Routes>
-          </MemoryRouter>
-        </ThemeProvider>
-      </StyleSheetManager>
-    );
-
-    const activeTab = screen.getByRole("tab", { name: "Main Checking" });
-    expect(getCSSForElement(activeTab)).toContain("#cf6679");
+describe("MonthOverview — composition", () => {
+  it("renders the stat strip", () => {
+    renderOverview();
+    expect(screen.getByTestId("month-stat-strip")).toBeInTheDocument();
   });
 
-  it("active tab does not render with the generic primary color when account has its own color", () => {
-    render(
-      <StyleSheetManager disableCSSOMInjection>
-        <ThemeProvider theme={theme}>
-          <MemoryRouter initialEntries={["/months/2026-05"]}>
-            <Routes>
-              <Route
-                path="/months/:month"
-                element={<MonthOverview accounts={mockAccountsWithColor} />}
-              />
-            </Routes>
-          </MemoryRouter>
-        </ThemeProvider>
-      </StyleSheetManager>
-    );
-
-    const activeTab = screen.getByRole("tab", { name: "Main Checking" });
-    expect(getCSSForElement(activeTab)).not.toContain(theme.colors.primary);
-  });
-});
-
-describe("MonthOverview — balance summary bar", () => {
-  it("renders the projected balance for each account for the selected month", () => {
-    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
-
-    // g1 projected: 145000 cents = 1,450.00 €
-    expect(screen.getByText(/1[.,]450/)).toBeInTheDocument();
+  it("renders the spending list with variable spending rows", () => {
+    renderOverview();
+    expect(screen.getByText("Cat food")).toBeInTheDocument();
+    expect(screen.getByText("Zalando")).toBeInTheDocument();
   });
 
-  it("shows actual balance instead of projected when actual data is present", () => {
-    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
-
-    // t1 actual: 218000 cents = 2,180.00 € (not projected 215000 = 2,150)
-    expect(screen.getByText(/2[.,]180/)).toBeInTheDocument();
-    expect(screen.queryByText(/2[.,]150/)).not.toBeInTheDocument();
+  it("excludes transfers from the spending list", () => {
+    renderOverview();
+    expect(screen.queryByText("Move to savings")).not.toBeInTheDocument();
   });
 
-  it("shows the correct snapshot values when the month param changes", () => {
-    renderMonthOverview("2026-06", mockAccounts, mockSnapshots);
-
-    // g1 projected for 2026-06: 148000 cents = 1,480.00 €
-    expect(screen.getByText(/1[.,]480/)).toBeInTheDocument();
+  it("renders the breakdown card", () => {
+    renderOverview();
+    expect(screen.getByText("By category")).toBeInTheDocument();
   });
-});
 
-// ---------------------------------------------------------------------------
-// Helpers and fixtures for Monthly Ledger tests
-// ---------------------------------------------------------------------------
+  it("renders the Planned year-comparison placeholder", () => {
+    renderOverview();
+    expect(screen.getByText("Planned")).toBeInTheDocument();
+  });
 
-const mockGiroRecurring: RecurringTransaction = {
-  id: "rt-1",
-  accountId: "g1",
-  amount: 323643,
-  description: "Salary",
-  category: "Income",
-  frequency: "monthly",
-  dayOfMonth: 1,
-};
-
-const mockTagRecurring: RecurringTransaction = {
-  id: "rt-2",
-  accountId: "t1",
-  amount: -70000,
-  description: "Savings transfer",
-  category: "Transfer",
-  frequency: "monthly",
-  dayOfMonth: 5,
-};
-
-const mockGiroTransaction: Transaction = {
-  id: "txn-g1",
-  accountId: "g1",
-  date: "2026-05-10",
-  amount: -5000,
-  description: "Supermarket",
-  category: "Food",
-};
-
-const mockTagTransaction: Transaction = {
-  id: "txn-t1",
-  accountId: "t1",
-  date: "2026-05-12",
-  amount: -3000,
-  description: "Dental",
-  category: "Health",
-};
-
-function renderMonthOverviewWithLedger(
-  month = "2026-05",
-  accounts: AccountWithBalance[] = mockAccounts,
-  recurringTransactionsByAccount: Record<string, RecurringTransaction[]> = {}
-) {
-  return render(
-    <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={[`/months/${month}`]}>
-        <Routes>
-          <Route
-            path="/months/:month"
-            element={
-              <MonthOverview
-                accounts={accounts}
-                recurringTransactionsByAccount={recurringTransactionsByAccount}
-              />
-            }
-          />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// MonthOverview — Recurring This Month section
-// ---------------------------------------------------------------------------
-
-describe("MonthOverview — Recurring This Month section", () => {
-  it("renders a 'Recurring this month' heading", () => {
-    renderMonthOverviewWithLedger("2026-05", mockAccounts, {
-      g1: [mockGiroRecurring],
-      t1: [],
-    });
-
+  it("does not tab the Mortgage account", () => {
+    renderOverview();
     expect(
-      screen.getByRole("heading", { name: /recurring this month/i })
-    ).toBeInTheDocument();
-  });
-
-  it("renders the recurring transaction description for the active account", () => {
-    renderMonthOverviewWithLedger("2026-05", mockAccounts, {
-      g1: [mockGiroRecurring],
-      t1: [],
-    });
-
-    expect(screen.getByText("Salary")).toBeInTheDocument();
-  });
-
-  it("shows the selected account's recurring transactions after tab switch", () => {
-    renderMonthOverviewWithLedger("2026-05", mockAccounts, {
-      g1: [mockGiroRecurring],
-      t1: [mockTagRecurring],
-    });
-
-    fireEvent.click(screen.getByRole("tab", { name: "DKB Reserve" }));
-
-    expect(screen.getByText("Savings transfer")).toBeInTheDocument();
-    expect(screen.queryByText("Salary")).not.toBeInTheDocument();
+      screen.queryByRole("tab", { name: /Mortgage/ })
+    ).not.toBeInTheDocument();
   });
 });
 
-// ---------------------------------------------------------------------------
-// MonthOverview — one-off transaction list
-// ---------------------------------------------------------------------------
-
-describe("MonthOverview — one-off transaction list", () => {
-  it("renders one-off transaction rows returned by useMonthTransactions", () => {
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [mockGiroTransaction],
-    });
-
-    renderMonthOverviewWithLedger();
-
-    expect(screen.getByText("Supermarket")).toBeInTheDocument();
-  });
-
-  it("renders an empty state when no one-off transactions exist for the month", () => {
-    mockUseMonthTransactions.mockReturnValue(emptyMonthTransactions);
-
-    renderMonthOverviewWithLedger();
-
-    expect(screen.getByText(/no transactions this month/i)).toBeInTheDocument();
-  });
-
-  it("switches to the newly selected account's transactions when a tab is clicked", () => {
-    mockUseMonthTransactions.mockImplementation((accountId: string) => {
-      if (accountId === "g1") {
-        return {
-          ...emptyMonthTransactions,
-          transactions: [mockGiroTransaction],
-        };
-      }
-      return {
-        ...emptyMonthTransactions,
-        transactions: [mockTagTransaction],
-      };
-    });
-
-    renderMonthOverviewWithLedger();
-
-    expect(screen.getByText("Supermarket")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: "DKB Reserve" }));
-
-    expect(screen.getByText("Dental")).toBeInTheDocument();
-    expect(screen.queryByText("Supermarket")).not.toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// MonthOverview — add transaction form
-// ---------------------------------------------------------------------------
-
-describe("MonthOverview — add transaction form", () => {
-  it("renders an 'Add transaction' button", () => {
-    renderMonthOverviewWithLedger();
-
-    expect(
-      screen.getByRole("button", { name: /add transaction/i })
-    ).toBeInTheDocument();
-  });
-
-  it("opens TransactionCreateModal when the 'Add transaction' button is clicked", () => {
-    renderMonthOverviewWithLedger();
-
-    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
-
-    expect(screen.getByTestId("transaction-create-modal")).toBeInTheDocument();
-  });
-
-  it("passes the active account id and month to TransactionCreateModal", () => {
-    renderMonthOverviewWithLedger("2026-05");
-
-    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
-
+describe("MonthOverview — add expense", () => {
+  it("opens the create modal for the active account", () => {
+    renderOverview();
+    fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
     const modal = screen.getByTestId("transaction-create-modal");
-    expect(modal).toHaveAttribute("data-account-id", "g1");
-    expect(modal).toHaveAttribute("data-month", "2026-05");
+    expect(modal).toBeInTheDocument();
+    expect(modal).toHaveAttribute("data-account-id", "main");
   });
 
-  it("closes TransactionCreateModal when its onClose fires", () => {
-    renderMonthOverviewWithLedger("2026-05");
-
-    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+  it("closes the create modal on cancel", () => {
+    renderOverview();
+    fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-
     expect(
       screen.queryByTestId("transaction-create-modal")
     ).not.toBeInTheDocument();
   });
-
-  it("the 'To account' select is present when the modal opens", () => {
-    renderMonthOverviewWithLedger("2026-05");
-
-    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
-
-    expect(
-      screen.getByRole("combobox", { name: /to account/i })
-    ).toBeInTheDocument();
-  });
 });
 
-// ---------------------------------------------------------------------------
-// MonthOverview — click to edit
-// ---------------------------------------------------------------------------
-
-describe("MonthOverview — click to edit", () => {
-  it("clicking a one-off transaction row opens TransactionEditModal", () => {
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [mockGiroTransaction],
-    });
-
-    renderMonthOverviewWithLedger();
-
-    fireEvent.click(screen.getByText("Supermarket"));
-
-    expect(screen.getByTestId("transaction-edit-modal")).toBeInTheDocument();
-  });
-
-  it("TransactionEditModal receives the clicked transaction as its transaction prop", () => {
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [mockGiroTransaction],
-    });
-
-    renderMonthOverviewWithLedger();
-
-    fireEvent.click(screen.getByText("Supermarket"));
-
+describe("MonthOverview — edit and delete", () => {
+  it("opens the edit modal with the clicked transaction", () => {
+    renderOverview();
+    fireEvent.click(screen.getByText("Cat food"));
     expect(screen.getByTestId("transaction-edit-modal")).toHaveAttribute(
       "data-transaction-id",
-      mockGiroTransaction.id
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// MonthOverview — delete via edit modal
-// ---------------------------------------------------------------------------
-
-describe("MonthOverview — delete via edit modal", () => {
-  it("refetches transactions when onDeleted fires", () => {
-    const refetchMock = vi.fn();
-    const refetchAllMock = vi.fn();
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [mockGiroTransaction],
-      refetch: refetchMock,
-    });
-    mockUseAllMonthTransactions.mockReturnValue({
-      transactions: [],
-      isLoading: false,
-      refetch: refetchAllMock,
-    });
-
-    renderMonthOverviewWithLedger();
-    fireEvent.click(screen.getByText("Supermarket"));
-
-    capturedOnDeleted?.(mockGiroTransaction.id);
-
-    expect(refetchMock).toHaveBeenCalled();
-    expect(refetchAllMock).toHaveBeenCalled();
-  });
-
-  it("closes the edit modal when onDeleted fires", () => {
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [mockGiroTransaction],
-    });
-
-    renderMonthOverviewWithLedger();
-    fireEvent.click(screen.getByText("Supermarket"));
-
-    expect(screen.getByTestId("transaction-edit-modal")).toBeInTheDocument();
-
-    act(() => {
-      capturedOnDeleted?.(mockGiroTransaction.id);
-    });
-
-    expect(
-      screen.queryByTestId("transaction-edit-modal")
-    ).not.toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// MonthOverview — amount coloring
-// ---------------------------------------------------------------------------
-
-function renderForCSS(
-  month = "2026-05",
-  accounts: AccountWithBalance[] = mockAccounts,
-  recurringTransactionsByAccount: Record<string, RecurringTransaction[]> = {}
-) {
-  return render(
-    <StyleSheetManager disableCSSOMInjection>
-      <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={[`/months/${month}`]}>
-          <Routes>
-            <Route
-              path="/months/:month"
-              element={
-                <MonthOverview
-                  accounts={accounts}
-                  recurringTransactionsByAccount={
-                    recurringTransactionsByAccount
-                  }
-                />
-              }
-            />
-          </Routes>
-        </MemoryRouter>
-      </ThemeProvider>
-    </StyleSheetManager>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// MonthOverview — balance value coloring
-// ---------------------------------------------------------------------------
-
-const mockAccountsMixed: AccountWithBalance[] = [
-  {
-    id: "g1",
-    kind: "Girokonto",
-    name: "Main Checking",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
-    balance: 150000,
-  },
-  {
-    id: "m1",
-    kind: "Mortgage",
-    name: "Home Loan",
-    openingBalance: 30000000,
-    openingDate: "2026-01-01",
-    balance: 29000000,
-  },
-];
-
-const mockSnapshotsMixed: MonthlySnapshot[] = [
-  {
-    month: "2026-05",
-    accounts: {
-      g1: { projected: 145000 },
-      m1: { projected: 29000000 },
-    },
-    netCashflow: 0,
-    totalLiquid: 145000,
-  },
-];
-
-describe("MonthOverview — balance value coloring", () => {
-  it("Mortgage balance renders with error color", () => {
-    render(
-      <StyleSheetManager disableCSSOMInjection>
-        <ThemeProvider theme={theme}>
-          <MemoryRouter initialEntries={["/months/2026-05"]}>
-            <Routes>
-              <Route
-                path="/months/:month"
-                element={
-                  <MonthOverview
-                    accounts={mockAccountsMixed}
-                    snapshots={mockSnapshotsMixed}
-                  />
-                }
-              />
-            </Routes>
-          </MemoryRouter>
-        </ThemeProvider>
-      </StyleSheetManager>
-    );
-
-    // Mortgage balance: 29000000 cents = 290,000.00 €
-    const balanceEl = screen.getByText(/290[.,]000/);
-    expect(getCSSForElement(balanceEl)).toContain(theme.colors.error);
-  });
-
-  it("Girokonto balance renders with secondary color", () => {
-    render(
-      <StyleSheetManager disableCSSOMInjection>
-        <ThemeProvider theme={theme}>
-          <MemoryRouter initialEntries={["/months/2026-05"]}>
-            <Routes>
-              <Route
-                path="/months/:month"
-                element={
-                  <MonthOverview
-                    accounts={mockAccountsMixed}
-                    snapshots={mockSnapshotsMixed}
-                  />
-                }
-              />
-            </Routes>
-          </MemoryRouter>
-        </ThemeProvider>
-      </StyleSheetManager>
-    );
-
-    // Girokonto balance: 145000 cents = 1,450.00 €
-    const balanceEl = screen.getByText(/1[.,]450/);
-    expect(getCSSForElement(balanceEl)).toContain(theme.colors.secondary);
-  });
-});
-
-describe("MonthOverview — amount coloring — one-off transactions", () => {
-  it("positive one-off amount renders with secondary color", () => {
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [{ ...mockGiroTransaction, amount: 10000 }],
-    });
-
-    renderForCSS();
-
-    const amountEl = screen.getByText(/100/);
-    expect(getCSSForElement(amountEl)).toContain(theme.colors.secondary);
-  });
-
-  it("negative one-off amount renders with error color", () => {
-    mockUseMonthTransactions.mockReturnValue({
-      ...emptyMonthTransactions,
-      transactions: [mockGiroTransaction], // amount: -5000
-    });
-
-    renderForCSS();
-
-    const amountEl = screen.getByText(/-50/);
-    expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
-  });
-});
-
-describe("MonthOverview — amount coloring — recurring transactions", () => {
-  it("positive recurring amount renders with secondary color", () => {
-    renderForCSS("2026-05", mockAccounts, {
-      g1: [mockGiroRecurring], // amount: 323643 (positive)
-      t1: [],
-    });
-
-    const amountEl = screen.getByText(/3[.,]236/);
-    expect(getCSSForElement(amountEl)).toContain(theme.colors.secondary);
-  });
-
-  it("negative recurring amount renders with error color", () => {
-    renderForCSS("2026-05", mockAccounts, {
-      g1: [mockTagRecurring], // amount: -70000 (negative)
-      t1: [],
-    });
-
-    const amountEl = screen.getByText(/-700/);
-    expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// MonthOverview — balance summary bar Chips (issue #114)
-// ---------------------------------------------------------------------------
-
-describe("MonthOverview — balance summary bar Chips", () => {
-  it("renders one Chip per account in the Balance Summary Bar", () => {
-    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
-    expect(screen.getAllByTestId("chip")).toHaveLength(mockAccounts.length);
-  });
-
-  it("each Chip receives account.color when the account has a color set", () => {
-    renderMonthOverview("2026-05", mockAccountsWithColor, mockSnapshots);
-    const chips = screen.getAllByTestId("chip");
-    expect(chips[0]).toHaveAttribute(
-      "data-color",
-      mockAccountsWithColor[0].color
-    );
-    expect(chips[1]).toHaveAttribute(
-      "data-color",
-      mockAccountsWithColor[1].color
+      "t1"
     );
   });
 
-  it("each Chip falls back to chartColors[kind] when account.color is null", () => {
-    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
-    const chips = screen.getAllByTestId("chip");
-    expect(chips[0]).toHaveAttribute("data-color", chartColors.Girokonto);
-    expect(chips[1]).toHaveAttribute("data-color", chartColors.Tagesgeld);
-  });
-
-  it("Chip appears before the account name in each Balance Summary Item", () => {
-    renderMonthOverview("2026-05", mockAccounts, mockSnapshots);
-    const chips = screen.getAllByTestId("chip");
-    chips.forEach((chip) => {
-      expect(chip.parentElement?.firstElementChild).toBe(chip);
-    });
+  it("refetches after a delete", () => {
+    renderOverview();
+    fireEvent.click(screen.getByText("Cat food"));
+    capturedOnDeleted?.("t1");
+    expect(refetch).toHaveBeenCalled();
   });
 });

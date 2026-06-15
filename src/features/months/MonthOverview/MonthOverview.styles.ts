@@ -3,96 +3,57 @@ import styled from "styled-components";
 export const StyledMonthOverview = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.space4}px;
+  gap: ${({ theme }) => theme.spacing.space6}px;
 `;
 
-export const StyledBalanceSummaryBar = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing.space4}px;
-  padding: ${({ theme }) => theme.spacing.space3}px
-    ${({ theme }) => theme.spacing.space4}px;
-  background: ${({ theme }) => theme.colors.surfaceVariant};
-  border-radius: 8px;
+export const StyledColumns = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: ${({ theme }) => theme.spacing.space6}px;
+  align-items: start;
 `;
 
-export const StyledBalanceSummaryItem = styled.div`
+export const StyledRightColumn = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: ${({ theme }) => theme.spacing.space1}px;
+  gap: ${({ theme }) => theme.spacing.space6}px;
 `;
 
-export const StyledBalanceLabel = styled.span`
-  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-`;
-
-export const StyledBalanceValue = styled.span<{ $isLiability: boolean }>`
-  font-size: ${({ theme }) => theme.typography.sizes.md}px;
-  font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  color: ${({ theme, $isLiability }) =>
-    $isLiability ? theme.colors.error : theme.colors.secondary};
-`;
-
-export const StyledTabList = styled.div`
+export const StyledStepper = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing.space2}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-`;
-
-export const StyledTab = styled.button<{ $isActive: boolean; $color?: string }>`
-  background: none;
-  border: none;
-  border-bottom: 2px solid
-    ${({ theme, $isActive, $color }) =>
-      $isActive ? ($color ?? theme.colors.primary) : "transparent"};
-  padding: ${({ theme }) => theme.spacing.space2}px
-    ${({ theme }) => theme.spacing.space3}px;
-  cursor: pointer;
-  color: ${({ theme, $isActive, $color }) =>
-    $isActive ? ($color ?? theme.colors.primary) : theme.colors.onSurface};
-`;
-
-export const StyledSectionHeading = styled.h3`
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  margin: 0;
-`;
-
-export const StyledTransactionRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing.space2}px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  color: ${({ theme }) => theme.colors.onSurface};
-`;
-
-export const StyledOneOffRow = styled.div<{ $gridTemplate: string }>`
-  display: grid;
-  grid-template-columns: ${({ $gridTemplate }) => $gridTemplate};
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.space4}px;
-  padding: ${({ theme }) => theme.spacing.space2}px
-    ${({ theme }) => theme.spacing.space4}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  color: ${({ theme }) => theme.colors.onSurface};
+  gap: ${({ theme }) => theme.spacing.space1}px;
+  background-color: ${({ theme }) => theme.colors.surfaceContainer};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  padding: 3px;
+`;
+
+export const StyledStepButton = styled.button`
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
   cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.surfaceVariant};
+    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
+    color: ${({ theme }) => theme.colors.onSurface};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
+    outline-offset: 2px;
   }
 `;
 
-export const StyledEmptyState = styled.p`
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  margin: 0;
-`;
-
-export const StyledSignedAmount = styled.span<{ $isPositive: boolean }>`
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: ${({ theme, $isPositive }) =>
-    $isPositive ? theme.colors.secondary : theme.colors.error};
+export const StyledStepLabel = styled.span`
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.onSurface};
+  padding: 0 10px;
 `;

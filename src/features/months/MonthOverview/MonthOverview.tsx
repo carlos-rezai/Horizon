@@ -1,200 +1,139 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { AccountKind, AccountWithBalance } from "../../../types/account";
-import type { MonthlySnapshot } from "../../../types/projection";
-import type { RecurringTransaction } from "../../../types/recurring";
 import type { Transaction } from "../../../types/transaction";
-import { formatBalance } from "../../../utils/format/format";
-import Button from "../../../primitives/Button/Button";
-import Chip from "../../../primitives/Chip/Chip";
-import { resolveAccountColor } from "../../../utils/color/color";
-import { useMonthTransactions } from "../useMonthTransactions";
+import PageHeader from "../../../components/PageHeader/PageHeader";
+import { formatMonthLong, formatMonth } from "../../../utils/format/format";
+import {
+  deriveMonthStats,
+  selectVariableSpending,
+} from "../../../utils/monthStats/monthStats";
+import MonthStatStrip from "../MonthStatStrip/MonthStatStrip";
+import SpendingList from "../SpendingList/SpendingList";
+import MonthBreakdown from "../MonthBreakdown/MonthBreakdown";
+import YearComparison from "../YearComparison/YearComparison";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
-import TableHeader from "../../../components/TableHeader/TableHeader";
 import {
   StyledMonthOverview,
-  StyledBalanceSummaryBar,
-  StyledBalanceSummaryItem,
-  StyledBalanceLabel,
-  StyledBalanceValue,
-  StyledTabList,
-  StyledTab,
-  StyledSectionHeading,
-  StyledTransactionRow,
-  StyledOneOffRow,
-  StyledEmptyState,
-  StyledSignedAmount,
+  StyledColumns,
+  StyledRightColumn,
+  StyledStepper,
+  StyledStepButton,
+  StyledStepLabel,
 } from "./MonthOverview.styles";
 
-const LIABILITY_KINDS = new Set<AccountKind>(["Mortgage", "CreditCard"]);
+// Variable Spending lives only on liquid spending accounts — Mortgage and
+// Investment accounts never hold one-off expenses, so they are not tabbed.
+const NON_SPENDING_KINDS = new Set<AccountKind>(["Mortgage", "Investment"]);
 
-const ONEOFF_GRID = "100px 1fr 100px 160px";
-const ONEOFF_COLUMNS = ["Date", "Description", "Amount", "To account"];
-
-function getTransferTarget(
-  tx: Transaction,
-  allTxs: Transaction[],
-  accounts: AccountWithBalance[]
-): string | null {
-  if (!tx.transferId) return null;
-  const otherLeg = allTxs.find(
-    (t) => t.transferId === tx.transferId && t.accountId !== tx.accountId
-  );
-  return accounts.find((a) => a.id === otherLeg?.accountId)?.name ?? null;
+function shiftMonth(month: string, delta: number): string {
+  let [year, mon] = month.split("-").map(Number);
+  mon += delta;
+  if (mon < 1) {
+    mon = 12;
+    year -= 1;
+  } else if (mon > 12) {
+    mon = 1;
+    year += 1;
+  }
+  return `${year}-${String(mon).padStart(2, "0")}`;
 }
 
 interface Props {
   accounts: AccountWithBalance[];
-  snapshots?: MonthlySnapshot[];
-  recurringTransactionsByAccount?: Record<string, RecurringTransaction[]>;
 }
 
-export default function MonthOverview({
-  accounts,
-  snapshots = [],
-  recurringTransactionsByAccount,
-}: Props) {
+export default function MonthOverview({ accounts }: Props) {
   const navigate = useNavigate();
   const { month } = useParams<{ month: string }>();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const monthStr = month ?? "";
+
+  const [createAccountId, setCreateAccountId] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
 
-  const activeAccount = accounts[activeIndex];
-  const snapshot = snapshots.find((s) => s.month === month);
-  const monthStr = month ?? "";
+  const spendingAccounts = accounts.filter(
+    (a) => !NON_SPENDING_KINDS.has(a.kind)
+  );
 
-  const { transactions, refetch } = useMonthTransactions(
-    activeAccount?.id ?? "",
+  const { transactions, refetch } = useAllMonthTransactions(
+    spendingAccounts.map((a) => a.id),
     monthStr
   );
 
-  const { transactions: allMonthTransactions, refetch: refetchAll } =
-    useAllMonthTransactions(
-      accounts.map((a) => a.id),
-      monthStr
-    );
+  const variableSpending = selectVariableSpending(transactions);
+  const stats = deriveMonthStats(transactions, monthStr);
+  const monthLabel = formatMonthLong(monthStr).split(" ")[0];
 
-  const recurringForAccount =
-    recurringTransactionsByAccount?.[activeAccount?.id ?? ""] ?? [];
+  function handleCreated() {
+    setCreateAccountId(null);
+    refetch();
+  }
 
   function handleDeleted() {
-    refetch();
-    refetchAll();
     setSelectedTransaction(null);
+    refetch();
   }
 
   return (
     <StyledMonthOverview>
-      <Button aria-label="Back" onClick={() => navigate(-1)}>
-        Back
-      </Button>
-      {snapshot && (
-        <StyledBalanceSummaryBar>
-          {accounts.map((account) => {
-            const entry = snapshot.accounts[account.id];
-            const balance =
-              entry !== undefined ? (entry.actual ?? entry.projected) : null;
-            return (
-              <StyledBalanceSummaryItem key={account.id}>
-                <Chip size="sm" color={resolveAccountColor(account)} />
-                <StyledBalanceLabel>{account.name}</StyledBalanceLabel>
-                <StyledBalanceValue
-                  $isLiability={LIABILITY_KINDS.has(account.kind)}
-                >
-                  {balance !== null ? formatBalance(balance) : "—"}
-                </StyledBalanceValue>
-              </StyledBalanceSummaryItem>
-            );
-          })}
-        </StyledBalanceSummaryBar>
-      )}
-      <StyledTabList role="tablist">
-        {accounts.map((account, index) => (
-          <StyledTab
-            key={account.id}
-            role="tab"
-            aria-selected={index === activeIndex}
-            $isActive={index === activeIndex}
-            $color={account.color ?? undefined}
-            onClick={() => setActiveIndex(index)}
-          >
-            {account.name}
-          </StyledTab>
-        ))}
-      </StyledTabList>
+      <PageHeader
+        overline={formatMonthLong(monthStr)}
+        title="Month Overview"
+        subtitle="Variable spending · Recurring-Only Model"
+        actions={
+          <StyledStepper>
+            <StyledStepButton
+              aria-label="Previous month"
+              onClick={() => navigate(`/months/${shiftMonth(monthStr, -1)}`)}
+            >
+              <ChevronLeft size={16} />
+            </StyledStepButton>
+            <StyledStepLabel>{formatMonth(monthStr)}</StyledStepLabel>
+            <StyledStepButton
+              aria-label="Next month"
+              onClick={() => navigate(`/months/${shiftMonth(monthStr, 1)}`)}
+            >
+              <ChevronRight size={16} />
+            </StyledStepButton>
+          </StyledStepper>
+        }
+      />
 
-      {recurringTransactionsByAccount !== undefined && (
-        <>
-          <StyledSectionHeading>Recurring this month</StyledSectionHeading>
-          {recurringForAccount.map((rt) => (
-            <StyledTransactionRow key={rt.id}>
-              <span>{rt.description}</span>
-              <StyledSignedAmount $isPositive={rt.amount >= 0}>
-                {formatBalance(rt.amount)}
-              </StyledSignedAmount>
-            </StyledTransactionRow>
-          ))}
-        </>
-      )}
+      <MonthStatStrip stats={stats} />
 
-      <TableHeader columns={ONEOFF_COLUMNS} gridTemplate={ONEOFF_GRID} />
+      <StyledColumns>
+        <SpendingList
+          accounts={spendingAccounts}
+          transactions={variableSpending}
+          monthLabel={monthLabel}
+          onAddExpense={(accountId) => setCreateAccountId(accountId)}
+          onEditTransaction={(tx) => setSelectedTransaction(tx)}
+        />
+        <StyledRightColumn>
+          <MonthBreakdown transactions={variableSpending} />
+          <YearComparison monthLabel={monthLabel} />
+        </StyledRightColumn>
+      </StyledColumns>
 
-      {transactions.length === 0 ? (
-        <StyledEmptyState>No transactions this month</StyledEmptyState>
-      ) : (
-        transactions.map((tx) => (
-          <StyledOneOffRow
-            key={tx.id}
-            $gridTemplate={ONEOFF_GRID}
-            onClick={() => setSelectedTransaction(tx)}
-          >
-            <span>{tx.date}</span>
-            <span>{tx.description}</span>
-            <StyledSignedAmount $isPositive={tx.amount >= 0}>
-              {formatBalance(tx.amount)}
-            </StyledSignedAmount>
-            <span>
-              {getTransferTarget(tx, allMonthTransactions, accounts) ?? "—"}
-            </span>
-          </StyledOneOffRow>
-        ))
-      )}
-
-      <Button onClick={() => setShowCreateModal(true)}>Add transaction</Button>
-
-      {showCreateModal && (
+      {createAccountId !== null && (
         <TransactionCreateModal
-          accountId={activeAccount?.id ?? ""}
+          accountId={createAccountId}
           accounts={accounts}
           month={monthStr}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={() => {
-            setShowCreateModal(false);
-            refetch();
-            refetchAll();
-          }}
+          onClose={() => setCreateAccountId(null)}
+          onSuccess={handleCreated}
         />
       )}
 
       {selectedTransaction && (
         <TransactionEditModal
           transaction={selectedTransaction}
-          toAccountName={
-            getTransferTarget(
-              selectedTransaction,
-              allMonthTransactions,
-              accounts
-            ) ?? undefined
-          }
           onClose={() => setSelectedTransaction(null)}
-          onSaved={(updated) => {
-            setSelectedTransaction(null);
-            void Promise.resolve(updated);
-          }}
+          onSaved={() => setSelectedTransaction(null)}
           onDeleted={handleDeleted}
         />
       )}
