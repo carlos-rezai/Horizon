@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatBalance, formatMonth, toOrdinal } from "./format";
+import { formatBalance, formatBytes, formatMonth, toOrdinal } from "./format";
 
 describe("formatBalance", () => {
   it("formats a positive cent value as a German-locale EUR string", () => {
@@ -16,6 +16,33 @@ describe("formatBalance", () => {
 
   it("formats a negative value", () => {
     expect(formatBalance(-5050)).toBe("-50,50 €");
+  });
+});
+
+describe("formatBytes", () => {
+  it("formats zero bytes", () => {
+    expect(formatBytes(0)).toBe("0 B");
+  });
+
+  it("formats a sub-kilobyte value in bytes with no decimals", () => {
+    expect(formatBytes(512)).toBe("512 B");
+  });
+
+  it("formats an exact kilobyte without a trailing decimal", () => {
+    expect(formatBytes(2048)).toBe("2 KB");
+  });
+
+  it("formats a megabyte value with a German-locale decimal comma", () => {
+    // 2_517_172 / 1024 / 1024 = 2.40… → de-DE one fraction digit
+    expect(formatBytes(2_517_172)).toBe("2,4 MB");
+  });
+
+  it("formats an exact megabyte without a trailing decimal", () => {
+    expect(formatBytes(5_242_880)).toBe("5 MB");
+  });
+
+  it("formats a gigabyte value", () => {
+    expect(formatBytes(1_073_741_824)).toBe("1 GB");
   });
 });
 
