@@ -1,17 +1,17 @@
 import { useLocation } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection";
-import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
 import { ProjectionAccordion } from "../../features/projection";
-import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
 import Card from "../../components/Card/Card";
-import CardHeader from "../../components/CardHeader/CardHeader";
 import PageHeader from "../../components/PageHeader/PageHeader";
+import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
+import Button from "../../primitives/Button/Button";
 import Spinner from "../../primitives/Spinner/Spinner";
 import { StyledPlanPage, StyledErrorText } from "./PlanPage.styles";
 
 export default function PlanPage() {
   const location = useLocation();
+  const { notify } = useSnackbar();
   const {
     accounts,
     isLoading: accountsLoading,
@@ -21,8 +21,8 @@ export default function PlanPage() {
     snapshots,
     isLoading: projectionLoading,
     error: projectionError,
+    refetch,
   } = useProjection();
-  const { recurringTransactions } = useAllRecurringTransactions();
 
   const initialYear = location.state?.year as number | undefined;
 
@@ -34,17 +34,23 @@ export default function PlanPage() {
 
   return (
     <StyledPlanPage>
-      <PageHeader text="Financial Plan" />
-      <CardHeader text="Trajectory Horizon" />
-      <Card>
-        <TrajectoryHorizon
-          snapshots={snapshots}
-          accounts={accounts}
-          recurringTransactions={recurringTransactions}
-          isLoading={projectionLoading}
-        />
-      </Card>
-      <CardHeader text="Plan Detail" />
+      <PageHeader
+        overline="Outlook"
+        title="Financial Plan"
+        subtitle="240-month projection · Recurring-Only Engine"
+        actions={
+          <Button
+            variant="secondary"
+            icon="RefreshCw"
+            onClick={() => {
+              refetch();
+              notify("Recalculated", { variant: "success" });
+            }}
+          >
+            Recalculate
+          </Button>
+        }
+      />
       <Card>
         <ProjectionAccordion
           snapshots={snapshots}

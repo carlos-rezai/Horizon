@@ -5,6 +5,7 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import PlanPage from "./PlanPage";
+import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
 import type { AccountWithBalance } from "../../types/account";
 
 afterEach(() => {
@@ -42,9 +43,11 @@ function mockAllSuccess() {
 function renderPage() {
   return render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={["/plan"]}>
-        <PlanPage />
-      </MemoryRouter>
+      <SnackbarProvider>
+        <MemoryRouter initialEntries={["/plan"]}>
+          <PlanPage />
+        </MemoryRouter>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }
@@ -53,9 +56,11 @@ function renderForCSS() {
   return render(
     <StyleSheetManager disableCSSOMInjection>
       <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={["/plan"]}>
-          <PlanPage />
-        </MemoryRouter>
+        <SnackbarProvider>
+          <MemoryRouter initialEntries={["/plan"]}>
+            <PlanPage />
+          </MemoryRouter>
+        </SnackbarProvider>
       </ThemeProvider>
     </StyleSheetManager>
   );
@@ -70,10 +75,11 @@ function getInjectedCSS(): string {
 describe("PlanPage — card surfaces", () => {
   beforeEach(mockAllSuccess);
 
-  it("renders at least 2 card surfaces — chart and accordion", async () => {
+  it("renders the Outlook header and the accordion card surface", async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText("Financial Plan")).toBeInTheDocument();
+      expect(screen.getAllByTestId("card").length).toBeGreaterThanOrEqual(1);
     });
   });
 });
