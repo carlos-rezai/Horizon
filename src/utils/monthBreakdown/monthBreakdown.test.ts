@@ -1,0 +1,74 @@
+import { describe, it, expect } from "vitest";
+import type { Transaction } from "../../types/transaction";
+import { deriveBreakdown } from "./monthBreakdown";
+import { colorForCategoryName } from "../categoryColor/categoryColor";
+
+function tx(overrides: Partial<Transaction>): Transaction {
+  return {
+    id: Math.random().toString(36).slice(2),
+    accountId: "a1",
+    date: "2026-06-03",
+    amount: -1000,
+    description: "Expense",
+    category: "Food",
+    ...overrides,
+  };
+}
+
+describe("deriveBreakdown", () => {
+  it("groups variable spending by category into positive-magnitude slices", () => {
+    const txns = [
+      tx({ amount: -5000, category: "Groceries" }),
+      tx({ amount: -1000, category: "Groceries" }),
+      tx({ amount: -3000, category: "Dining" }),
+    ];
+    const { segments } = deriveBreakdown(txns);
+    const groceries = segments.find((s) => s.label === "Groceries");
+    expect(groceries?.amount).toBe(6000);
+    const dining = segments.find((s) => s.label === "Dining");
+    expect(dining?.amount).toBe(3000);
+  });
+
+  it("sorts slices descending by amount", () => {
+    const txns = [
+      tx({ amount: -2000, category: "Cat" }),
+      tx({ amount: -6000, category: "Groceries" }),
+      tx({ amount: -3000, category: "Dining" }),
+    ];
+    const { segments } = deriveBreakdown(txns);
+    expect(segments.map((s) => s.label)).toEqual([
+      "Groceries",
+      "Dining",
+      "Cat",
+    ]);
+  });
+
+  it("resolves each slice colour from the category name", () => {
+    const txns = [tx({ amount: -5000, category: "Groceries" })];
+    const { segments } = deriveBreakdown(txns);
+    expect(segments[0].color).toBe(colorForCategoryName("Groceries"));
+  });
+
+  it("totals the magnitudes of every slice", () => {
+    const txns = [
+      tx({ amount: -5000, category: "Groceries" }),
+      tx({ amount: -3000, category: "Dining" }),
+    ];
+    expect(deriveBreakdown(txns).total).toBe(8000);
+  });
+
+  it("excludes transfers and auto-settlement", () => {
+    const txns = [
+      tx({ amount: -5000, category: "Groceries" }),
+      tx({ amount: -90000, category: "Groceries", transferId: "tr1" }),
+      tx({ amount: -90000, category: "Dining", isAutoSettlement: true }),
+    ];
+    const { segments, total } = deriveBreakdown(txns);
+    expect(segments).toHaveLength(1);
+    expect(total).toBe(5000);
+  });
+
+  it("returns empty segments and zero total for an empty month", () => {
+    expect(deriveBreakdown([])).toEqual({ segments: [], total: 0 });
+  });
+});
