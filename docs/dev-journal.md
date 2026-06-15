@@ -114,3 +114,22 @@ behaviour when the field is absent.
 **What to watch:** If a user has an October ST stored as an annual RT created before
 this change, it will still fire at the projection-start month until re-saved.
 Consider surfacing a one-time prompt to re-confirm ST month after this ships.
+
+---
+
+## 2026-06-15 — #138 Outlook accordion: projected vs actual Restschuld
+
+While restructuring the Projection Accordion (issue #138) the collapsed/expanded
+Restschuld column was switched to read the **projected** balance only, not
+`actual ?? projected`. A Mortgage's `actual` is just its un-replayed opening
+balance (ST is a recurring transfer, never an actual transaction), so when the
+mortgage's `openingDate` is in the past, the replay-derived projected start
+(e.g. 72.000) differs from the opening balance (90.000). Mixing them fabricated
+a phantom Restschuld step-down at the current-month boundary.
+
+**Out-of-scope observation:** the Dashboard KPI "Restschuld" tile and the
+MortgageCountdown still use `actual ?? projected`, so they show the opening
+balance (90.000) while the accordion/trajectory show the projected start
+(72.000). Both are defensible (account balance vs modelled trajectory) but
+inconsistent across screens. A future consistency pass should pick one
+convention for "current Restschuld" project-wide.
