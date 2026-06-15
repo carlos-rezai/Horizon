@@ -12,11 +12,13 @@ import MortgageCountdown from "../../features/mortgage/MortgageCountdown/Mortgag
 import Card from "../../components/Card/Card";
 import CardHeader from "../../components/CardHeader/CardHeader";
 import PageHeader from "../../components/PageHeader/PageHeader";
+import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
 import Spinner from "../../primitives/Spinner/Spinner";
 import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
 import { computeTotalLiquid } from "../../utils/accounts/accounts";
 import { formatBalance } from "../../utils/format/format";
+import { downloadBackup } from "../../features/settings/downloadBackup";
 import {
   StyledDashboard,
   StyledGrid,
@@ -28,7 +30,17 @@ import {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { notify } = useSnackbar();
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const handleBackup = async () => {
+    try {
+      await downloadBackup();
+      notify("Backup saved", { variant: "success" });
+    } catch {
+      notify("Backup failed", { variant: "error" });
+    }
+  };
 
   const {
     accounts,
@@ -52,7 +64,29 @@ export default function DashboardPage() {
 
   return (
     <StyledDashboard>
-      <PageHeader text="Dashboard" />
+      <PageHeader
+        overline="Overview"
+        title="Dashboard"
+        subtitle="Your financial horizon at a glance"
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              icon="Download"
+              onClick={() => void handleBackup()}
+            >
+              Backup
+            </Button>
+            <Button
+              variant="primary"
+              icon="Plus"
+              onClick={() => setShowCreateModal(true)}
+            >
+              Add account
+            </Button>
+          </>
+        }
+      />
       <KpiStrip snapshots={snapshots} accounts={accounts} />
       <TrajectoryHorizon
         snapshots={snapshots}
@@ -67,9 +101,6 @@ export default function DashboardPage() {
               <Heading level={2}>Accounts Summary</Heading>
               <span>Total Liquid: {formatBalance(totalLiquid)}</span>
             </StyledAccountsHeaderInfo>
-            <Button onClick={() => setShowCreateModal(true)}>
-              Add account
-            </Button>
           </StyledAccountsHeader>
           <AccountOverview accounts={accounts} />
           {showCreateModal && (
