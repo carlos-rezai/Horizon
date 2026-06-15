@@ -75,10 +75,14 @@ export default function SpendingList({
     })),
   ];
 
-  const rows =
+  const visible =
     tab === ALL
       ? transactions
       : transactions.filter((t) => t.accountId === tab);
+
+  // The prototype lists a month's spending oldest-first (ISO dates sort
+  // chronologically), interleaving accounts on the All-accounts tab.
+  const rows = [...visible].sort((a, b) => a.date.localeCompare(b.date));
 
   const activeAccountId = tab === ALL ? (accounts[0]?.id ?? "") : tab;
 

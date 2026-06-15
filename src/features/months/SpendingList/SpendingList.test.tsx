@@ -119,6 +119,23 @@ describe("SpendingList", () => {
     expect(screen.getByText("REWE")).toBeInTheDocument();
   });
 
+  it("orders rows ascending by date on the All accounts tab", () => {
+    // Fixture dates: Cat food 06-09, Zalando 06-07, REWE 06-02.
+    // The prototype lists a month's spending oldest-first, interleaving
+    // accounts — so the DOM order must be REWE (02) → Zalando (07) → Cat food (09).
+    renderList();
+    const rewe = screen.getByText("REWE");
+    const zalando = screen.getByText("Zalando");
+    const catFood = screen.getByText("Cat food");
+    expect(
+      rewe.compareDocumentPosition(zalando) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      zalando.compareDocumentPosition(catFood) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   it("filters to the selected account when its tab is clicked", () => {
     renderList();
     fireEvent.click(screen.getByRole("tab", { name: /Visa/ }));
