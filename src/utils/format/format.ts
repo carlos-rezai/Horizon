@@ -5,6 +5,22 @@ export function formatBalance(cents: number): string {
   }).format(cents / 100);
 }
 
+const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
+
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const exponent = Math.floor(Math.log(bytes) / Math.log(1024));
+  const unitIndex = Math.min(exponent, BYTE_UNITS.length - 1);
+  const value = bytes / 1024 ** unitIndex;
+  if (unitIndex === 0) {
+    return `${value} ${BYTE_UNITS[0]}`;
+  }
+  const formatted = new Intl.NumberFormat("de-DE", {
+    maximumFractionDigits: 1,
+  }).format(value);
+  return `${formatted} ${BYTE_UNITS[unitIndex]}`;
+}
+
 const MONTHS = [
   "Jan",
   "Feb",
