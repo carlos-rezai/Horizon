@@ -93,7 +93,10 @@ function applyRecurringToBalances(
     const destKind = accountMap.get(r.linkedAccountId)?.kind;
     if (destKind === "Mortgage") {
       const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
-      const actualDebit = Math.min(r.amount, remaining);
+      // Operate on the magnitude so the paydown matches every other transfer's
+      // sign convention: a transfer stored with the domain's negative outflow
+      // sign reduces Restschuld identically to a positive-amount transfer.
+      const actualDebit = Math.min(Math.abs(r.amount), remaining);
       if (actualDebit <= 0) {
         runningBalances.set(
           r.accountId,
