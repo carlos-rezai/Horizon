@@ -1,36 +1,34 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { ChevronRight, Flag } from "lucide-react";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
-import type { RecurringTransaction } from "../../../types/recurring";
-import {
-  buildAccountColumns,
-  findMortgagePayoffMonth,
-  deriveSTMonths,
-} from "../../../utils/projection/projection";
-import { formatBalance, formatMonth } from "../../../utils/format/format";
+import { findMortgagePayoffMonth } from "../../../utils/projection/projection";
+import { aggregateYearSummaries } from "../../../utils/accordion/accordion";
+import { formatMonth } from "../../../utils/format/format";
+import Money from "../../../primitives/Money/Money";
 import {
   StyledAccordion,
+  StyledSectionHead,
+  StyledSectionTitle,
+  StyledLegend,
+  StyledLegendDot,
+  StyledColumnHeader,
   StyledYearSection,
   StyledYearHeader,
+  StyledChevron,
   StyledYearLabel,
-  StyledLiquidMeta,
-  StyledRestschuldMeta,
-  StyledRowSpacer,
-  StyledTableWrapper,
-  StyledTable,
-  StyledTh,
-  StyledTr,
-  StyledTd,
+  StyledMonthRow,
+  StyledMonthName,
+  StyledNum,
+  StyledPayoffFlag,
+  StyledDash,
   StyledEmptyState,
-  StyledSTBadge,
-  StyledPayoffBadge,
 } from "./ProjectionAccordion.styles";
 
 interface Props {
   snapshots: MonthlySnapshot[];
   accounts: AccountWithBalance[];
-  recurringTransactions?: RecurringTransaction[];
   initialYear?: number;
 }
 
@@ -46,41 +44,31 @@ function groupByYear(
   return groups;
 }
 
-function getRestschuld(
+// The accordion is a pure projection view (Total Liquid / Restschuld / Net
+// Cashflow / Sondertilgung), so it reads the *projected* Restschuld — never the
+// actual. A Mortgage's "actual" is just its un-replayed opening balance (ST is
+// modelled as a recurring transfer, not an actual transaction), so mixing it in
+// would fabricate a phantom step-down at the current-month boundary.
+function restschuldOf(
   snapshot: MonthlySnapshot,
   mortgageIds: string[]
-): number | null {
-  if (mortgageIds.length === 0) return null;
+): number {
   return mortgageIds.reduce((sum, id) => {
     const entry = snapshot.accounts[id];
-    return sum + (entry?.actual ?? entry?.projected ?? 0);
+    return sum + (entry?.projected ?? 0);
   }, 0);
-}
-
-function getCellValue(
-  snapshot: MonthlySnapshot,
-  accountId: string
-): { value: number | null; isActual: boolean } {
-  const entry = snapshot.accounts[accountId];
-  if (entry === undefined) return { value: null, isActual: false };
-  if (entry.actual !== undefined)
-    return { value: entry.actual, isActual: true };
-  return { value: entry.projected, isActual: false };
 }
 
 export default function ProjectionAccordion({
   snapshots,
   accounts,
-  recurringTransactions = [],
   initialYear,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const currentYear = new Date().getFullYear();
-  const defaultExpanded = initialYear ?? currentYear;
-
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(
-    new Set([defaultExpanded])
+  const [expanded, setExpanded] = useState<number | null>(
+    initialYear ?? currentYear
   );
 
   useEffect(() => {
@@ -99,15 +87,9 @@ export default function ProjectionAccordion({
     );
   }
 
-  const columns = buildAccountColumns(accounts);
-  const mortgageAccounts = accounts.filter((a) => a.kind === "Mortgage");
-  const stMonths = deriveSTMonths(
-    recurringTransactions,
-    accounts,
-    snapshots[0].month,
-    snapshots.length
-  );
-  const mortgageIds = mortgageAccounts.map((a) => a.id);
+  const mortgageIds = accounts
+    .filter((a) => a.kind === "Mortgage")
+    .map((a) => a.id);
   const hasMortgage = mortgageIds.length > 0;
 
   const payoffMonth = hasMortgage
@@ -115,125 +97,148 @@ export default function ProjectionAccordion({
     : null;
   const payoffYear = payoffMonth ? parseInt(payoffMonth.slice(0, 4), 10) : null;
 
+  // Per-month Restschuld and the Sondertilgung step-down vs. the previous month.
+  const restschuldByMonth = new Map<string, number>();
+  const stByMonth = new Map<string, number>();
+  snapshots.forEach((s, i) => {
+    const rs = restschuldOf(s, mortgageIds);
+    restschuldByMonth.set(s.month, rs);
+    if (i > 0) {
+      const step = restschuldOf(snapshots[i - 1], mortgageIds) - rs;
+      if (step > 0) stByMonth.set(s.month, step);
+    }
+  });
+
+  const summaries = aggregateYearSummaries(
+    snapshots.map((s) => ({
+      month: s.month,
+      totalLiquid: s.totalLiquid,
+      restschuld: restschuldByMonth.get(s.month) ?? 0,
+      netCashflow: s.netCashflow,
+    }))
+  );
+
   const yearGroups = groupByYear(snapshots);
 
   function toggleYear(year: number) {
-    setExpandedYears((prev) => {
-      const next = new Set(prev);
-      if (next.has(year)) {
-        next.delete(year);
-      } else {
-        next.add(year);
-      }
-      return next;
-    });
+    setExpanded((prev) => (prev === year ? null : year));
   }
 
   return (
     <StyledAccordion>
-      {[...yearGroups.entries()].map(([year, monthSnapshots]) => {
-        const isExpanded = expandedYears.has(year);
-        const lastSnapshot = monthSnapshots[monthSnapshots.length - 1];
-        const summaryRestschuld = getRestschuld(lastSnapshot, mortgageIds);
+      <StyledSectionHead>
+        <StyledSectionTitle>Projection Accordion</StyledSectionTitle>
+        <StyledLegend>
+          <StyledLegendDot />
+          Payoff year highlighted
+        </StyledLegend>
+      </StyledSectionHead>
+
+      <StyledColumnHeader>
+        <span />
+        <span>Period</span>
+        <span>Total Liquid</span>
+        <span>Restschuld</span>
+        <span>Net Cashflow</span>
+        <span>Sondertilgung</span>
+      </StyledColumnHeader>
+
+      {summaries.map((summary) => {
+        const year = summary.year;
+        const isOpen = expanded === year;
         const isPayoffYear = payoffYear === year;
+        const months = yearGroups.get(year) ?? [];
 
         return (
           <StyledYearSection key={year} id={`year-${year}`}>
             <StyledYearHeader
-              aria-expanded={isExpanded}
+              type="button"
+              aria-expanded={isOpen}
+              $open={isOpen}
               onClick={() => toggleYear(year)}
             >
-              <StyledYearLabel>{year}</StyledYearLabel>
-              <StyledLiquidMeta>
-                Liquid {formatBalance(lastSnapshot.totalLiquid)}
-              </StyledLiquidMeta>
-              {summaryRestschuld !== null && (
-                <StyledRestschuldMeta>
-                  RS {formatBalance(summaryRestschuld)}
-                </StyledRestschuldMeta>
+              <StyledChevron $open={isOpen}>
+                <ChevronRight size={17} />
+              </StyledChevron>
+              <StyledYearLabel $payoff={isPayoffYear}>{year}</StyledYearLabel>
+              <StyledNum $tone="pos">
+                <Money cents={summary.totalLiquid} />
+              </StyledNum>
+              {!hasMortgage ? (
+                <StyledDash>—</StyledDash>
+              ) : summary.restschuld > 0 ? (
+                <StyledNum $tone="debt">
+                  <Money cents={summary.restschuld} />
+                </StyledNum>
+              ) : (
+                <StyledPayoffFlag>
+                  <Flag size={12} />
+                  <Money cents={0} />
+                </StyledPayoffFlag>
               )}
-              <StyledRowSpacer />
-              {isPayoffYear && payoffMonth && (
-                <StyledPayoffBadge>
-                  Paid off {formatMonth(payoffMonth)}
-                </StyledPayoffBadge>
+              <StyledNum>
+                <Money cents={summary.netCashflow} sign />
+              </StyledNum>
+              {hasMortgage && summary.sondertilgung > 0 ? (
+                <StyledNum $tone="muted">
+                  <Money cents={-summary.sondertilgung} />
+                </StyledNum>
+              ) : (
+                <StyledDash>—</StyledDash>
               )}
             </StyledYearHeader>
 
-            {isExpanded && (
-              <StyledTableWrapper>
-                <StyledTable>
-                  <thead>
-                    <tr>
-                      <StyledTh>Month</StyledTh>
-                      {columns.map((col) => (
-                        <StyledTh key={col.id}>{col.name}</StyledTh>
-                      ))}
-                      {hasMortgage && <StyledTh>Restschuld</StyledTh>}
-                      <StyledTh>Net Cashflow</StyledTh>
-                      <StyledTh>Total Liquid</StyledTh>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthSnapshots.map((snapshot) => {
-                      const restschuld = getRestschuld(snapshot, mortgageIds);
-                      const stAmount = stMonths.get(snapshot.month);
-                      const isSTMonth = stAmount !== undefined;
-                      const isPayoffMonth = snapshot.month === payoffMonth;
+            {isOpen &&
+              months.map((snapshot) => {
+                const restschuld = restschuldByMonth.get(snapshot.month) ?? 0;
+                const stAmount = stByMonth.get(snapshot.month);
+                const isSTMonth = stAmount !== undefined;
+                const isPayoffMonth = snapshot.month === payoffMonth;
 
-                      return (
-                        <StyledTr
-                          key={snapshot.month}
-                          $isSTMonth={isSTMonth}
-                          $isPayoffMonth={isPayoffMonth}
-                          data-testid={
-                            isPayoffMonth ? "payoff-month-row" : undefined
-                          }
-                          onClick={() => {
-                            navigate(location.pathname, {
-                              replace: true,
-                              state: { year },
-                            });
-                            navigate(`/months/${snapshot.month}`);
-                          }}
-                        >
-                          <StyledTd>{formatMonth(snapshot.month)}</StyledTd>
-                          {columns.map((col) => {
-                            const { value, isActual } = getCellValue(
-                              snapshot,
-                              col.id
-                            );
-                            return (
-                              <StyledTd key={col.id} $isActual={isActual}>
-                                {value !== null ? formatBalance(value) : "—"}
-                              </StyledTd>
-                            );
-                          })}
-                          {hasMortgage && (
-                            <StyledTd>
-                              {restschuld !== null
-                                ? formatBalance(restschuld)
-                                : "—"}
-                              {isSTMonth && (
-                                <StyledSTBadge>
-                                  +{formatBalance(stAmount)}
-                                </StyledSTBadge>
-                              )}
-                            </StyledTd>
-                          )}
-                          <StyledTd>
-                            {formatBalance(snapshot.netCashflow)}
-                          </StyledTd>
-                          <StyledTd>
-                            {formatBalance(snapshot.totalLiquid)}
-                          </StyledTd>
-                        </StyledTr>
-                      );
-                    })}
-                  </tbody>
-                </StyledTable>
-              </StyledTableWrapper>
-            )}
+                return (
+                  <StyledMonthRow
+                    key={snapshot.month}
+                    $isST={isSTMonth}
+                    $isPayoff={isPayoffMonth}
+                    data-testid={
+                      isPayoffMonth ? "payoff-month-row" : "month-row"
+                    }
+                    onClick={() => {
+                      navigate(location.pathname, {
+                        replace: true,
+                        state: { year },
+                      });
+                      navigate(`/months/${snapshot.month}`);
+                    }}
+                  >
+                    <span />
+                    <StyledMonthName $payoff={isPayoffMonth}>
+                      {formatMonth(snapshot.month).slice(0, 3)}
+                      {isPayoffMonth && <Flag size={11} />}
+                    </StyledMonthName>
+                    <StyledNum>
+                      <Money cents={snapshot.totalLiquid} />
+                    </StyledNum>
+                    {!hasMortgage ? (
+                      <StyledDash>—</StyledDash>
+                    ) : (
+                      <StyledNum $tone={restschuld > 0 ? "muted" : "accent"}>
+                        <Money cents={restschuld} />
+                      </StyledNum>
+                    )}
+                    <StyledNum>
+                      <Money cents={snapshot.netCashflow} sign />
+                    </StyledNum>
+                    {hasMortgage && isSTMonth ? (
+                      <StyledNum $tone="muted">
+                        <Money cents={-stAmount} />
+                      </StyledNum>
+                    ) : (
+                      <StyledDash>—</StyledDash>
+                    )}
+                  </StyledMonthRow>
+                );
+              })}
           </StyledYearSection>
         );
       })}

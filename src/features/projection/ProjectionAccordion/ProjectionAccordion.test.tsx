@@ -189,7 +189,9 @@ describe("ProjectionAccordion — month row navigation", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Oct 2026").closest("tr")!);
+    fireEvent.click(
+      screen.getByText("Oct").closest('[data-testid="month-row"]')!
+    );
 
     expect(mockNavigate).toHaveBeenCalledWith("/months/2026-10");
   });
@@ -203,10 +205,14 @@ describe("ProjectionAccordion — month row navigation", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Nov 2026").closest("tr")!);
+    fireEvent.click(
+      screen.getByText("Nov").closest('[data-testid="month-row"]')!
+    );
     expect(mockNavigate).toHaveBeenCalledWith("/months/2026-11");
 
-    fireEvent.click(screen.getByText("Dec 2026").closest("tr")!);
+    fireEvent.click(
+      screen.getByText("Dec").closest('[data-testid="month-row"]')!
+    );
     expect(mockNavigate).toHaveBeenCalledWith("/months/2026-12");
   });
 });
