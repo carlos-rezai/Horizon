@@ -37,8 +37,13 @@ import {
 } from "../../../utils/trajectory/trajectory";
 import { formatBalance } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
+import { Filter } from "lucide-react";
 import {
   StyledSection,
+  StyledHeader,
+  StyledOverline,
+  StyledTitle,
+  StyledSeriesToggle,
   StyledChartWrapper,
   StyledEmptyState,
   StyledLoadingState,
@@ -309,6 +314,7 @@ export default function TrajectoryHorizon({
   const handleIsolate = (key: string) =>
     setVisibility(isolateSeries(seriesKeys, key));
   const handleShowAll = () => setVisibility(showAllSeries(seriesKeys));
+  const visibleCount = series.filter((s) => visibility[s.key] === true).length;
 
   const [, yMax] = computeVisibleYDomain(data, visibility);
   const TICK_STEP_CENTS = 2_500_000;
@@ -332,6 +338,18 @@ export default function TrajectoryHorizon({
 
   return (
     <StyledSection>
+      <StyledHeader>
+        <div>
+          <StyledOverline>Trajectory Horizon</StyledOverline>
+          <StyledTitle>10-Year Projection</StyledTitle>
+        </div>
+        {!isLoading && accounts.length > 0 && (
+          <StyledSeriesToggle>
+            <Filter size={14} />
+            {visibleCount} of {series.length} series · click to toggle
+          </StyledSeriesToggle>
+        )}
+      </StyledHeader>
       {isLoading ? (
         <StyledLoadingState data-testid="trajectory-horizon-loading">
           Loading…
@@ -343,7 +361,7 @@ export default function TrajectoryHorizon({
       ) : (
         <>
           {payoffMonth && (
-            <StyledPayoffMarker data-testid="payoff-marker">
+            <StyledPayoffMarker data-testid="payoff-marker" aria-hidden="true">
               Payoff: {formatMonthLabel(payoffMonth)}
             </StyledPayoffMarker>
           )}
