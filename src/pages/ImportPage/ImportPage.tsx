@@ -1,12 +1,5 @@
-import Heading from "../../primitives/Heading/Heading";
-import { Container, Header } from "./ImportPage.styles";
+import ImportView from "../../features/import/ImportView/ImportView";
 
 export default function ImportPage() {
-  return (
-    <Container>
-      <Header>
-        <Heading level={1}>Import</Heading>
-      </Header>
-    </Container>
-  );
+  return <ImportView />;
 }
