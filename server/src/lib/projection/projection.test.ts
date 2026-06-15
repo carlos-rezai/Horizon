@@ -362,6 +362,70 @@ describe("projectBalances - Sondertilgung", () => {
     expect(snapshots[12].accounts["tagesgeld"].projected).toBe(1000000);
   });
 
+  it("annual ST stored with the domain's negative outflow sign reduces the Mortgage balance, capped at remaining debt", () => {
+    // Reconciled convention: a transfer's amount may be stored with the domain's
+    // negative outflow sign (outflow = negative) just like every other transfer.
+    // The mortgage paydown branch must operate on the magnitude, so a negative
+    // ST reduces Restschuld identically to the positive-amount form above.
+    const accounts = [
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 30000000 },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: -700000, // negative outflow sign
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // Month 0: ST fires — Tagesgeld debited by the magnitude (700000)
+    expect(snapshots[0].accounts["tagesgeld"].projected).toBe(300000);
+    // Mortgage reduced by the magnitude: 30000000 − 700000 = 29300000
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(29300000);
+    // Month 12: ST fires again → 29300000 − 700000 = 28600000
+    expect(snapshots[12].accounts["mortgage"].projected).toBe(28600000);
+  });
+
+  it("a negative-amount ST is capped at the remaining Mortgage balance", () => {
+    const accounts = [
+      { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 1000000 },
+      { id: "mortgage", kind: "Mortgage" as const, openingBalance: 300000 },
+    ];
+    const recurring = [
+      {
+        accountId: "tagesgeld",
+        amount: -700000, // negative outflow sign, exceeds remaining debt
+        frequency: "annual" as const,
+        dayOfMonth: 1,
+        isActive: true,
+        linkedAccountId: "mortgage",
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04",
+      24
+    );
+
+    // Mortgage clamped to 0; Tagesgeld debited only by the 300000 actually applied
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(0);
+    expect(snapshots[0].accounts["tagesgeld"].projected).toBe(700000);
+  });
+
   it("Restschuld never goes below zero across all projected months", () => {
     const accounts = [
       { id: "tagesgeld", kind: "Tagesgeld" as const, openingBalance: 5000000 },
