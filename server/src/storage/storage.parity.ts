@@ -1325,6 +1325,89 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Categories — color (issue #134)
+  //
+  // Every Category carries a deterministic hex `color`, auto-seeded from
+  // accountColorPalette on insert with a per-name fallback for rows that have
+  // no stored colour (the SQL-seeded defaults). The colour is a pure function
+  // of the category name — same name → same colour, stable across reads and
+  // across a backup/reopen. Format + determinism are asserted; exact palette
+  // values are intentionally not pinned.
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo color", () => {
+    const HEX = /^#[0-9a-fA-F]{6}$/;
+
+    it("assigns a hex colour to every seeded default category", async () => {
+      const all = await storage.categories.findAll();
+      const defaults = all.filter((c) =>
+        (DEFAULT_CATEGORY_NAMES as readonly string[]).includes(c.name)
+      );
+
+      expect(defaults).toHaveLength(DEFAULT_CATEGORY_NAMES.length);
+      for (const cat of defaults) {
+        expect(cat.color).toMatch(HEX);
+      }
+    });
+
+    it("assigns a hex colour to a newly created category and findAll returns the same value", async () => {
+      const created = await storage.categories.create({ name: "Vet" });
+
+      expect(created.color).toMatch(HEX);
+
+      const all = await storage.categories.findAll();
+      const fromAll = all.find((c) => c.name === "Vet");
+      expect(fromAll?.color).toBe(created.color);
+    });
+
+    it("derives the colour deterministically from the name (delete + recreate is identical)", async () => {
+      const first = await storage.categories.create({ name: "Vet" });
+      const firstColor = first.color;
+      expect(firstColor).toMatch(HEX);
+
+      const deleted = await storage.categories.delete(first.id);
+      expect(deleted).toEqual({ ok: true });
+
+      const second = await storage.categories.create({ name: "Vet" });
+      expect(second.color).toBe(firstColor);
+    });
+
+    it("returns a stable colour for the same name across repeated reads", async () => {
+      const firstRead = await storage.categories.findAll();
+      const secondRead = await storage.categories.findAll();
+
+      const foodA = firstRead.find((c) => c.name === "Food");
+      const foodB = secondRead.find((c) => c.name === "Food");
+
+      expect(foodA?.color).toMatch(HEX);
+      expect(foodB?.color).toBe(foodA?.color);
+    });
+
+    it("round-trips the colour through a backup and reopen", async () => {
+      const created = await storage.categories.create({ name: "Vet" });
+      const expectedColor = created.color;
+      expect(expectedColor).toMatch(HEX);
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-cat-color-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        const restored = await createStorage({ path: destPath });
+        try {
+          const all = await restored.categories.findAll();
+          const vet = all.find((c) => c.name === "Vet");
+          expect(vet?.color).toBe(expectedColor);
+        } finally {
+          await restored.close();
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 
