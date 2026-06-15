@@ -4,9 +4,20 @@
  * `restschuld` is `null` once the mortgage is paid off.
  */
 export interface KpiPoint {
+  /** ISO month (YYYY-MM). Required only for the To-Payoff derivation. */
+  month?: string;
   totalLiquid: number;
   restschuld: number | null;
   netCashflow: number;
+}
+
+/**
+ * The mortgage payoff headline: how many months from the current month until
+ * the Restschuld first reaches zero, and the ISO month it happens in.
+ */
+export interface ToPayoffKpi {
+  months: number;
+  payoffMonth: string;
 }
 
 /**
@@ -23,6 +34,7 @@ export interface KpiStrip {
   totalLiquid: Kpi;
   restschuld: Kpi;
   netCashflow: Kpi;
+  toPayoff: ToPayoffKpi | null;
 }
 
 /** The sparkline window is the next 12 months, current month included. */
@@ -39,6 +51,26 @@ const pctDelta = (spark: number[]): number | null => {
   const last = spark[spark.length - 1];
   if (first === 0) return null;
   return ((last - first) / first) * 100;
+};
+
+/**
+ * Find the mortgage payoff: the first month, scanning the full horizon from the
+ * current month, where the Restschuld reaches zero (or drops to a post-payoff
+ * `null`). Returns `null` when there is no debt at the current month or the
+ * mortgage never pays off within the projection.
+ */
+const deriveToPayoff = (points: KpiPoint[]): ToPayoffKpi | null => {
+  const current = points[0];
+  if (!current || current.restschuld === null || current.restschuld <= 0) {
+    return null;
+  }
+  for (let i = 0; i < points.length; i++) {
+    const r = points[i].restschuld;
+    if (r === null || r <= 0) {
+      return { months: i, payoffMonth: points[i].month ?? "" };
+    }
+  }
+  return null;
 };
 
 /**
@@ -72,5 +104,6 @@ export const deriveKpiStrip = (points: KpiPoint[]): KpiStrip => {
       delta: null,
       spark: netCashflowSpark,
     },
+    toPayoff: deriveToPayoff(points),
   };
 };
