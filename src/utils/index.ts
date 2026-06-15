@@ -14,3 +14,4 @@ export {
 export type { AccountColumn } from "./projection/projection";
 export { API_BASE } from "./api/api";
 export { resolveAccountColor } from "./color/color";
+export { recurringNetPerMonth } from "./recurring/recurring";

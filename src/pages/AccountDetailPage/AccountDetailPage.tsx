@@ -10,12 +10,18 @@ import Card from "../../components/Card/Card";
 import Heading from "../../primitives/Heading/Heading";
 import Button from "../../primitives/Button/Button";
 import { API_BASE } from "../../utils/api/api";
+import { recurringNetPerMonth } from "../../utils/recurring/recurring";
+import { formatBalance } from "../../utils/format/format";
 import type { Transaction } from "../../types/transaction";
 import type { RecurringTransaction } from "../../types/recurring";
 import {
   StyledPage,
   StyledSection,
   StyledActions,
+  StyledStatStrip,
+  StyledStat,
+  StyledStatLabel,
+  StyledStatValue,
 } from "./AccountDetailPage.styles";
 
 export default function AccountDetailPage() {
@@ -107,6 +113,34 @@ export default function AccountDetailPage() {
             girokontoAccounts={accounts.filter((a) => a.kind === "Girokonto")}
           />
         )}
+      </Card>
+      <Card>
+        <StyledStatStrip>
+          <StyledStat>
+            <StyledStatLabel>Opening Balance</StyledStatLabel>
+            <StyledStatValue>
+              {formatBalance(account.openingBalance)}
+            </StyledStatValue>
+          </StyledStat>
+          <StyledStat>
+            <StyledStatLabel>Opening Date</StyledStatLabel>
+            <StyledStatValue>
+              {new Date(account.openingDate).toLocaleDateString("de-DE")}
+            </StyledStatValue>
+          </StyledStat>
+          <StyledStat>
+            <StyledStatLabel>Recurring</StyledStatLabel>
+            <StyledStatValue>{recurringTransactions.length}</StyledStatValue>
+          </StyledStat>
+          <StyledStat>
+            <StyledStatLabel>Recurring net / mo</StyledStatLabel>
+            <StyledStatValue>
+              {formatBalance(
+                recurringNetPerMonth(recurringTransactions, account.id)
+              )}
+            </StyledStatValue>
+          </StyledStat>
+        </StyledStatStrip>
       </Card>
       <StyledSection>
         <Card>
