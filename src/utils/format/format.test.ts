@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formatBalance, formatBytes, formatMonth, toOrdinal } from "./format";
+import {
+  formatBalance,
+  formatBytes,
+  formatMonth,
+  formatMonthLong,
+  toOrdinal,
+} from "./format";
 
 describe("formatBalance", () => {
   it("formats a positive cent value as a German-locale EUR string", () => {
@@ -59,6 +65,15 @@ describe("formatMonth", () => {
   it("maps October", () => expect(formatMonth("2024-10")).toBe("Oct 2024"));
   it("maps November", () => expect(formatMonth("2024-11")).toBe("Nov 2024"));
   it("maps December", () => expect(formatMonth("2024-12")).toBe("Dec 2024"));
+});
+
+describe("formatMonthLong", () => {
+  it("maps January to the full month name", () =>
+    expect(formatMonthLong("2031-01")).toBe("January 2031"));
+  it("maps October to the full month name", () =>
+    expect(formatMonthLong("2031-10")).toBe("October 2031"));
+  it("maps December to the full month name", () =>
+    expect(formatMonthLong("2026-12")).toBe("December 2026"));
 });
 
 describe("toOrdinal", () => {

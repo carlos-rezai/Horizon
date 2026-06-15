@@ -9,12 +9,14 @@ export const StyledStrip = styled.div`
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 `;
 
-export const StyledTile = styled.div`
+export const StyledTile = styled.div<{ $accent?: boolean }>`
   flex: 1;
   min-width: 0;
   overflow: hidden;
   padding: 18px 20px;
   border-right: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  background-color: ${({ theme, $accent }) =>
+    $accent ? theme.colors.primaryContainer : "transparent"};
 
   &:last-child {
     border-right: none;
@@ -46,4 +48,40 @@ export const StyledValue = styled.div`
   font-weight: 600;
   letter-spacing: -0.02em;
   color: ${({ theme }) => theme.colors.onSurface};
+`;
+
+export const StyledSpark = styled.div`
+  margin-top: 16px;
+`;
+
+export const StyledPayoffValue = styled.div`
+  margin-top: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+`;
+
+export const StyledPayoffNum = styled.span`
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const StyledPayoffUnit = styled.span`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.body.fontSize};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+
+  &:not(:last-child) {
+    margin-right: 4px;
+  }
+`;
+
+export const StyledPayoffHint = styled.div`
+  margin-top: 6px;
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;

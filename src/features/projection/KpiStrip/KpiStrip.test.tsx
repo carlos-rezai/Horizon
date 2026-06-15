@@ -63,12 +63,41 @@ describe("KpiStrip — tiles", () => {
     expect(screen.getByTestId("kpi-strip")).toBeInTheDocument();
   });
 
-  it("renders one tile each for Total Liquid, Restschuld, and Net Cashflow", () => {
+  it("renders one tile each for Total Liquid, Restschuld, Net Cashflow, and To Payoff", () => {
     renderStrip();
     expect(screen.getByText("Total Liquid")).toBeInTheDocument();
     expect(screen.getByText("Restschuld")).toBeInTheDocument();
     expect(screen.getByText("Net Cashflow")).toBeInTheDocument();
-    expect(screen.getAllByTestId("kpi-tile")).toHaveLength(3);
+    expect(screen.getByText("To Payoff")).toBeInTheDocument();
+    expect(screen.getAllByTestId("kpi-tile")).toHaveLength(4);
+  });
+});
+
+describe("KpiStrip — To Payoff", () => {
+  it("shows years, months, and the debt-free month when the mortgage pays off", () => {
+    // 5 months: positive Restschuld ramping to 0 at index 4 (payoff in month m4).
+    const payoffSnapshots: MonthlySnapshot[] = [
+      300000, 225000, 150000, 75000, 0,
+    ].map((debt, i) => ({
+      month: `2026-0${i + 1}`,
+      accounts: { g1: { projected: 100000 }, m1: { projected: debt } },
+      netCashflow: 5000,
+      totalLiquid: 100000,
+    }));
+
+    renderStrip(payoffSnapshots);
+
+    const payoff = tile("To Payoff");
+    // 4 months → 0 years, 4 months
+    expect(payoff).toHaveTextContent("Years");
+    expect(payoff).toHaveTextContent("Months");
+    expect(payoff).toHaveTextContent("debt-free in May 2026");
+  });
+
+  it("renders an honest empty state when there is no payoff in the horizon", () => {
+    // No mortgage account → no Restschuld → no payoff.
+    renderStrip(snapshots, [giroAccount]);
+    expect(tile("To Payoff")).toHaveTextContent(/no payoff/i);
   });
 });
 

@@ -41,6 +41,26 @@ export function formatMonth(yyyyMM: string): string {
   return `${MONTHS[parseInt(month, 10) - 1]} ${year}`;
 }
 
+const MONTHS_LONG = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export function formatMonthLong(yyyyMM: string): string {
+  const [year, month] = yyyyMM.split("-");
+  return `${MONTHS_LONG[parseInt(month, 10) - 1]} ${year}`;
+}
+
 export function toOrdinal(n: number): string {
   const mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
