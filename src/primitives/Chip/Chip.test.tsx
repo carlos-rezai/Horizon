@@ -54,9 +54,18 @@ describe("Chip", () => {
       expect(getInjectedCSS()).toContain("#4A90E2");
     });
 
-    it("renders as a pill with 9999px border-radius", () => {
+    it("renders as a circular dot with 9999px border-radius", () => {
       renderForCSS(<Chip color="#4A90E2" />);
-      expect(getInjectedCSS()).toContain("9999");
+      const css = getInjectedCSS();
+      expect(css).toContain("9999");
+      // Equal width/height → a circle, not a horizontal pill.
+      expect(css).toContain("width:10px");
+      expect(css).toContain("height:10px");
+    });
+
+    it("applies a soft glow ring in the same colour", () => {
+      renderForCSS(<Chip color="#4A90E2" />);
+      expect(getInjectedCSS()).toContain("0 0 0 3px #4A90E21f");
     });
   });
 });
