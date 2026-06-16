@@ -121,9 +121,10 @@ describe("KpiStrip — values", () => {
 describe("KpiStrip — forward delta", () => {
   it("shows a forward delta on the Total Liquid tile when the projection grows", () => {
     renderStrip();
-    expect(within(tile("Total Liquid")).getByTestId("delta")).toHaveTextContent(
-      "▲"
-    );
+    const delta = within(tile("Total Liquid")).getByTestId("delta");
+    // A forward (up) delta renders the up-right arrow icon, not the down arrow.
+    expect(delta.querySelector(".lucide-arrow-up-right")).not.toBeNull();
+    expect(delta.querySelector(".lucide-arrow-down")).toBeNull();
   });
 
   it("renders no delta on the value-only Net Cashflow tile", () => {
