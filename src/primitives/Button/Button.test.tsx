@@ -97,9 +97,11 @@ function getInjectedCSS(): string {
 }
 
 describe("Button — styles", () => {
-  it("primary variant uses primaryContainer as background color", () => {
+  it("primary variant uses the solid primary colour as background", () => {
     renderForCSS(<Button variant="primary">Save</Button>);
-    expect(getInjectedCSS()).toContain(theme.colors.primaryContainer);
+    expect(getInjectedCSS()).toContain(
+      `background-color:${theme.colors.primary}`
+    );
   });
 
   it("all variants use 'all 0.2s ease' base transition", () => {

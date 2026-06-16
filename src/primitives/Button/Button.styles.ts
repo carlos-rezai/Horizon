@@ -37,9 +37,15 @@ export const StyledButton = styled.button<{
   ${({ $variant, theme }) =>
     $variant === "primary" &&
     css`
-      background-color: ${theme.colors.primaryContainer};
+      background-color: ${theme.colors.primary};
       color: ${theme.colors.onPrimary};
-      border-color: ${theme.colors.primaryContainer};
+      border-color: ${theme.colors.primary};
+      font-weight: ${theme.typography.weights.semibold};
+
+      &:hover:not(:disabled) {
+        background-color: ${theme.colors.onPrimaryContainer};
+        border-color: ${theme.colors.onPrimaryContainer};
+      }
     `}
 
   ${({ $variant, theme }) =>
