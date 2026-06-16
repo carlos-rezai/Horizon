@@ -39,6 +39,18 @@ export const StyledNav = styled.nav`
   gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 
+export const StyledNavLabel = styled.span`
+  padding: 0 ${({ theme }) => theme.spacing.space3}px
+    ${({ theme }) => theme.spacing.space2}px;
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
+  font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
+  line-height: ${({ theme }) => theme.typography.scale.label.lineHeight};
+  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.onSurfaceFaint};
+`;
+
 export const StyledNavLink = styled.a`
   display: flex;
   align-items: center;

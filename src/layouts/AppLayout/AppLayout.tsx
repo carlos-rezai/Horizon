@@ -20,6 +20,7 @@ import {
   StyledSidebar,
   StyledBrand,
   StyledWordmark,
+  StyledNavLabel,
   StyledNav,
   StyledNavLink,
   StyledSpacer,
@@ -49,6 +50,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <BrandMark size={30} label="Horizon" />
             <StyledWordmark>HORIZON</StyledWordmark>
           </StyledBrand>
+          <StyledNavLabel>Navigation</StyledNavLabel>
           <StyledNav>
             <StyledNavLink
               as={Link}
