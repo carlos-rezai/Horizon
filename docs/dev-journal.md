@@ -1,5 +1,49 @@
 # Dev Journal
 
+## 2026-06-16 — #138 Phase 6 + 7: Modals + acceptance sweep (refactor close-out)
+
+Finished the visual-fidelity refactor. The Transaction Edit modal was the only
+modal needing a real rebuild; the rest were already faithful or needed small
+polish.
+
+**Transaction Edit modal → `08` (full fidelity).** New reusable
+`primitives/ChoiceChip` (label + active + optional colour dot + disabled) drives
+both the Direction toggle and the Category picker. The modal now uses the
+`Modal` title/footer slots (Delete · Cancel · Save changes), an "On ● account"
+context line, Description, an Amount + Date two-column grid, an editable
+**Direction** (Outflow/Inflow → amount sign), and editable **Category** chips.
+Transfer legs stay read-only (Save hidden, fields disabled, two-leg note).
+`transactions.category` stores a category **name** (the server's in-use check
+matches `transactions.category = category.name`), so chips key off names and
+colour via `colorForCategoryName`. The modal gained an `accounts` prop (wired
+from `MonthOverview`) to resolve the source account's name + colour.
+
+**Import Wizard (`07`) — already faithful.** Verified all three steps (Account
+→ Map columns → Review) render 1:1 against the screenshot; it shipped complete
+with the Import UI. No change.
+
+**Mortgage / Account-Create — toggle polish only.** Origination fields + the
+live `% paid off` preview (MortgageModal) and the showInTrajectory field
+already existed. Polished the "Display in Trajectory Horizon" control from a raw
+checkbox to the prototype's bordered card: `TrendingUp` icon box (gold when on)
+
+- title + description + the `Toggle` primitive on the right (hidden for
+  Mortgage).
+
+**Import history defaults expanded.** The year accordion now opens the most
+recent year by default (was all-collapsed), matching `05`.
+
+**Acceptance sweep — typography drift.** `FormField` labels were sentence-case
+14px; the prototype uses the small uppercase label scale for every field. Moved
+`FormField`'s label onto `typography.scale.label` (11px, uppercase,
+letter-spacing) — purely visual (`text-transform`, so the DOM text and all
+`getByLabelText` tests are unaffected), bringing every modal's field labels to
+the prototype.
+
+**Known minor deviation (deferred):** the Edit/Create amount inputs don't render
+the prototype's inline `€` prefix — the `Input` primitive has no prefix slot and
+adding one is out of this refactor's scope.
+
 ## 2026-06-16 — #138 Phase 5: Settings recomposed to the prototype
 
 Brought the Settings screen's Preferences and About cards to the canonical
