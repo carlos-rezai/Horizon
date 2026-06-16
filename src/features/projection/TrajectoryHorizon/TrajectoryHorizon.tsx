@@ -38,7 +38,7 @@ import {
 } from "../../../utils/trajectory/trajectory";
 import { formatBalance } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { Filter } from "lucide-react";
+import { Filter, RotateCcw } from "lucide-react";
 import {
   StyledSection,
   StyledHeader,
@@ -187,6 +187,7 @@ function TrajectoryLegend({
       })}
       {hiddenCount > 0 && (
         <StyledShowAllButton type="button" onClick={onShowAll}>
+          <RotateCcw size={13} />
           Show all
         </StyledShowAllButton>
       )}
@@ -299,17 +300,26 @@ export default function TrajectoryHorizon({
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
   const hasMortgage = mortgageIds.length > 0;
 
-  // Series rendered in the chart and listed in the interactive legend. Account
-  // and debt lines first; the gold Total Liquid "SUM" hero line renders last
-  // (on top).
+  // Legend order (prototype): the gold Total Liquid "SUM" line first, then each
+  // account, then Restschuld. The `<Line>` elements are rendered separately so
+  // their draw order (liquid on top) is unaffected by this list order.
   const series = useMemo<TrajectorySeries[]>(() => {
-    const list: TrajectorySeries[] = nonMortgageAccounts.map((a) => ({
-      key: a.id,
-      name: a.name,
-      color: resolveAccountColor(a),
-      kind: "account",
-      dashed: false,
-    }));
+    const list: TrajectorySeries[] = [
+      {
+        key: TOTAL_LIQUID_KEY,
+        name: "Total Liquid",
+        color: theme.colors.liquid,
+        kind: "liquid",
+        dashed: false,
+      },
+      ...nonMortgageAccounts.map<TrajectorySeries>((a) => ({
+        key: a.id,
+        name: a.name,
+        color: resolveAccountColor(a),
+        kind: "account",
+        dashed: false,
+      })),
+    ];
     if (hasMortgage) {
       list.push({
         key: RESTSCHULD_KEY,
@@ -319,13 +329,6 @@ export default function TrajectoryHorizon({
         dashed: true,
       });
     }
-    list.push({
-      key: TOTAL_LIQUID_KEY,
-      name: "Total Liquid",
-      color: theme.colors.liquid,
-      kind: "liquid",
-      dashed: false,
-    });
     return list;
   }, [nonMortgageAccounts, hasMortgage, theme]);
 
