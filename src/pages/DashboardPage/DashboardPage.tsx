@@ -92,7 +92,20 @@ export default function DashboardPage() {
       <StyledGrid>
         <div>
           <Card>
-            <SectionHead label="Accounts" title="Accounts" />
+            <SectionHead
+              label="Accounts"
+              title="Accounts"
+              right={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="Plus"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Account
+                </Button>
+              }
+            />
             <AccountOverview accounts={accounts} />
           </Card>
           {showCreateModal && (
