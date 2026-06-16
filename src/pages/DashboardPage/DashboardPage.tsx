@@ -19,7 +19,7 @@ import { downloadBackup } from "../../features/settings/downloadBackup";
 import {
   StyledDashboard,
   StyledGrid,
-  StyledSection,
+  StyledColumn,
   StyledErrorText,
 } from "./DashboardPage.styles";
 
@@ -90,7 +90,7 @@ export default function DashboardPage() {
         isLoading={false}
       />
       <StyledGrid>
-        <StyledSection $gridArea="accounts">
+        <div>
           <Card>
             <SectionHead label="Accounts" title="Accounts" />
             <AccountOverview accounts={accounts} />
@@ -102,18 +102,8 @@ export default function DashboardPage() {
               girokontoAccounts={accounts.filter((a) => a.kind === "Girokonto")}
             />
           )}
-        </StyledSection>
-        <StyledSection $gridArea="plan">
-          <Card>
-            <PlanSummary
-              snapshots={snapshots}
-              accounts={accounts}
-              recurringTransactions={recurringTransactions}
-              maxYears={10}
-            />
-          </Card>
-        </StyledSection>
-        <StyledSection $gridArea="mortgage-countdown">
+        </div>
+        <StyledColumn>
           <MortgageCountdown
             accounts={accounts}
             snapshots={snapshots}
@@ -122,7 +112,15 @@ export default function DashboardPage() {
               refetchProjection();
             }}
           />
-        </StyledSection>
+          <Card>
+            <PlanSummary
+              snapshots={snapshots}
+              accounts={accounts}
+              recurringTransactions={recurringTransactions}
+              maxYears={10}
+            />
+          </Card>
+        </StyledColumn>
       </StyledGrid>
     </StyledDashboard>
   );
