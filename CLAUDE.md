@@ -190,6 +190,7 @@ DEBUG_SQL= # set to "1" to enable better-sqlite3 query tracing via console.info.
 - [x] Dashboard Clock — live date and time widget displayed on the dashboard
 - [x] Claude Design Handover — full visual rebuild from the canonical Horizon prototype (`docs/handoff/`): gold/ink Meridian token rewrite, new primitives/components, five reskinned screens, Import UI shell, and the four supporting migrations (category color, account sortOrder, account showInTrajectory, mortgage origination)
 - [ ] CSV / Bank Statement Import (backend) — the engine behind the Import UI: real CSV parsing, per-bank column-mapping presets (remembered), duplicate + recurring detection, and persisted import history; imported rows land in Variable Spending. The Import UI ships with Claude Design Handover; this is its deferred backend epic
+- [ ] Month Year-Comparison — replace the Month Overview "This year so far" placeholder with the prototype's real per-category bars: cumulative variable spend from Jan 1 through the current month, per category, compared against the same period last year. Ships as an honest "coming soon" placeholder with Claude Design Handover; this is its deferred data feature
 - [ ] Monthly Spending Breakdown Chart — folded into Claude Design Handover (the Month Overview breakdown donut)
 - [ ] Native Application Menu — surface app settings (database info, backup/restore, autoupdate, versions) in the Electron native title bar menu alongside File, Edit, View, Window, and Help
 - [ ] Monthly digest (AI) — permanently deferred

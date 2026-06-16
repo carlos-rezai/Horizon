@@ -252,6 +252,7 @@ The generated installer will be signed with your local certificate and will inst
 | Dashboard Clock                           | ✅ Complete |
 | Claude Design Handover                    | ✅ Complete |
 | CSV / Bank Statement Import (backend)     | 🔜 Planned  |
+| Month Year-Comparison                     | 🔜 Planned  |
 | Monthly Spending Breakdown Chart          | ➡ Folded in |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
