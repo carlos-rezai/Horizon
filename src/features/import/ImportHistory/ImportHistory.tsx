@@ -12,6 +12,7 @@ import type { AccountWithBalance } from "../../../types/account";
 import { resolveAccountColor } from "../../../utils/color/color";
 import Tabs, { type TabItem } from "../../../primitives/Tabs/Tabs";
 import Button from "../../../primitives/Button/Button";
+import Badge from "../../../primitives/Badge/Badge";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import type { ImportedStatement } from "../importTypes";
 import {
@@ -32,7 +33,6 @@ import {
   StyledFileMain,
   StyledFileName,
   StyledFileSub,
-  StyledAccountBadge,
   StyledFileMeta,
   StyledFileRange,
   StyledFileCount,
@@ -175,9 +175,9 @@ export default function ImportHistory({
                         <StyledFileMain>
                           <StyledFileName>{file.filename}</StyledFileName>
                           <StyledFileSub>
-                            <StyledAccountBadge $color={color}>
+                            <Badge color={color}>
                               {account?.name ?? "Account"}
-                            </StyledAccountBadge>
+                            </Badge>
                             <StyledFileMeta>
                               {file.bank} · {file.sizeKB} KB
                             </StyledFileMeta>

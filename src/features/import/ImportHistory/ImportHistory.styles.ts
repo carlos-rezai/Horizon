@@ -128,27 +128,6 @@ export const StyledFileSub = styled.div`
   margin-top: 4px;
 `;
 
-export const StyledAccountBadge = styled.span<{ $color: string }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 9px;
-  border-radius: ${({ theme }) => theme.radius.pill}px;
-  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
-  font-size: 11px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.onSurface};
-  background: ${({ $color }) => $color + "1f"};
-
-  &::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: ${({ $color }) => $color};
-  }
-`;
-
 export const StyledFileMeta = styled.span`
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: 12px;
