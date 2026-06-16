@@ -1,5 +1,35 @@
 # Dev Journal
 
+## 2026-06-16 — #138 Phase 4: Account Detail recomposed to the prototype
+
+Rebuilt the Account Detail screen to the canonical hero layout: `AccountHero`
+(Avatar in the account colour, name + account-colour status dot, kind Badge,
+subtitle, ghost Edit + danger Delete, and a CURRENT BALANCE / RESTSCHULD
+StatBlock with a balance Sparkline), `AccountStatStrip` (Opening Balance,
+Opening Date, Recurring, Recurring net / mo — sibling of `MonthStatStrip`), a
+`SectionHead` + "Add recurring", and a reskinned `RecurringTransactionList`
+(NAME | AMOUNT | DAY | FREQUENCY, the transfer target as a "→ ● account"
+sub-line, frequency as a Badge).
+
+**Two prototype elements had no real-data field; resolved by deriving from what
+exists (developer-approved this session):**
+
+- **Hero subtitle.** The prototype's `a.sub` ("Savings · 1.2% APY · ST reserve")
+  is hand-authored and the account model has no such column (no new schema in
+  scope). `accountSubtitle` derives a per-kind line instead — "Checking/Savings/
+  Investment account", "Mortgage · Restschuld", and "Credit card · settles
+  monthly → <funding>" for a linked card.
+- **Balance sparkline.** The prototype hardcodes the series; `accountBalanceSeries`
+  reads the account's month-by-month balance from the projection snapshots
+  (actual over projected). Honest forward trend — the line is the account's real
+  trajectory, so a Tagesgeld with an annual Sondertilgung shows its real dips.
+
+**Inline editing dropped.** The old header's inline rename / opening-balance
+fields are gone; the hero's Edit opens the existing AccountCreateModal (edit
+mode), which already covers name + opening balance + every other field. The
+delete guard (blocked while the account has one-off transactions) and a confirm
+step are preserved — the prototype's delete-with-Undo toast is a separate epic.
+
 ## 2026-06-16 — #138 Phase 3: Month Overview acceptance pass (1:1 with prototype)
 
 Drove the real app (seeded with the prototype's Nov-2026 accounts + variable
