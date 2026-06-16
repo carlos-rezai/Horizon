@@ -32,6 +32,7 @@ export default function Tabs({ tabs, activeId, onChange }: TabsProps) {
             type="button"
             aria-selected={active}
             $active={active}
+            $color={tab.color}
             onClick={() => onChange(tab.id)}
           >
             {tab.color ? <StyledDot $color={tab.color} /> : null}
