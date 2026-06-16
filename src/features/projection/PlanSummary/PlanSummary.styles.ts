@@ -1,35 +1,24 @@
 import styled from "styled-components";
-import { Link } from "react-router-dom";
 
-export const StyledSection = styled.section`
-  margin-top: ${({ theme }) => theme.spacing.space6}px;
-`;
-
-export const StyledViewFullPlan = styled(Link)`
-  color: ${({ theme }) => theme.colors.secondary};
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
+export const StyledSection = styled.section``;
 
 export const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-variant-numeric: tabular-nums;
-  margin-top: ${({ theme }) => theme.spacing.space3}px;
 `;
 
 export const StyledTh = styled.th`
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   text-align: right;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  font-weight: ${({ theme }) => theme.typography.weights.medium};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
+  font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
+  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.onSurfaceFaint};
 
   &:first-child {
     text-align: left;
@@ -45,22 +34,11 @@ export const StyledRow = styled.tr`
 `;
 
 export const StyledPayoffRow = styled(StyledRow)`
-  background-color: ${({ theme }) => theme.colors.secondaryTint};
+  background-color: ${({ theme }) => theme.colors.primaryContainer};
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.secondaryTint};
+    background-color: ${({ theme }) => theme.colors.primaryContainer};
   }
-`;
-
-export const StyledPayoffBadge = styled.span`
-  display: inline-block;
-  padding: 2px ${({ theme }) => theme.spacing.space2}px;
-  border-radius: 999px;
-  background-color: ${({ theme }) => theme.colors.secondary};
-  color: ${({ theme }) => theme.colors.onSecondary};
-  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
-  font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  letter-spacing: 0.05em;
 `;
 
 export const StyledTd = styled.td`
@@ -72,8 +50,14 @@ export const StyledTd = styled.td`
 
   &:first-child {
     text-align: left;
-    font-weight: ${({ theme }) => theme.typography.weights.semibold};
   }
+`;
+
+export const StyledYear = styled.span<{ $payoff: boolean }>`
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
+  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  color: ${({ $payoff, theme }) =>
+    $payoff ? theme.colors.primary : theme.colors.onSurface};
 `;
 
 export const StyledTotalLiquidAmount = styled.span`
@@ -84,8 +68,24 @@ export const StyledRestschuldAmount = styled.span`
   color: ${({ theme }) => theme.colors.error};
 `;
 
+export const StyledPayoffFlag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: 10px;
+  font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
+  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
 export const StyledSTAmount = styled.span`
-  color: ${({ theme }) => theme.colors.secondary};
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+`;
+
+export const StyledDash = styled.span`
+  color: ${({ theme }) => theme.colors.onSurfaceFaint};
 `;
 
 export const StyledEmptyState = styled.p`

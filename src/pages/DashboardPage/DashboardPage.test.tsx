@@ -105,7 +105,7 @@ describe("DashboardPage — composition", () => {
   it("composes the Plan Summary", async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText("View full plan →")).toBeInTheDocument();
+      expect(screen.getByText("Plan Summary")).toBeInTheDocument();
     });
   });
 });

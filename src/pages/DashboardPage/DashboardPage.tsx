@@ -10,7 +10,6 @@ import AccountOverview from "../../features/accounts/AccountOverview/AccountOver
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
 import Card from "../../components/Card/Card";
-import CardHeader from "../../components/CardHeader/CardHeader";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import SectionHead from "../../components/SectionHead/SectionHead";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
@@ -105,7 +104,6 @@ export default function DashboardPage() {
           )}
         </StyledSection>
         <StyledSection $gridArea="plan">
-          <CardHeader text="Plan Overview" />
           <Card>
             <PlanSummary
               snapshots={snapshots}

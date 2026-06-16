@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Flag } from "lucide-react";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -7,18 +8,21 @@ import {
   deriveYearSummaries,
 } from "../../../utils/projection/projection";
 import { formatBalance } from "../../../utils/format/format";
+import SectionHead from "../../../components/SectionHead/SectionHead";
+import Button from "../../../primitives/Button/Button";
 import {
   StyledSection,
-  StyledViewFullPlan,
   StyledTable,
   StyledTh,
   StyledRow,
   StyledPayoffRow,
-  StyledPayoffBadge,
   StyledTd,
+  StyledYear,
   StyledTotalLiquidAmount,
   StyledRestschuldAmount,
+  StyledPayoffFlag,
   StyledSTAmount,
+  StyledDash,
   StyledEmptyState,
 } from "./PlanSummary.styles";
 
@@ -40,6 +44,7 @@ export default function PlanSummary({
   const mortgageIds = accounts
     .filter((a) => a.kind === "Mortgage")
     .map((a) => a.id);
+  const hasMortgage = mortgageIds.length > 0;
 
   const stMonths =
     snapshots.length > 0
@@ -62,7 +67,20 @@ export default function PlanSummary({
 
   return (
     <StyledSection>
-      <StyledViewFullPlan to="/plan">View full plan →</StyledViewFullPlan>
+      <SectionHead
+        label="Outlook"
+        title="Plan Summary"
+        right={
+          <Button
+            variant="ghost"
+            size="sm"
+            iconRight="ArrowRight"
+            onClick={() => navigate("/plan")}
+          >
+            Full plan
+          </Button>
+        }
+      />
       {rows.length === 0 ? (
         <StyledEmptyState>
           Add accounts on the dashboard to see your financial plan.
@@ -73,8 +91,8 @@ export default function PlanSummary({
             <tr>
               <StyledTh>Year</StyledTh>
               <StyledTh>Total Liquid</StyledTh>
-              {mortgageIds.length > 0 && <StyledTh>Restschuld</StyledTh>}
-              <StyledTh>Savings Rate</StyledTh>
+              {hasMortgage && <StyledTh>Restschuld</StyledTh>}
+              <StyledTh>ST</StyledTh>
             </tr>
           </thead>
           <tbody>
@@ -87,32 +105,37 @@ export default function PlanSummary({
                   data-testid="year-summary-row"
                   onClick={() => handleRowClick(row.year)}
                 >
-                  <StyledTd>{row.year}</StyledTd>
+                  <StyledTd>
+                    <StyledYear $payoff={isPayoff}>{row.year}</StyledYear>
+                  </StyledTd>
                   <StyledTd>
                     <StyledTotalLiquidAmount>
                       {formatBalance(row.totalLiquid)}
                     </StyledTotalLiquidAmount>
                   </StyledTd>
-                  {mortgageIds.length > 0 && (
+                  {hasMortgage && (
                     <StyledTd>
-                      {row.restschuld !== null ? (
+                      {row.restschuld === 0 ? (
+                        <StyledPayoffFlag>
+                          <Flag size={12} />
+                          Payoff
+                        </StyledPayoffFlag>
+                      ) : row.restschuld !== null ? (
                         <StyledRestschuldAmount>
                           {formatBalance(row.restschuld)}
                         </StyledRestschuldAmount>
                       ) : (
-                        "—"
+                        <StyledDash>—</StyledDash>
                       )}
                     </StyledTd>
                   )}
                   <StyledTd>
-                    {isPayoff ? (
-                      <StyledPayoffBadge>PAYOFF</StyledPayoffBadge>
-                    ) : row.stAmount !== null ? (
+                    {row.stAmount ? (
                       <StyledSTAmount>
-                        {formatBalance(row.stAmount)}
+                        {formatBalance(-Math.abs(row.stAmount))}
                       </StyledSTAmount>
                     ) : (
-                      "—"
+                      <StyledDash>—</StyledDash>
                     )}
                   </StyledTd>
                 </RowComponent>

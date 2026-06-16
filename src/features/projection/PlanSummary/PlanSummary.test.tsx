@@ -117,10 +117,25 @@ describe("PlanSummary — row click navigation", () => {
 });
 
 describe("PlanSummary — column headers", () => {
-  it("renders 'Savings Rate' as the ST column header", () => {
+  it("renders 'ST' as the Sondertilgung column header", () => {
     renderSummary();
 
-    expect(screen.getByText("Savings Rate")).toBeInTheDocument();
+    expect(screen.getByText("ST")).toBeInTheDocument();
+  });
+
+  it("renders the section overline and title", () => {
+    renderSummary();
+
+    expect(screen.getByText("Outlook")).toBeInTheDocument();
+    expect(screen.getByText("Plan Summary")).toBeInTheDocument();
+  });
+
+  it("navigates to the full plan when the Full plan action is clicked", () => {
+    renderSummary();
+
+    fireEvent.click(screen.getByRole("button", { name: /Full plan/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/plan");
   });
 });
 
@@ -149,15 +164,15 @@ describe("PlanSummary — payoff year", () => {
     },
   ];
 
-  it("renders a PAYOFF badge on the first row where restschuld reaches zero", () => {
+  it("renders a Payoff flag in the Restschuld column where restschuld reaches zero", () => {
     renderSummary(payoffSnapshots, [giroAccount, mortgageAccount]);
 
-    expect(screen.getByText("PAYOFF")).toBeInTheDocument();
+    expect(screen.getByText("Payoff")).toBeInTheDocument();
   });
 
-  it("renders the PAYOFF badge only on the payoff year row", () => {
+  it("renders the Payoff flag only on rows where restschuld is zero", () => {
     renderSummary(payoffSnapshots, [giroAccount, mortgageAccount]);
 
-    expect(screen.getAllByText("PAYOFF")).toHaveLength(1);
+    expect(screen.getAllByText("Payoff")).toHaveLength(1);
   });
 });
