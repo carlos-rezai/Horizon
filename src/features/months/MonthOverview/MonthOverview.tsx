@@ -132,6 +132,7 @@ export default function MonthOverview({ accounts }: Props) {
       {selectedTransaction && (
         <TransactionEditModal
           transaction={selectedTransaction}
+          accounts={accounts}
           onClose={() => setSelectedTransaction(null)}
           onSaved={() => setSelectedTransaction(null)}
           onDeleted={handleDeleted}

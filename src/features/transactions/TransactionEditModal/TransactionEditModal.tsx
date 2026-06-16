@@ -1,22 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Transaction } from "../../../types/transaction";
+import type { AccountWithBalance } from "../../../types/account";
+import type { Category } from "../../../types/category";
 import { eurosToCents } from "../../../utils/currency/currency";
+import { resolveAccountColor } from "../../../utils/color/color";
+import { colorForCategoryName } from "../../../utils/categoryColor/categoryColor";
 import { API_BASE } from "../../../utils/api/api";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";
+import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import {
   StyledFields,
-  StyledActions,
+  StyledOnRow,
+  StyledOnLabel,
+  StyledOnAccount,
+  StyledDot,
+  StyledAccountName,
+  StyledGrid,
+  StyledChipRow,
   StyledTransferNote,
   StyledTransferDestination,
   StyledErrorText,
 } from "./TransactionEditModal.styles";
 
+type Flow = "in" | "out";
+
 interface Props {
   transaction: Transaction;
+  accounts?: AccountWithBalance[];
   toAccountName?: string;
   onClose: () => void;
   onSaved: (tx: Transaction) => void;
@@ -25,36 +39,61 @@ interface Props {
 
 export default function TransactionEditModal({
   transaction,
+  accounts,
   toAccountName,
   onClose,
   onSaved,
   onDeleted,
 }: Props) {
   const isTransfer = Boolean(transaction.transferId);
+  const account = accounts?.find((a) => a.id === transaction.accountId);
 
   const [date, setDate] = useState(transaction.date);
   const [description, setDescription] = useState(transaction.description);
-  const [amount, setAmount] = useState(String(transaction.amount / 100));
+  const [amount, setAmount] = useState(
+    String(Math.abs(transaction.amount) / 100)
+  );
+  const [flow, setFlow] = useState<Flow>(
+    transaction.amount >= 0 ? "in" : "out"
+  );
+  const [category, setCategory] = useState(transaction.category);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/categories`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: unknown) => {
+        if (!cancelled && Array.isArray(data)) {
+          setCategories(data as Category[]);
+        }
+      })
+      .catch(() => {
+        /* categories are optional chrome; ignore load failures */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const canSave = !isTransfer && description.trim() !== "" && amount !== "";
+
   const handleSave = async () => {
+    if (!canSave) return;
+    const magnitude = Math.abs(eurosToCents(amount));
+    const signed = flow === "out" ? -magnitude : magnitude;
+
     const res = await fetch(`${API_BASE}/transactions/${transaction.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date,
-        description,
-        amount: eurosToCents(amount),
-        category: transaction.category,
-      }),
+      body: JSON.stringify({ date, description, amount: signed, category }),
     });
 
     const data = (await res.json()) as Transaction & { error?: string };
 
     if (!res.ok) {
-      setError(
-        (data as { error?: string }).error ?? "Failed to update transaction"
-      );
+      setError(data.error ?? "Failed to update transaction");
       return;
     }
 
@@ -84,28 +123,64 @@ export default function TransactionEditModal({
   };
 
   return (
-    <Modal onClose={onClose}>
+    <Modal
+      onClose={onClose}
+      title="Edit transaction"
+      footer={
+        <>
+          <Button
+            variant="danger"
+            icon="Trash2"
+            onClick={handleDelete}
+            style={{ marginRight: "auto" }}
+          >
+            Delete
+          </Button>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          {!isTransfer && (
+            <Button
+              variant="primary"
+              icon="Check"
+              onClick={handleSave}
+              disabled={!canSave}
+            >
+              Save changes
+            </Button>
+          )}
+        </>
+      }
+    >
       <StyledFields>
-        {isTransfer && (
-          <StyledTransferNote>
-            This is one leg of a transfer — deleting it will remove both legs.
-          </StyledTransferNote>
-        )}
-        {isTransfer && toAccountName && (
-          <StyledTransferDestination>
-            <span>Transfer to</span>
-            {toAccountName}
-          </StyledTransferDestination>
+        {account && (
+          <StyledOnRow>
+            <StyledOnLabel>On</StyledOnLabel>
+            <StyledOnAccount>
+              <StyledDot $color={resolveAccountColor(account)} />
+              <StyledAccountName>{account.name}</StyledAccountName>
+            </StyledOnAccount>
+          </StyledOnRow>
         )}
 
-        <FormField label="Date" htmlFor="edit-date">
-          <DatePicker
-            aria-label="Date"
-            value={date}
-            onChange={setDate}
-            disabled={isTransfer}
-          />
-        </FormField>
+        {isTransfer && (
+          <StyledTransferNote>
+            <span>
+              This is one leg of a transfer — deleting it removes{" "}
+              <StyledTransferDestination>both legs</StyledTransferDestination>.
+              {toAccountName && (
+                <>
+                  {" "}
+                  Transfer to{" "}
+                  <StyledTransferDestination>
+                    {toAccountName}
+                  </StyledTransferDestination>
+                  .
+                </>
+              )}
+            </span>
+          </StyledTransferNote>
+        )}
 
         <FormField label="Description" htmlFor="edit-description">
           <Input
@@ -118,33 +193,64 @@ export default function TransactionEditModal({
           />
         </FormField>
 
-        <FormField label="Amount" htmlFor="edit-amount">
-          <Input
-            id="edit-amount"
-            type="text"
-            inputMode="decimal"
-            aria-label="Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            disabled={isTransfer}
-          />
-        </FormField>
+        <StyledGrid>
+          <FormField label="Amount" htmlFor="edit-amount">
+            <Input
+              id="edit-amount"
+              type="text"
+              inputMode="decimal"
+              aria-label="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={isTransfer}
+            />
+          </FormField>
+
+          <FormField label="Date" htmlFor="edit-date">
+            <DatePicker
+              aria-label="Date"
+              value={date}
+              onChange={setDate}
+              disabled={isTransfer}
+            />
+          </FormField>
+        </StyledGrid>
+
+        {!isTransfer && (
+          <FormField label="Direction">
+            <StyledChipRow>
+              <ChoiceChip
+                label="Outflow"
+                active={flow === "out"}
+                onClick={() => setFlow("out")}
+              />
+              <ChoiceChip
+                label="Inflow"
+                active={flow === "in"}
+                onClick={() => setFlow("in")}
+              />
+            </StyledChipRow>
+          </FormField>
+        )}
+
+        {categories.length > 0 && (
+          <FormField label="Category">
+            <StyledChipRow>
+              {categories.map((c) => (
+                <ChoiceChip
+                  key={c.id}
+                  label={c.name}
+                  color={colorForCategoryName(c.name)}
+                  active={category === c.name}
+                  disabled={isTransfer}
+                  onClick={() => !isTransfer && setCategory(c.name)}
+                />
+              ))}
+            </StyledChipRow>
+          </FormField>
+        )}
 
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
-
-        <StyledActions>
-          {!isTransfer && (
-            <Button type="button" onClick={handleSave}>
-              Save
-            </Button>
-          )}
-          <Button type="button" variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-        </StyledActions>
       </StyledFields>
     </Modal>
   );

@@ -1,6 +1,7 @@
 export { default as Avatar } from "./Avatar/Avatar";
 export { default as Badge } from "./Badge/Badge";
 export { default as Chip } from "./Chip/Chip";
+export { default as ChoiceChip } from "./ChoiceChip/ChoiceChip";
 export { default as Button } from "./Button/Button";
 export { default as DatePicker } from "./DatePicker/DatePicker";
 export { default as Delta } from "./Delta/Delta";
