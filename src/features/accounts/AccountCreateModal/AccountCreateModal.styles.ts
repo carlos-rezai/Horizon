@@ -55,10 +55,46 @@ export const StyledIconButton = styled.button<StyledIconButtonProps>`
 export const StyledToggleRow = styled.label`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.space2}px;
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.onSurface};
+  gap: ${({ theme }) => theme.spacing.space4}px;
+  padding: 14px 16px;
+  background: ${({ theme }) => theme.colors.surfaceContainerLow};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.lg}px;
   cursor: pointer;
+`;
+
+export const StyledToggleIcon = styled.span<{ $active: boolean }>`
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  background: ${({ theme }) => theme.colors.surfaceContainerHigh};
+  color: ${({ $active, theme }) =>
+    $active ? theme.colors.primary : theme.colors.onSurfaceDim};
+  transition: color 0.15s ease;
+`;
+
+export const StyledToggleText = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+export const StyledToggleTitle = styled.div`
+  font-family: ${({ theme }) => theme.typography.scale.bodyMd.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.bodyMd.fontSize};
+  line-height: ${({ theme }) => theme.typography.scale.bodyMd.lineHeight};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.onSurface};
+`;
+
+export const StyledToggleDesc = styled.div`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  line-height: ${({ theme }) => theme.typography.scale.body.lineHeight};
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  margin-top: 2px;
 `;
 
 export const StyledColorRow = styled.div`

@@ -11,6 +11,8 @@ import Input from "../../../primitives/Input/Input";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
+import Toggle from "../../../primitives/Toggle/Toggle";
+import { TrendingUp } from "lucide-react";
 import Snackbar from "../../../components/Snackbar/Snackbar";
 import CreditCardSettlementFields from "../../settlements/CreditCardSettlementFields/CreditCardSettlementFields";
 import {
@@ -22,6 +24,10 @@ import {
   StyledColorRow,
   StyledColorSwatch,
   StyledToggleRow,
+  StyledToggleIcon,
+  StyledToggleText,
+  StyledToggleTitle,
+  StyledToggleDesc,
 } from "./AccountCreateModal.styles";
 
 interface Props {
@@ -244,12 +250,18 @@ export default function AccountCreateModal({
 
         {kind !== "Mortgage" && (
           <StyledToggleRow>
-            <input
-              type="checkbox"
-              checked={showInTrajectory}
-              onChange={(e) => setShowInTrajectory(e.target.checked)}
-            />
-            Display in Trajectory Horizon
+            <StyledToggleIcon $active={showInTrajectory} aria-hidden>
+              <TrendingUp size={18} />
+            </StyledToggleIcon>
+            <StyledToggleText>
+              <StyledToggleTitle>
+                Display in Trajectory Horizon
+              </StyledToggleTitle>
+              <StyledToggleDesc>
+                Show this account as a line on the dashboard chart by default.
+              </StyledToggleDesc>
+            </StyledToggleText>
+            <Toggle checked={showInTrajectory} onChange={setShowInTrajectory} />
           </StyledToggleRow>
         )}
 
