@@ -85,7 +85,11 @@ export default function ImportHistory({
   onDelete,
   onStartImport,
 }: Props) {
-  const [openYear, setOpenYear] = useState<number | null>(null);
+  // Default to the most recent year expanded (matches the prototype `05`).
+  const [openYear, setOpenYear] = useState<number | null>(() => {
+    const years = history.map((f) => f.year);
+    return years.length > 0 ? Math.max(...years) : null;
+  });
 
   const filtered =
     activeAccountId === ALL
