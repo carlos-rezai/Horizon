@@ -1,3 +1,4 @@
+import { ArrowUpRight, ArrowDown } from "lucide-react";
 import { StyledDelta } from "./Delta.styles";
 
 interface DeltaProps {
@@ -15,10 +16,11 @@ const formatter = new Intl.NumberFormat("de-DE", {
 export default function Delta({ value, suffix = "%" }: DeltaProps) {
   const down = value < 0;
   const magnitude = formatter.format(Math.abs(value));
+  const Arrow = down ? ArrowDown : ArrowUpRight;
 
   return (
     <StyledDelta data-testid="delta" $down={down}>
-      {down ? "▼" : "▲"}
+      <Arrow size={11} strokeWidth={2.5} aria-hidden="true" />
       {magnitude}
       {suffix}
     </StyledDelta>
