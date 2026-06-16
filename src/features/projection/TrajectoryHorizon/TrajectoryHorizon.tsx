@@ -11,6 +11,7 @@ import {
   Tooltip,
   ReferenceArea,
   ReferenceLine,
+  ReferenceDot,
   ResponsiveContainer,
 } from "recharts";
 import type {
@@ -218,6 +219,47 @@ function YearTick({ x = 0, y = 0, payload, data, mutedColor }: YearTickProps) {
   );
 }
 
+interface PayoffMarkerLabelProps {
+  viewBox?: { x?: number; y?: number };
+  dateText: string;
+  color: string;
+}
+
+// Flag + "PAYOFF · <month year>" rendered at the top of the payoff reference
+// line, matching the canonical prototype marker.
+function PayoffMarkerLabel({
+  viewBox,
+  dateText,
+  color,
+}: PayoffMarkerLabelProps) {
+  if (!viewBox || viewBox.x == null || viewBox.y == null) return null;
+  return (
+    <g transform={`translate(${viewBox.x + 7},${viewBox.y + 1})`}>
+      <g
+        transform="scale(0.5)"
+        stroke={color}
+        strokeWidth={2.2}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+        <line x1={4} y1={22} x2={4} y2={15} />
+      </g>
+      <text
+        x={14}
+        y={9}
+        fill={color}
+        fontSize={10}
+        fontWeight={600}
+        letterSpacing="0.08em"
+      >
+        PAYOFF · {dateText}
+      </text>
+    </g>
+  );
+}
+
 export default function TrajectoryHorizon({
   snapshots,
   accounts,
@@ -321,6 +363,9 @@ export default function TrajectoryHorizon({
   const payoffIndex = payoffMonth
     ? data.findIndex((p) => p.label === payoffMonth)
     : -1;
+  const payoffDateLabel = payoffMonth
+    ? formatMonthLabel(payoffMonth).toUpperCase()
+    : "";
   const liquidVisible = visibility[TOTAL_LIQUID_KEY] === true;
 
   // Post-payoff portion of the Total Liquid line, used to shade the freedom
@@ -444,12 +489,24 @@ export default function TrajectoryHorizon({
                     stroke={theme.colors.primary}
                     strokeDasharray="4 4"
                     strokeWidth={1.5}
-                    label={{
-                      value: "Payoff",
-                      position: "insideTopRight",
-                      fill: theme.colors.primary,
-                      fontSize: 10,
-                    }}
+                    label={
+                      <PayoffMarkerLabel
+                        dateText={payoffDateLabel}
+                        color={theme.colors.primary}
+                      />
+                    }
+                  />
+                )}
+                {payoffIndex >= 0 && (
+                  <ReferenceDot
+                    yAxisId="left"
+                    x={payoffIndex}
+                    y={0}
+                    r={4.5}
+                    fill={theme.colors.primary}
+                    stroke={theme.colors.surfaceContainer}
+                    strokeWidth={2}
+                    isFront
                   />
                 )}
                 {todayIndex >= 0 && (
