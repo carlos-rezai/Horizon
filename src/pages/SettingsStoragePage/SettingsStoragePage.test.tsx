@@ -10,6 +10,7 @@ import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { theme } from "../../tokens";
+import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
 import SettingsStoragePage from "./SettingsStoragePage";
 
 afterEach(() => {
@@ -21,9 +22,11 @@ afterEach(() => {
 function renderPage() {
   return render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={["/settings/storage"]}>
-        <SettingsStoragePage />
-      </MemoryRouter>
+      <SnackbarProvider>
+        <MemoryRouter initialEntries={["/settings/storage"]}>
+          <SettingsStoragePage />
+        </MemoryRouter>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }

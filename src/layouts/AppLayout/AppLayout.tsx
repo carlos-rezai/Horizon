@@ -13,12 +13,12 @@ import {
   InsufficientFundsWarnings,
 } from "../../features/settlements";
 import Clock from "../../components/Clock/Clock";
+import BrandMark from "../../components/BrandMark/BrandMark";
 import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
 import {
   StyledWrapper,
   StyledSidebar,
   StyledBrand,
-  StyledBrandMark,
   StyledWordmark,
   StyledNav,
   StyledNavLink,
@@ -46,30 +46,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <StyledWrapper>
         <StyledSidebar>
           <StyledBrand>
-            <StyledBrandMark
-              width={30}
-              height={30}
-              viewBox="0 0 30 30"
-              role="img"
-              aria-label="Horizon"
-            >
-              <circle
-                className="ring"
-                cx="15"
-                cy="15"
-                r="13.5"
-                fill="none"
-                strokeWidth="1.5"
-              />
-              <path
-                className="arc"
-                d="M3 18 Q15 9 27 18"
-                fill="none"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle className="sun" cx="22.5" cy="11" r="2.6" />
-            </StyledBrandMark>
+            <BrandMark size={30} label="Horizon" />
             <StyledWordmark>HORIZON</StyledWordmark>
           </StyledBrand>
           <StyledNav>

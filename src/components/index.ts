@@ -1,3 +1,4 @@
+export { default as BrandMark } from "./BrandMark/BrandMark";
 export { default as Card } from "./Card/Card";
 export { default as CardHeader } from "./CardHeader/CardHeader";
 export { default as DataRow } from "./DataRow/DataRow";
