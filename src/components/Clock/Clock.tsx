@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { StyledClock, StyledTime, StyledDate } from "./Clock.styles";
+import {
+  StyledClock,
+  StyledTimeRow,
+  StyledTime,
+  StyledSeconds,
+  StyledDate,
+} from "./Clock.styles";
 
 const WEEKDAYS = [
   "Sunday",
@@ -29,23 +35,16 @@ const MONTHS = [
 export default function Clock() {
   const [now, setNow] = useState(() => new Date());
 
+  // Tick every second so the dim seconds readout stays live (matches the
+  // canonical prototype SidebarClock).
   useEffect(() => {
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-    const start = new Date();
-    const msToNextMinute =
-      (60 - start.getSeconds()) * 1_000 - start.getMilliseconds();
-    const timeoutId = setTimeout(() => {
-      setNow(new Date());
-      intervalId = setInterval(() => setNow(new Date()), 60_000);
-    }, msToNextMinute);
-    return () => {
-      clearTimeout(timeoutId);
-      clearInterval(intervalId);
-    };
+    const intervalId = setInterval(() => setNow(new Date()), 1_000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const hours = String(now.getHours()).padStart(2, "0");
   const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
   const time = `${hours}:${minutes}`;
 
   const weekday = WEEKDAYS[now.getDay()];
@@ -55,7 +54,10 @@ export default function Clock() {
 
   return (
     <StyledClock>
-      <StyledTime>{time}</StyledTime>
+      <StyledTimeRow>
+        <StyledTime>{time}</StyledTime>
+        <StyledSeconds>:{seconds}</StyledSeconds>
+      </StyledTimeRow>
       <StyledDate>{date}</StyledDate>
     </StyledClock>
   );

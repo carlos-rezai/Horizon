@@ -48,21 +48,31 @@ describe("Clock — zero-padding", () => {
   });
 });
 
+describe("Clock — seconds readout", () => {
+  it("renders the dim seconds alongside HH:MM", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-01-15T15:30:07"));
+    renderWithTheme(<Clock />);
+    expect(screen.getByText("15:30")).toBeInTheDocument();
+    expect(screen.getByText(":07")).toBeInTheDocument();
+  });
+});
+
 describe("Clock — live interval", () => {
-  it("does not update the display before the next minute boundary", () => {
+  it("advances the seconds every second", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-01-15T15:30:30"));
     renderWithTheme(<Clock />);
-    expect(screen.getByText("15:30")).toBeInTheDocument();
+    expect(screen.getByText(":30")).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(29_999);
+      vi.advanceTimersByTime(1_000);
     });
 
-    expect(screen.getByText("15:30")).toBeInTheDocument();
+    expect(screen.getByText(":31")).toBeInTheDocument();
   });
 
-  it("updates the display at the next minute boundary", () => {
+  it("rolls the minute over at the boundary", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-01-15T15:30:30"));
     renderWithTheme(<Clock />);
@@ -73,37 +83,16 @@ describe("Clock — live interval", () => {
     });
 
     expect(screen.getByText("15:31")).toBeInTheDocument();
-  });
-
-  it("continues updating every 60 000ms after the initial sync", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2025-01-15T15:30:30"));
-    renderWithTheme(<Clock />);
-
-    act(() => {
-      vi.advanceTimersByTime(30_000);
-    });
-
-    expect(screen.getByText("15:31")).toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(60_000);
-    });
-
-    expect(screen.getByText("15:32")).toBeInTheDocument();
   });
 });
 
 describe("Clock — cleanup", () => {
-  it("calls clearTimeout and clearInterval when the component unmounts", () => {
+  it("clears the interval when the component unmounts", () => {
     vi.useFakeTimers();
-    const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
     const clearIntervalSpy = vi.spyOn(window, "clearInterval");
     const { unmount } = renderWithTheme(<Clock />);
     unmount();
-    expect(clearTimeoutSpy).toHaveBeenCalled();
     expect(clearIntervalSpy).toHaveBeenCalled();
-    clearTimeoutSpy.mockRestore();
     clearIntervalSpy.mockRestore();
   });
 });
