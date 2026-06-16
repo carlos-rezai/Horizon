@@ -209,7 +209,9 @@ function YearTick({ x = 0, y = 0, payload, data, mutedColor }: YearTickProps) {
   const point = data[index];
   if (!point) return null;
 
-  if (index % 12 !== 0) return null;
+  // One label every two years (prototype cadence), anchored on the year
+  // boundary closest to each data start.
+  if (index % 24 !== 0) return null;
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -516,7 +518,7 @@ export default function TrajectoryHorizon({
                   <ReferenceLine
                     yAxisId="left"
                     x={todayIndex}
-                    stroke={theme.colors.onSurface}
+                    stroke={theme.colors.outline}
                     strokeDasharray="3 4"
                     strokeWidth={1}
                     label={{
