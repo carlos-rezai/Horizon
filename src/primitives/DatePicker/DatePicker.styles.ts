@@ -56,9 +56,21 @@ export const Wrapper = styled.div`
   }
 `;
 
+export const StyledCalendarIcon = styled.span`
+  position: absolute;
+  top: 50%;
+  right: ${({ theme }) => theme.spacing.space3}px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+`;
+
 export const StyledDateInput = styled.input`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.space2}px
+  padding: ${({ theme }) => theme.spacing.space2}px 32px
+    ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;
   background-color: ${({ theme }) => theme.colors.surfaceContainerLowest};
   color: ${({ theme }) => theme.colors.onSurface};

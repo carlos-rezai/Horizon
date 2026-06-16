@@ -199,6 +199,7 @@ export default function TransactionEditModal({
               id="edit-amount"
               type="text"
               inputMode="decimal"
+              prefix="€"
               aria-label="Amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}

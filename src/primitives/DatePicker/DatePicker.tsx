@@ -2,7 +2,12 @@ import { forwardRef } from "react";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import type { InputHTMLAttributes } from "react";
-import { Wrapper, StyledDateInput } from "./DatePicker.styles";
+import { Calendar } from "lucide-react";
+import {
+  Wrapper,
+  StyledDateInput,
+  StyledCalendarIcon,
+} from "./DatePicker.styles";
 
 interface DatePickerProps {
   value: string;
@@ -53,6 +58,9 @@ export default function DatePicker({
         placeholderText="DD.MM.YYYY"
         popperPlacement="bottom-start"
       />
+      <StyledCalendarIcon aria-hidden="true">
+        <Calendar size={15} />
+      </StyledCalendarIcon>
     </Wrapper>
   );
 }
