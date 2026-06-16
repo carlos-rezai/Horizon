@@ -317,9 +317,6 @@ export default function TrajectoryHorizon({
   const visibleCount = series.filter((s) => visibility[s.key] === true).length;
 
   const [, yMax] = computeVisibleYDomain(data, visibility);
-  const TICK_STEP_CENTS = 2_500_000;
-  const yTicks: number[] = [];
-  for (let v = 0; v <= yMax; v += TICK_STEP_CENTS) yTicks.push(v);
 
   const payoffIndex = payoffMonth
     ? data.findIndex((p) => p.label === payoffMonth)
@@ -378,7 +375,7 @@ export default function TrajectoryHorizon({
             <ResponsiveContainer width="100%" height={360}>
               <ComposedChart
                 data={freedomData}
-                margin={{ top: 8, right: 70, left: 70, bottom: 8 }}
+                margin={{ top: 8, right: 20, left: 20, bottom: 8 }}
               >
                 <defs>
                   <linearGradient id="freedomGrad" x1="0" y1="0" x2="0" y2="1">
@@ -409,13 +406,7 @@ export default function TrajectoryHorizon({
                   }
                   interval={0}
                 />
-                <YAxis
-                  yAxisId="left"
-                  tickFormatter={(v: number) => formatBalance(v)}
-                  ticks={yTicks}
-                  domain={[0, yMax]}
-                  width={90}
-                />
+                <YAxis yAxisId="left" domain={[0, yMax]} hide />
                 <Tooltip
                   content={(props) => (
                     <ChartTooltip
