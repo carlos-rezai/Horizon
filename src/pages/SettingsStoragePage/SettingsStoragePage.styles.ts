@@ -18,9 +18,3 @@ export const Grid = styled.div`
 export const FullWidth = styled.div`
   grid-column: 1 / -1;
 `;
-
-export const Preferences = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.space4}px;
-`;

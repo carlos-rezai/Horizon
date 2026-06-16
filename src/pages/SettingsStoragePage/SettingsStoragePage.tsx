@@ -2,14 +2,9 @@ import PageHeader from "../../components/PageHeader/PageHeader";
 import Card from "../../components/Card/Card";
 import SectionHead from "../../components/SectionHead/SectionHead";
 import StorageCard from "../../features/settings/StorageCard/StorageCard";
-import AutoUpdateToggle from "../../features/settings/AutoUpdateToggle/AutoUpdateToggle";
+import PreferencesCard from "../../features/settings/PreferencesCard/PreferencesCard";
 import AppVersion from "../../features/settings/AppVersion/AppVersion";
-import {
-  Container,
-  FullWidth,
-  Grid,
-  Preferences,
-} from "./SettingsStoragePage.styles";
+import { Container, FullWidth, Grid } from "./SettingsStoragePage.styles";
 
 export default function SettingsStoragePage() {
   return (
@@ -21,12 +16,7 @@ export default function SettingsStoragePage() {
       />
       <Grid>
         <StorageCard />
-        <Card>
-          <SectionHead label="Application" title="Preferences" />
-          <Preferences>
-            <AutoUpdateToggle />
-          </Preferences>
-        </Card>
+        <PreferencesCard />
         <FullWidth>
           <Card>
             <SectionHead label="About" title="Horizon" />

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Toggle from "../../../primitives/Toggle/Toggle";
-import { Label, Row } from "./AutoUpdateToggle.styles";
 
 export default function AutoUpdateToggle() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -16,10 +15,5 @@ export default function AutoUpdateToggle() {
     void window.horizon?.updates.setAutoDownload(value);
   }
 
-  return (
-    <Row>
-      <Label>Automatically download updates</Label>
-      <Toggle checked={enabled} onChange={handleChange} />
-    </Row>
-  );
+  return <Toggle checked={enabled} onChange={handleChange} />;
 }
