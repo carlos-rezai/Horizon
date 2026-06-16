@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Check } from "lucide-react";
 import Button from "../../../primitives/Button/Button";
 import Spinner from "../../../primitives/Spinner/Spinner";
 import Text from "../../../primitives/Text/Text";
@@ -91,7 +92,12 @@ export default function StorageCard() {
       <SectionHead
         label="Storage"
         title="Database"
-        right={<IntegrityBadge>{integrityLabel}</IntegrityBadge>}
+        right={
+          <IntegrityBadge>
+            {status.integrity === "ok" && <Check size={13} />}
+            {integrityLabel}
+          </IntegrityBadge>
+        }
       />
       {status.path !== undefined && (
         <PathBox>
