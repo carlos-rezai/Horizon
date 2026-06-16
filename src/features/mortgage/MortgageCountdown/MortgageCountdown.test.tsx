@@ -122,7 +122,7 @@ describe("MortgageCountdown", () => {
     expect(bar).toHaveAttribute("aria-valuemax");
   });
 
-  it("shows time remaining when payoff month is found", () => {
+  it("shows the To Payoff countdown and payoff date when payoff month is found", () => {
     // Build snapshots where balance reaches 0 partway through
     const snapshots: MonthlySnapshot[] = Array.from({ length: 120 }, (_, i) => {
       const year = 2026 + Math.floor(i / 12);
@@ -141,7 +141,22 @@ describe("MortgageCountdown", () => {
       <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
     );
 
-    expect(screen.getByText("Time Remaining")).toBeInTheDocument();
-    expect(screen.getByText(/\d+ years?.*\d+ months?/i)).toBeInTheDocument();
+    expect(screen.getByText("To Payoff")).toBeInTheDocument();
+    // The countdown renders year/month units.
+    expect(screen.getByText("yr")).toBeInTheDocument();
+    expect(screen.getByText("mo")).toBeInTheDocument();
+  });
+
+  it("renders the Paid off label and an edit button", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
+
+    renderWithTheme(
+      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+    );
+
+    expect(screen.getByText("Paid off")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Edit mortgage details" })
+    ).toBeInTheDocument();
   });
 });
