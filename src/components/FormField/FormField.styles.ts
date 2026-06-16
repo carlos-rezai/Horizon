@@ -7,10 +7,13 @@ export const StyledFormField = styled.div`
 `;
 
 export const StyledLabel = styled.label`
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  font-weight: ${({ theme }) => theme.typography.weights.medium};
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  line-height: ${({ theme }) => theme.typography.lineHeights.normal};
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
+  font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
+  line-height: ${({ theme }) => theme.typography.scale.label.lineHeight};
+  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;
 
 export const StyledErrorMessage = styled.span`
