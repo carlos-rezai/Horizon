@@ -1,5 +1,39 @@
 # Dev Journal
 
+## 2026-06-16 — #138 Phase 5: Settings recomposed to the prototype
+
+Brought the Settings screen's Preferences and About cards to the canonical
+layout, reusing existing primitives and adding two small reusable pieces.
+
+**New shared components.** `SettingRow` (components/) — the prototype's
+icon-box + title/desc + right-slot row, used for every preference line — and
+`BrandMark` (components/) — the sun-arc logo SVG extracted out of `AppLayout`'s
+sidebar so it can be reused in the About card. `BrandMark` takes a `label` prop:
+labelled it is an accessible `img`, unlabelled it is decorative (`aria-hidden`),
+so the sidebar mark stays the named graphic and the About mark doesn't duplicate
+the accessible name on the page.
+
+**Preferences card** (`features/settings/PreferencesCard`): three `SettingRow`s
+— Automatic updates (wired `AutoUpdateToggle`, now reduced to just the
+primitive Toggle), Appearance (`Dark` badge), Privacy (`Local` pos badge).
+
+**About card** (`features/settings/AboutCard`): `BrandMark` + product
+description + tech line, and a VERSION label / mono version / "Check for
+updates" button. `AppVersion` (the old "Horizon x.y.z / Electron …" stack) was
+removed — the prototype shows the app version alone, no Electron line.
+
+**"Check for updates" wiring.** There is no dedicated check-for-updates IPC and
+adding one is out of scope, so the button surfaces the _current_ update state
+via the existing `useUpdateStatus` + snackbar: a Download action when an update
+is known available, a Restart action when one is downloaded, otherwise an
+honest "You're on the latest version (vX)" info toast. Because `AboutCard` now
+uses `useSnackbar`, the page test wraps the page in `SnackbarProvider` (as
+production already does via `AppLayout`).
+
+**Out of scope, confirmed by the plan.** The prototype's "Snackbar states"
+preview card stays dropped (decision doc); the Storage card keeps showing the
+_real_ DB path/size, not the prototype's mock `2,4 MB`.
+
 ## 2026-06-16 — #138 Phase 4: Account Detail recomposed to the prototype
 
 Rebuilt the Account Detail screen to the canonical hero layout: `AccountHero`
