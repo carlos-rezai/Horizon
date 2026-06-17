@@ -21,6 +21,7 @@ export const PathBox = styled.div`
   border-radius: ${({ theme }) => theme.radius.md}px;
   padding: ${({ theme }) => theme.spacing.space3}px
     ${({ theme }) => theme.spacing.space4}px;
+  margin-bottom: ${({ theme }) => theme.spacing.space2}px;
 `;
 
 export const PathLabel = styled.div`
@@ -73,6 +74,7 @@ export const StatValue = styled.span<{ $accent?: boolean }>`
 export const Actions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.space3}px;
+  margin-top: ${({ theme }) => theme.spacing.space4}px;
 
   & > button {
     flex: 1;
@@ -83,6 +85,7 @@ export const ConfirmDialog = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space3}px;
+  margin-top: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space4}px;
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.md}px;
