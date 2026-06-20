@@ -185,6 +185,53 @@ describe("migrate (SQLite)", () => {
     db.close();
   });
 
+  describe("migration 011 (imports)", () => {
+    it("creates the imports and import_presets tables", async () => {
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const tables = db
+        .prepare(
+          `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`
+        )
+        .all() as Array<{ name: string }>;
+      const names = tables.map((t) => t.name);
+
+      expect(names).toContain("imports");
+      expect(names).toContain("import_presets");
+
+      db.close();
+    });
+
+    it("adds a nullable import_id column to transactions", async () => {
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const cols = db
+        .prepare(`PRAGMA table_info(transactions)`)
+        .all() as Array<{ name: string; notnull: number }>;
+      const importId = cols.find((c) => c.name === "import_id");
+
+      expect(importId).toBeDefined();
+      expect(importId?.notnull).toBe(0);
+
+      db.close();
+    });
+
+    it("advances PRAGMA user_version to at least 11", async () => {
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const version = db.pragma("user_version", { simple: true }) as number;
+      expect(version).toBeGreaterThanOrEqual(11);
+
+      db.close();
+    });
+  });
+
   describe("tempfile lifecycle", () => {
     let dbPath: string;
 

@@ -1713,6 +1713,302 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Imports (issue #140) — ImportsRepo
+  //
+  // A committed set of already-parsed rows becomes import_id-tagged Variable
+  // Spending transactions plus one `imports` history record, written in a
+  // single atomic transaction. The history record carries derived metadata
+  // (date range, row count). Deleting an import cascades to its transactions
+  // while leaving hand-entered spend untouched. Signs are preserved exactly as
+  // supplied — a positive credit row becomes a positive transaction.
+  // -------------------------------------------------------------------------
+
+  const sampleImportRows = [
+    {
+      date: "2026-03-05",
+      amount: -1299,
+      description: "REWE",
+      category: "Food",
+    },
+    {
+      date: "2026-03-12",
+      amount: 250000,
+      description: "Gehalt",
+      category: "Income",
+    },
+    {
+      date: "2026-03-20",
+      amount: -4500,
+      description: "Deutsche Bahn",
+      category: "Miscellaneous",
+    },
+  ];
+
+  function makeImportInput(
+    accountId: string,
+    overrides: Partial<{
+      bank: string;
+      filename: string;
+      sizeBytes: number;
+      rows: typeof sampleImportRows;
+    }> = {}
+  ) {
+    return {
+      accountId,
+      bank: "dkb",
+      filename: "dkb-2026-03.csv",
+      sizeBytes: 4096,
+      rows: sampleImportRows,
+      ...overrides,
+    };
+  }
+
+  describe("ImportsRepo.create", () => {
+    it("returns an Import DTO with derived date range, row count, and echoed metadata", async () => {
+      const account = await makeAccount();
+
+      const created = await storage.imports.create(makeImportInput(account.id));
+
+      expect(created).not.toBeNull();
+      expect(typeof created?.id).toBe("string");
+      expect(created?.accountId).toBe(account.id);
+      expect(created?.bank).toBe("dkb");
+      expect(created?.filename).toBe("dkb-2026-03.csv");
+      expect(created?.sizeBytes).toBe(4096);
+      expect(created?.rowCount).toBe(3);
+      expect(created?.startDate).toBe("2026-03-05");
+      expect(created?.endDate).toBe("2026-03-20");
+      expect(typeof created?.importedAt).toBe("string");
+      expect(created!.importedAt.length).toBeGreaterThan(0);
+    });
+
+    it("persists one transaction per row, each tagged with the import_id", async () => {
+      const account = await makeAccount();
+
+      const created = await storage.imports.create(makeImportInput(account.id));
+      const txs = await storage.transactions.findByAccount(account.id);
+
+      expect(txs).toHaveLength(3);
+      expect(txs.every((t) => t.importId === created!.id)).toBe(true);
+    });
+
+    it("preserves signs exactly: a positive credit row persists as a positive transaction", async () => {
+      const account = await makeAccount();
+
+      await storage.imports.create(makeImportInput(account.id));
+      const txs = await storage.transactions.findByAccount(account.id);
+      const amounts = txs.map((t) => t.amount).sort((a, b) => a - b);
+
+      expect(amounts).toEqual([-4500, -1299, 250000]);
+    });
+
+    it("tags imported rows with import_id while hand-entered spend in the same account stays NULL", async () => {
+      const account = await makeAccount();
+
+      const manual = await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -1000,
+        description: "Coffee",
+        category: "Food",
+      });
+      const created = await storage.imports.create(makeImportInput(account.id));
+
+      const txs = await storage.transactions.findByAccount(account.id);
+      const byId = new Map(txs.map((t) => [t.id, t]));
+
+      // Hand-entered spend: import_id NULL → undefined on the DTO.
+      expect(byId.get(manual!.id)?.importId).toBeUndefined();
+      // Every imported row carries this import's id.
+      const imported = txs.filter((t) => t.id !== manual!.id);
+      expect(imported).toHaveLength(3);
+      expect(imported.every((t) => t.importId === created!.id)).toBe(true);
+    });
+
+    it("is atomic: returns null and persists nothing for a well-formed but unknown accountId", async () => {
+      const unknownId = "00000000-0000-4000-8000-999999999999";
+
+      let result: Awaited<ReturnType<typeof storage.imports.create>> | null =
+        null;
+      try {
+        result = await storage.imports.create(makeImportInput(unknownId));
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+      expect(await storage.transactions.findAll()).toEqual([]);
+      expect(await storage.imports.findAll()).toEqual([]);
+    });
+
+    it("returns null for an unparseable accountId", async () => {
+      let result: Awaited<ReturnType<typeof storage.imports.create>> | null =
+        null;
+      try {
+        result = await storage.imports.create(makeImportInput("not-an-id"));
+      } catch {
+        result = null;
+      }
+
+      expect(result).toBeNull();
+      expect(await storage.imports.findAll()).toEqual([]);
+    });
+  });
+
+  describe("ImportsRepo.findAll / findByAccount", () => {
+    it("findAll returns every import across accounts", async () => {
+      const a = await makeAccount({ name: "A" });
+      const b = await makeAccount({ name: "B" });
+      await storage.imports.create(makeImportInput(a.id));
+      await storage.imports.create(
+        makeImportInput(b.id, { filename: "b.csv" })
+      );
+
+      const all = await storage.imports.findAll();
+      expect(all).toHaveLength(2);
+    });
+
+    it("findByAccount returns only the given account's imports", async () => {
+      const a = await makeAccount({ name: "A" });
+      const b = await makeAccount({ name: "B" });
+      await storage.imports.create(makeImportInput(a.id));
+      await storage.imports.create(
+        makeImportInput(b.id, { filename: "b.csv" })
+      );
+
+      const forA = await storage.imports.findByAccount(a.id);
+      expect(forA).toHaveLength(1);
+      expect(forA[0].accountId).toBe(a.id);
+    });
+
+    it("findByAccount returns an empty array for an account with no imports", async () => {
+      const account = await makeAccount();
+      const list = await storage.imports.findByAccount(account.id);
+      expect(list).toEqual([]);
+    });
+  });
+
+  describe("ImportsRepo.findTransactions", () => {
+    it("returns the persisted, import_id-tagged rows of a past import", async () => {
+      const account = await makeAccount();
+      const created = await storage.imports.create(makeImportInput(account.id));
+
+      const txs = await storage.imports.findTransactions(created!.id);
+
+      expect(txs).toHaveLength(3);
+      expect(txs.every((t) => t.importId === created!.id)).toBe(true);
+      const descriptions = txs.map((t) => t.description).sort();
+      expect(descriptions).toEqual(["Deutsche Bahn", "Gehalt", "REWE"]);
+    });
+
+    it("returns an empty array for an unknown importId", async () => {
+      const txs = await storage.imports.findTransactions(
+        "00000000-0000-4000-8000-999999999999"
+      );
+      expect(txs).toEqual([]);
+    });
+  });
+
+  describe("ImportsRepo.delete (cascade)", () => {
+    it("removes the import and all its tagged transactions and returns true", async () => {
+      const account = await makeAccount();
+      const created = await storage.imports.create(makeImportInput(account.id));
+
+      const result = await storage.imports.delete(created!.id);
+
+      expect(result).toBe(true);
+      expect(await storage.imports.findAll()).toEqual([]);
+      expect(await storage.transactions.findByAccount(account.id)).toEqual([]);
+    });
+
+    it("leaves hand-entered Variable Spending (import_id NULL) untouched", async () => {
+      const account = await makeAccount();
+
+      const manual = await storage.transactions.create(account.id, {
+        date: "2026-03-02",
+        amount: -800,
+        description: "Cat food",
+        category: "Food",
+      });
+      const created = await storage.imports.create(makeImportInput(account.id));
+
+      await storage.imports.delete(created!.id);
+
+      const remaining = await storage.transactions.findByAccount(account.id);
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].id).toBe(manual!.id);
+      expect(remaining[0].importId).toBeUndefined();
+    });
+
+    it("returns false for an unknown importId", async () => {
+      const result = await storage.imports.delete(
+        "00000000-0000-4000-8000-999999999999"
+      );
+      expect(result).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Imports (issue #140) — ImportPresetsRepo
+  //
+  // Remembered per-bank column mappings live in the import_presets DB table so
+  // they survive restart, reinstall, and backup/restore. upsert/get round-trip
+  // the mapping; a second upsert overwrites the prior one for the same bank.
+  // -------------------------------------------------------------------------
+
+  describe("ImportPresetsRepo", () => {
+    const dkbMapping = {
+      date: "Buchungstag",
+      description: "Verwendungszweck",
+      amount: "Betrag",
+    };
+
+    it("get returns null when no preset exists for the bank", async () => {
+      const preset = await storage.importPresets.get("dkb");
+      expect(preset).toBeNull();
+    });
+
+    it("upsert then get round-trips the mapping", async () => {
+      await storage.importPresets.upsert("dkb", dkbMapping);
+
+      const preset = await storage.importPresets.get("dkb");
+      expect(preset).toEqual(dkbMapping);
+    });
+
+    it("upsert overwrites the mapping for an existing bank", async () => {
+      await storage.importPresets.upsert("dkb", dkbMapping);
+      const adjusted = {
+        date: "Wertstellung",
+        description: "Buchungstext",
+        amount: "Umsatz",
+      };
+      await storage.importPresets.upsert("dkb", adjusted);
+
+      const preset = await storage.importPresets.get("dkb");
+      expect(preset).toEqual(adjusted);
+    });
+
+    it("a remembered mapping survives a backup and reopen", async () => {
+      await storage.importPresets.upsert("dkb", dkbMapping);
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-preset-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        const restored = await createStorage({ path: destPath });
+        try {
+          const preset = await restored.importPresets.get("dkb");
+          expect(preset).toEqual(dkbMapping);
+        } finally {
+          await restored.close();
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Storage.backup
   // -------------------------------------------------------------------------
 
