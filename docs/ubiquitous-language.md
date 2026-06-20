@@ -620,18 +620,18 @@
 
 ## CSV / Bank Statement Import (new)
 
-| Term                     | Definition                                                                                                                                                                            | Aliases to avoid                          |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **Import**               | The feature (sidebar nav + `features/import`) for bringing bank statements into Horizon — the **UI** ships with the Handover; the parsing/detection engine is a deferred backend epic | Upload, sync, ingest                      |
-| **Statement**            | A single imported bank CSV file, recorded in **Import History** with its account, bank, date range, and transaction count                                                             | Bank file, CSV, export                    |
-| **Import Wizard**        | The 3-step modal flow: **Account & file → Map columns → Review & categorize** — the only path to create an Import                                                                     | Import flow, upload wizard                |
-| **Column Mapping**       | The mapping from a bank CSV's columns to Horizon's Date / Description / Amount fields, set in the wizard's Map-columns step                                                           | Field mapping, schema map                 |
-| **Bank Preset**          | A per-bank remembered **Column Mapping** re-applied automatically when a Statement from that bank is imported again                                                                   | Bank profile, saved mapping               |
-| **Duplicate Detection**  | The wizard heuristic that flags an imported row as a likely duplicate of an existing Transaction — flagged rows are **pre-unchecked**                                                 | Dedup, duplicate check                    |
-| **Recurring Detection**  | The wizard heuristic that flags an imported row as matching a known RecurringTransaction — flagged rows are **pre-unchecked** to avoid double-counting                                | Recurring match, standing-order detection |
-| **Imported Transaction** | A row confirmed in the wizard's Review step — it lands as **Variable Spending** on the chosen account                                                                                 | Import row, parsed transaction            |
-| **Import History**       | The year-grouped accordion of past **Statements** on the Import page, with Preview / Re-categorize / Re-download / Delete per file                                                    | Import list, upload history               |
-| **Import Preview**       | The read-only modal showing the transactions of an already-imported **Statement**                                                                                                     | File preview, statement view              |
+| Term                               | Definition                                                                                                                                                                                                         | Aliases to avoid                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| **Import**                         | The feature (sidebar nav + `features/import`) for bringing bank statements into Horizon — the **UI** ships with the Handover; the parsing/detection engine is a deferred backend epic                              | Upload, sync, ingest                      |
+| **Statement**                      | A single imported bank CSV file, recorded in **Import History** with its account, bank, date range, and transaction count                                                                                          | Bank file, CSV, export                    |
+| **Import Wizard**                  | The 3-step modal flow: **Account & file → Map columns → Review & categorize** — the only path to create an Import                                                                                                  | Import flow, upload wizard                |
+| **Column Mapping**                 | The mapping from a bank CSV's columns to Horizon's Date / Description / Amount fields, set in the wizard's Map-columns step                                                                                        | Field mapping, schema map                 |
+| **Bank Preset** (updated)          | A per-bank remembered **Column Mapping** (+ delimiter/decimal/date) re-applied automatically when a Statement from that bank is imported again — **persisted in the `import_presets` DB table**, not client memory | Bank profile, saved mapping               |
+| **Duplicate Detection** (updated)  | The **server-side** heuristic (run during **Import Preview Request**) that flags an imported row as a high-precision duplicate of an existing Transaction — flagged rows are **pre-unchecked**                     | Dedup, duplicate check                    |
+| **Recurring Detection** (updated)  | The **server-side** heuristic (run during **Import Preview Request**) that flags an imported row as matching a known RecurringTransaction — flagged rows are **pre-unchecked** to avoid double-counting            | Recurring match, standing-order detection |
+| **Imported Transaction** (updated) | A row confirmed in the wizard's Review step — committed as **Variable Spending** on the chosen account with its `import_id` set to its **Import Record**                                                           | Import row, parsed transaction            |
+| **Import History** (updated)       | The year-grouped accordion of past **Statements** (**Import Records**) on the Import page; the real per-file actions are **Preview** and **Delete** (Re-download dropped, Re-categorize deferred)                  | Import list, upload history               |
+| **Import Preview**                 | The read-only modal showing the transactions of an already-imported **Statement**                                                                                                                                  | File preview, statement view              |
 
 ## Relationships (Claude Design Handover additions)
 
@@ -665,6 +665,53 @@
 > **Dev:** "I imported a Sparkasse CSV and my salary row was unchecked."
 >
 > **Domain expert:** "**Recurring Detection** flagged it — Horizon already models salary as a RecurringTransaction, so importing it would double-count. It's pre-unchecked. Same with **Duplicate Detection**. Everything you do confirm becomes an **Imported Transaction** in **Variable Spending**, and the CSV is recorded as a **Statement** in **Import History**."
+
+## Bank Statement Import — Backend (new)
+
+| Term                       | Definition                                                                                                                                                                                      | Aliases to avoid                         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Import Record**          | The persisted `imports` table row for one imported **Statement** — account, bank, filename, date range, row count, imported-on, size; the durable backing of an **Import History** entry        | Import row, history entry, statement row |
+| **Import Preview Request** | `POST /imports/preview` — multipart upload (file bytes + accountId + optional mapping) that parses, auto-categorizes, and runs **Duplicate**/**Recurring Detection**; **writes nothing**        | Parse request, dry run                   |
+| **Import Commit**          | `POST /imports` — the JSON request carrying the chosen rows that atomically inserts the **Import Record** + its **Imported Transactions** and upserts the **Bank Preset** in one DB transaction | Save import, finalize import             |
+| **Stateless Preview**      | The rule that an **Import Preview Request** holds **no server session** — the **Import Commit** re-sends the reviewed rows and the server re-validates them; the raw file is never persisted    | —                                        |
+| **Import Cascade Delete**  | `DELETE /imports/:id` — deletes an **Import Record** and the **Imported Transactions** carrying its `import_id`, implemented in the repo use-case method (not SQL `ON DELETE CASCADE`)          | Cascade, bulk delete                     |
+| **Charset Detection**      | The server step that sniffs a statement's encoding (BOM → UTF-8, else **Windows-1252**) and decodes the raw bytes via `TextDecoder` before parsing — owned by the server, never the Renderer    | Encoding sniff, decode                   |
+| **Header Signature**       | The set of column names on a **Bank Preset** that identifies the real header row inside a CSV — the parser skips the metadata **preamble** by scanning down to it                               | Header match, column fingerprint         |
+| **Preamble**               | The bank-specific metadata lines (IBAN, period, opening balance) that precede the real header row in some exports — discarded by matching the **Header Signature**                              | Header junk, metadata rows               |
+| **Auto-Categorization**    | The server keyword→category rule map that assigns each parsed row one of the eight default Categories (`Miscellaneous` fallback); overridable per-row in the wizard                             | Auto-tag, category guess                 |
+| **csvImport module**       | The pure, fully-tested `server/src/lib/csvImport/` engine — **Charset Detection**, bank detection, parse, cents/ISO conversion, **Auto-Categorization**, duplicate/recurring detection          | Parser, import engine                    |
+
+## Relationships (Bank Statement Import — Backend additions)
+
+- An **Import Record** belongs to exactly one **Account** and groups zero or more **Imported Transactions** via their `import_id`; a hand-entered **Variable Spending** transaction has `import_id` NULL
+- An **Import Commit** is atomic — the **Import Record**, all its **Imported Transactions**, and the **Bank Preset** upsert succeed or fail together (one better-sqlite3 transaction), the same all-or-nothing guarantee as `transfers.create`
+- **Bank detection** matches the parsed **Header Signature** against the shipped **Bank Presets** — it is driven by the file's columns, never by which **Account** the import targets
+- **Charset Detection**, **Header Signature** matching, **Auto-Categorization**, and both detections all run inside the **csvImport module** during the **Import Preview Request** — the **Renderer** only renders the returned rows
+- An **Imported Transaction** always keeps its real sign — an included positive credit becomes a positive **Variable Spending** transaction
+- **Import Cascade Delete** is the only path that removes imported rows in bulk; **Duplicate** and **Recurring Detection** never delete or merge — they only pre-uncheck in the wizard
+- The whole flow is **offline and on-device**: the Express server is the local `utilityProcess` child on **127.0.0.1** (**Loopback Bind**); the CSV never leaves the machine
+
+## Example dialogue (Bank Statement Import — Backend)
+
+> **Dev:** "When I drop a DKB CSV, where does the parsing actually happen — in the browser?"
+>
+> **Domain expert:** "No. The Renderer uploads the raw bytes to the local Express child over loopback. The **csvImport module** does **Charset Detection** — DKB exports are Windows-1252, so decoding in the browser would mangle the umlauts. That's the whole reason it's a multipart upload and server-side."
+>
+> **Dev:** "The first few lines of the file are account info, not transactions. How does it skip them?"
+>
+> **Domain expert:** "The **Bank Preset** carries a **Header Signature** — the column names that mark the real header row. The parser scans past the **Preamble** until it matches, then parses from there."
+>
+> **Dev:** "I reviewed the rows but haven't confirmed yet. Is the server holding my parse somewhere?"
+>
+> **Domain expert:** "No — it's a **Stateless Preview**. The **Import Preview Request** writes nothing and keeps no session. When you confirm, the **Import Commit** sends the rows you kept back to the server, which re-validates them and inserts the **Import Record** and **Imported Transactions** in one transaction."
+>
+> **Dev:** "If I delete that import later, what happens to the transactions?"
+>
+> **Domain expert:** "**Import Cascade Delete** removes the **Import Record** and every **Imported Transaction** carrying its `import_id`. Your hand-entered **Variable Spending** is untouched — those rows have a NULL `import_id`."
+>
+> **Dev:** "And re-importing the same file next month?"
+>
+> **Domain expert:** "**Duplicate Detection** flags the overlap and pre-unchecks it, and **Recurring Detection** pre-unchecks your salary and rent so you don't double-count what the Projection Engine already models. Nothing is dropped silently — you decide."
 
 ## Flagged ambiguities
 
@@ -746,3 +793,6 @@
   the parent port. The **Renderer** additionally communicates with **Electron Main** through
   the **Preload Bridge** — `window.horizon.updates` exposes update event listeners and
   `quitAndInstall`/`downloadUpdate` invokes. The Renderer still never talks to SQLite directly.
+- **"Statement" vs "Import Record"** (new) — **Statement** is the UX/domain word for an imported bank CSV file; **Import Record** is its persisted `imports` table row. Use **Import Record** in storage/repo/migration discussions and **Statement** in UI/UX copy. They are 1:1 — never imply a Statement exists without an Import Record (the raw file is not stored).
+- **"import"** (new) — overloaded (ES module import, the **Import** feature, a single **Import Record**). In data-layer discussion, prefer **Import Record** for the row and **Import Commit**/**Import Preview Request** for the operations; reserve plain "Import" for the feature/nav. Never use "import" to mean an **Imported Transaction**.
+- **"preview"** (new) — overloaded: **Import Preview** is the read-only modal for an **already-committed** Statement; the **Import Preview Request** (`/imports/preview`) is the pre-commit parse-and-detect call. Always qualify which one — they sit on opposite sides of the **Import Commit**.
