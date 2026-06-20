@@ -5,7 +5,10 @@ import type {
   AccountWithBalance,
   Category,
   CategoryCreateInput,
+  ColumnMapping,
   DeleteResult,
+  Import,
+  ImportCreateInput,
   MortgageOriginationInput,
   RecurringTransaction,
   RecurringTransactionCreateInput,
@@ -76,6 +79,19 @@ export interface RecurringTransactionsRepo {
   delete(id: string): Promise<boolean>;
 }
 
+export interface ImportsRepo {
+  create(input: ImportCreateInput): Promise<Import | null>;
+  findAll(): Promise<Import[]>;
+  findByAccount(accountId: string): Promise<Import[]>;
+  findTransactions(importId: string): Promise<Transaction[]>;
+  delete(importId: string): Promise<boolean>;
+}
+
+export interface ImportPresetsRepo {
+  get(bank: string): Promise<ColumnMapping | null>;
+  upsert(bank: string, mapping: ColumnMapping): Promise<void>;
+}
+
 export interface StorageStatus {
   driver: "mongo" | "sqlite";
   schemaVersion: number;
@@ -90,6 +106,8 @@ export interface Storage {
   transfers: TransfersRepo;
   categories: CategoriesRepo;
   recurringTransactions: RecurringTransactionsRepo;
+  imports: ImportsRepo;
+  importPresets: ImportPresetsRepo;
   close(): Promise<void>;
   serialize(): Buffer;
   backup(destPath: string): Promise<void>;

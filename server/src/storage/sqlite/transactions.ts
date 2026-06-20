@@ -4,7 +4,7 @@ import type { TransactionsRepo } from "../Storage.js";
 import type { Transaction } from "../types.js";
 import { isValidUuid } from "./uuid.js";
 
-interface TransactionRow {
+export interface TransactionRow {
   id: string;
   account_id: string;
   date: string;
@@ -14,9 +14,10 @@ interface TransactionRow {
   transfer_id: string | null;
   recurring_transaction_id: string | null;
   is_auto_settlement: number;
+  import_id: string | null;
 }
 
-function toTransactionDTO(row: TransactionRow): Transaction {
+export function toTransactionDTO(row: TransactionRow): Transaction {
   const dto: Transaction = {
     id: row.id,
     accountId: row.account_id,
@@ -30,6 +31,7 @@ function toTransactionDTO(row: TransactionRow): Transaction {
     dto.recurringTransactionId = row.recurring_transaction_id;
   }
   if (row.is_auto_settlement === 1) dto.isAutoSettlement = true;
+  if (row.import_id !== null) dto.importId = row.import_id;
   return dto;
 }
 

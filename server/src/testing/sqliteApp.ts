@@ -31,6 +31,12 @@ export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
     get recurringTransactions() {
       return inner.recurringTransactions;
     },
+    get imports() {
+      return inner.imports;
+    },
+    get importPresets() {
+      return inner.importPresets;
+    },
     close: () => inner.close(),
     serialize: () => inner.serialize(),
     backup: (destPath: string) => inner.backup(destPath),

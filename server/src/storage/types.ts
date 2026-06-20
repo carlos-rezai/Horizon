@@ -124,6 +124,40 @@ export interface Transaction {
   transferId?: string;
   recurringTransactionId?: string;
   isAutoSettlement?: boolean;
+  importId?: string;
+}
+
+export interface ColumnMapping {
+  date: string;
+  description: string;
+  amount: string;
+}
+
+export interface ImportRowInput {
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+}
+
+export interface ImportCreateInput {
+  accountId: string;
+  bank: string;
+  filename: string;
+  sizeBytes: number;
+  rows: ImportRowInput[];
+}
+
+export interface Import {
+  id: string;
+  accountId: string;
+  bank: string;
+  filename: string;
+  sizeBytes: number;
+  rowCount: number;
+  startDate: string;
+  endDate: string;
+  importedAt: string;
 }
 
 export interface TransactionCreateInput {

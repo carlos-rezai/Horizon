@@ -25,6 +25,12 @@ describe("SQLite Storage Driver — parity", () => {
     get recurringTransactions() {
       return inner.recurringTransactions;
     },
+    get imports() {
+      return inner.imports;
+    },
+    get importPresets() {
+      return inner.importPresets;
+    },
     close: () => inner.close(),
     backup: (destPath: string) => inner.backup(destPath),
     restore: (srcPath: string) => inner.restore(srcPath),

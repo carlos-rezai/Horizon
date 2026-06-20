@@ -13,6 +13,10 @@ import { createSqliteCategoriesRepo } from "./categories.js";
 import { createSqliteRecurringTransactionsRepo } from "./recurringTransactions.js";
 import { createSqliteTransactionsRepo } from "./transactions.js";
 import { createSqliteTransfersRepo } from "./transfers.js";
+import {
+  createSqliteImportPresetsRepo,
+  createSqliteImportsRepo,
+} from "./imports.js";
 
 export type SqliteStorageOptions = OpenConnectionOptions;
 
@@ -24,6 +28,8 @@ interface Repos {
   recurringTransactions: ReturnType<
     typeof createSqliteRecurringTransactionsRepo
   >;
+  imports: ReturnType<typeof createSqliteImportsRepo>;
+  importPresets: ReturnType<typeof createSqliteImportPresetsRepo>;
 }
 
 function buildRepos(db: Database.Database): Repos {
@@ -32,12 +38,16 @@ function buildRepos(db: Database.Database): Repos {
   const transfers = createSqliteTransfersRepo(db);
   const categories = createSqliteCategoriesRepo(db);
   const recurringTransactions = createSqliteRecurringTransactionsRepo(db);
+  const imports = createSqliteImportsRepo(db);
+  const importPresets = createSqliteImportPresetsRepo(db);
   return {
     accounts,
     transactions,
     transfers,
     categories,
     recurringTransactions,
+    imports,
+    importPresets,
   };
 }
 
@@ -85,6 +95,12 @@ export async function createSqliteStorage(
     },
     get recurringTransactions() {
       return repos.recurringTransactions;
+    },
+    get imports() {
+      return repos.imports;
+    },
+    get importPresets() {
+      return repos.importPresets;
     },
     async close() {
       closeConnection(db);
