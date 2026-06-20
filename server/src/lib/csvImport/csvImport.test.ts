@@ -1,0 +1,345 @@
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { describe, expect, it } from "vitest";
+import {
+  BANK_PRESETS,
+  DEFAULT_BANK,
+  detectEncoding,
+  detectBank,
+  parseStatement,
+  parseAmount,
+  parseDate,
+  categorize,
+  detectDuplicates,
+  detectRecurring,
+} from "./index.js";
+import type { MappedRow } from "./index.js";
+import type { Transaction, RecurringTransaction } from "../../storage/types.js";
+
+// ---------------------------------------------------------------------------
+// Fixtures — real-shaped Sparkasse / DKB / ING exports with the hard cases:
+// UTF-8 BOM vs Windows-1252, a metadata preamble before the header row,
+// decimal-comma amounts, DD.MM.YYYY dates, and a quote-aware embedded delimiter.
+// ---------------------------------------------------------------------------
+
+function fixtureBytes(name: string): Uint8Array {
+  return readFileSync(
+    fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url))
+  );
+}
+
+function fixtureText(name: string): string {
+  const bytes = fixtureBytes(name);
+  return new TextDecoder(detectEncoding(bytes)).decode(bytes);
+}
+
+function makeTxn(
+  overrides: Partial<Transaction> & { id: string }
+): Transaction {
+  return {
+    accountId: "acc1",
+    date: "2026-11-02",
+    amount: -1250,
+    description: "Placeholder",
+    category: "Food",
+    ...overrides,
+  };
+}
+
+function makeRecurring(
+  overrides: Partial<RecurringTransaction> & { id: string }
+): RecurringTransaction {
+  return {
+    accountId: "acc1",
+    amount: -85000,
+    description: "Miete",
+    category: "Housing",
+    frequency: "monthly",
+    dayOfMonth: 1,
+    ...overrides,
+  };
+}
+
+function mapped(overrides: Partial<MappedRow>): MappedRow {
+  return {
+    date: "2026-11-02",
+    description: "REWE SAGT DANKE",
+    amount: -1250,
+    category: "Food",
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Extended BankPreset constant
+// ---------------------------------------------------------------------------
+
+describe("BANK_PRESETS", () => {
+  it("ships server-side presets for the three target German banks", () => {
+    expect(Object.keys(BANK_PRESETS)).toEqual(
+      expect.arrayContaining(["Sparkasse", "DKB", "ING"])
+    );
+  });
+
+  it("extends each preset with delimiter, headerSignature, and optional encoding", () => {
+    for (const preset of Object.values(BANK_PRESETS)) {
+      expect(preset.delimiter).toBe(";");
+      expect(Array.isArray(preset.headerSignature)).toBe(true);
+      expect(preset.headerSignature.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("uses a known preset as the default bank", () => {
+    expect(BANK_PRESETS[DEFAULT_BANK]).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectEncoding
+// ---------------------------------------------------------------------------
+
+describe("detectEncoding", () => {
+  it("returns 'utf-8' for a BOM-prefixed file", () => {
+    expect(detectEncoding(fixtureBytes("sparkasse.csv"))).toBe("utf-8");
+    expect(detectEncoding(fixtureBytes("dkb.csv"))).toBe("utf-8");
+  });
+
+  it("returns 'windows-1252' for a file with no BOM", () => {
+    expect(detectEncoding(fixtureBytes("ing.csv"))).toBe("windows-1252");
+    expect(detectEncoding(fixtureBytes("windows1252-umlauts.csv"))).toBe(
+      "windows-1252"
+    );
+  });
+
+  it("decodes umlauts (ä ö ü ß) correctly from a Windows-1252 fixture", () => {
+    const text = fixtureText("windows1252-umlauts.csv");
+    expect(text).toContain("Große Straße Müller Bäckerei Köln");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectBank
+// ---------------------------------------------------------------------------
+
+describe("detectBank", () => {
+  it("recognises each target bank from its parsed header row", () => {
+    const sparkasse = parseStatement(
+      fixtureText("sparkasse.csv"),
+      BANK_PRESETS.Sparkasse
+    );
+    const dkb = parseStatement(fixtureText("dkb.csv"), BANK_PRESETS.DKB);
+    const ing = parseStatement(fixtureText("ing.csv"), BANK_PRESETS.ING);
+
+    expect(detectBank(sparkasse.columns, BANK_PRESETS)).toBe("Sparkasse");
+    expect(detectBank(dkb.columns, BANK_PRESETS)).toBe("DKB");
+    expect(detectBank(ing.columns, BANK_PRESETS)).toBe("ING");
+  });
+
+  it("falls back to DEFAULT_BANK for an unmatched header row", () => {
+    expect(detectBank(["Date", "Description", "Amount"], BANK_PRESETS)).toBe(
+      DEFAULT_BANK
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseStatement
+// ---------------------------------------------------------------------------
+
+describe("parseStatement", () => {
+  it("skips a metadata preamble and starts at the headerSignature row", () => {
+    const { columns, rows } = parseStatement(
+      fixtureText("sparkasse.csv"),
+      BANK_PRESETS.Sparkasse
+    );
+
+    expect(columns).toEqual(BANK_PRESETS.Sparkasse.columns);
+    expect(rows).toHaveLength(4);
+    expect(rows[0].Buchungstag).toBe("02.11.2026");
+    expect(rows[0].Verwendungszweck).toBe("REWE SAGT DANKE");
+    expect(rows[0].Betrag).toBe("-12,50");
+  });
+
+  it("is quote-aware: a delimiter inside a quoted field is not a column break", () => {
+    const { rows } = parseStatement(fixtureText("ing.csv"), BANK_PRESETS.ING);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].Verwendungszweck).toBe("Aldi Einkauf; Filiale 12");
+    expect(rows[0].Betrag).toBe("-19,99");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseAmount
+// ---------------------------------------------------------------------------
+
+describe("parseAmount", () => {
+  it("converts a decimal-comma amount to exact integer cents", () => {
+    expect(parseAmount("-12,50", ",")).toBe(-1250);
+    expect(parseAmount("-9,90", ",")).toBe(-990);
+  });
+
+  it("handles a thousands separator without floating-point error", () => {
+    expect(parseAmount("2.500,00", ",")).toBe(250000);
+    expect(parseAmount("1.234,56", ",")).toBe(123456);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseDate
+// ---------------------------------------------------------------------------
+
+describe("parseDate", () => {
+  it("converts a DD.MM.YYYY date to an ISO date string", () => {
+    expect(parseDate("02.11.2026", "DD.MM.YYYY")).toBe("2026-11-02");
+    expect(parseDate("31.12.2026", "DD.MM.YYYY")).toBe("2026-12-31");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// categorize
+// ---------------------------------------------------------------------------
+
+describe("categorize", () => {
+  it("maps representative descriptions onto the eight real categories", () => {
+    expect(categorize("REWE SAGT DANKE")).toBe("Food");
+    expect(categorize("Lebensmittel EDEKA")).toBe("Food");
+    expect(categorize("Miete Oktober")).toBe("Housing");
+    expect(categorize("Gehalt Oktober")).toBe("Income");
+    expect(categorize("Netflix Abo")).toBe("Subscriptions");
+    expect(categorize("Sparplan ETF MSCI World")).toBe("Investment");
+  });
+
+  it("is case-insensitive", () => {
+    expect(categorize("rewe sagt danke")).toBe("Food");
+  });
+
+  it("falls back to Miscellaneous when no keyword matches", () => {
+    expect(categorize("Zufaellige unbekannte Zahlung XYZ")).toBe(
+      "Miscellaneous"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectDuplicates
+// ---------------------------------------------------------------------------
+
+describe("detectDuplicates", () => {
+  it("flags a row matching an existing account transaction by signed amount, ISO date, and normalized description", () => {
+    const rows: MappedRow[] = [
+      mapped({
+        description: "REWE SAGT DANKE",
+        amount: -1250,
+        date: "2026-11-02",
+      }),
+      mapped({
+        description: "Gehalt Oktober",
+        amount: 250000,
+        date: "2026-11-05",
+        category: "Income",
+      }),
+    ];
+    const existing: Transaction[] = [
+      // Same amount + date, description differs only by case and whitespace.
+      makeTxn({
+        id: "t1",
+        description: "rewe   sagt  danke",
+        amount: -1250,
+        date: "2026-11-02",
+      }),
+    ];
+
+    expect(detectDuplicates(rows, existing)).toEqual([true, false]);
+  });
+
+  it("does not flag a row when the existing transaction differs in date or amount", () => {
+    const rows: MappedRow[] = [mapped({ amount: -1250, date: "2026-11-02" })];
+    const existing: Transaction[] = [
+      makeTxn({
+        id: "t1",
+        description: "REWE SAGT DANKE",
+        amount: -1250,
+        date: "2026-11-09",
+      }),
+      makeTxn({
+        id: "t2",
+        description: "REWE SAGT DANKE",
+        amount: -9999,
+        date: "2026-11-02",
+      }),
+    ];
+
+    expect(detectDuplicates(rows, existing)).toEqual([false]);
+  });
+
+  it("de-dupes repeats within the same file, flagging only the later occurrence", () => {
+    const rows: MappedRow[] = [
+      mapped({
+        description: "REWE SAGT DANKE",
+        amount: -1250,
+        date: "2026-11-02",
+      }),
+      mapped({
+        description: "Aldi Einkauf",
+        amount: -1999,
+        date: "2026-11-07",
+      }),
+      mapped({
+        description: "REWE SAGT DANKE",
+        amount: -1250,
+        date: "2026-11-02",
+      }),
+    ];
+
+    expect(detectDuplicates(rows, [])).toEqual([false, false, true]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// detectRecurring
+// ---------------------------------------------------------------------------
+
+describe("detectRecurring", () => {
+  it("flags rows matching a recurring transaction by sign, amount, and description containment in either direction", () => {
+    const recurring: RecurringTransaction[] = [
+      makeRecurring({ id: "r1", description: "Miete", amount: -85000 }),
+      makeRecurring({
+        id: "r2",
+        description: "Netflix Monatsabo",
+        amount: -1299,
+        category: "Subscriptions",
+      }),
+    ];
+    const rows: MappedRow[] = [
+      mapped({
+        description: "Miete Oktober Vermieter",
+        amount: -85000,
+        category: "Housing",
+      }),
+      mapped({
+        description: "Netflix",
+        amount: -1299,
+        category: "Subscriptions",
+      }),
+      mapped({ description: "REWE SAGT DANKE", amount: -1250 }),
+    ];
+
+    expect(detectRecurring(rows, recurring)).toEqual([true, true, false]);
+  });
+
+  it("does not flag a row whose sign differs from the recurring transaction", () => {
+    const recurring: RecurringTransaction[] = [
+      makeRecurring({ id: "r1", description: "Miete", amount: -85000 }),
+    ];
+    const rows: MappedRow[] = [
+      mapped({
+        description: "Miete Rueckzahlung",
+        amount: 85000,
+        category: "Housing",
+      }),
+    ];
+
+    expect(detectRecurring(rows, recurring)).toEqual([false]);
+  });
+});

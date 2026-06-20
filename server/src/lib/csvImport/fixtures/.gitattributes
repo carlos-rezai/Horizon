@@ -1,0 +1,3 @@
+# CSV import fixtures carry exact bytes (UTF-8 BOM vs Windows-1252, CRLF).
+# Treat as binary so git never normalizes line endings or encoding.
+*.csv binary
