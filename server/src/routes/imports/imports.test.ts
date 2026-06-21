@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";

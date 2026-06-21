@@ -30,7 +30,7 @@ export interface ParsedStatement {
  * given delimiter, doubled `""` escapes inside quotes, and CRLF or LF line
  * endings.
  */
-function splitRecords(text: string, delimiter: string): string[][] {
+export function splitRecords(text: string, delimiter: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";

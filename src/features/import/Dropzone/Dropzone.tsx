@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import Button from "../../../primitives/Button/Button";
 import {
@@ -10,16 +10,20 @@ import {
 } from "./Dropzone.styles";
 
 interface Props {
-  onPick: () => void;
+  /** A CSV was dropped or chosen. */
+  onFile: (file: File) => void;
 }
 
-export default function Dropzone({ onPick }: Props) {
+export default function Dropzone({ onFile }: Props) {
   const [over, setOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const browse = () => inputRef.current?.click();
 
   return (
     <StyledDropzone
       $over={over}
-      onClick={onPick}
+      onClick={browse}
       onDragOver={(e) => {
         e.preventDefault();
         setOver(true);
@@ -28,9 +32,21 @@ export default function Dropzone({ onPick }: Props) {
       onDrop={(e) => {
         e.preventDefault();
         setOver(false);
-        onPick();
+        const file = e.dataTransfer.files[0];
+        if (file) onFile(file);
       }}
     >
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,text/csv"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(file);
+          e.target.value = "";
+        }}
+      />
       <StyledIconWrap $over={over}>
         <Upload size={22} />
       </StyledIconWrap>
@@ -45,7 +61,7 @@ export default function Dropzone({ onPick }: Props) {
         icon="Plus"
         onClick={(e) => {
           e.stopPropagation();
-          onPick();
+          browse();
         }}
       >
         Choose file

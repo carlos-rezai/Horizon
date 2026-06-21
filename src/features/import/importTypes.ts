@@ -1,13 +1,45 @@
 /**
- * Shapes for the Import UI shell.
+ * Shapes for the Import feature.
  *
- * These describe persisted import history and the transactions an imported
- * statement carries. The real records are produced by the deferred "CSV /
- * Bank Statement Import (backend)" epic; the Import UI reads them through the
- * {@link useImport} seam.
+ * The backend ("CSV / Bank Statement Import") owns parsing, detection, and
+ * persistence; these types describe what crosses the loopback API and the
+ * UI-facing shapes the components render. Server field names
+ * (`description`/`category`) are mapped to the UI's shorter `desc`/`cat` in
+ * {@link useImport}.
  */
+import type { ParsedImportRow } from "./reviewRows";
 
-/** A single transaction belonging to an imported statement. */
+/** Which raw CSV column feeds each Horizon field (server `ColumnMapping`). */
+export interface ColumnMapping {
+  date: string;
+  description: string;
+  amount: string;
+}
+
+/** One persisted import record as returned by `GET /imports`. */
+export interface ImportRecord {
+  id: string;
+  accountId: string;
+  bank: string;
+  filename: string;
+  sizeBytes: number;
+  rowCount: number;
+  startDate: string;
+  endDate: string;
+  importedAt: string;
+}
+
+/** A persisted transaction as returned by `GET /imports/:id/transactions`. */
+export interface ImportTransactionRecord {
+  id: string;
+  accountId: string;
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+}
+
+/** A single transaction belonging to an imported statement (UI shape). */
 export interface ImportedTxn {
   id: string;
   date: string;
@@ -18,7 +50,7 @@ export interface ImportedTxn {
   amount: number;
 }
 
-/** One imported bank statement and its parsed transactions. */
+/** One imported bank statement and its parsed transactions (UI shape). */
 export interface ImportedStatement {
   id: string;
   accountId: string;
@@ -34,6 +66,37 @@ export interface ImportedStatement {
   /** ISO date the statement was imported. */
   importedOn: string;
   sizeKB: number;
-  /** Representative parsed rows for preview. */
+  /** Parsed rows for preview; loaded on demand from the server. */
   txns: ImportedTxn[];
+}
+
+/** Summary counts returned alongside a preview. */
+export interface PreviewSummary {
+  total: number;
+  duplicates: number;
+  recurring: number;
+}
+
+/** The `POST /imports/preview` response, with rows mapped to the UI shape. */
+export interface ImportPreview {
+  bank: string;
+  mapping: ColumnMapping;
+  columns: string[];
+  rows: ParsedImportRow[];
+  summary: PreviewSummary;
+}
+
+/** Payload for committing the chosen rows via `POST /imports`. */
+export interface CommitImportInput {
+  accountId: string;
+  bank: string;
+  filename: string;
+  sizeBytes: number;
+  mapping: ColumnMapping;
+  rows: Array<{
+    date: string;
+    amount: number;
+    description: string;
+    category: string;
+  }>;
 }

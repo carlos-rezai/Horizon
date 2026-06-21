@@ -11,3 +11,11 @@ export type { ParsedStatement } from "./parse.js";
 export { categorize } from "./categorize.js";
 export { detectDuplicates, detectRecurring } from "./detect.js";
 export type { MappedRow } from "./types.js";
+export {
+  detectStatement,
+  mapStatementRows,
+  StatementParseError,
+  MAX_ROWS,
+  MAX_COLUMNS,
+} from "./preview.js";
+export type { DetectedStatement } from "./preview.js";

@@ -6,10 +6,12 @@ import { resolveAccountColor } from "../../../utils/color/color";
 import Modal from "../../../components/Modal/Modal";
 import Button from "../../../primitives/Button/Button";
 import Select from "../../../primitives/Select/Select";
+import Spinner from "../../../primitives/Spinner/Spinner";
 import Money from "../../../primitives/Money/Money";
-import { BANK_PRESETS, DEFAULT_BANK, type ColumnMapping } from "../bankPresets";
-import type { PresetMemory } from "../presetMemory";
-import { sampleParsedRows } from "../useImport";
+import type {
+  ColumnMapping,
+  ImportPreview as ImportPreviewData,
+} from "../importTypes";
 import {
   buildReviewRows,
   summarizeReview,
@@ -54,15 +56,32 @@ import {
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
 
+function formatKB(bytes: number): number {
+  return Math.max(1, Math.round(bytes / 1024));
+}
+
 interface Props {
   importAccounts: AccountWithBalance[];
   categories: Category[];
-  presetMemory: PresetMemory;
-  detectBank: (accountId: string) => string;
+  file: File;
   presetAccountId: string | null;
+  preview: (accountId: string, file: File) => Promise<ImportPreviewData>;
+  commit: (input: {
+    accountId: string;
+    bank: string;
+    filename: string;
+    sizeBytes: number;
+    mapping: ColumnMapping;
+    rows: Array<{
+      date: string;
+      amount: number;
+      description: string;
+      category: string;
+    }>;
+  }) => Promise<void>;
   onClose: () => void;
-  /** Fired on confirm with the chosen account and the included/skipped split. */
-  onConfirm: (result: {
+  /** Fired after a successful commit with the included/skipped split. */
+  onDone: (result: {
     account: AccountWithBalance;
     included: number;
     skipped: number;
@@ -72,35 +91,70 @@ interface Props {
 export default function ImportWizard({
   importAccounts,
   categories,
-  presetMemory,
-  detectBank,
+  file,
   presetAccountId,
+  preview,
+  commit,
   onClose,
-  onConfirm,
+  onDone,
 }: Props) {
   const [step, setStep] = useState(1);
   const [accountId, setAccountId] = useState(
     presetAccountId ?? importAccounts[0]?.id ?? ""
   );
 
-  const bank = detectBank(accountId);
-  const preset = BANK_PRESETS[bank] ?? BANK_PRESETS[DEFAULT_BANK];
+  const [data, setData] = useState<ImportPreviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [rows, setRows] = useState<ReviewRow[]>([]);
+  const [map, setMap] = useState<ColumnMapping>({
+    date: "",
+    description: "",
+    amount: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [map, setMap] = useState<ColumnMapping>(() => presetMemory.get(bank));
-  const [rows, setRows] = useState<ReviewRow[]>(() =>
-    buildReviewRows(sampleParsedRows())
-  );
-
-  // Re-apply the remembered preset whenever the target bank changes.
+  // Upload for a fresh parse + detect whenever the target account changes:
+  // duplicate/recurring flags are relative to that account. The loading flag
+  // is flipped on in the account-change handler (and at mount) rather than in
+  // this effect, keeping setState out of the synchronous effect body.
   useEffect(() => {
-    setMap(presetMemory.get(bank));
-  }, [bank, presetMemory]);
+    if (!accountId) return;
+    let cancelled = false;
+
+    preview(accountId, file)
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setRows(buildReviewRows(result.rows));
+        setMap(result.mapping);
+        setLoadError(null);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : "Unknown error");
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, file, preview]);
+
+  const selectAccount = (id: string) => {
+    if (id === accountId) return;
+    setLoading(true);
+    setAccountId(id);
+  };
 
   const summary = summarizeReview(rows);
   const account =
     importAccounts.find((a) => a.id === accountId) ?? importAccounts[0];
-
-  const rawRows = useMemo(() => sampleParsedRows().slice(0, 3), []);
+  const bank = data?.bank ?? "…";
+  const columns = data?.columns ?? [];
+  const rawRows = useMemo(() => rows.slice(0, 3), [rows]);
 
   const categoryOptions = useMemo(() => {
     const names = new Set(categories.map((c) => c.name));
@@ -122,18 +176,39 @@ export default function ImportWizard({
   const next = () => setStep((s) => Math.min(3, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
 
-  const confirm = () => {
-    // Persist any column-mapping adjustments for this bank's next import.
-    presetMemory.remember(bank, map);
-    if (account) {
-      onConfirm({
+  const confirm = async () => {
+    if (!account || !data) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await commit({
+        accountId: account.id,
+        bank: data.bank,
+        filename: file.name,
+        sizeBytes: file.size,
+        mapping: map,
+        rows: rows
+          .filter((r) => r.included)
+          .map((r) => ({
+            date: r.date,
+            amount: r.amount,
+            description: r.desc,
+            category: r.cat,
+          })),
+      });
+      onDone({
         account,
         included: summary.included,
         skipped: rows.length - summary.included,
       });
+      onClose();
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : "Import failed");
+      setSubmitting(false);
     }
-    onClose();
   };
+
+  const blocked = loading || loadError !== null;
 
   const footer =
     step === 1 ? (
@@ -141,7 +216,12 @@ export default function ImportWizard({
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" iconRight="ArrowRight" onClick={next}>
+        <Button
+          variant="primary"
+          iconRight="ArrowRight"
+          onClick={next}
+          disabled={blocked}
+        >
           Map columns
         </Button>
       </>
@@ -150,7 +230,12 @@ export default function ImportWizard({
         <Button variant="secondary" icon="ArrowLeft" onClick={back}>
           Back
         </Button>
-        <Button variant="primary" iconRight="ArrowRight" onClick={next}>
+        <Button
+          variant="primary"
+          iconRight="ArrowRight"
+          onClick={next}
+          disabled={blocked}
+        >
           {`Review ${rows.length} rows`}
         </Button>
       </>
@@ -163,7 +248,7 @@ export default function ImportWizard({
           variant="primary"
           icon="Check"
           onClick={confirm}
-          disabled={summary.included === 0}
+          disabled={summary.included === 0 || submitting || blocked}
         >
           {`Import ${summary.included} transaction${summary.included !== 1 ? "s" : ""}`}
         </Button>
@@ -191,6 +276,10 @@ export default function ImportWizard({
           })}
         </StyledSteps>
 
+        {loadError && (
+          <StyledNote>{`Could not read this file: ${loadError}`}</StyledNote>
+        )}
+
         {step === 1 && account && (
           <StyledStack>
             <StyledFileCard>
@@ -198,13 +287,21 @@ export default function ImportWizard({
                 <Banknote size={20} />
               </StyledFileGlyph>
               <StyledFileInfo>
-                <StyledFileName>{bank}_statement_2026-11.csv</StyledFileName>
-                <StyledFileMeta>12 rows detected · 24 KB</StyledFileMeta>
+                <StyledFileName>{file.name}</StyledFileName>
+                <StyledFileMeta>
+                  {loading
+                    ? "Detecting…"
+                    : `${data?.summary.total ?? 0} rows detected · ${formatKB(file.size)} KB`}
+                </StyledFileMeta>
               </StyledFileInfo>
-              <StyledFormatBadge>
-                <Check size={11} />
-                {`${bank} format`}
-              </StyledFormatBadge>
+              {loading ? (
+                <Spinner size="small" />
+              ) : (
+                <StyledFormatBadge>
+                  <Check size={11} />
+                  {`${bank} format`}
+                </StyledFormatBadge>
+              )}
             </StyledFileCard>
 
             <div>
@@ -216,7 +313,7 @@ export default function ImportWizard({
                     type="button"
                     $active={a.id === accountId}
                     $color={resolveAccountColor(a)}
-                    onClick={() => setAccountId(a.id)}
+                    onClick={() => selectAccount(a.id)}
                   >
                     {a.name}
                   </StyledChip>
@@ -241,19 +338,19 @@ export default function ImportWizard({
               <MapField
                 label="Date"
                 value={map.date}
-                columns={preset.columns}
+                columns={columns}
                 onChange={(v) => updateMap({ date: v })}
               />
               <MapField
                 label="Description"
-                value={map.desc}
-                columns={preset.columns}
-                onChange={(v) => updateMap({ desc: v })}
+                value={map.description}
+                columns={columns}
+                onChange={(v) => updateMap({ description: v })}
               />
               <MapField
                 label="Amount"
                 value={map.amount}
-                columns={preset.columns}
+                columns={columns}
                 onChange={(v) => updateMap({ amount: v })}
               />
             </StyledMapCard>
@@ -348,6 +445,7 @@ export default function ImportWizard({
                 </StyledReviewRow>
               ))}
             </StyledReviewBody>
+            {submitError && <StyledNote>{submitError}</StyledNote>}
             <StyledFootnote>
               <Info size={13} />
               Duplicates and recurring rows are unchecked by default to avoid

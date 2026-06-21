@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Banknote,
-  ChevronRight,
-  Search,
-  Filter,
-  Download,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Banknote, ChevronRight, Search, Trash2, Upload } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import { resolveAccountColor } from "../../../utils/color/color";
 import Tabs, { type TabItem } from "../../../primitives/Tabs/Tabs";
@@ -68,8 +60,6 @@ interface Props {
   activeAccountId: string;
   onAccountChange: (id: string) => void;
   onPreview: (statement: ImportedStatement) => void;
-  onReimport: (statement: ImportedStatement) => void;
-  onRecat: (statement: ImportedStatement) => void;
   onDelete: (statement: ImportedStatement) => void;
   onStartImport: () => void;
 }
@@ -80,8 +70,6 @@ export default function ImportHistory({
   activeAccountId,
   onAccountChange,
   onPreview,
-  onReimport,
-  onRecat,
   onDelete,
   onStartImport,
 }: Props) {
@@ -198,22 +186,6 @@ export default function ImportHistory({
                             onClick={() => onPreview(file)}
                           >
                             <Search size={16} />
-                          </StyledActionBtn>
-                          <StyledActionBtn
-                            type="button"
-                            title="Re-categorize"
-                            aria-label="Re-categorize"
-                            onClick={() => onRecat(file)}
-                          >
-                            <Filter size={16} />
-                          </StyledActionBtn>
-                          <StyledActionBtn
-                            type="button"
-                            title="Re-download CSV"
-                            aria-label="Re-download CSV"
-                            onClick={() => onReimport(file)}
-                          >
-                            <Download size={16} />
                           </StyledActionBtn>
                           <StyledActionBtn
                             type="button"
