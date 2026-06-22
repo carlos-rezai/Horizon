@@ -83,5 +83,10 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
   },
 };
 
-/** Fallback bank used when an import can't be matched to a known preset. */
-export const DEFAULT_BANK = "DKB";
+/**
+ * Label for a statement that matches no known preset. Deliberately NOT a real
+ * bank name: a generic import remembers its column mapping under this label,
+ * so it can never overwrite a real bank's remembered preset (the latent bug
+ * the "DKB" default used to cause).
+ */
+export const DEFAULT_BANK = "Generic";

@@ -88,8 +88,10 @@ describe("BANK_PRESETS", () => {
     }
   });
 
-  it("uses a known preset as the default bank", () => {
-    expect(BANK_PRESETS[DEFAULT_BANK]).toBeDefined();
+  it("uses a generic fallback label that is not a real bank preset", () => {
+    // The fallback must not collide with a known bank, or a generic import
+    // would overwrite that bank's remembered preset.
+    expect(BANK_PRESETS[DEFAULT_BANK]).toBeUndefined();
   });
 });
 
