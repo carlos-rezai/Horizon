@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, RefreshCw, Info, Banknote } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
@@ -13,11 +13,7 @@ import type {
   ColumnMapping,
   ImportPreview as ImportPreviewData,
 } from "../importTypes";
-import {
-  buildReviewRows,
-  summarizeReview,
-  type ReviewRow,
-} from "../reviewRows";
+import { useImportWizard } from "../useImportWizard";
 import {
   StyledWizard,
   StyledSteps,
@@ -96,116 +92,41 @@ export default function ImportWizard({
   onDone,
 }: Props) {
   const [step, setStep] = useState(1);
-  const [accountId, setAccountId] = useState(
-    presetAccountId ?? importAccounts[0]?.id ?? ""
-  );
-
-  const [data, setData] = useState<ImportPreviewData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [rows, setRows] = useState<ReviewRow[]>([]);
-  const [map, setMap] = useState<ColumnMapping>({
-    date: "",
-    description: "",
-    amount: "",
+  const {
+    accountId,
+    account,
+    selectAccount,
+    data,
+    loading,
+    loadError,
+    blocked,
+    rows,
+    map,
+    categoryOptions,
+    summary,
+    submitting,
+    submitError,
+    toggle,
+    setCat,
+    updateMap,
+    confirm,
+  } = useImportWizard({
+    importAccounts,
+    categories,
+    file,
+    presetAccountId,
+    preview,
+    commit,
+    onClose,
+    onDone,
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Upload for a fresh parse + detect whenever the target account changes:
-  // duplicate/recurring flags are relative to that account. The loading flag
-  // is flipped on in the account-change handler (and at mount) rather than in
-  // this effect, keeping setState out of the synchronous effect body.
-  useEffect(() => {
-    if (!accountId) return;
-    let cancelled = false;
-
-    preview(accountId, file)
-      .then((result) => {
-        if (cancelled) return;
-        setData(result);
-        setRows(buildReviewRows(result.rows));
-        setMap(result.mapping);
-        setLoadError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setLoadError(err instanceof Error ? err.message : "Unknown error");
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [accountId, file, preview]);
-
-  const selectAccount = (id: string) => {
-    if (id === accountId) return;
-    setLoading(true);
-    setAccountId(id);
-  };
-
-  const summary = summarizeReview(rows);
-  const account =
-    importAccounts.find((a) => a.id === accountId) ?? importAccounts[0];
   const bank = data?.bank ?? "…";
   const columns = data?.columns ?? [];
   const rawRows = useMemo(() => rows.slice(0, 3), [rows]);
 
-  const categoryOptions = useMemo(() => {
-    const names = new Set(categories.map((c) => c.name));
-    rows.forEach((r) => names.add(r.cat));
-    return [...names];
-  }, [categories, rows]);
-
-  const toggle = (id: string) =>
-    setRows((rs) =>
-      rs.map((r) => (r.id === id ? { ...r, included: !r.included } : r))
-    );
-
-  const setCat = (id: string, cat: string) =>
-    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, cat } : r)));
-
-  const updateMap = (patch: Partial<ColumnMapping>) =>
-    setMap((m) => ({ ...m, ...patch }));
-
   const next = () => setStep((s) => Math.min(3, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
-
-  const confirm = async () => {
-    if (!account || !data) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await commit({
-        accountId: account.id,
-        bank: data.bank,
-        filename: file.name,
-        sizeBytes: file.size,
-        mapping: map,
-        rows: rows
-          .filter((r) => r.included)
-          .map((r) => ({
-            date: r.date,
-            amount: r.amount,
-            description: r.desc,
-            category: r.cat,
-          })),
-      });
-      onDone({
-        account,
-        included: summary.included,
-        skipped: rows.length - summary.included,
-      });
-      onClose();
-    } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : "Import failed");
-      setSubmitting(false);
-    }
-  };
-
-  const blocked = loading || loadError !== null;
 
   const footer =
     step === 1 ? (
