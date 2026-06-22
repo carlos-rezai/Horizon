@@ -18,3 +18,10 @@ export {
   MAX_COLUMNS,
 } from "./preview.js";
 export type { DetectedStatement } from "./preview.js";
+export { buildPreview } from "./buildPreview.js";
+export type {
+  BuildPreviewInput,
+  StatementPreview,
+  PreviewRow,
+  PreviewSummary,
+} from "./buildPreview.js";
