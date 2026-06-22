@@ -358,7 +358,7 @@ export default function ImportWizard({
                   <StyledRawRow key={r.id} $alt={i % 2 === 1}>
                     <span>{r.date}</span>
                     <span>{r.desc}</span>
-                    <span>{(r.amount / 100).toFixed(2).replace(".", ",")}</span>
+                    <Money cents={r.amount} />
                   </StyledRawRow>
                 ))}
               </StyledRawPreview>
