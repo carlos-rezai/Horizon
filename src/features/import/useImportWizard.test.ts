@@ -40,6 +40,9 @@ function makePreview(): ImportPreview {
       description: "Verwendungszweck",
       amount: "Betrag (€)",
     },
+    delimiter: ";",
+    decimal: ",",
+    dateFmt: "DD.MM.YYYY",
     columns: ["Buchungsdatum", "Verwendungszweck", "Betrag (€)"],
     rows: [
       {
@@ -172,6 +175,10 @@ describe("useImportWizard — commit", () => {
       accountId: "acc-1",
       bank: "DKB",
       filename: "dkb-2026-03.csv",
+      // The full format is echoed back so the bank's preset round-trips it.
+      delimiter: ";",
+      decimal: ",",
+      dateFmt: "DD.MM.YYYY",
     });
     // Only the one included (non-recurring) row, mapped to description/category.
     expect(payload.rows).toEqual([

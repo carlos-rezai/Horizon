@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type {
   ColumnMapping,
+  StoredImportPreset,
   Transaction,
   RecurringTransaction,
 } from "../../storage/types.js";
@@ -26,6 +27,11 @@ export interface PreviewSummary {
 export interface StatementPreview {
   bank: string;
   mapping: ColumnMapping;
+  /** Effective format applied to the rows — echoed back on commit so the
+   * remembered preset round-trips the full format, not just the column map. */
+  delimiter: string;
+  decimal: string;
+  dateFmt: string;
   columns: string[];
   rows: PreviewRow[];
   summary: PreviewSummary;
@@ -39,12 +45,12 @@ export interface BuildPreviewInput {
   /** The target account's recurring transactions — for recurring detection. */
   recurring: RecurringTransaction[];
   /**
-   * Look up a bank's remembered column mapping (or null if none saved). The
-   * detected bank's mapping is preferred over the freshly-detected default so
-   * a past correction is re-applied. Injected so this module stays free of
+   * Look up a bank's remembered preset (or null if none saved). A remembered
+   * mapping and format are preferred over the freshly-detected defaults so a
+   * past correction is re-applied. Injected so this module stays free of
    * storage — the route backs it with the import-presets repo.
    */
-  getRememberedMapping: (bank: string) => Promise<ColumnMapping | null>;
+  getRememberedPreset: (bank: string) => Promise<StoredImportPreset | null>;
   /** Row-id generator; injectable so tests can assert deterministic ids. */
   generateId?: () => string;
 }
@@ -61,9 +67,20 @@ export async function buildPreview(
 ): Promise<StatementPreview> {
   const detected = detectStatement(input.bytes);
 
-  const remembered = await input.getRememberedMapping(detected.bank);
-  const mapping = remembered ?? detected.mapping;
-  const mappedRows = mapStatementRows(detected, mapping);
+  // Prefer the remembered mapping and format over the freshly-detected
+  // defaults, so a past correction (column map, decimal, date format) is
+  // re-applied. The delimiter governs splitting, which detection already owns,
+  // so it is remembered for round-trip completeness but not re-applied here.
+  const remembered = await input.getRememberedPreset(detected.bank);
+  const mapping = remembered?.mapping ?? detected.mapping;
+  const delimiter = remembered?.delimiter ?? detected.delimiter;
+  const decimal = remembered?.decimal ?? detected.decimal;
+  const dateFmt = remembered?.dateFmt ?? detected.dateFmt;
+
+  const mappedRows = mapStatementRows(
+    { ...detected, decimal, dateFmt },
+    mapping
+  );
 
   const duplicateFlags = detectDuplicates(mappedRows, input.existingTxns);
   const recurringFlags = detectRecurring(mappedRows, input.recurring);
@@ -79,6 +96,9 @@ export async function buildPreview(
   return {
     bank: detected.bank,
     mapping,
+    delimiter,
+    decimal,
+    dateFmt,
     columns: detected.columns,
     rows,
     summary: {

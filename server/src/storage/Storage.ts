@@ -5,10 +5,10 @@ import type {
   AccountWithBalance,
   Category,
   CategoryCreateInput,
-  ColumnMapping,
   DeleteResult,
   ImportRecord,
   ImportCreateInput,
+  StoredImportPreset,
   MortgageOriginationInput,
   RecurringTransaction,
   RecurringTransactionCreateInput,
@@ -88,8 +88,8 @@ export interface ImportsRepo {
 }
 
 export interface ImportPresetsRepo {
-  get(bank: string): Promise<ColumnMapping | null>;
-  upsert(bank: string, mapping: ColumnMapping): Promise<void>;
+  get(bank: string): Promise<StoredImportPreset | null>;
+  upsert(bank: string, preset: StoredImportPreset): Promise<void>;
 }
 
 export interface StorageStatus {

@@ -133,6 +133,19 @@ export interface ColumnMapping {
   amount: string;
 }
 
+/**
+ * A remembered per-bank import preset: the column mapping plus the format
+ * quirks the parse engine needs to re-interpret a statement exactly as it was
+ * last committed (delimiter, decimal separator, date format). Persisted in
+ * `import_presets` so it survives restart, reinstall, and backup/restore.
+ */
+export interface StoredImportPreset {
+  mapping: ColumnMapping;
+  delimiter: string;
+  decimal: string;
+  dateFmt: string;
+}
+
 export interface ImportRowInput {
   date: string;
   amount: number;

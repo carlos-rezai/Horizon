@@ -504,6 +504,38 @@ describe("POST /imports/preview", () => {
     expect(res.status).toBe(422);
   });
 
+  it("remembers the committed format and re-applies it on the next preview", async () => {
+    const account = await createAccount();
+
+    // Commit a DKB import carrying a distinctive remembered format. The bank
+    // label must match what detection returns ("DKB") so the preset is found.
+    const committed = await postImport(account.id, {
+      bank: "DKB",
+      mapping: {
+        date: "Buchungsdatum",
+        description: "Verwendungszweck",
+        amount: "Betrag (€)",
+      },
+      decimal: ".",
+      dateFmt: "YYYY-MM-DD",
+    });
+    expect(committed.status).toBe(201);
+
+    const res = await previewFixture("dkb.csv", account.id);
+
+    expect(res.status).toBe(200);
+    expect(res.body.bank).toBe("DKB");
+    // The preview echoes the remembered format, not the detected default —
+    // the full preset round-trips, not just the column mapping.
+    expect(res.body.decimal).toBe(".");
+    expect(res.body.dateFmt).toBe("YYYY-MM-DD");
+    expect(res.body.mapping).toEqual({
+      date: "Buchungsdatum",
+      description: "Verwendungszweck",
+      amount: "Betrag (€)",
+    });
+  });
+
   it("returns a clear error for a non-CSV / unparseable file", async () => {
     const account = await createAccount();
     // PNG magic bytes — not a CSV at all.

@@ -160,6 +160,9 @@ export function useImportWizard({
         filename: file.name,
         sizeBytes: file.size,
         mapping: map,
+        delimiter: data.delimiter,
+        decimal: data.decimal,
+        dateFmt: data.dateFmt,
         rows: rows
           .filter((r) => r.included)
           .map((r) => ({

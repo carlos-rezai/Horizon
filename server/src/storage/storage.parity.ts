@@ -1956,10 +1956,15 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   // -------------------------------------------------------------------------
 
   describe("ImportPresetsRepo", () => {
-    const dkbMapping = {
-      date: "Buchungstag",
-      description: "Verwendungszweck",
-      amount: "Betrag",
+    const dkbPreset = {
+      mapping: {
+        date: "Buchungstag",
+        description: "Verwendungszweck",
+        amount: "Betrag",
+      },
+      delimiter: ";",
+      decimal: ",",
+      dateFmt: "DD.MM.YYYY",
     };
 
     it("get returns null when no preset exists for the bank", async () => {
@@ -1967,19 +1972,24 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(preset).toBeNull();
     });
 
-    it("upsert then get round-trips the mapping", async () => {
-      await storage.importPresets.upsert("dkb", dkbMapping);
+    it("upsert then get round-trips the full preset (mapping + format)", async () => {
+      await storage.importPresets.upsert("dkb", dkbPreset);
 
       const preset = await storage.importPresets.get("dkb");
-      expect(preset).toEqual(dkbMapping);
+      expect(preset).toEqual(dkbPreset);
     });
 
-    it("upsert overwrites the mapping for an existing bank", async () => {
-      await storage.importPresets.upsert("dkb", dkbMapping);
+    it("upsert overwrites the preset for an existing bank", async () => {
+      await storage.importPresets.upsert("dkb", dkbPreset);
       const adjusted = {
-        date: "Wertstellung",
-        description: "Buchungstext",
-        amount: "Umsatz",
+        mapping: {
+          date: "Wertstellung",
+          description: "Buchungstext",
+          amount: "Umsatz",
+        },
+        delimiter: ",",
+        decimal: ".",
+        dateFmt: "YYYY-MM-DD",
       };
       await storage.importPresets.upsert("dkb", adjusted);
 
@@ -1987,8 +1997,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(preset).toEqual(adjusted);
     });
 
-    it("a remembered mapping survives a backup and reopen", async () => {
-      await storage.importPresets.upsert("dkb", dkbMapping);
+    it("a remembered preset survives a backup and reopen", async () => {
+      await storage.importPresets.upsert("dkb", dkbPreset);
 
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-preset-"));
       const destPath = path.join(dir, "snapshot.db");
@@ -1998,7 +2008,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const restored = await createStorage({ path: destPath });
         try {
           const preset = await restored.importPresets.get("dkb");
-          expect(preset).toEqual(dkbMapping);
+          expect(preset).toEqual(dkbPreset);
         } finally {
           await restored.close();
         }

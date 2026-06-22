@@ -81,6 +81,10 @@ export interface PreviewSummary {
 export interface ImportPreview {
   bank: string;
   mapping: ColumnMapping;
+  /** Effective format the engine applied — echoed back on commit. */
+  delimiter: string;
+  decimal: string;
+  dateFmt: string;
   columns: string[];
   rows: ParsedImportRow[];
   summary: PreviewSummary;
@@ -93,6 +97,10 @@ export interface CommitImportInput {
   filename: string;
   sizeBytes: number;
   mapping: ColumnMapping;
+  /** The full format to remember for this bank, echoed from the preview. */
+  delimiter: string;
+  decimal: string;
+  dateFmt: string;
   rows: Array<{
     date: string;
     amount: number;

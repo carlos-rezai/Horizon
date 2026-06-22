@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
 import { buildPreview } from "./buildPreview.js";
-import type { ColumnMapping } from "../../storage/types.js";
+import type { StoredImportPreset } from "../../storage/types.js";
 import type { Transaction, RecurringTransaction } from "../../storage/types.js";
 
 // buildPreview is the pure orchestration core behind POST /imports/preview:
@@ -22,7 +22,7 @@ function sequentialIds(): () => string {
   return () => `r${n++}`;
 }
 
-const noPreset = async (): Promise<ColumnMapping | null> => null;
+const noPreset = async (): Promise<StoredImportPreset | null> => null;
 
 function makeTxn(
   overrides: Partial<Transaction> & { id: string }
@@ -57,7 +57,7 @@ describe("buildPreview", () => {
       bytes: fixtureBytes("dkb.csv"),
       existingTxns: [],
       recurring: [],
-      getRememberedMapping: noPreset,
+      getRememberedPreset: noPreset,
       generateId: sequentialIds(),
     });
 
@@ -82,7 +82,7 @@ describe("buildPreview", () => {
       bytes: fixtureBytes("dkb.csv"),
       existingTxns: [],
       recurring: [],
-      getRememberedMapping: noPreset,
+      getRememberedPreset: noPreset,
       generateId: sequentialIds(),
     });
 
@@ -106,7 +106,7 @@ describe("buildPreview", () => {
       bytes: fixtureBytes("sparkasse.csv"),
       existingTxns: [],
       recurring: [],
-      getRememberedMapping: noPreset,
+      getRememberedPreset: noPreset,
     });
 
     expect(preview.bank).toBe("Sparkasse");
@@ -126,7 +126,7 @@ describe("buildPreview", () => {
         }),
       ],
       recurring: [],
-      getRememberedMapping: noPreset,
+      getRememberedPreset: noPreset,
     });
 
     const edeka = preview.rows.find(
@@ -143,7 +143,7 @@ describe("buildPreview", () => {
       bytes: fixtureBytes("dkb.csv"),
       existingTxns: [],
       recurring: [makeRecurring({ id: "r1" })],
-      getRememberedMapping: noPreset,
+      getRememberedPreset: noPreset,
     });
 
     const etf = preview.rows.find(
@@ -153,25 +153,59 @@ describe("buildPreview", () => {
     expect(preview.summary.recurring).toBe(1);
   });
 
-  it("re-applies a bank's remembered mapping over the detected default", async () => {
-    const remembered: ColumnMapping = {
-      date: "Buchungsdatum",
-      description: "Auftraggeber / Begünstigter",
-      amount: "Betrag (€)",
+  it("re-applies a bank's remembered mapping and echoes its full format", async () => {
+    const remembered: StoredImportPreset = {
+      mapping: {
+        date: "Buchungsdatum",
+        description: "Auftraggeber / Begünstigter",
+        amount: "Betrag (€)",
+      },
+      delimiter: ";",
+      decimal: ",",
+      dateFmt: "DD.MM.YYYY",
     };
 
     const preview = await buildPreview({
       bytes: fixtureBytes("dkb.csv"),
       existingTxns: [],
       recurring: [],
-      getRememberedMapping: async (bank) =>
-        bank === "DKB" ? remembered : null,
+      getRememberedPreset: async (bank) => (bank === "DKB" ? remembered : null),
     });
 
-    expect(preview.mapping).toEqual(remembered);
+    expect(preview.mapping).toEqual(remembered.mapping);
+    expect(preview.delimiter).toBe(";");
+    expect(preview.decimal).toBe(",");
+    expect(preview.dateFmt).toBe("DD.MM.YYYY");
     // Description now reads from the remembered column, not the detected one.
-    const first = preview.rows[0];
-    expect(first.description).not.toBe("Lebensmittel EDEKA");
+    expect(preview.rows[0].description).not.toBe("Lebensmittel EDEKA");
+  });
+
+  it("applies a remembered decimal separator when parsing amounts", async () => {
+    const remembered: StoredImportPreset = {
+      mapping: {
+        date: "Buchungsdatum",
+        description: "Verwendungszweck",
+        amount: "Betrag (€)",
+      },
+      delimiter: ";",
+      decimal: ".",
+      dateFmt: "DD.MM.YYYY",
+    };
+
+    const preview = await buildPreview({
+      bytes: fixtureBytes("dkb.csv"),
+      existingTxns: [],
+      recurring: [],
+      getRememberedPreset: async () => remembered,
+    });
+
+    // With the remembered decimal ".", "-34,20" reads as -3420.00 → -342000
+    // cents — proof the remembered format, not the detected ",", drove parsing.
+    const edeka = preview.rows.find(
+      (r) => r.description === "Lebensmittel EDEKA"
+    );
+    expect(edeka?.amount).toBe(-342000);
+    expect(preview.decimal).toBe(".");
   });
 
   it("falls back to an adjustable mapping when the bank is unmatched", async () => {
@@ -179,7 +213,7 @@ describe("buildPreview", () => {
       bytes: fixtureBytes("windows1252-umlauts.csv"),
       existingTxns: [],
       recurring: [],
-      getRememberedMapping: noPreset,
+      getRememberedPreset: noPreset,
     });
 
     expect(preview.columns).toContain("Buchungsdatum");

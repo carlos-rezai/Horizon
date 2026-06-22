@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  const { mapping, ...input } = parsed.data;
+  const { mapping, delimiter, decimal, dateFmt, ...input } = parsed.data;
 
   const created = await getStorage(req).imports.create(input);
   if (!created) {
@@ -36,9 +36,14 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  // Remember the per-bank column mapping so the next import of the same bank
-  // pre-fills it.
-  await getStorage(req).importPresets.upsert(input.bank, mapping);
+  // Remember the per-bank mapping and full format so the next import of the
+  // same bank pre-fills the columns and re-applies the decimal/date format.
+  await getStorage(req).importPresets.upsert(input.bank, {
+    mapping,
+    delimiter,
+    decimal,
+    dateFmt,
+  });
 
   res.status(201).json(created);
 });
@@ -73,7 +78,7 @@ router.post("/preview", (req, res) => {
         bytes: req.file.buffer,
         existingTxns: await storage.transactions.findByAccount(accountId),
         recurring,
-        getRememberedMapping: (bank) => storage.importPresets.get(bank),
+        getRememberedPreset: (bank) => storage.importPresets.get(bank),
       });
       res.json(preview);
     } catch (parseErr) {

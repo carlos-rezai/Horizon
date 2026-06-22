@@ -42,6 +42,7 @@ export interface DetectedStatement {
   records: Array<Record<string, string>>;
   /** Best-guess mapping the user can adjust in the wizard. */
   mapping: ColumnMapping;
+  delimiter: string;
   decimal: string;
   dateFmt: string;
 }
@@ -56,6 +57,7 @@ function locateKnownBank(text: string): DetectedStatement | null {
         columns: parsed.columns,
         records: parsed.rows,
         mapping: preset.map,
+        delimiter: preset.delimiter,
         decimal: preset.decimal,
         dateFmt: preset.dateFmt,
       };
@@ -113,6 +115,7 @@ function locateGeneric(text: string): DetectedStatement {
     columns,
     records: dataRecords,
     mapping: { date, description, amount },
+    delimiter: GENERIC_DELIMITER,
     decimal: GENERIC_DECIMAL,
     dateFmt: GENERIC_DATE_FMT,
   };

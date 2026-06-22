@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import type Database from "better-sqlite3";
 import type { ImportPresetsRepo, ImportsRepo } from "../Storage.js";
 import type { ColumnMapping, ImportRecord } from "../types.js";
+import type { StoredImportPreset } from "../types.js";
 import { isValidUuid } from "./uuid.js";
 import { toTransactionDTO, type TransactionRow } from "./transactions.js";
 
@@ -145,23 +146,45 @@ export function createSqliteImportPresetsRepo(
   db: Database.Database
 ): ImportPresetsRepo {
   const selectStmt = db.prepare(
-    `SELECT mapping FROM import_presets WHERE bank = ?`
+    `SELECT mapping, delimiter, decimal, date_fmt FROM import_presets WHERE bank = ?`
   );
   const upsertStmt = db.prepare(
-    `INSERT INTO import_presets (bank, mapping)
-     VALUES (?, ?)
-     ON CONFLICT(bank) DO UPDATE SET mapping = excluded.mapping`
+    `INSERT INTO import_presets (bank, mapping, delimiter, decimal, date_fmt)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(bank) DO UPDATE SET
+       mapping = excluded.mapping,
+       delimiter = excluded.delimiter,
+       decimal = excluded.decimal,
+       date_fmt = excluded.date_fmt`
   );
 
   return {
     async get(bank) {
-      const row = selectStmt.get(bank) as { mapping: string } | undefined;
+      const row = selectStmt.get(bank) as
+        | {
+            mapping: string;
+            delimiter: string;
+            decimal: string;
+            date_fmt: string;
+          }
+        | undefined;
       if (!row) return null;
-      return JSON.parse(row.mapping) as ColumnMapping;
+      return {
+        mapping: JSON.parse(row.mapping) as ColumnMapping,
+        delimiter: row.delimiter,
+        decimal: row.decimal,
+        dateFmt: row.date_fmt,
+      } satisfies StoredImportPreset;
     },
 
-    async upsert(bank, mapping) {
-      upsertStmt.run(bank, JSON.stringify(mapping));
+    async upsert(bank, preset) {
+      upsertStmt.run(
+        bank,
+        JSON.stringify(preset.mapping),
+        preset.delimiter,
+        preset.decimal,
+        preset.dateFmt
+      );
     },
   };
 }
