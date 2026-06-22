@@ -5,7 +5,6 @@ import {
   BANK_PRESETS,
   DEFAULT_BANK,
   detectEncoding,
-  detectBank,
   parseStatement,
   parseAmount,
   parseDate,
@@ -114,31 +113,6 @@ describe("detectEncoding", () => {
   it("decodes umlauts (ä ö ü ß) correctly from a Windows-1252 fixture", () => {
     const text = fixtureText("windows1252-umlauts.csv");
     expect(text).toContain("Große Straße Müller Bäckerei Köln");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// detectBank
-// ---------------------------------------------------------------------------
-
-describe("detectBank", () => {
-  it("recognises each target bank from its parsed header row", () => {
-    const sparkasse = parseStatement(
-      fixtureText("sparkasse.csv"),
-      BANK_PRESETS.Sparkasse
-    );
-    const dkb = parseStatement(fixtureText("dkb.csv"), BANK_PRESETS.DKB);
-    const ing = parseStatement(fixtureText("ing.csv"), BANK_PRESETS.ING);
-
-    expect(detectBank(sparkasse.columns, BANK_PRESETS)).toBe("Sparkasse");
-    expect(detectBank(dkb.columns, BANK_PRESETS)).toBe("DKB");
-    expect(detectBank(ing.columns, BANK_PRESETS)).toBe("ING");
-  });
-
-  it("falls back to DEFAULT_BANK for an unmatched header row", () => {
-    expect(detectBank(["Date", "Description", "Amount"], BANK_PRESETS)).toBe(
-      DEFAULT_BANK
-    );
   });
 });
 

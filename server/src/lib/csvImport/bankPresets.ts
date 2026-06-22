@@ -21,8 +21,9 @@ export interface BankPreset {
   delimiter: string;
   /**
    * Distinctive subset of `columns`. A parsed row containing all of these
-   * is the header row; presets are matched against a header row by the same
-   * containment check in {@link detectBank}.
+   * is the header row; `parseStatement` scans past the preamble to the first
+   * row that contains them, and the same containment check drives bank
+   * detection (the first preset whose signature is found wins).
    */
   headerSignature: string[];
   /** Encoding override; when omitted the engine sniffs the BOM. */

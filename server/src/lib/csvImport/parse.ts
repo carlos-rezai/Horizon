@@ -122,23 +122,6 @@ export function parseStatement(
 }
 
 /**
- * Match a parsed header row against the presets by `headerSignature`
- * containment. Falls back to `defaultBank` when nothing matches.
- */
-export function detectBank(
-  headerRow: string[],
-  presets: Record<string, BankPreset>,
-  defaultBank: string = "DKB"
-): string {
-  for (const [name, preset] of Object.entries(presets)) {
-    if (isHeaderRow(headerRow, preset.headerSignature)) {
-      return name;
-    }
-  }
-  return defaultBank;
-}
-
-/**
  * Parse a localized amount string into exact integer cents. Strips the
  * thousands separator (the opposite of `decimal`) and works on the integer and
  * fractional parts separately so there is no floating-point error.

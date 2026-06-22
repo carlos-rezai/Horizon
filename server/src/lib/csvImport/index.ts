@@ -2,7 +2,6 @@ export { BANK_PRESETS, DEFAULT_BANK } from "./bankPresets.js";
 export type { BankPreset } from "./bankPresets.js";
 export {
   detectEncoding,
-  detectBank,
   parseStatement,
   parseAmount,
   parseDate,
