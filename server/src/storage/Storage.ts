@@ -7,7 +7,7 @@ import type {
   CategoryCreateInput,
   ColumnMapping,
   DeleteResult,
-  Import,
+  ImportRecord,
   ImportCreateInput,
   MortgageOriginationInput,
   RecurringTransaction,
@@ -80,9 +80,9 @@ export interface RecurringTransactionsRepo {
 }
 
 export interface ImportsRepo {
-  create(input: ImportCreateInput): Promise<Import | null>;
-  findAll(): Promise<Import[]>;
-  findByAccount(accountId: string): Promise<Import[]>;
+  create(input: ImportCreateInput): Promise<ImportRecord | null>;
+  findAll(): Promise<ImportRecord[]>;
+  findByAccount(accountId: string): Promise<ImportRecord[]>;
   findTransactions(importId: string): Promise<Transaction[]>;
   delete(importId: string): Promise<boolean>;
 }

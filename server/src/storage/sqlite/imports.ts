@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import type Database from "better-sqlite3";
 import type { ImportPresetsRepo, ImportsRepo } from "../Storage.js";
-import type { ColumnMapping, Import } from "../types.js";
+import type { ColumnMapping, ImportRecord } from "../types.js";
 import { isValidUuid } from "./uuid.js";
 import { toTransactionDTO, type TransactionRow } from "./transactions.js";
 
@@ -17,7 +17,7 @@ interface ImportRow {
   imported_at: string;
 }
 
-function toImportDTO(row: ImportRow): Import {
+function toImportDTO(row: ImportRow): ImportRecord {
   return {
     id: row.id,
     accountId: row.account_id,

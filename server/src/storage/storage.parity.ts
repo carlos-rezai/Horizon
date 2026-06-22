@@ -1764,7 +1764,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   }
 
   describe("ImportsRepo.create", () => {
-    it("returns an Import DTO with derived date range, row count, and echoed metadata", async () => {
+    it("returns an ImportRecord DTO with derived date range, row count, and echoed metadata", async () => {
       const account = await makeAccount();
 
       const created = await storage.imports.create(makeImportInput(account.id));

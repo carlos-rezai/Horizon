@@ -148,7 +148,7 @@ export interface ImportCreateInput {
   rows: ImportRowInput[];
 }
 
-export interface Import {
+export interface ImportRecord {
   id: string;
   accountId: string;
   bank: string;
