@@ -21,6 +21,15 @@ export function formatBytes(bytes: number): string {
   return `${formatted} ${BYTE_UNITS[unitIndex]}`;
 }
 
+/**
+ * A file size as a whole number of kilobytes, floored to 1 KB so a tiny
+ * statement never displays as "0 KB". Used by the Import feature's history
+ * rows and upload card.
+ */
+export function formatFileSizeKB(bytes: number): number {
+  return Math.max(1, Math.round(bytes / 1024));
+}
+
 const MONTHS = [
   "Jan",
   "Feb",

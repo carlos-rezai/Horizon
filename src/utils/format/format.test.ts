@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   formatBalance,
   formatBytes,
+  formatFileSizeKB,
   formatMonth,
   formatMonthLong,
   toOrdinal,
@@ -49,6 +50,18 @@ describe("formatBytes", () => {
 
   it("formats a gigabyte value", () => {
     expect(formatBytes(1_073_741_824)).toBe("1 GB");
+  });
+});
+
+describe("formatFileSizeKB", () => {
+  it("rounds bytes to whole kilobytes", () => {
+    expect(formatFileSizeKB(4096)).toBe(4);
+    expect(formatFileSizeKB(1536)).toBe(2); // 1.5 KB rounds up
+  });
+
+  it("floors to a minimum of 1 KB for a sub-kilobyte file", () => {
+    expect(formatFileSizeKB(100)).toBe(1);
+    expect(formatFileSizeKB(0)).toBe(1);
   });
 });
 

@@ -8,6 +8,7 @@ import Button from "../../../primitives/Button/Button";
 import Select from "../../../primitives/Select/Select";
 import Spinner from "../../../primitives/Spinner/Spinner";
 import Money from "../../../primitives/Money/Money";
+import { formatFileSizeKB } from "../../../utils/format/format";
 import type {
   ColumnMapping,
   ImportPreview as ImportPreviewData,
@@ -55,10 +56,6 @@ import {
 } from "./ImportWizard.styles";
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
-
-function formatKB(bytes: number): number {
-  return Math.max(1, Math.round(bytes / 1024));
-}
 
 interface Props {
   importAccounts: AccountWithBalance[];
@@ -291,7 +288,7 @@ export default function ImportWizard({
                 <StyledFileMeta>
                   {loading
                     ? "Detecting…"
-                    : `${data?.summary.total ?? 0} rows detected · ${formatKB(file.size)} KB`}
+                    : `${data?.summary.total ?? 0} rows detected · ${formatFileSizeKB(file.size)} KB`}
                 </StyledFileMeta>
               </StyledFileInfo>
               {loading ? (

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import { API_BASE } from "../../utils/api/api";
+import { formatFileSizeKB } from "../../utils/format/format";
 import type {
   CommitImportInput,
   ImportPreview,
@@ -50,7 +51,7 @@ function toStatement(record: ImportRecord): ImportedStatement {
     to: record.endDate,
     count: record.rowCount,
     importedOn: record.importedAt.slice(0, 10),
-    sizeKB: Math.max(1, Math.round(record.sizeBytes / 1024)),
+    sizeKB: formatFileSizeKB(record.sizeBytes),
     txns: [],
   };
 }
