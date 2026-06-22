@@ -9,9 +9,7 @@ import type {
   ImportTransactionRecord,
   ImportedStatement,
   ImportedTxn,
-  PreviewSummary,
 } from "./importTypes";
-import type { ParsedImportRow } from "./reviewRows";
 
 /** Account kinds that can receive imported bank statements. */
 const IMPORTABLE_KINDS = new Set<AccountKind>([
@@ -19,25 +17,6 @@ const IMPORTABLE_KINDS = new Set<AccountKind>([
   "CreditCard",
   "Tagesgeld",
 ]);
-
-/** A preview row as returned by the server (before UI field renaming). */
-interface ServerPreviewRow {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  category: string;
-  duplicate: boolean;
-  recurring: boolean;
-}
-
-interface ServerPreviewResponse {
-  bank: string;
-  mapping: { date: string; description: string; amount: string };
-  columns: string[];
-  rows: ServerPreviewRow[];
-  summary: PreviewSummary;
-}
 
 /** Map a persisted `imports` record onto the UI's grouped-history shape. */
 function toStatement(record: ImportRecord): ImportedStatement {
@@ -53,28 +32,6 @@ function toStatement(record: ImportRecord): ImportedStatement {
     importedOn: record.importedAt.slice(0, 10),
     sizeKB: formatFileSizeKB(record.sizeBytes),
     txns: [],
-  };
-}
-
-function toImportedTxn(record: ImportTransactionRecord): ImportedTxn {
-  return {
-    id: record.id,
-    date: record.date,
-    desc: record.description,
-    cat: record.category,
-    amount: record.amount,
-  };
-}
-
-function toParsedRow(row: ServerPreviewRow): ParsedImportRow {
-  return {
-    id: row.id,
-    date: row.date,
-    desc: row.description,
-    amount: row.amount,
-    cat: row.category,
-    duplicate: row.duplicate,
-    recurring: row.recurring,
   };
 }
 
@@ -154,14 +111,9 @@ export function useImport(accounts: AccountWithBalance[]): UseImportResult {
         );
       }
 
-      const data = (await res.json()) as ServerPreviewResponse;
-      return {
-        bank: data.bank,
-        mapping: data.mapping,
-        columns: data.columns,
-        rows: data.rows.map(toParsedRow),
-        summary: data.summary,
-      };
+      // The server already speaks description/category — the response is the
+      // UI preview shape, no field translation needed.
+      return (await res.json()) as ImportPreview;
     },
     []
   );
@@ -192,8 +144,9 @@ export function useImport(accounts: AccountWithBalance[]): UseImportResult {
       if (!res.ok) {
         throw new Error(`Failed to load transactions: ${res.status}`);
       }
-      const data = (await res.json()) as ImportTransactionRecord[];
-      return data.map(toImportedTxn);
+      // ImportTransactionRecord already carries description/category — the UI
+      // shape (ImportedTxn) is a structural subset, so no mapping is needed.
+      return (await res.json()) as ImportTransactionRecord[];
     },
     []
   );

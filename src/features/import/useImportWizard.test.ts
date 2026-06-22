@@ -45,16 +45,16 @@ function makePreview(): ImportPreview {
       {
         id: "r0",
         date: "2026-03-05",
-        desc: "REWE",
+        description: "REWE",
         amount: -1299,
-        cat: "Food",
+        category: "Food",
       },
       {
         id: "r1",
         date: "2026-03-12",
-        desc: "Gehalt",
+        description: "Gehalt",
         amount: 250000,
-        cat: "Income",
+        category: "Income",
         recurring: true,
       },
     ],
@@ -138,12 +138,12 @@ describe("useImportWizard — row editing", () => {
     expect(result.current.summary.included).toBe(2);
   });
 
-  it("setCat changes a row's category", async () => {
+  it("setCategory changes a row's category", async () => {
     const { result } = setup();
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    act(() => result.current.setCat("r0", "Subscriptions"));
-    expect(result.current.rows.find((r) => r.id === "r0")?.cat).toBe(
+    act(() => result.current.setCategory("r0", "Subscriptions"));
+    expect(result.current.rows.find((r) => r.id === "r0")?.category).toBe(
       "Subscriptions"
     );
   });

@@ -7,13 +7,13 @@
  * the user doesn't double-count what Horizon already tracks.
  */
 
-/** A row produced by the (deferred) parse + detection seam. */
+/** A previewed row as returned by the parse + detection engine. */
 export interface ParsedImportRow {
   id: string;
   date: string;
-  desc: string;
+  description: string;
   amount: number;
-  cat: string;
+  category: string;
   duplicate?: boolean;
   recurring?: boolean;
 }

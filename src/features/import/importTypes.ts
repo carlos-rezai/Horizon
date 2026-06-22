@@ -3,9 +3,9 @@
  *
  * The backend ("CSV / Bank Statement Import") owns parsing, detection, and
  * persistence; these types describe what crosses the loopback API and the
- * UI-facing shapes the components render. Server field names
- * (`description`/`category`) are mapped to the UI's shorter `desc`/`cat` in
- * {@link useImport}.
+ * UI-facing shapes the components render. The UI speaks the same
+ * `description`/`category` field names as the server end-to-end — no
+ * translation layer.
  */
 import type { ParsedImportRow } from "./reviewRows";
 
@@ -43,9 +43,9 @@ export interface ImportTransactionRecord {
 export interface ImportedTxn {
   id: string;
   date: string;
-  desc: string;
+  description: string;
   /** Category key. */
-  cat: string;
+  category: string;
   /** Amount in cents (integer). */
   amount: number;
 }

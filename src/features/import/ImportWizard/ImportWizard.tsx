@@ -107,7 +107,7 @@ export default function ImportWizard({
     submitting,
     submitError,
     toggle,
-    setCat,
+    setCategory,
     updateMap,
     confirm,
   } = useImportWizard({
@@ -278,7 +278,7 @@ export default function ImportWizard({
                 {rawRows.map((r, i) => (
                   <StyledRawRow key={r.id} $alt={i % 2 === 1}>
                     <span>{r.date}</span>
-                    <span>{r.desc}</span>
+                    <span>{r.description}</span>
                     <Money cents={r.amount} />
                   </StyledRawRow>
                 ))}
@@ -332,11 +332,11 @@ export default function ImportWizard({
                     {r.included && <Check size={12} />}
                   </StyledCheck>
                   <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
-                  <StyledReviewDesc>{r.desc}</StyledReviewDesc>
+                  <StyledReviewDesc>{r.description}</StyledReviewDesc>
                   <Select
-                    value={r.cat}
+                    value={r.category}
                     aria-label="category"
-                    onChange={(e) => setCat(r.id, e.target.value)}
+                    onChange={(e) => setCategory(r.id, e.target.value)}
                   >
                     {categoryOptions.map((name) => (
                       <option key={name} value={name}>

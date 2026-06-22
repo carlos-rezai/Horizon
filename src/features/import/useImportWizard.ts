@@ -45,7 +45,7 @@ interface UseImportWizardResult {
   submitting: boolean;
   submitError: string | null;
   toggle: (id: string) => void;
-  setCat: (id: string, cat: string) => void;
+  setCategory: (id: string, category: string) => void;
   updateMap: (patch: Partial<ColumnMapping>) => void;
   confirm: () => Promise<void>;
 }
@@ -126,7 +126,7 @@ export function useImportWizard({
 
   const categoryOptions = useMemo(() => {
     const names = new Set(categories.map((c) => c.name));
-    rows.forEach((r) => names.add(r.cat));
+    rows.forEach((r) => names.add(r.category));
     return [...names];
   }, [categories, rows]);
 
@@ -138,9 +138,9 @@ export function useImportWizard({
     []
   );
 
-  const setCat = useCallback(
-    (id: string, cat: string) =>
-      setRows((rs) => rs.map((r) => (r.id === id ? { ...r, cat } : r))),
+  const setCategory = useCallback(
+    (id: string, category: string) =>
+      setRows((rs) => rs.map((r) => (r.id === id ? { ...r, category } : r))),
     []
   );
 
@@ -165,8 +165,8 @@ export function useImportWizard({
           .map((r) => ({
             date: r.date,
             amount: r.amount,
-            description: r.desc,
-            category: r.cat,
+            description: r.description,
+            category: r.category,
           })),
       });
       onDone({
@@ -206,7 +206,7 @@ export function useImportWizard({
     submitting,
     submitError,
     toggle,
-    setCat,
+    setCategory,
     updateMap,
     confirm,
   };

@@ -5,35 +5,35 @@ import type { ParsedImportRow } from "./reviewRows";
 const clean: ParsedImportRow = {
   id: "i1",
   date: "2026-11-02",
-  desc: "REWE SAGT DANKE",
+  description: "REWE SAGT DANKE",
   amount: -6284,
-  cat: "Groceries",
+  category: "Groceries",
 };
 
 const duplicate: ParsedImportRow = {
   id: "i4",
   date: "2026-11-03",
-  desc: "Restaurant Mitte",
+  description: "Restaurant Mitte",
   amount: -6400,
-  cat: "Dining",
+  category: "Dining",
   duplicate: true,
 };
 
 const recurring: ParsedImportRow = {
   id: "i2",
   date: "2026-11-01",
-  desc: "Gehalt Arbeitgeber GmbH",
+  description: "Gehalt Arbeitgeber GmbH",
   amount: 412000,
-  cat: "Income",
+  category: "Income",
   recurring: true,
 };
 
 const both: ParsedImportRow = {
   id: "i5",
   date: "2026-11-05",
-  desc: "BVG Monatskarte",
+  description: "BVG Monatskarte",
   amount: -4900,
-  cat: "Transport",
+  category: "Transport",
   duplicate: true,
   recurring: true,
 };

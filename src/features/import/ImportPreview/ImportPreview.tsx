@@ -51,8 +51,8 @@ export default function ImportPreview({ statement, account, onClose }: Props) {
           {statement.txns.map((t, i) => (
             <StyledRow key={t.id} $alt={i % 2 === 1}>
               <StyledDate>{t.date.slice(5)}</StyledDate>
-              <StyledDesc>{t.desc}</StyledDesc>
-              <StyledCategory>{t.cat}</StyledCategory>
+              <StyledDesc>{t.description}</StyledDesc>
+              <StyledCategory>{t.category}</StyledCategory>
               <StyledAmount>
                 <Money cents={t.amount} sign />
               </StyledAmount>
