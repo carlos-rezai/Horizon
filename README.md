@@ -251,7 +251,7 @@ The generated installer will be signed with your local certificate and will inst
 | Account Color Identity                    | ✅ Complete |
 | Dashboard Clock                           | ✅ Complete |
 | Claude Design Handover                    | ✅ Complete |
-| CSV / Bank Statement Import (backend)     | 🔜 Planned  |
+| CSV / Bank Statement Import (backend)     | ✅ Complete |
 | Month Year-Comparison                     | 🔜 Planned  |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
