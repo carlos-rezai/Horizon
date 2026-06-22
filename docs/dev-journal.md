@@ -1,5 +1,36 @@
 # Dev Journal
 
+## 2026-06-22 — #143 Bank Statement Import refactor (close-out)
+
+Worked the `20-bank-statement-import-refactor` plan end to end across twelve
+commits, low-risk → high-risk. Cleanup clusters first: deleted the dead
+`detectBank` path (`locateKnownBank` is the only detection source); extracted a
+shared `formatFileSizeKB` util and reused the `Money` primitive in the wizard's
+raw preview; lifted the preview orchestration into a pure, fixture-tested
+`buildPreview()` and thinned the route to transport; extracted `useImportWizard`
+so `ImportWizard.tsx` is composition over presentation; and aligned naming —
+`Import` → `ImportRecord` in the data layer, `desc`/`cat` → `description`/
+`category` in the UI (deleting the `toParsedRow` / `toImportedTxn` translation
+layers).
+
+**Consistency pass — a latent defect, not just a tidy-up.** The generic
+fallback labelled every unrecognized statement `DEFAULT_BANK = "DKB"`. Because a
+commit remembers its preset keyed by bank label, a single generic import
+silently overwrote the _real_ DKB account's remembered column mapping. Renaming
+the fallback to `"Generic"` (commit 10) closes that — a distinct label can never
+collide with a real bank's preset memory.
+
+**Preset round-trip fixed.** Migration 011 had collapsed `import_presets` to
+`(bank, mapping)`, dropping the `delimiter`/`decimal`/`date_fmt` the engine needs
+to re-interpret a statement; a "remembered" preset restored only column _names_
+and re-derived format quirks from the freshly detected bank. Migration 012
+widens the table (forward-only, German-default backfill) and the full preset now
+round-trips: the preview echoes the effective format, the wizard sends it back
+on commit, and `buildPreview` re-applies a remembered preset's decimal/date
+format when mapping rows. The delimiter is persisted for completeness but not
+re-applied — detection still owns splitting, so a remembered delimiter has no
+consumer yet.
+
 ## 2026-06-16 — #138 Phase 6 + 7: Modals + acceptance sweep (refactor close-out)
 
 Finished the visual-fidelity refactor. The Transaction Edit modal was the only
