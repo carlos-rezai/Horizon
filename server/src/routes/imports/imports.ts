@@ -1,12 +1,8 @@
-import { randomUUID } from "crypto";
 import { Router, type Request } from "express";
 import multer from "multer";
 import { ImportCreateSchema } from "./import.js";
 import {
-  detectStatement,
-  mapStatementRows,
-  detectDuplicates,
-  detectRecurring,
+  buildPreview,
   StatementParseError,
 } from "../../lib/csvImport/index.js";
 import type { Storage } from "../../storage/Storage.js";
@@ -67,52 +63,28 @@ router.post("/preview", (req, res) => {
 
     const accountId =
       typeof req.body.accountId === "string" ? req.body.accountId : "";
+    const storage = getStorage(req);
 
-    let detected;
     try {
-      detected = detectStatement(req.file.buffer);
+      const recurring = (await storage.recurringTransactions.findAll()).filter(
+        (rule) => rule.accountId === accountId
+      );
+      const preview = await buildPreview({
+        bytes: req.file.buffer,
+        existingTxns: await storage.transactions.findByAccount(accountId),
+        recurring,
+        getRememberedMapping: (bank) => storage.importPresets.get(bank),
+      });
+      res.json(preview);
     } catch (parseErr) {
+      // A statement we can't parse is a 422 with the engine's message; any
+      // other failure is a genuine 500 and re-thrown to the error handler.
       if (parseErr instanceof StatementParseError) {
         res.status(422).json({ error: parseErr.message });
         return;
       }
       throw parseErr;
     }
-
-    const storage = getStorage(req);
-
-    // Reuse the bank's remembered mapping if one was saved on a past commit;
-    // otherwise fall back to the detected default the user can adjust.
-    const remembered = await storage.importPresets.get(detected.bank);
-    const mapping = remembered ?? detected.mapping;
-    const mappedRows = mapStatementRows(detected, mapping);
-
-    const existingTxns = await storage.transactions.findByAccount(accountId);
-    const recurring = (await storage.recurringTransactions.findAll()).filter(
-      (rule) => rule.accountId === accountId
-    );
-
-    const duplicateFlags = detectDuplicates(mappedRows, existingTxns);
-    const recurringFlags = detectRecurring(mappedRows, recurring);
-
-    const rows = mappedRows.map((row, index) => ({
-      id: randomUUID(),
-      ...row,
-      duplicate: duplicateFlags[index],
-      recurring: recurringFlags[index],
-    }));
-
-    res.json({
-      bank: detected.bank,
-      mapping,
-      columns: detected.columns,
-      rows,
-      summary: {
-        total: rows.length,
-        duplicates: duplicateFlags.filter(Boolean).length,
-        recurring: recurringFlags.filter(Boolean).length,
-      },
-    });
   });
 });
 
