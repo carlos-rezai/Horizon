@@ -713,6 +713,44 @@
 >
 > **Domain expert:** "**Duplicate Detection** flags the overlap and pre-unchecks it, and **Recurring Detection** pre-unchecks your salary and rent so you don't double-count what the Projection Engine already models. Nothing is dropped silently — you decide."
 
+## Month Year-Comparison (new)
+
+| Term                       | Definition                                                                                                                                                                                | Aliases to avoid                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Year Comparison**        | The Month Overview right-column card that pairs this year's **YTD Variable Spending** against the prior year's, per **Category**, over the same Jan-through-**Viewed Month** window       | YoY, year-over-year, annual comparison |
+| **YTD Variable Spending**  | The cumulative sum of a **Category**'s **Variable Spending** magnitude from January 1 through the **Viewed Month**, in cents — whole calendar months, never a day-of-month cutoff         | Year-to-date spend, running total      |
+| **Viewed Month**           | The `YYYY-MM` currently selected in the Month Overview month navigator — anchors the **YTD Variable Spending** window's end; not necessarily today's real-world month                     | Current month, selected month          |
+| **Year Comparison Report** | The `GET /reports/year-comparison?month=YYYY-MM` endpoint that aggregates per-**Category** `{ thisYear, lastYear }` magnitudes server-side and returns the top 5 by `thisYear`            | YoY endpoint, comparison API           |
+| **thisYear / lastYear**    | The two per-**Category** cents magnitudes in a **Year Comparison Report** row — `thisYear` is the **Viewed Month**'s **YTD Variable Spending**; `lastYear` is the same window, prior year | currentYear/previousYear, ytd/priorYtd |
+
+## Relationships (Month Year-Comparison additions)
+
+- A **Year Comparison** card is always derived from the **Viewed Month** — stepping the month navigator recomputes it; it never pins to today's real-world month
+- **YTD Variable Spending** spans whole calendar months from January through the **Viewed Month** inclusive — an in-progress month counts in full, both years, so the comparison is apples-to-apples at month granularity
+- A **Year Comparison Report** ranks **Categories** by `thisYear` descending and returns at most five — a Category with heavy `lastYear` but ~zero `thisYear` correctly falls off the list
+- **Year Comparison** is computed across all spending accounts (excludes **Mortgage** and **Investment**), independent of the Month Overview **Account Tabs** — it answers a portfolio-level question
+- A **Year Comparison Report** row's magnitudes are absolute cents (like the Month Overview breakdown), so bars render regardless of expense sign; bar color is resolved client-side from the **Category** name, never sent in the payload
+- When no **Variable Spending** exists in the window, the **Year Comparison** card shows an honest empty state; when only the prior year is empty (first year of use), it renders this-year bars with zero-length last-year bars and keeps both legend entries
+- The **Year Comparison Report** is the first route under `/reports` — SQLite aggregation and the YTD/year-pairing math live in `server/src`; `src/` renders exactly what the endpoint returns
+
+## Example dialogue (Month Year-Comparison)
+
+> **Dev:** "When I step the Month Overview back to March 2024, does the Year Comparison card change?"
+>
+> **Domain expert:** "Yes — it's anchored to the **Viewed Month**, not today. It recomputes to **YTD Variable Spending** from Jan 1 through March 2024, against Jan–March 2023. The whole page describes the Viewed Month, so the card follows it."
+>
+> **Dev:** "It's June and we're halfway through the month — does June count fully or only up to today?"
+>
+> **Domain expert:** "Fully. **YTD Variable Spending** is whole calendar months, both years. Horizon is a manual monthly model — there's no live feed, so a day-of-month cutoff would just make the bars twitch every day for no signal."
+>
+> **Dev:** "Which categories get bars — the same five as the breakdown donut?"
+>
+> **Domain expert:** "Not necessarily. The **Year Comparison Report** ranks by `thisYear` across the whole YTD window and returns the top five. The donut is one month; this is the year so far. A category you spent on heavily last year but dropped this year just won't appear — that's correct."
+>
+> **Dev:** "Where does the per-category math run — in a hook?"
+>
+> **Domain expert:** "Server-side. `GET /reports/year-comparison?month=` does the aggregation and pairing and sends one small payload of `thisYear`/`lastYear` cents. The card just colors each bar from the category name and scales to the shared max. `src/` never touches SQLite."
+
 ## Flagged ambiguities
 
 - **"ink" / "accent" vs MD3 token names"** (new) — the **Prototype** names colors
@@ -796,3 +834,5 @@
 - **"Statement" vs "Import Record"** (new) — **Statement** is the UX/domain word for an imported bank CSV file; **Import Record** is its persisted `imports` table row. Use **Import Record** in storage/repo/migration discussions and **Statement** in UI/UX copy. They are 1:1 — never imply a Statement exists without an Import Record (the raw file is not stored).
 - **"import"** (new) — overloaded (ES module import, the **Import** feature, a single **Import Record**). In data-layer discussion, prefer **Import Record** for the row and **Import Commit**/**Import Preview Request** for the operations; reserve plain "Import" for the feature/nav. Never use "import" to mean an **Imported Transaction**.
 - **"preview"** (new) — overloaded: **Import Preview** is the read-only modal for an **already-committed** Statement; the **Import Preview Request** (`/imports/preview`) is the pre-commit parse-and-detect call. Always qualify which one — they sit on opposite sides of the **Import Commit**.
+- **"current month"** (new) — the build-status wording "Jan 1 through the current month" means the **Viewed Month** (the month selected in the Month Overview navigator), not today's real-world calendar month. The **Year Comparison** card recomputes as you step the navigator. Reserve "current month" for the dashboard's live-today widgets; use **Viewed Month** anywhere the month is navigable.
+- **"YTD" / "year so far"** (new) — in Horizon, **YTD Variable Spending** runs January 1 → **Viewed Month** inclusive in **whole calendar months** — never Jan 1 → today's date. The UI title "This year so far" is the user-facing label for this metric; never let "so far" imply a day-of-month cutoff. Only **Variable Spending** counts (transfer legs and auto-settlement are excluded), so "YTD spend" is never total cashflow.
