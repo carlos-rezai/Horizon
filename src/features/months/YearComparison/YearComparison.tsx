@@ -6,6 +6,7 @@ import type { YearComparisonRow } from "../useYearComparison";
 import {
   StyledIntro,
   StyledEmpty,
+  StyledError,
   StyledRows,
   StyledRow,
   StyledRowHead,
@@ -25,6 +26,8 @@ interface Props {
   monthLabel: string;
   /** Ranked category rows, this year against the same span last year. */
   rows: YearComparisonRow[];
+  /** Fetch failure message, if the comparison could not be loaded. */
+  error?: string | null;
 }
 
 /** Width as a percentage of the shared maximum, divide-by-zero guarded. */
@@ -39,11 +42,24 @@ function widthPct(value: number, max: number): string {
  * category: this year in the category colour, last year muted. All bars share a
  * single maximum so magnitudes read against each other across both years.
  */
-export default function YearComparison({ monthLabel, rows }: Props) {
+export default function YearComparison({ monthLabel, rows, error }: Props) {
   const sharedMax = Math.max(
     0,
     ...rows.map((r) => Math.max(r.thisYear, r.lastYear))
   );
+
+  if (error) {
+    return (
+      <Card>
+        <SectionHead label="Year comparison" title="This year so far" />
+        <StyledIntro>
+          Spending from Jan 1 through {monthLabel}, compared with the same
+          period last year.
+        </StyledIntro>
+        <StyledError>Couldn’t load the year comparison.</StyledError>
+      </Card>
+    );
+  }
 
   if (rows.length === 0) {
     return (

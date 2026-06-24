@@ -64,7 +64,8 @@ export default function MonthOverview({ accounts }: Props) {
     spendingAccounts.map((a) => a.id),
     monthStr
   );
-  const { rows: yearComparisonRows } = useYearComparison(monthStr);
+  const { rows: yearComparisonRows, error: yearComparisonError } =
+    useYearComparison(monthStr);
 
   const variableSpending = selectVariableSpending(transactions);
   const stats = deriveMonthStats(transactions, monthStr);
@@ -117,7 +118,11 @@ export default function MonthOverview({ accounts }: Props) {
         />
         <StyledRightColumn>
           <MonthBreakdown transactions={variableSpending} />
-          <YearComparison monthLabel={monthLabel} rows={yearComparisonRows} />
+          <YearComparison
+            monthLabel={monthLabel}
+            rows={yearComparisonRows}
+            error={yearComparisonError}
+          />
         </StyledRightColumn>
       </StyledColumns>
 

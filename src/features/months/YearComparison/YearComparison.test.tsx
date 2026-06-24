@@ -25,6 +25,14 @@ function renderCard(rows: Row[] = ROWS, monthLabel = "June") {
   );
 }
 
+function renderCardWithError(error: string, monthLabel = "June") {
+  return render(
+    <ThemeProvider theme={theme}>
+      <YearComparison monthLabel={monthLabel} rows={[]} error={error} />
+    </ThemeProvider>
+  );
+}
+
 afterEach(cleanup);
 
 describe("YearComparison — headings & framing", () => {
@@ -125,6 +133,28 @@ describe("YearComparison — empty state", () => {
     expect(screen.queryAllByTestId("yc-row")).toHaveLength(0);
     expect(screen.queryAllByTestId("yc-bar-thisyear")).toHaveLength(0);
     expect(screen.queryAllByTestId("yc-bar-lastyear")).toHaveLength(0);
+  });
+});
+
+describe("YearComparison — error state", () => {
+  it("shows an honest error message when the fetch failed", () => {
+    renderCardWithError("Failed to fetch year comparison: 500");
+    expect(
+      screen.getByText("Couldn’t load the year comparison.")
+    ).toBeInTheDocument();
+  });
+
+  it("renders the error message, not the empty state, when error is set", () => {
+    renderCardWithError("network down");
+    expect(
+      screen.queryByText("No spending yet this year.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders no rows or bars in the error state", () => {
+    renderCardWithError("network down");
+    expect(screen.queryAllByTestId("yc-row")).toHaveLength(0);
+    expect(screen.queryAllByTestId("yc-bar-thisyear")).toHaveLength(0);
   });
 });
 
