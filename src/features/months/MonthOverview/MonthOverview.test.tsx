@@ -19,6 +19,11 @@ vi.mock("../useAllMonthTransactions", () => ({
     mockUseAllMonthTransactions(...args),
 }));
 
+const mockUseYearComparison = vi.fn();
+vi.mock("../useYearComparison", () => ({
+  useYearComparison: (...args: unknown[]) => mockUseYearComparison(...args),
+}));
+
 let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
   null;
 
@@ -118,6 +123,10 @@ beforeEach(() => {
     isLoading: false,
     refetch,
   });
+  mockUseYearComparison.mockReturnValue({
+    rows: [{ category: "Groceries", thisYear: 12000, lastYear: 9000 }],
+    isLoading: false,
+  });
 });
 
 afterEach(() => {
@@ -200,9 +209,10 @@ describe("MonthOverview — composition", () => {
     expect(screen.getByText("By category")).toBeInTheDocument();
   });
 
-  it("renders the Planned year-comparison placeholder", () => {
+  it("renders the data-backed year-comparison card", () => {
     renderOverview();
-    expect(screen.getByText("Planned")).toBeInTheDocument();
+    expect(screen.getByText("Year comparison")).toBeInTheDocument();
+    expect(screen.getByTestId("yc-row")).toBeInTheDocument();
   });
 
   it("does not tab the Mortgage account", () => {

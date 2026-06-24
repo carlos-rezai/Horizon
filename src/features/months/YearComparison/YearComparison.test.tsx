@@ -53,8 +53,12 @@ describe("YearComparison — rows", () => {
     const groceriesRow = screen
       .getByText("Groceries")
       .closest("[data-testid='yc-row']") as HTMLElement;
+    // formatBalance emits a U+00A0 thin space that the default normalizer
+    // collapses, so a string matcher can never equal it — compare the exact
+    // formatted value against the element's raw textContent instead.
+    const value = formatBalance(12000);
     expect(
-      within(groceriesRow).getByText(formatBalance(12000))
+      within(groceriesRow).getByText((_, el) => el?.textContent === value)
     ).toBeInTheDocument();
   });
 

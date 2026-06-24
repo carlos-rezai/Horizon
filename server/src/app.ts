@@ -14,6 +14,7 @@ import projectionRouter from "./routes/projection/projection.js";
 import storageRouter from "./routes/storage/storage.js";
 import settlementsRouter from "./routes/settlements/settlements.js";
 import importsRouter from "./routes/imports/imports.js";
+import reportsRouter from "./routes/reports/reports.js";
 import { generateSettlements } from "./services/settlementService/settlementService.js";
 import type { Storage } from "./storage/Storage.js";
 
@@ -49,6 +50,7 @@ export async function createApp(storage: Storage): Promise<Express> {
   app.use("/storage", storageRouter);
   app.use("/settlements", settlementsRouter);
   app.use("/imports", importsRouter);
+  app.use("/reports", reportsRouter);
 
   app.use(logUnhandledError);
 

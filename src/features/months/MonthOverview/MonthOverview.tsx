@@ -14,6 +14,7 @@ import SpendingList from "../SpendingList/SpendingList";
 import MonthBreakdown from "../MonthBreakdown/MonthBreakdown";
 import YearComparison from "../YearComparison/YearComparison";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
+import { useYearComparison } from "../useYearComparison";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
 import {
@@ -63,6 +64,7 @@ export default function MonthOverview({ accounts }: Props) {
     spendingAccounts.map((a) => a.id),
     monthStr
   );
+  const { rows: yearComparisonRows } = useYearComparison(monthStr);
 
   const variableSpending = selectVariableSpending(transactions);
   const stats = deriveMonthStats(transactions, monthStr);
@@ -115,7 +117,7 @@ export default function MonthOverview({ accounts }: Props) {
         />
         <StyledRightColumn>
           <MonthBreakdown transactions={variableSpending} />
-          <YearComparison monthLabel={monthLabel} />
+          <YearComparison monthLabel={monthLabel} rows={yearComparisonRows} />
         </StyledRightColumn>
       </StyledColumns>
 
