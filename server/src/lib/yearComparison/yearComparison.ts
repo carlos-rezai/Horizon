@@ -1,4 +1,5 @@
 import type { AccountKind } from "../../storage/types.js";
+import { parseYearMonth } from "../date/date.js";
 
 /** Minimal account shape the year-comparison needs: identity and kind. */
 export interface YcAccountEntry {
@@ -30,11 +31,6 @@ const NON_SPENDING_KINDS: ReadonlySet<AccountKind> = new Set([
 ]);
 
 const TOP_N = 5;
-
-function parseYearMonth(value: string): { year: number; month: number } {
-  const [year, month] = value.split("-").map(Number);
-  return { year, month };
-}
 
 /**
  * Cumulative variable spend per category, January through the viewed month
