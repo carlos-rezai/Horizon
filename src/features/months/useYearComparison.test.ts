@@ -76,6 +76,45 @@ describe("useYearComparison — loading state", () => {
   });
 });
 
+describe("useYearComparison — failure path", () => {
+  it("sets error and clears isLoading on a non-OK response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    } as Response);
+
+    const { result } = renderHook(() => useYearComparison("2026-06"));
+
+    await act(async () => {});
+
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.rows).toEqual([]);
+  });
+
+  it("sets error and clears isLoading when the fetch rejects", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
+
+    const { result } = renderHook(() => useYearComparison("2026-06"));
+
+    await act(async () => {});
+
+    expect(result.current.error).toBe("network down");
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("leaves error null on a successful response", async () => {
+    mockFetchOk();
+
+    const { result } = renderHook(() => useYearComparison("2026-06"));
+
+    await act(async () => {});
+
+    expect(result.current.error).toBeNull();
+  });
+});
+
 describe("useYearComparison — refetch on month change", () => {
   beforeEach(() => mockFetchOk());
 
