@@ -986,6 +986,72 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
   });
 
+  describe("TransactionsRepo.findByDateRange", () => {
+    it("returns transactions in the half-open span — lower inclusive, upper exclusive — across accounts, in date order", async () => {
+      const a = await makeAccount({ name: "A" });
+      const b = await makeAccount({ name: "B" });
+
+      const seed = async (
+        accountId: string,
+        date: string,
+        description: string
+      ) => {
+        await storage.transactions.create(accountId, {
+          date,
+          amount: -100,
+          description,
+          category: "Food",
+        });
+      };
+
+      // Just below the lower bound — excluded.
+      await seed(a.id, "2025-12-31", "before");
+      // Exactly the lower bound — included.
+      await seed(a.id, "2026-01-01", "lower-bound");
+      // Mid-span, on the other account — included, proves cross-account.
+      await seed(b.id, "2026-02-10", "mid-other-account");
+      await seed(a.id, "2026-03-15", "mid");
+      // Last day inside the span — included.
+      await seed(a.id, "2026-06-30", "last-in");
+      // Exactly the upper bound — excluded.
+      await seed(b.id, "2026-07-01", "upper-bound");
+
+      const rows = await storage.transactions.findByDateRange(
+        "2026-01-01",
+        "2026-07-01"
+      );
+
+      expect(rows.map((t) => t.date)).toEqual([
+        "2026-01-01",
+        "2026-02-10",
+        "2026-03-15",
+        "2026-06-30",
+      ]);
+      expect(rows.map((t) => t.description)).toEqual([
+        "lower-bound",
+        "mid-other-account",
+        "mid",
+        "last-in",
+      ]);
+    });
+
+    it("returns an empty array when no transactions fall in the span", async () => {
+      const account = await makeAccount();
+      await storage.transactions.create(account.id, {
+        date: "2026-01-15",
+        amount: -100,
+        description: "outside",
+        category: "Food",
+      });
+
+      const rows = await storage.transactions.findByDateRange(
+        "2027-01-01",
+        "2027-02-01"
+      );
+      expect(rows).toEqual([]);
+    });
+  });
+
   describe("TransactionsRepo.findByTransferId", () => {
     it("returns both legs sharing a transferId", async () => {
       const source = await makeAccount({ name: "Source", kind: "Girokonto" });
