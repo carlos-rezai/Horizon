@@ -1,5 +1,52 @@
 # Dev Journal
 
+## 2026-06-25 — #147 Month Year-Comparison refactor (close-out)
+
+Worked the `21-month-year-comparison-refactor` plan end to end across ten
+commits, cheapest → riskiest, each leaving the full suite green. Five
+independent cleanups behind the shipped year-over-year card:
+
+**Dead route mapping.** The reports route hand-rebuilt `YcAccountEntry` /
+`YcTxEntry` objects from the storage DTOs before calling the library. The
+storage `Account` / `Transaction` types are already structural supersets of
+those input interfaces, so the `.map(...)` blocks were a no-op copy — deleted,
+DTO arrays now pass straight through.
+
+**`parseYearMonth` helper.** Extracted the open-coded `value.split("-")`
+month parser into `lib/date/date.ts` with its own test (handles both `YYYY-MM`
+and `YYYY-MM-DD`). `computeYearComparison` adopts it. `lib/projection` and
+`lib/settlement` still carry their own copies — deliberately out of scope to
+keep the blast radius small; they're noted future adopters.
+
+**Named server Variable-Spending rule.** `computeYearComparison` inlined the
+"drop transfer legs and auto-settlement" predicate and owned a private
+`NON_SPENDING_KINDS` set. Both now live in `lib/variableSpending/` as
+`isVariableSpending` (transaction predicate) and `selectSpendingAccounts`
+(account-kind selector). `src/` and `server/src/` are separate build targets
+and can't share code, so the client's `selectVariableSpending` in
+`src/utils/monthStats` and this server copy are knowingly duplicated — a parity
+comment on the module pins them together. Future `/reports` cards reuse the
+server helper instead of re-inlining.
+
+**Hook failure path.** `useYearComparison` did `fetch().then(r => r.json())`
+with no `res.ok` guard and no `.catch` — a 500 or dropped connection left the
+card spinning forever. It now mirrors `useMonthTransactions`: an `error` field,
+an `ok` guard, a `.catch`. The card threads `error` through `MonthOverview` and
+renders an honest one-line message, a branch distinct from its empty state.
+
+**Narrowed query (`findByDateRange`).** The route loaded the entire
+transactions table via `findAll()` then let the library discard everything
+outside a two-year window. Added `findByDateRange(fromInclusive, toExclusive)`
+to the `TransactionsRepo` contract — a half-open `date >= ? AND date < ?
+ORDER BY date` query mirroring the per-account month finder — covered it in the
+shared storage parity spec, and pointed the route at a two-year span computed
+from `?month`. The library is unchanged and still re-filters, so this is a pure
+data-load optimization that cannot alter the rows.
+
+**No contract change.** Endpoint URL, `?month` parameter, response shape,
+ranking, and cap are all untouched. The only frontend-visible change is the new
+`error` field on the hook.
+
 ## 2026-06-22 — #143 Bank Statement Import refactor (close-out)
 
 Worked the `20-bank-statement-import-refactor` plan end to end across twelve
