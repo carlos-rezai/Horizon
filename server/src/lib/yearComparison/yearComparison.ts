@@ -1,5 +1,9 @@
 import type { AccountKind } from "../../storage/types.js";
 import { parseYearMonth } from "../date/date.js";
+import {
+  isVariableSpending,
+  selectSpendingAccounts,
+} from "../variableSpending/variableSpending.js";
 
 /** Minimal account shape the year-comparison needs: identity and kind. */
 export interface YcAccountEntry {
@@ -24,12 +28,6 @@ export interface YcRow {
   lastYear: number;
 }
 
-/** Mortgage and Investment never hold variable spending. */
-const NON_SPENDING_KINDS: ReadonlySet<AccountKind> = new Set([
-  "Mortgage",
-  "Investment",
-]);
-
 const TOP_N = 5;
 
 /**
@@ -52,14 +50,14 @@ export function computeYearComparison(
     parseYearMonth(viewedMonth);
 
   const spendingAccountIds = new Set(
-    accounts.filter((a) => !NON_SPENDING_KINDS.has(a.kind)).map((a) => a.id)
+    selectSpendingAccounts(accounts).map((a) => a.id)
   );
 
   const totals = new Map<string, { thisYear: number; lastYear: number }>();
 
   for (const tx of transactions) {
     if (!spendingAccountIds.has(tx.accountId)) continue;
-    if (tx.transferId || tx.isAutoSettlement) continue;
+    if (!isVariableSpending(tx)) continue;
 
     const { year, month } = parseYearMonth(tx.date);
     if (month < 1 || month > viewedMonthNum) continue;
