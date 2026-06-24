@@ -109,3 +109,50 @@ describe("YearComparison — legend", () => {
     expect(within(legend).getByText(/last year/i)).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Honest states (issue #146)
+// ---------------------------------------------------------------------------
+
+describe("YearComparison — empty state", () => {
+  it("shows an honest empty message when there are no rows", () => {
+    renderCard([]);
+    expect(screen.getByText("No spending yet this year.")).toBeInTheDocument();
+  });
+
+  it("renders no bars when there are no rows", () => {
+    renderCard([]);
+    expect(screen.queryAllByTestId("yc-row")).toHaveLength(0);
+    expect(screen.queryAllByTestId("yc-bar-thisyear")).toHaveLength(0);
+    expect(screen.queryAllByTestId("yc-bar-lastyear")).toHaveLength(0);
+  });
+});
+
+describe("YearComparison — first-year case (no prior-year data)", () => {
+  const FIRST_YEAR_ROWS: Row[] = [
+    { category: "Groceries", thisYear: 12000, lastYear: 0 },
+    { category: "Dining", thisYear: 6000, lastYear: 0 },
+  ];
+
+  it("renders this-year bars while last-year bars have zero width", () => {
+    renderCard(FIRST_YEAR_ROWS);
+
+    const groceriesRow = screen
+      .getByText("Groceries")
+      .closest("[data-testid='yc-row']") as HTMLElement;
+
+    const thisYearBar = within(groceriesRow).getByTestId("yc-bar-thisyear");
+    const lastYearBar = within(groceriesRow).getByTestId("yc-bar-lastyear");
+
+    // this-year bar is scaled to the shared max (12000), last-year is empty
+    expect(thisYearBar).toHaveStyle({ width: "100%" });
+    expect(lastYearBar).toHaveStyle({ width: "0%" });
+  });
+
+  it("still renders both legend entries in the first-year case", () => {
+    renderCard(FIRST_YEAR_ROWS);
+    const legend = screen.getByTestId("yc-legend");
+    expect(within(legend).getByText(/this year/i)).toBeInTheDocument();
+    expect(within(legend).getByText(/last year/i)).toBeInTheDocument();
+  });
+});

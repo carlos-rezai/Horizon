@@ -180,3 +180,172 @@ describe("computeYearComparison — ranking and cap", () => {
     expect(rows.map((r) => r.category)).toEqual(["C6", "C5", "C4", "C3", "C2"]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Honest states (issue #146)
+// ---------------------------------------------------------------------------
+
+describe("computeYearComparison — empty result", () => {
+  it("returns no rows when there are no transactions at all", () => {
+    const rows = computeYearComparison([], [GIRO], "2026-06");
+    expect(rows).toEqual([]);
+  });
+
+  it("returns no rows when no spending falls inside either window", () => {
+    const txs = [
+      // after the viewed month, this year — out of window
+      tx({ date: "2026-09-01", amount: -1000, category: "Groceries" }),
+      // two years ago — out of both windows
+      tx({ date: "2024-03-01", amount: -2000, category: "Groceries" }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+    expect(rows).toEqual([]);
+  });
+});
+
+describe("computeYearComparison — first-year case (no prior-year data)", () => {
+  it("returns this-year magnitudes with lastYear at zero", () => {
+    const txs = [
+      tx({ date: "2026-02-01", amount: -3000, category: "Groceries" }),
+      tx({ date: "2026-05-01", amount: -1000, category: "Dining" }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toEqual([
+      { category: "Groceries", thisYear: 3000, lastYear: 0 },
+      { category: "Dining", thisYear: 1000, lastYear: 0 },
+    ]);
+  });
+});
+
+describe("computeYearComparison — fewer than five categories", () => {
+  it("returns only the categories that exist, with no empty padding", () => {
+    const txs = [
+      tx({ amount: -1000, category: "Groceries" }),
+      tx({ amount: -2000, category: "Dining" }),
+      tx({ amount: -3000, category: "Transport" }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => r.category)).toEqual([
+      "Transport",
+      "Dining",
+      "Groceries",
+    ]);
+  });
+});
+
+describe("computeYearComparison — drop-off (ranking is by thisYear)", () => {
+  it("drops a category with heavy last-year spend but ~zero this year out of the top five", () => {
+    const txs = [
+      // five categories with this-year spend
+      tx({ date: "2026-03-01", amount: -100, category: "C1" }),
+      tx({ date: "2026-03-01", amount: -200, category: "C2" }),
+      tx({ date: "2026-03-01", amount: -300, category: "C3" }),
+      tx({ date: "2026-03-01", amount: -400, category: "C4" }),
+      tx({ date: "2026-03-01", amount: -500, category: "C5" }),
+      // heavy last year, nothing this year — must fall off the top five
+      tx({ date: "2025-03-01", amount: -90000, category: "OldHabit" }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toHaveLength(5);
+    expect(rows.map((r) => r.category)).not.toContain("OldHabit");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Module correctness (issue #146)
+// ---------------------------------------------------------------------------
+
+describe("computeYearComparison — in-progress whole month", () => {
+  it("counts the whole viewed month in both years regardless of day-of-month", () => {
+    const txs = [
+      // last day of the viewed month, this year — beyond any day-of-month cutoff
+      tx({ date: "2026-06-30", amount: -4000, category: "Groceries" }),
+      // last day of the same month, last year — prior-year whole-month twin
+      tx({ date: "2025-06-30", amount: -1000, category: "Groceries" }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toEqual([
+      { category: "Groceries", thisYear: 4000, lastYear: 1000 },
+    ]);
+  });
+
+  it("is stable day to day — the result does not depend on today's date", () => {
+    // The function takes only the viewed month, so a transaction dated later
+    // in the month than 'today' is still counted: no day-of-month cutoff.
+    const txs = [
+      tx({ date: "2026-06-28", amount: -4000, category: "Groceries" }),
+    ];
+
+    const early = computeYearComparison(txs, [GIRO], "2026-06");
+    const late = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(early).toEqual(late);
+    expect(early).toEqual([
+      { category: "Groceries", thisYear: 4000, lastYear: 0 },
+    ]);
+  });
+});
+
+describe("computeYearComparison — absolute-cents summation across mixed signs", () => {
+  it("sums magnitudes regardless of sign (a refund adds to the magnitude)", () => {
+    const txs = [
+      tx({ date: "2026-03-01", amount: -3000, category: "Groceries" }),
+      // a positive entry (e.g. a refund) — still contributes its magnitude
+      tx({ date: "2026-04-01", amount: 1000, category: "Groceries" }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toEqual([
+      { category: "Groceries", thisYear: 4000, lastYear: 0 },
+    ]);
+  });
+});
+
+describe("computeYearComparison — transfer and auto-settlement exclusion", () => {
+  it("excludes transfer legs (rows carrying a transferId)", () => {
+    const txs = [
+      tx({ date: "2026-03-01", amount: -1000, category: "Groceries" }),
+      tx({
+        date: "2026-03-01",
+        amount: -50000,
+        category: "Groceries",
+        transferId: "tr-1",
+      }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toEqual([
+      { category: "Groceries", thisYear: 1000, lastYear: 0 },
+    ]);
+  });
+
+  it("excludes auto-settlement rows", () => {
+    const txs = [
+      tx({ date: "2026-03-01", amount: -1000, category: "Groceries" }),
+      tx({
+        date: "2026-03-01",
+        amount: -75000,
+        category: "Groceries",
+        isAutoSettlement: true,
+      }),
+    ];
+
+    const rows = computeYearComparison(txs, [GIRO], "2026-06");
+
+    expect(rows).toEqual([
+      { category: "Groceries", thisYear: 1000, lastYear: 0 },
+    ]);
+  });
+});

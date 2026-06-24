@@ -143,3 +143,24 @@ describe("GET /reports/year-comparison", () => {
     expect(row?.thisYear).toBe(1000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// ?month validation (issue #146)
+// ---------------------------------------------------------------------------
+
+describe("GET /reports/year-comparison — ?month validation", () => {
+  it("returns 400 when month is missing", async () => {
+    const res = await request(app).get("/reports/year-comparison");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when month does not match ^\\d{4}-\\d{2}$", async () => {
+    const res = await request(app).get("/reports/year-comparison?month=2026-6");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for a non-date month value", async () => {
+    const res = await request(app).get("/reports/year-comparison?month=June");
+    expect(res.status).toBe(400);
+  });
+});
