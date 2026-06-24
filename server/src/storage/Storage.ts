@@ -43,6 +43,14 @@ export interface TransactionsRepo {
     accountId: string,
     opts?: { month?: string }
   ): Promise<Transaction[]>;
+  /**
+   * All transactions whose ISO date falls in the half-open span
+   * [fromInclusive, toExclusive), across every account, ordered by date.
+   */
+  findByDateRange(
+    fromInclusive: string,
+    toExclusive: string
+  ): Promise<Transaction[]>;
   findByTransferId(transferId: string): Promise<Transaction[]>;
   create(
     accountId: string,

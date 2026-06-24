@@ -58,6 +58,11 @@ export function createSqliteTransactionsRepo(
        WHERE account_id = ? AND date >= ? AND date < ?
      ORDER BY date DESC`
   );
+  const selectByDateRangeStmt = db.prepare(
+    `SELECT * FROM transactions
+       WHERE date >= ? AND date < ?
+     ORDER BY date`
+  );
   const selectByTransferStmt = db.prepare(
     `SELECT * FROM transactions WHERE transfer_id = ?`
   );
@@ -105,6 +110,14 @@ export function createSqliteTransactionsRepo(
       } else {
         rows = selectByAccountStmt.all(accountId) as TransactionRow[];
       }
+      return rows.map(toTransactionDTO);
+    },
+
+    async findByDateRange(fromInclusive, toExclusive) {
+      const rows = selectByDateRangeStmt.all(
+        fromInclusive,
+        toExclusive
+      ) as TransactionRow[];
       return rows.map(toTransactionDTO);
     },
 
