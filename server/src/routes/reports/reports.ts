@@ -17,22 +17,14 @@ router.get("/year-comparison", async (req, res) => {
     return;
   }
 
+  // The storage Account and Transaction DTOs are structural supersets of the
+  // library's YcAccountEntry / YcTxEntry inputs, so they pass straight through.
   const [accounts, transactions] = await Promise.all([
     storage.accounts.findAll(),
     storage.transactions.findAll(),
   ]);
 
-  const accountEntries = accounts.map((a) => ({ id: a.id, kind: a.kind }));
-  const transactionEntries = transactions.map((tx) => ({
-    accountId: tx.accountId,
-    date: tx.date,
-    amount: tx.amount,
-    category: tx.category,
-    transferId: tx.transferId,
-    isAutoSettlement: tx.isAutoSettlement,
-  }));
-
-  const rows = computeYearComparison(transactionEntries, accountEntries, month);
+  const rows = computeYearComparison(transactions, accounts, month);
 
   res.json({ month, rows });
 });
