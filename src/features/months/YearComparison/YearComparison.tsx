@@ -5,6 +5,7 @@ import { colorForCategoryName } from "../../../utils/categoryColor/categoryColor
 import type { YearComparisonRow } from "../useYearComparison";
 import {
   StyledIntro,
+  StyledEmpty,
   StyledRows,
   StyledRow,
   StyledRowHead,
@@ -43,6 +44,19 @@ export default function YearComparison({ monthLabel, rows }: Props) {
     0,
     ...rows.map((r) => Math.max(r.thisYear, r.lastYear))
   );
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <SectionHead label="Year comparison" title="This year so far" />
+        <StyledIntro>
+          Spending from Jan 1 through {monthLabel}, compared with the same
+          period last year.
+        </StyledIntro>
+        <StyledEmpty>No spending yet this year.</StyledEmpty>
+      </Card>
+    );
+  }
 
   return (
     <Card>

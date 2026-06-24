@@ -8,6 +8,13 @@ export const StyledIntro = styled.p`
   margin: -2px 0 0;
 `;
 
+export const StyledEmpty = styled.p`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.body.fontSize};
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  margin: ${({ theme }) => theme.spacing.space5}px 0 0;
+`;
+
 export const StyledRows = styled.div`
   display: flex;
   flex-direction: column;

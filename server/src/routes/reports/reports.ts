@@ -8,17 +8,14 @@ function getStorage(req: Request): Storage {
   return req.app.locals.storage;
 }
 
-function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
 router.get("/year-comparison", async (req, res) => {
   const storage = getStorage(req);
-  const month =
-    typeof req.query.month === "string" && /^\d{4}-\d{2}$/.test(req.query.month)
-      ? req.query.month
-      : currentMonth();
+  const { month } = req.query;
+
+  if (typeof month !== "string" || !/^\d{4}-\d{2}$/.test(month)) {
+    res.status(400).json({ error: "month must match YYYY-MM" });
+    return;
+  }
 
   const [accounts, transactions] = await Promise.all([
     storage.accounts.findAll(),
