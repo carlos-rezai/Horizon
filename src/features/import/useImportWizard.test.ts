@@ -1,10 +1,22 @@
 // @vitest-environment jsdom
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, type Mock } from "vitest";
 import { useImportWizard } from "./useImportWizard";
 import type { AccountWithBalance } from "../../types/account";
 import type { Category } from "../../types/category";
-import type { ImportPreview } from "./importTypes";
+import type { CommitImportInput, ImportPreview } from "./importTypes";
+
+// The exact param signatures useImportWizard expects. Typing the mocks against
+// these (rather than the loose `Mock<Procedure>` of a bare `vi.fn()`) keeps the
+// stubs assignable to the hook's params; a real signature change fails here.
+type PreviewFn = (accountId: string, file: File) => Promise<ImportPreview>;
+type CommitFn = (input: CommitImportInput) => Promise<void>;
+type OnCloseFn = () => void;
+type OnDoneFn = (result: {
+  account: AccountWithBalance;
+  included: number;
+  skipped: number;
+}) => void;
 
 const accounts: AccountWithBalance[] = [
   {
@@ -67,16 +79,18 @@ function makePreview(): ImportPreview {
 
 function setup(
   overrides: {
-    preview?: ReturnType<typeof vi.fn>;
-    commit?: ReturnType<typeof vi.fn>;
-    onClose?: ReturnType<typeof vi.fn>;
-    onDone?: ReturnType<typeof vi.fn>;
+    preview?: Mock<PreviewFn>;
+    commit?: Mock<CommitFn>;
+    onClose?: Mock<OnCloseFn>;
+    onDone?: Mock<OnDoneFn>;
   } = {}
 ) {
-  const preview = overrides.preview ?? vi.fn().mockResolvedValue(makePreview());
-  const commit = overrides.commit ?? vi.fn().mockResolvedValue(undefined);
-  const onClose = overrides.onClose ?? vi.fn();
-  const onDone = overrides.onDone ?? vi.fn();
+  const preview =
+    overrides.preview ?? vi.fn<PreviewFn>().mockResolvedValue(makePreview());
+  const commit =
+    overrides.commit ?? vi.fn<CommitFn>().mockResolvedValue(undefined);
+  const onClose = overrides.onClose ?? vi.fn<OnCloseFn>();
+  const onDone = overrides.onDone ?? vi.fn<OnDoneFn>();
 
   const hook = renderHook(() =>
     useImportWizard({
@@ -120,7 +134,9 @@ describe("useImportWizard — preview lifecycle", () => {
   });
 
   it("surfaces a load error and blocks navigation", async () => {
-    const preview = vi.fn().mockRejectedValue(new Error("Could not read"));
+    const preview = vi
+      .fn<PreviewFn>()
+      .mockRejectedValue(new Error("Could not read"));
     const { result } = setup({ preview });
 
     await waitFor(() =>
@@ -198,7 +214,9 @@ describe("useImportWizard — commit", () => {
   });
 
   it("surfaces a commit failure and does not close", async () => {
-    const commit = vi.fn().mockRejectedValue(new Error("Failed to import"));
+    const commit = vi
+      .fn<CommitFn>()
+      .mockRejectedValue(new Error("Failed to import"));
     const { result, onClose } = setup({ commit });
     await waitFor(() => expect(result.current.loading).toBe(false));
 

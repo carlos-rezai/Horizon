@@ -10,7 +10,7 @@ import Spinner from "../../../primitives/Spinner/Spinner";
 import Money from "../../../primitives/Money/Money";
 import { formatFileSizeKB } from "../../../utils/format/format";
 import type {
-  ColumnMapping,
+  CommitImportInput,
   ImportPreview as ImportPreviewData,
 } from "../importTypes";
 import { useImportWizard } from "../useImportWizard";
@@ -59,19 +59,7 @@ interface Props {
   file: File;
   presetAccountId: string | null;
   preview: (accountId: string, file: File) => Promise<ImportPreviewData>;
-  commit: (input: {
-    accountId: string;
-    bank: string;
-    filename: string;
-    sizeBytes: number;
-    mapping: ColumnMapping;
-    rows: Array<{
-      date: string;
-      amount: number;
-      description: string;
-      category: string;
-    }>;
-  }) => Promise<void>;
+  commit: (input: CommitImportInput) => Promise<void>;
   onClose: () => void;
   /** Fired after a successful commit with the included/skipped split. */
   onDone: (result: {
