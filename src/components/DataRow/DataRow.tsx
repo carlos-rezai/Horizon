@@ -1,19 +1,29 @@
 import React from "react";
 import { StyledDataRow } from "./DataRow.styles";
 
-interface DataRowProps extends React.HTMLAttributes<HTMLDivElement> {
+interface DataRowOwnProps {
   columns: string[];
   last?: boolean;
   children: React.ReactNode;
 }
 
-export default function DataRow({
+/**
+ * A grid row that renders as a <div> by default but can become any element or
+ * component via `as` (e.g. a router <Link> to make the whole row a navigation
+ * target). Props for the chosen element — `to`, `href`, `onClick` — are
+ * forwarded through.
+ */
+type DataRowProps<C extends React.ElementType = "div"> = DataRowOwnProps & {
+  as?: C;
+} & Omit<React.ComponentPropsWithoutRef<C>, keyof DataRowOwnProps | "as">;
+
+export default function DataRow<C extends React.ElementType = "div">({
   columns,
   last = false,
   onClick,
   children,
   ...rest
-}: DataRowProps) {
+}: DataRowProps<C>) {
   const template = columns.map((col) => `minmax(0, ${col})`).join(" ");
   return (
     <StyledDataRow
