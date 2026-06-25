@@ -511,7 +511,6 @@ export default function TrajectoryHorizon({
                     fill={theme.colors.primary}
                     stroke={theme.colors.surfaceContainer}
                     strokeWidth={2}
-                    isFront
                   />
                 )}
                 {todayIndex >= 0 && (
