@@ -57,6 +57,11 @@ export default function DatePicker({
         customInput={<DateInput aria-label={ariaLabel} />}
         placeholderText="DD.MM.YYYY"
         popperPlacement="bottom-start"
+        // Position the calendar with a fixed strategy so it's anchored to the
+        // viewport and escapes the modal dialog's `overflow: auto` clipping —
+        // otherwise, in a short modal the calendar is cut off and forces a
+        // scroll instead of opening over the modal.
+        popperProps={{ strategy: "fixed" }}
       />
       <StyledCalendarIcon aria-hidden="true">
         <Calendar size={15} />
