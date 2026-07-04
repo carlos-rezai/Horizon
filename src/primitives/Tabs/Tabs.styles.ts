@@ -1,10 +1,57 @@
 import styled from "styled-components";
 
+export const StyledTabsRoot = styled.div`
+  position: relative;
+`;
+
 export const StyledTabList = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space1}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+
+  /* When the tabs are wider than the card, keep them on one line and let the
+     strip scroll sideways rather than spilling out of the card. The scrollbar
+     is hidden; the chevron buttons are the scroll affordance on desktop. */
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  &::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+`;
+
+/**
+ * Edge chevron that pages the tab strip. Rendered only when there is more to
+ * scroll in that direction; the gradient fades tabs out beneath it so it reads
+ * as "more this way" rather than a hard clip.
+ */
+export const StyledScrollButton = styled.button<{ $side: "left" | "right" }>`
+  position: absolute;
+  top: 0;
+  bottom: 1px; /* clear the tablist's 1px bottom border */
+  ${({ $side }) => ($side === "left" ? "left: 0;" : "right: 0;")}
+  z-index: 1; /* sit above the tab strip so both chevrons stay clickable */
+  display: grid;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  background: ${({ theme, $side }) =>
+    `linear-gradient(to ${$side === "left" ? "right" : "left"}, ${
+      theme.colors.surfaceContainer
+    } 60%, transparent)`};
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.onSurface};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary};
+    outline-offset: -2px;
+  }
 `;
 
 export const StyledTab = styled.button<{ $active: boolean; $color?: string }>`
@@ -13,6 +60,10 @@ export const StyledTab = styled.button<{ $active: boolean; $color?: string }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
   padding: 11px 14px;
+  /* Keep each tab at its natural width so the strip scrolls instead of the
+     tabs squashing or wrapping out of the card. */
+  flex-shrink: 0;
+  white-space: nowrap;
   border: none;
   background-color: transparent;
   color: ${({ $active, theme }) =>

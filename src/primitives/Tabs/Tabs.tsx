@@ -1,5 +1,9 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
+  StyledTabsRoot,
   StyledTabList,
+  StyledScrollButton,
   StyledTab,
   StyledDot,
   StyledCount,
@@ -21,28 +25,84 @@ interface TabsProps {
 }
 
 export default function Tabs({ tabs, activeId, onChange }: TabsProps) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Recompute which chevrons to show from the strip's scroll position.
+  const updateAffordances = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 1);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateAffordances();
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateAffordances);
+    observer.observe(el);
+    return () => observer.disconnect();
+    // Re-measure when the tab set changes (e.g. accounts added/removed).
+  }, [updateAffordances, tabs]);
+
+  const page = (direction: -1 | 1) => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollBy({
+      left: direction * el.clientWidth * 0.75,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <StyledTabList role="tablist">
-      {tabs.map((tab) => {
-        const active = tab.id === activeId;
-        return (
-          <StyledTab
-            key={tab.id}
-            role="tab"
-            type="button"
-            aria-selected={active}
-            $active={active}
-            $color={tab.color}
-            onClick={() => onChange(tab.id)}
-          >
-            {tab.color ? <StyledDot $color={tab.color} /> : null}
-            <span>{tab.label}</span>
-            {tab.count !== undefined ? (
-              <StyledCount>{tab.count}</StyledCount>
-            ) : null}
-          </StyledTab>
-        );
-      })}
-    </StyledTabList>
+    <StyledTabsRoot>
+      {canScrollLeft && (
+        <StyledScrollButton
+          type="button"
+          $side="left"
+          aria-label="Scroll tabs left"
+          onClick={() => page(-1)}
+        >
+          <ChevronLeft size={16} />
+        </StyledScrollButton>
+      )}
+
+      <StyledTabList role="tablist" ref={listRef} onScroll={updateAffordances}>
+        {tabs.map((tab) => {
+          const active = tab.id === activeId;
+          return (
+            <StyledTab
+              key={tab.id}
+              role="tab"
+              type="button"
+              aria-selected={active}
+              $active={active}
+              $color={tab.color}
+              onClick={() => onChange(tab.id)}
+            >
+              {tab.color ? <StyledDot $color={tab.color} /> : null}
+              <span>{tab.label}</span>
+              {tab.count !== undefined ? (
+                <StyledCount>{tab.count}</StyledCount>
+              ) : null}
+            </StyledTab>
+          );
+        })}
+      </StyledTabList>
+
+      {canScrollRight && (
+        <StyledScrollButton
+          type="button"
+          $side="right"
+          aria-label="Scroll tabs right"
+          onClick={() => page(1)}
+        >
+          <ChevronRight size={16} />
+        </StyledScrollButton>
+      )}
+    </StyledTabsRoot>
   );
 }
