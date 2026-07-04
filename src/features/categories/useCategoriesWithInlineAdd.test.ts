@@ -35,10 +35,20 @@ describe("useCategoriesWithInlineAdd — initial fetch", () => {
     expect(result.current.categories).toEqual(existingCategories);
   });
 
-  it("selectedCategoryId equals initialId synchronously on first render when initialId is provided", () => {
-    const { result } = renderHook(() => useCategoriesWithInlineAdd("cat-2"));
+  it("resolves selectedCategoryId to the category matching initialCategoryName after loading", async () => {
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("Income"));
+
+    await act(async () => {});
 
     expect(result.current.selectedCategoryId).toBe("cat-2");
+  });
+
+  it("falls back to the first category when initialCategoryName matches none", async () => {
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("Unknown"));
+
+    await act(async () => {});
+
+    expect(result.current.selectedCategoryId).toBe("cat-1");
   });
 });
 

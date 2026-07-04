@@ -13,11 +13,13 @@ interface UseCategoriesWithInlineAddResult {
 }
 
 export function useCategoriesWithInlineAdd(
-  initialId?: string
+  initialCategoryName?: string
 ): UseCategoriesWithInlineAddResult {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(initialId ?? "");
+  // Resolved from initialCategoryName once the list loads — a name can't be
+  // mapped to an id synchronously before the categories are fetched.
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
@@ -34,9 +36,9 @@ export function useCategoriesWithInlineAdd(
         if (!cancelled) {
           setCategories(data);
           const preferred =
-            initialId && data.some((c) => c.id === initialId)
-              ? initialId
-              : (data[0]?.id ?? "");
+            data.find((c) => c.name === initialCategoryName)?.id ??
+            data[0]?.id ??
+            "";
           setSelectedCategoryId(preferred);
           setIsLoading(false);
         }
@@ -51,6 +53,9 @@ export function useCategoriesWithInlineAdd(
     return () => {
       cancelled = true;
     };
+    // Runs once on mount: the initial category is resolved against the first
+    // fetch, not re-resolved when initialCategoryName changes later.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function addCategory(name: string): Promise<void> {

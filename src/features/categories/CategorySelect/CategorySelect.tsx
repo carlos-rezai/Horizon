@@ -18,10 +18,11 @@ interface Props {
    * category by name (not id), so consumers store this value directly.
    */
   onChange: (categoryName: string) => void;
-  initialCategoryId?: string;
+  /** Pre-select this category by *name* (e.g. when editing an existing row). */
+  initialCategory?: string;
 }
 
-export default function CategorySelect({ onChange, initialCategoryId }: Props) {
+export default function CategorySelect({ onChange, initialCategory }: Props) {
   const {
     categories,
     selectedCategoryId,
@@ -29,7 +30,7 @@ export default function CategorySelect({ onChange, initialCategoryId }: Props) {
     isAdding,
     addCategory,
     addError,
-  } = useCategoriesWithInlineAdd(initialCategoryId);
+  } = useCategoriesWithInlineAdd(initialCategory);
 
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");

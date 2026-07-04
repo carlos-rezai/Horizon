@@ -190,7 +190,7 @@ export default function RecurringTransactionModal({
 
         <CategorySelect
           onChange={setCategory}
-          initialCategoryId={transaction?.category}
+          initialCategory={transaction?.category}
         />
 
         <FormField

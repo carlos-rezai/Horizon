@@ -41,7 +41,7 @@ const existingRt: RecurringTransaction = {
   accountId: "acc-1",
   amount: -120000,
   description: "Rent",
-  category: "cat-1",
+  category: "Housing",
   frequency: "monthly",
   dayOfMonth: 1,
 };
@@ -267,6 +267,20 @@ describe("RecurringTransactionModal — successful save", () => {
         frequency: "monthly",
         dayOfMonth: 1,
       })
+    );
+  });
+
+  it("pre-selects the existing category by name and saves it unchanged when editing", async () => {
+    const onSaved = vi.fn();
+    renderEditModal({ onSaved });
+
+    // The category resolves to the row's own value once the list has loaded.
+    await screen.findByRole("option", { name: "Housing" });
+
+    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "Housing" })
     );
   });
 
