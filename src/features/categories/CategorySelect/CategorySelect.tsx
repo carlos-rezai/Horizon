@@ -13,7 +13,11 @@ import {
 const ADD_CATEGORY_VALUE = "__add__";
 
 interface Props {
-  onChange: (id: string) => void;
+  /**
+   * Called with the selected category's *name*. Transactions reference their
+   * category by name (not id), so consumers store this value directly.
+   */
+  onChange: (categoryName: string) => void;
   initialCategoryId?: string;
 }
 
@@ -30,13 +34,16 @@ export default function CategorySelect({ onChange, initialCategoryId }: Props) {
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
+  // Emit the selected category's name (not its id): transactions store the
+  // category by name, so this is what consumers persist.
   useEffect(() => {
-    if (selectedCategoryId) {
-      onChange(selectedCategoryId);
+    const selected = categories.find((c) => c.id === selectedCategoryId);
+    if (selected) {
+      onChange(selected.name);
     }
     // onChange is a stable setState setter in all consumers — safe to omit
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategoryId]);
+  }, [selectedCategoryId, categories]);
 
   const handleCategoryChange = (selected: string) => {
     if (selected === ADD_CATEGORY_VALUE) {

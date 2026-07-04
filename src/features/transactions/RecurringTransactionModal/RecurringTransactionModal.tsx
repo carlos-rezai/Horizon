@@ -63,7 +63,7 @@ export default function RecurringTransactionModal({
   const [monthOfYear, setMonthOfYear] = useState<number>(
     transaction?.monthOfYear ?? new Date().getMonth() + 1
   );
-  const [categoryId, setCategoryId] = useState("");
+  const [category, setCategory] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleSave = (e: React.FormEvent) => {
@@ -89,7 +89,7 @@ export default function RecurringTransactionModal({
     const payload: RecurringFormPayload = {
       amount: parsedAmount,
       description,
-      category: categoryId,
+      category,
       frequency,
       dayOfMonth,
       ...(linkedAccountId ? { linkedAccountId } : {}),
@@ -189,7 +189,7 @@ export default function RecurringTransactionModal({
         )}
 
         <CategorySelect
-          onChange={setCategoryId}
+          onChange={setCategory}
           initialCategoryId={transaction?.category}
         />
 

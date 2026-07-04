@@ -41,7 +41,7 @@ export default function TransactionCreateModal({
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [category, setCategory] = useState("");
   const [toAccountId, setToAccountId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +69,7 @@ export default function TransactionCreateModal({
           amount: eurosToCents(amount),
           date,
           description,
-          category: categoryId,
+          category,
         }),
       });
     } else {
@@ -80,7 +80,7 @@ export default function TransactionCreateModal({
           date,
           amount: eurosToCents(amount),
           description,
-          category: categoryId,
+          category,
         }),
       });
     }
@@ -129,7 +129,7 @@ export default function TransactionCreateModal({
           />
         </FormField>
 
-        <CategorySelect onChange={setCategoryId} />
+        <CategorySelect onChange={setCategory} />
 
         {accounts !== undefined && (
           <FormField label="To account" htmlFor="txn-to-account">

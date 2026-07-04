@@ -55,11 +55,11 @@ describe("CategorySelect — dropdown population", () => {
     expect(screen.getByRole("option", { name: "Income" })).toBeInTheDocument();
   });
 
-  it("calls onChange with the first category id on initial load", async () => {
+  it("calls onChange with the first category name on initial load", async () => {
     const { onChange } = renderSelect();
 
     await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(existingCategories[0].id);
+      expect(onChange).toHaveBeenCalledWith(existingCategories[0].name);
     });
   });
 });
@@ -98,7 +98,7 @@ describe("CategorySelect — inline category add", () => {
     ).toBeInTheDocument();
   });
 
-  it("appends the new category, auto-selects it, and calls onChange with its id", async () => {
+  it("appends the new category, auto-selects it, and calls onChange with its name", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
         ok: true,
@@ -128,7 +128,7 @@ describe("CategorySelect — inline category add", () => {
       await screen.findByRole("option", { name: "Transport" })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/category/i)).toHaveValue(newCategory.id);
-    expect(onChange).toHaveBeenCalledWith(newCategory.id);
+    expect(onChange).toHaveBeenCalledWith(newCategory.name);
   });
 
   it("disables form controls while category creation is in flight", async () => {
