@@ -49,7 +49,9 @@ Thumbs.d
 # electron-builder output
 release/
 
-# local dev SQLite database
+# local dev SQLite database (runtime data lives in .data/; the committed seed is in fixtures/)
+.data/
+# legacy fallback: if HORIZON_DB_PATH is unset the entrypoint defaults to ./horizon.db
 horizon.db
 horizon.db-shm
 horizon.db-wal
@@ -60,7 +62,3 @@ horizon.db-wal
 .understand-anything/intermediate/
 .understand-anything/tmp/
 .understand-anything/fingerprints.json
-
-horizon-handoff-seed.db
-horizon-handoff-seed.db-shm
-horizon-handoff-seed.db-wal
