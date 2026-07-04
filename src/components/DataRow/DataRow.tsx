@@ -25,12 +25,16 @@ export default function DataRow<C extends React.ElementType = "div">({
   ...rest
 }: DataRowProps<C>) {
   const template = columns.map((col) => `minmax(0, ${col})`).join(" ");
+  // A row is clickable when it has a click handler *or* navigates as a link
+  // (`as={Link} to=…` / `as="a" href=…`), so link rows get the pointer cursor
+  // and hover affordance too.
+  const clickable = Boolean(onClick) || "to" in rest || "href" in rest;
   return (
     <StyledDataRow
       data-testid="data-row"
       $columns={template}
       $last={last}
-      $clickable={Boolean(onClick)}
+      $clickable={clickable}
       onClick={onClick}
       {...rest}
     >

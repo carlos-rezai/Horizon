@@ -62,6 +62,24 @@ describe("DataRow", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it("is clickable (pointer cursor) when it navigates as a link", () => {
+    renderForCSS(
+      <DataRow columns={["1fr"]} as="a" href="/accounts/1">
+        <span>Row</span>
+      </DataRow>
+    );
+    expect(getInjectedCSS()).toContain("cursor:pointer");
+  });
+
+  it("is not clickable (default cursor) when it is a plain row", () => {
+    renderForCSS(
+      <DataRow columns={["1fr"]}>
+        <span>Row</span>
+      </DataRow>
+    );
+    expect(getInjectedCSS()).toContain("cursor:default");
+  });
+
   it("renders a hairline divider by default", () => {
     renderForCSS(
       <DataRow columns={["1fr"]}>
