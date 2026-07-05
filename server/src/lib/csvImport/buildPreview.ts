@@ -21,6 +21,10 @@ export interface PreviewSummary {
   total: number;
   duplicates: number;
   recurring: number;
+  /** Rows flagged as not-yet-settled (pending / "vorgemerkt"). */
+  pending: number;
+  /** Records with a non-empty date that failed to parse — dropped, not lost. */
+  rejected: number;
 }
 
 /** The full stateless-preview payload the wizard renders. */
@@ -77,7 +81,7 @@ export async function buildPreview(
   const decimal = remembered?.decimal ?? detected.decimal;
   const dateFmt = remembered?.dateFmt ?? detected.dateFmt;
 
-  const mappedRows = mapStatementRows(
+  const { rows: mappedRows, rejected } = mapStatementRows(
     { ...detected, decimal, dateFmt },
     mapping
   );
@@ -105,6 +109,8 @@ export async function buildPreview(
       total: rows.length,
       duplicates: duplicateFlags.filter(Boolean).length,
       recurring: recurringFlags.filter(Boolean).length,
+      pending: rows.filter((row) => row.pending).length,
+      rejected,
     },
   };
 }

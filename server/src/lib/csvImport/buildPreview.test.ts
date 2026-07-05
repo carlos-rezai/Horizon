@@ -84,7 +84,13 @@ describe("buildPreview", () => {
       "Betrag (€)",
     ]);
     expect(preview.rows).toHaveLength(2);
-    expect(preview.summary).toEqual({ total: 2, duplicates: 0, recurring: 0 });
+    expect(preview.summary).toEqual({
+      total: 2,
+      duplicates: 0,
+      recurring: 0,
+      pending: 0,
+      rejected: 0,
+    });
   });
 
   it("maps rows to signed cents and ISO dates, assigns ids, and auto-categorizes", async () => {

@@ -10,4 +10,10 @@ export interface MappedRow {
   /** Signed integer cents. */
   amount: number;
   category: string;
+  /**
+   * True when the source row is a not-yet-settled (pending / "vorgemerkt")
+   * booking, per the preset's pendingColumn/pendingValues. Pending rows arrive
+   * pre-unchecked in the wizard, like duplicates and recurring.
+   */
+  pending: boolean;
 }

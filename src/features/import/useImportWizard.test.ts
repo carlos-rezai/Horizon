@@ -73,7 +73,7 @@ function makePreview(): ImportPreview {
         recurring: true,
       },
     ],
-    summary: { total: 2, duplicates: 0, recurring: 1 },
+    summary: { total: 2, duplicates: 0, recurring: 1, pending: 0, rejected: 0 },
   };
 }
 

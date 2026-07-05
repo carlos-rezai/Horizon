@@ -75,6 +75,10 @@ export interface PreviewSummary {
   total: number;
   duplicates: number;
   recurring: number;
+  /** Rows flagged as not-yet-settled (pending / "vorgemerkt"). */
+  pending: number;
+  /** Records with a non-empty date that failed to parse — dropped, not lost. */
+  rejected: number;
 }
 
 /** The `POST /imports/preview` response, with rows mapped to the UI shape. */

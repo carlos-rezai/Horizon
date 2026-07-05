@@ -141,6 +141,28 @@ export function parseAmount(str: string, decimal: string): number {
 }
 
 /**
+ * Parse an amount, returning `null` when the cell carries no digits at all
+ * (junk like "keine Zahl"). Lets the mapper count an unparseable row as
+ * rejected rather than silently coercing it to 0.
+ */
+export function tryParseAmount(str: string, decimal: string): number | null {
+  return /\d/.test(str) ? parseAmount(str, decimal) : null;
+}
+
+/** A well-formed ISO date the mapper emits. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Parse a date, returning `null` when the source cell doesn't yield a
+ * well-formed ISO date (junk like "not-a-date"). Lets the mapper count an
+ * unparseable row as rejected rather than emitting a garbage date.
+ */
+export function tryParseDate(str: string, dateFmt: string): string | null {
+  const iso = parseDate(str, dateFmt);
+  return ISO_DATE.test(iso) ? iso : null;
+}
+
+/**
  * Convert a date string to an ISO (`YYYY-MM-DD`) date string given its source
  * format (e.g. `DD.MM.YYYY`).
  */

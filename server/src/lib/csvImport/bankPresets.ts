@@ -28,6 +28,19 @@ export interface BankPreset {
   headerSignature: string[];
   /** Encoding override; when omitted the engine sniffs the BOM. */
   encoding?: string;
+  /**
+   * True when the bank wraps every field in quotes. Data on the preset so the
+   * format slices stay pure; the quote-aware splitter handles it either way.
+   */
+  quoted?: boolean;
+  /**
+   * Column whose cell marks a row as not-yet-settled (a "vorgemerkt" /
+   * pending booking). When set, a row is pending if its cell value is one of
+   * {@link pendingValues}.
+   */
+  pendingColumn?: string;
+  /** Cell values in {@link pendingColumn} that mean the row is pending. */
+  pendingValues?: string[];
 }
 
 export const BANK_PRESETS: Record<string, BankPreset> = {

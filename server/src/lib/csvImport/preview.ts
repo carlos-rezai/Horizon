@@ -3,8 +3,8 @@ import { BANK_PRESETS, DEFAULT_BANK } from "./bankPresets.js";
 import {
   detectEncoding,
   parseStatement,
-  parseAmount,
-  parseDate,
+  tryParseAmount,
+  tryParseDate,
   splitRecords,
 } from "./parse.js";
 import { categorize } from "./categorize.js";
@@ -45,6 +45,10 @@ export interface DetectedStatement {
   delimiter: string;
   decimal: string;
   dateFmt: string;
+  /** Column marking a pending booking (carried from the preset, if any). */
+  pendingColumn?: string;
+  /** Cell values in {@link pendingColumn} that mean the row is pending. */
+  pendingValues?: string[];
 }
 
 /** Try each known bank preset; the first whose header signature is found wins. */
@@ -60,6 +64,8 @@ function locateKnownBank(text: string): DetectedStatement | null {
         delimiter: preset.delimiter,
         decimal: preset.decimal,
         dateFmt: preset.dateFmt,
+        pendingColumn: preset.pendingColumn,
+        pendingValues: preset.pendingValues,
       };
     }
   }
@@ -141,21 +147,68 @@ export function detectStatement(bytes: Uint8Array): DetectedStatement {
   return detected;
 }
 
+/** The emitted rows plus the count of records that failed to parse. */
+export interface MappedRows {
+  rows: MappedRow[];
+  /**
+   * Records with a non-empty date that failed date/amount parsing. Surfaced as
+   * a count so the user knows a row was dropped — never silently lost.
+   */
+  rejected: number;
+}
+
+/** True when the record's pendingColumn cell is one of the preset's pendingValues. */
+function isPending(
+  record: Record<string, string>,
+  detected: DetectedStatement
+): boolean {
+  if (!detected.pendingColumn || !detected.pendingValues) {
+    return false;
+  }
+  return detected.pendingValues.includes(record[detected.pendingColumn] ?? "");
+}
+
 /**
  * Turn detected records into normalized rows under the given mapping:
- * signed-cents amounts, ISO dates, and an auto-assigned category.
+ * signed-cents amounts, ISO dates, an auto-assigned category, and a pending
+ * flag. Records with an empty date cell are dropped silently (blank lines,
+ * balance-footer rows); a record with a non-empty date that fails date/amount
+ * parsing is counted as `rejected` and never emitted.
  */
 export function mapStatementRows(
   detected: DetectedStatement,
   mapping: ColumnMapping
-): MappedRow[] {
-  return detected.records.map((record) => {
+): MappedRows {
+  const rows: MappedRow[] = [];
+  let rejected = 0;
+
+  for (const record of detected.records) {
+    const rawDate = record[mapping.date] ?? "";
+    if (rawDate.trim().length === 0) {
+      // A dateless record is a blank line or a balance footer — not a
+      // transaction and not an error, so drop it without counting.
+      continue;
+    }
+
+    const date = tryParseDate(rawDate, detected.dateFmt);
+    const amount = tryParseAmount(
+      record[mapping.amount] ?? "",
+      detected.decimal
+    );
+    if (date === null || amount === null) {
+      rejected += 1;
+      continue;
+    }
+
     const description = record[mapping.description] ?? "";
-    return {
-      date: parseDate(record[mapping.date] ?? "", detected.dateFmt),
+    rows.push({
+      date,
       description,
-      amount: parseAmount(record[mapping.amount] ?? "", detected.decimal),
+      amount,
       category: categorize(description),
-    };
-  });
+      pending: isPending(record, detected),
+    });
+  }
+
+  return { rows, rejected };
 }
