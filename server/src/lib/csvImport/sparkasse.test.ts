@@ -38,8 +38,14 @@ const noPreset = async (): Promise<StoredImportPreset | null> => null;
 // ---------------------------------------------------------------------------
 
 describe("BANK_PRESETS — real Sparkasse only", () => {
-  it("contains only the Sparkasse preset (DKB, ING, fictional mapping removed)", () => {
-    expect(Object.keys(BANK_PRESETS)).toEqual(["Sparkasse"]);
+  it("keeps the real Sparkasse preset (DKB, ING, fictional mapping removed)", () => {
+    // #151 adds PostbankGiro alongside Sparkasse; the guessed DKB/ING and the
+    // fictional Sparkasse mapping stay gone.
+    expect(Object.keys(BANK_PRESETS)).toEqual(
+      expect.arrayContaining(["Sparkasse"])
+    );
+    expect(BANK_PRESETS.DKB).toBeUndefined();
+    expect(BANK_PRESETS.ING).toBeUndefined();
     // The generic fallback label must never become a real preset, or a generic
     // import could overwrite a real bank's remembered mapping.
     expect(BANK_PRESETS[DEFAULT_BANK]).toBeUndefined();

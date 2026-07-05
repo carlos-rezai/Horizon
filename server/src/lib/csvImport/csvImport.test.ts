@@ -74,10 +74,15 @@ function mapped(overrides: Partial<MappedRow>): MappedRow {
 // ---------------------------------------------------------------------------
 
 describe("BANK_PRESETS", () => {
-  it("ships only the single real Sparkasse server-side preset", () => {
-    // The guessed DKB / ING / fictional-Sparkasse presets were removed in
-    // #150; the shape of the surviving preset is asserted in sparkasse.test.ts.
-    expect(Object.keys(BANK_PRESETS)).toEqual(["Sparkasse"]);
+  it("ships the real Sparkasse and Postbank giro server-side presets", () => {
+    // The guessed DKB / ING / fictional-Sparkasse presets were removed in #150;
+    // #151 adds the real PostbankGiro. Each preset's shape is asserted in its
+    // own end-to-end spec (sparkasse.test.ts, postbank-giro.test.ts).
+    expect(Object.keys(BANK_PRESETS)).toEqual(
+      expect.arrayContaining(["Sparkasse", "PostbankGiro"])
+    );
+    expect(BANK_PRESETS.DKB).toBeUndefined();
+    expect(BANK_PRESETS.ING).toBeUndefined();
   });
 
   it("extends each preset with delimiter, headerSignature, and optional encoding", () => {
