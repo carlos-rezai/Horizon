@@ -253,7 +253,7 @@ The generated installer will be signed with your local certificate and will inst
 | Claude Design Handover                    | ✅ Complete |
 | CSV / Bank Statement Import (backend)     | ✅ Complete |
 | Month Year-Comparison                     | ✅ Complete |
-| PDF / Bank Statement Import (backend)     | 🔜 Planned  |
+| Real Bank CSV Import                      | 🔜 Planned  |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
