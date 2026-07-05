@@ -166,7 +166,9 @@ export function tryParseDate(str: string, dateFmt: string): string | null {
  * Convert a date string to an ISO (`YYYY-MM-DD`) date string given its source
  * format (e.g. `DD.MM.YYYY` or `DD.MM.YY`). A 2-digit `YY` year is expanded
  * unconditionally to `20YY` (bank statements are always current, so there is
- * no pivot window); a 4-digit `YYYY` year passes through unchanged.
+ * no pivot window); a 4-digit `YYYY` year passes through unchanged. A
+ * single-digit day or month (`D.M.YYYY`, e.g. Postbank's `1.9.2026`) is
+ * zero-padded to two digits so the emitted date is always well-formed ISO.
  */
 export function parseDate(str: string, dateFmt: string): string {
   const separator = dateFmt.includes(".")
@@ -180,7 +182,9 @@ export function parseDate(str: string, dateFmt: string): string {
   formatTokens.forEach((token, index) => {
     parts[token] = valueParts[index] ?? "";
   });
+  const day = (parts.DD ?? "").padStart(2, "0");
+  const month = (parts.MM ?? "").padStart(2, "0");
   const year =
     parts.YYYY ?? (parts.YY !== undefined ? `20${parts.YY}` : undefined);
-  return `${year}-${parts.MM}-${parts.DD}`;
+  return `${year}-${month}-${day}`;
 }

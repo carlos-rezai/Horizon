@@ -1,7 +1,6 @@
 import type { ColumnMapping } from "../../storage/types.js";
 import { BANK_PRESETS, DEFAULT_BANK } from "./bankPresets.js";
 import {
-  detectEncoding,
   parseStatement,
   tryParseAmount,
   tryParseDate,
@@ -127,15 +126,65 @@ function locateGeneric(text: string): DetectedStatement {
   };
 }
 
+const UTF8_BOM = [0xef, 0xbb, 0xbf] as const;
+
+/** True when the bytes open with a UTF-8 BOM — an authoritative UTF-8 claim. */
+function hasUtf8Bom(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 3 &&
+    bytes[0] === UTF8_BOM[0] &&
+    bytes[1] === UTF8_BOM[1] &&
+    bytes[2] === UTF8_BOM[2]
+  );
+}
+
 /**
- * Sniff the encoding, decode the raw bytes, locate the header (known preset or
- * generic fallback), and enforce the hard caps. Pure: no I/O, no DB.
+ * A located known bank decoded correctly when its full mapping — the
+ * date/description/amount columns, which for the German banks carry the umlaut
+ * header cell — survived the decode intact. A mojibake (`BegÃ¼nstigter`) or
+ * corrupted (`Beg�nstigter`) decode still matches the ASCII header
+ * signature but loses the umlaut column, so the mapping is the oracle that the
+ * chosen encoding is the right one.
+ */
+function decodedCleanly(detected: DetectedStatement): boolean {
+  return Object.values(detected.mapping).every((column) =>
+    detected.columns.includes(column)
+  );
+}
+
+/**
+ * Resolve the statement's text and located header, choosing the encoding via a
+ * signature-driven retry. A UTF-8 BOM is authoritative → UTF-8. Otherwise the
+ * bytes are decoded under both Windows-1252 and UTF-8 and the first decode that
+ * surfaces a cleanly-decoded known bank wins (the umlaut header is the oracle);
+ * if neither matches a known bank, the generic fallback is located under
+ * Windows-1252.
+ */
+function locateStatement(bytes: Uint8Array): DetectedStatement {
+  if (hasUtf8Bom(bytes)) {
+    const text = new TextDecoder("utf-8").decode(bytes);
+    return locateKnownBank(text) ?? locateGeneric(text);
+  }
+
+  for (const encoding of ["windows-1252", "utf-8"]) {
+    const text = new TextDecoder(encoding).decode(bytes);
+    const known = locateKnownBank(text);
+    if (known && decodedCleanly(known)) {
+      return known;
+    }
+  }
+
+  const fallbackText = new TextDecoder("windows-1252").decode(bytes);
+  return locateGeneric(fallbackText);
+}
+
+/**
+ * Decode the raw bytes with a signature-driven encoding retry, locate the
+ * header (known preset or generic fallback), and enforce the hard caps. Pure:
+ * no I/O, no DB.
  */
 export function detectStatement(bytes: Uint8Array): DetectedStatement {
-  const encoding = detectEncoding(bytes);
-  const text = new TextDecoder(encoding).decode(bytes);
-
-  const detected = locateKnownBank(text) ?? locateGeneric(text);
+  const detected = locateStatement(bytes);
 
   if (detected.columns.length > MAX_COLUMNS) {
     throw new StatementParseError(`Too many columns (max ${MAX_COLUMNS}).`);

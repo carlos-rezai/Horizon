@@ -86,6 +86,37 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     pendingColumn: "Info",
     pendingValues: ["Umsatz vorgemerkt"],
   },
+  /**
+   * Real Postbank Girokonto CSV export. Built from an anonymized owner export:
+   * unquoted, `;`-delimited, `D.M.YYYY` single-digit day/month dates, decimal
+   * comma, signed `Betrag` (used directly, no inversion). The export carries a
+   * redundant `Soll` / `Haben` debit-credit pair alongside the single signed
+   * `Betrag`; the pair is ignored and `Betrag` is the sole amount source. The
+   * umlaut header (`Begünstigter / Auftraggeber`) rides the signature-driven
+   * encoding retry in `detectStatement`. No pending marker.
+   */
+  PostbankGiro: {
+    columns: [
+      "Buchungstag",
+      "Wertstellung",
+      "Umsatzart",
+      "Begünstigter / Auftraggeber",
+      "Verwendungszweck",
+      "Betrag",
+      "Soll",
+      "Haben",
+      "Währung",
+    ],
+    map: {
+      date: "Buchungstag",
+      description: "Begünstigter / Auftraggeber",
+      amount: "Betrag",
+    },
+    decimal: ",",
+    dateFmt: "DD.MM.YYYY",
+    delimiter: ";",
+    headerSignature: ["Umsatzart", "Soll", "Haben"],
+  },
 };
 
 /**
