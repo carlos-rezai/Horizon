@@ -16,6 +16,16 @@ function fixtureBytes(name: string): Uint8Array {
   );
 }
 
+/**
+ * Encode hand-built synthetic statement text with a UTF-8 BOM so the engine's
+ * encoding sniff resolves to UTF-8 — lets a test isolate a rail without a
+ * fixture file.
+ */
+function bytesOf(text: string): Uint8Array {
+  const utf8Bom = String.fromCharCode(0xfeff);
+  return new TextEncoder().encode(utf8Bom + text);
+}
+
 /** A deterministic id generator: r0, r1, r2, … so row ids are assertable. */
 function sequentialIds(): () => string {
   let n = 0;
@@ -220,5 +230,57 @@ describe("buildPreview", () => {
     expect(typeof preview.mapping.date).toBe("string");
     expect(typeof preview.mapping.description).toBe("string");
     expect(typeof preview.mapping.amount).toBe("string");
+  });
+
+  it("skips an empty-date footer and reports an unparseable row as rejected in the summary", async () => {
+    const csv = [
+      "Datum;Beschreibung;Betrag",
+      "02.11.2026;REWE SAGT DANKE;-12,50",
+      ";Saldo zum 30.11.2026;1.234,56",
+      "not-a-date;Kaputt;-9,99",
+    ].join("\n");
+
+    const preview = await buildPreview({
+      bytes: bytesOf(csv),
+      existingTxns: [],
+      recurring: [],
+      getRememberedPreset: noPreset,
+      generateId: sequentialIds(),
+    });
+
+    // Only the one real transaction is emitted: the dateless footer is dropped
+    // silently and the junk-date row is rejected — both kept out of `rows`, but
+    // the rejected one is surfaced as a count rather than lost.
+    expect(preview.rows).toHaveLength(1);
+    expect(preview.rows[0].description).toBe("REWE SAGT DANKE");
+    expect(preview.summary.total).toBe(1);
+    expect(preview.summary.rejected).toBe(1);
+  });
+
+  it("threads a pending count and a per-row pending flag through the summary", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("dkb.csv"),
+      existingTxns: [],
+      recurring: [],
+      getRememberedPreset: noPreset,
+    });
+
+    // The shipped presets carry no pendingColumn yet, so every row is settled —
+    // but the flag and the count must thread through end-to-end regardless.
+    expect(preview.summary.pending).toBe(0);
+    expect(preview.rows.every((r) => r.pending === false)).toBe(true);
+  });
+
+  it("still rejects a file whose column count exceeds MAX_COLUMNS", async () => {
+    const header = Array.from({ length: 60 }, (_, i) => `Col${i}`).join(";");
+
+    await expect(
+      buildPreview({
+        bytes: bytesOf(header + "\n"),
+        existingTxns: [],
+        recurring: [],
+        getRememberedPreset: noPreset,
+      })
+    ).rejects.toThrow(/Too many columns/);
   });
 });

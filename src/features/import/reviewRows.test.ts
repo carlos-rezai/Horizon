@@ -38,6 +38,15 @@ const both: ParsedImportRow = {
   recurring: true,
 };
 
+const pending: ParsedImportRow = {
+  id: "i6",
+  date: "2026-11-04",
+  description: "Umsatz vorgemerkt Amazon",
+  amount: -2999,
+  category: "Shopping",
+  pending: true,
+};
+
 describe("buildReviewRows", () => {
   it("includes a clean row by default", () => {
     const [row] = buildReviewRows([clean]);
@@ -59,6 +68,16 @@ describe("buildReviewRows", () => {
     expect(row.included).toBe(false);
   });
 
+  it("pre-unchecks a pending row", () => {
+    const [row] = buildReviewRows([pending]);
+    expect(row.included).toBe(false);
+  });
+
+  it("keeps a pre-unchecked pending row re-checkable — its value is preserved, not dropped", () => {
+    const [row] = buildReviewRows([pending]);
+    expect(row).toEqual({ ...pending, included: false });
+  });
+
   it("preserves all non-flag fields unchanged", () => {
     const [row] = buildReviewRows([clean]);
     expect(row).toEqual({ ...clean, included: true });
@@ -66,13 +85,25 @@ describe("buildReviewRows", () => {
 });
 
 describe("summarizeReview", () => {
-  it("reports included, duplicate, and recurring counts on a mixed set", () => {
+  it("reports included, duplicate, recurring, and pending counts on a mixed set", () => {
     const rows = buildReviewRows([clean, duplicate, recurring, both]);
 
     expect(summarizeReview(rows)).toEqual({
       included: 1,
       duplicates: 2,
       recurring: 2,
+      pending: 0,
+    });
+  });
+
+  it("counts pending rows and pre-unchecks them alongside duplicates and recurring", () => {
+    const rows = buildReviewRows([clean, duplicate, recurring, pending]);
+
+    expect(summarizeReview(rows)).toEqual({
+      included: 1,
+      duplicates: 1,
+      recurring: 1,
+      pending: 1,
     });
   });
 });
