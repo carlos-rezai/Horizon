@@ -713,6 +713,51 @@
 >
 > **Domain expert:** "**Duplicate Detection** flags the overlap and pre-unchecks it, and **Recurring Detection** pre-unchecks your salary and rent so you don't double-count what the Projection Engine already models. Nothing is dropped silently — you decide."
 
+## Real Bank CSV Import (new)
+
+| Term                          | Definition                                                                                                                                                                                                                                                                           | Aliases to avoid                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **Verified Preset**           | A **Bank Preset** built from a real, owner-supplied export with a data-row fixture behind it — the four real formats (**Sparkasse**, **Postbank giro**, **Postbank CC**, **Renault**) that replace the retired guessed Sparkasse / DKB / ING presets                                 | Real preset, confirmed preset     |
+| **Header De-duplication**     | The parse-time rule that renames repeated header names — the _n_-th occurrence of a name `X` (n ≥ 2) becomes `X (n)` — so duplicate columns are individually addressable (Postbank CC's two `Betrag` → `Betrag`, `Betrag (2)`)                                                       | Column disambiguation, unique-ing |
+| **Pending Row**               | An imported row a bank marks provisional (Sparkasse `Info` = `Umsatz vorgemerkt`) — flagged `pending` in the **Import Preview Request** and **pre-unchecked** in the wizard, because it re-books later and would otherwise duplicate                                                 | Vorgemerkt row, provisional entry |
+| **Pending Column**            | The **Bank Preset** fields (`pendingColumn` + `pendingValues`) that name the status column and the cell values meaning provisional — only Sparkasse sets them; other presets have none                                                                                               | Status column, vorgemerkt column  |
+| **Signature-Driven Encoding** | The refinement of **Charset Detection**: with no BOM, decode under **both** Windows-1252 and UTF-8 and keep whichever surfaces a known **Header Signature** — the signature match is the oracle for "decoded correctly" (fixes real-umlaut headers like `Begünstigter`, `Gläubiger`) | Encoding retry, charset fallback  |
+| **Generic Fallback**          | The `Generic` (non-bank) path for a statement matching no **Verified Preset** — treats the first non-empty row as the header and keyword-matches columns; retained for unknown banks after **header-less** parsing was ruled out                                                     | Generic parse, unknown-bank path  |
+| **Rejected Row**              | A parsed row that has a non-empty date but whose date/amount fails to convert — **surfaced** in the preview summary, never silently dropped (distinct from an empty-date row, which is skipped as a blank line or balance footer)                                                    | Bad row, dropped row, error row   |
+
+## Relationships (Real Bank CSV Import additions)
+
+- A **Verified Preset** is a **Bank Preset** whose `map`, `headerSignature`, decimal, dateFmt, delimiter, and quoting were confirmed against a real export; the retired **Sparkasse / DKB / ING** guessed presets are deleted
+- **Header De-duplication** runs before mapping — a **Bank Preset**'s `map` and **Header Signature** reference the de-duplicated names; Postbank CC maps `amount → "Betrag (2)"` (the EUR column), never the foreign-currency `Betrag`
+- Description is always a **single column** chosen per **Verified Preset** — counterparty for Sparkasse / Postbank giro; `Verwendungszweck` for Postbank CC (no counterparty); `Buchungstext` for **Renault** (its counterparty is empty on interest/tax postings)
+- Amount is always the signed `Betrag` column — Postbank's separate `Soll` / `Haben` pair is ignored; card purchases are already negative, so no sign inversion
+- 2-digit years expand as **`20YY`** always (Sparkasse `DD.MM.YY`); single-digit day/month are zero-padded (Postbank / Postbank CC `D.M.YYYY`); every format normalizes to an ISO date
+- A row is **skipped** when its mapped date cell is empty (blank line / balance footer) and counted as a **Rejected Row** when it has a date but fails to parse — the `MAX_ROWS` / `MAX_COLUMNS` caps still reject the whole file past their limits
+- The four **Header Signatures** are mutually exclusive, so bank detection order is irrelevant: Postbank CC (`Belegdatum`,`Eingangstag`,`Kurs`), Postbank giro (`Umsatzart`,`Soll`,`Haben`), Renault (`Bezeichnung Auftragskonto`,`Saldo nach Buchung`), Sparkasse (`Auftragskonto`,`Sammlerreferenz`,`Kategorie`)
+- Migration `013` resets `import_presets` so the new **Verified Preset** defaults replace any remembered guessed-bank mapping
+
+## Example dialogue (Real Bank CSV Import)
+
+> **Dev:** "The Postbank credit-card file has two columns both called `Betrag`. Which one is the amount?"
+>
+> **Domain expert:** "The EUR one. **Header De-duplication** renames the second occurrence to `Betrag (2)`, and the **Verified Preset** maps `amount → Betrag (2)`. The first `Betrag` is the foreign-currency figure — we ignore it and `Kurs` too."
+>
+> **Dev:** "My Postbank export's header didn't match at first — `Begünstigter` looked like garbage."
+>
+> **Domain expert:** "That's **Signature-Driven Encoding**. No BOM, so the parser tries Windows-1252 and UTF-8 and keeps whichever makes the **Header Signature** appear. Sparkasse dodges it with ASCII spellings like `Beguenstigter`; Postbank and Renault use real umlauts, so the retry is what rescues them."
+>
+> **Dev:** "A Sparkasse row came in unchecked with no duplicate or recurring flag."
+>
+> **Domain expert:** "It was a **Pending Row** — its `Info` said `Umsatz vorgemerkt`. The **Pending Column** on the Sparkasse preset flags it and the wizard pre-unchecks it, because it re-books in a few days and importing it now would duplicate."
+>
+> **Dev:** "And the Renault Tagesgeld — its counterparty column is blank on the interest rows."
+>
+> **Domain expert:** "Right, so Renault's description is `Buchungstext`, not counterparty — `Kapitalertragsteuer`, `Abschluss`. Single column, just the one that's actually populated for a savings account. The other three banks keep counterparty."
+>
+> **Dev:** "What about a bank we don't have a preset for?"
+>
+> **Domain expert:** "The **Generic Fallback** — first row as header, keyword-matched columns. We looked at supporting truly header-less exports, but all four real banks ship a header, so that's a non-goal now."
+
 ## Month Year-Comparison (new)
 
 | Term                       | Definition                                                                                                                                                                                | Aliases to avoid                       |
@@ -836,3 +881,7 @@
 - **"preview"** (new) — overloaded: **Import Preview** is the read-only modal for an **already-committed** Statement; the **Import Preview Request** (`/imports/preview`) is the pre-commit parse-and-detect call. Always qualify which one — they sit on opposite sides of the **Import Commit**.
 - **"current month"** (new) — the build-status wording "Jan 1 through the current month" means the **Viewed Month** (the month selected in the Month Overview navigator), not today's real-world calendar month. The **Year Comparison** card recomputes as you step the navigator. Reserve "current month" for the dashboard's live-today widgets; use **Viewed Month** anywhere the month is navigable.
 - **"YTD" / "year so far"** (new) — in Horizon, **YTD Variable Spending** runs January 1 → **Viewed Month** inclusive in **whole calendar months** — never Jan 1 → today's date. The UI title "This year so far" is the user-facing label for this metric; never let "so far" imply a day-of-month cutoff. Only **Variable Spending** counts (transfer legs and auto-settlement are excluded), so "YTD spend" is never total cashflow.
+- **"header-less"** (new) — retired as a goal. Early design assumed some real exports were header-less (positional), but all four **Verified Presets** ship a header row. Never build positional/index-based mapping for the real banks; the **Generic Fallback** (first row as header) is the only path for unknown files. The roadmap's "harden … header-less exports" wording is superseded by this decision.
+- **"Betrag"** (new) — not unique. Postbank CC has two columns literally named `Betrag` (foreign-currency and EUR). Always address the EUR one as **`Betrag (2)`** (post **Header De-duplication**); never map `amount → "Betrag"` for that format. The bare name `Betrag` is unambiguous only in the single-`Betrag` presets (Sparkasse, Postbank giro, Renault).
+- **"pending"** (new) — in import context, a **Pending Row** is a bank-provisional entry (Sparkasse `Umsatz vorgemerkt`), flagged and pre-unchecked like duplicates/recurring. Do not conflate with a **Rejected Row** (parse failure) or with any UI loading/submitting state. Only a **Verified Preset** with a **Pending Column** produces Pending Rows.
+- **"description column"** (new) — never assume it is the counterparty. It is a single column chosen per **Verified Preset**: counterparty for Sparkasse / Postbank giro, `Verwendungszweck` for Postbank CC, `Buchungstext` for Renault. There is no counterparty + purpose composite.
