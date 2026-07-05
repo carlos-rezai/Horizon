@@ -74,10 +74,10 @@ function mapped(overrides: Partial<MappedRow>): MappedRow {
 // ---------------------------------------------------------------------------
 
 describe("BANK_PRESETS", () => {
-  it("ships server-side presets for the three target German banks", () => {
-    expect(Object.keys(BANK_PRESETS)).toEqual(
-      expect.arrayContaining(["Sparkasse", "DKB", "ING"])
-    );
+  it("ships only the single real Sparkasse server-side preset", () => {
+    // The guessed DKB / ING / fictional-Sparkasse presets were removed in
+    // #150; the shape of the surviving preset is asserted in sparkasse.test.ts.
+    expect(Object.keys(BANK_PRESETS)).toEqual(["Sparkasse"]);
   });
 
   it("extends each preset with delimiter, headerSignature, and optional encoding", () => {
@@ -124,24 +124,39 @@ describe("detectEncoding", () => {
 
 describe("parseStatement", () => {
   it("skips a metadata preamble and starts at the headerSignature row", () => {
+    // The real Sparkasse export leads with its header row; prepend a synthetic
+    // preamble to prove the engine scans past non-header lines to the signature.
+    const preamble =
+      '"Umsatzanzeige";"Sparkasse Musterstadt"\n' +
+      '"Zeitraum";"01.06.26 - 30.06.26"\n\n';
     const { columns, rows } = parseStatement(
-      fixtureText("sparkasse.csv"),
+      preamble + fixtureText("sparkasse-giro.csv"),
       BANK_PRESETS.Sparkasse
     );
 
     expect(columns).toEqual(BANK_PRESETS.Sparkasse.columns);
-    expect(rows).toHaveLength(4);
-    expect(rows[0].Buchungstag).toBe("02.11.2026");
-    expect(rows[0].Verwendungszweck).toBe("REWE SAGT DANKE");
-    expect(rows[0].Betrag).toBe("-12,50");
+    // Four transactions plus the dateless Endsaldo footer follow the header.
+    expect(rows).toHaveLength(5);
+    expect(rows[0].Buchungstag).toBe("24.06.26");
+    expect(rows[0]["Beguenstigter/Zahlungspflichtiger"]).toBe(
+      "MUSTER SUPERMARKT GMBH"
+    );
+    expect(rows[0].Betrag).toBe("-20,41");
   });
 
   it("is quote-aware: a delimiter inside a quoted field is not a column break", () => {
-    const { rows } = parseStatement(fixtureText("ing.csv"), BANK_PRESETS.ING);
+    const { rows } = parseStatement(
+      fixtureText("sparkasse-giro.csv"),
+      BANK_PRESETS.Sparkasse
+    );
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0].Verwendungszweck).toBe("Aldi Einkauf; Filiale 12");
-    expect(rows[0].Betrag).toBe("-19,99");
+    // The Verwendungszweck "Rechnung 12; Position 3" carries an embedded ';';
+    // the quote-aware split must keep it one field so Betrag stays aligned.
+    const dienst = rows.find(
+      (r) => r["Beguenstigter/Zahlungspflichtiger"] === "MUSTER DIENST GMBH"
+    );
+    expect(dienst?.Verwendungszweck).toBe("Rechnung 12; Position 3");
+    expect(dienst?.Betrag).toBe("-9,90");
   });
 });
 

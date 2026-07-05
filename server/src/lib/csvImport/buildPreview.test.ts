@@ -62,165 +62,150 @@ function makeRecurring(
 }
 
 describe("buildPreview", () => {
-  it("detects the bank and returns mapping, columns, rows, and summary", async () => {
+  it("detects the bank, assigns injected ids, and summarises", async () => {
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
       recurring: [],
       getRememberedPreset: noPreset,
       generateId: sequentialIds(),
     });
 
-    expect(preview.bank).toBe("DKB");
-    expect(preview.mapping).toEqual({
-      date: "Buchungsdatum",
-      description: "Verwendungszweck",
-      amount: "Betrag (€)",
-    });
-    expect(preview.columns).toEqual([
-      "Buchungsdatum",
-      "Auftraggeber / Begünstigter",
-      "Verwendungszweck",
-      "Betrag (€)",
-    ]);
-    expect(preview.rows).toHaveLength(2);
+    expect(preview.bank).toBe("Sparkasse");
+    // Four transactions survive; the dateless footer is dropped, one is pending.
+    expect(preview.rows.map((r) => r.id)).toEqual(["r0", "r1", "r2", "r3"]);
     expect(preview.summary).toEqual({
-      total: 2,
+      total: 4,
       duplicates: 0,
       recurring: 0,
-      pending: 0,
+      pending: 1,
       rejected: 0,
     });
   });
 
   it("maps rows to signed cents and ISO dates, assigns ids, and auto-categorizes", async () => {
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
       recurring: [],
       getRememberedPreset: noPreset,
       generateId: sequentialIds(),
     });
 
-    const edeka = preview.rows.find(
-      (r) => r.description === "Lebensmittel EDEKA"
+    const supermarkt = preview.rows.find(
+      (r) => r.description === "MUSTER SUPERMARKT GMBH"
     );
-    expect(edeka).toMatchObject({
+    expect(supermarkt).toMatchObject({
       id: expect.any(String),
-      date: "2026-11-03",
-      amount: -3420,
+      date: "2026-06-24",
+      amount: -2041,
       category: "Food",
       duplicate: false,
       recurring: false,
     });
     // Ids come from the injected generator.
-    expect(preview.rows.map((r) => r.id)).toEqual(["r0", "r1"]);
-  });
-
-  it("preserves the sign of a positive credit (Gehalt stays positive)", async () => {
-    const preview = await buildPreview({
-      bytes: fixtureBytes("sparkasse.csv"),
-      existingTxns: [],
-      recurring: [],
-      getRememberedPreset: noPreset,
-    });
-
-    expect(preview.bank).toBe("Sparkasse");
-    const gehalt = preview.rows.find((r) => r.description === "Gehalt Oktober");
-    expect(gehalt).toMatchObject({ amount: 250000, category: "Income" });
+    expect(preview.rows.map((r) => r.id)).toEqual(["r0", "r1", "r2", "r3"]);
   });
 
   it("flags a row that duplicates an existing account transaction", async () => {
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [
         makeTxn({
           id: "t1",
-          date: "2026-11-03",
-          amount: -3420,
-          description: "Lebensmittel EDEKA",
+          date: "2026-06-24",
+          amount: -2041,
+          description: "MUSTER SUPERMARKT GMBH",
         }),
       ],
       recurring: [],
       getRememberedPreset: noPreset,
     });
 
-    const edeka = preview.rows.find(
-      (r) => r.description === "Lebensmittel EDEKA"
+    const supermarkt = preview.rows.find(
+      (r) => r.description === "MUSTER SUPERMARKT GMBH"
     );
-    expect(edeka?.duplicate).toBe(true);
+    expect(supermarkt?.duplicate).toBe(true);
     expect(preview.summary.duplicates).toBe(1);
     // The duplicate is still present — the user may re-include it.
-    expect(preview.rows).toHaveLength(2);
+    expect(preview.rows).toHaveLength(4);
   });
 
   it("flags a row matching an existing recurring transaction", async () => {
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
-      recurring: [makeRecurring({ id: "r1" })],
+      recurring: [
+        makeRecurring({
+          id: "r1",
+          description: "MUSTER DIENST GMBH",
+          amount: -990,
+        }),
+      ],
       getRememberedPreset: noPreset,
     });
 
-    const etf = preview.rows.find(
-      (r) => r.description === "Sparplan ETF MSCI World"
+    const dienst = preview.rows.find(
+      (r) => r.description === "MUSTER DIENST GMBH"
     );
-    expect(etf?.recurring).toBe(true);
+    expect(dienst?.recurring).toBe(true);
     expect(preview.summary.recurring).toBe(1);
   });
 
   it("re-applies a bank's remembered mapping and echoes its full format", async () => {
     const remembered: StoredImportPreset = {
       mapping: {
-        date: "Buchungsdatum",
-        description: "Auftraggeber / Begünstigter",
-        amount: "Betrag (€)",
+        date: "Buchungstag",
+        description: "Verwendungszweck",
+        amount: "Betrag",
       },
       delimiter: ";",
       decimal: ",",
-      dateFmt: "DD.MM.YYYY",
+      dateFmt: "DD.MM.YY",
     };
 
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
       recurring: [],
-      getRememberedPreset: async (bank) => (bank === "DKB" ? remembered : null),
+      getRememberedPreset: async (bank) =>
+        bank === "Sparkasse" ? remembered : null,
     });
 
     expect(preview.mapping).toEqual(remembered.mapping);
     expect(preview.delimiter).toBe(";");
     expect(preview.decimal).toBe(",");
-    expect(preview.dateFmt).toBe("DD.MM.YYYY");
-    // Description now reads from the remembered column, not the detected one.
-    expect(preview.rows[0].description).not.toBe("Lebensmittel EDEKA");
+    expect(preview.dateFmt).toBe("DD.MM.YY");
+    // Description now reads the remembered Verwendungszweck, not the detected
+    // Beguenstigter/Zahlungspflichtiger counterparty.
+    expect(preview.rows[0].description).toBe("Einkauf Lebensmittel Filiale 12");
   });
 
   it("applies a remembered decimal separator when parsing amounts", async () => {
     const remembered: StoredImportPreset = {
       mapping: {
-        date: "Buchungsdatum",
-        description: "Verwendungszweck",
-        amount: "Betrag (€)",
+        date: "Buchungstag",
+        description: "Beguenstigter/Zahlungspflichtiger",
+        amount: "Betrag",
       },
       delimiter: ";",
       decimal: ".",
-      dateFmt: "DD.MM.YYYY",
+      dateFmt: "DD.MM.YY",
     };
 
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
       recurring: [],
       getRememberedPreset: async () => remembered,
     });
 
-    // With the remembered decimal ".", "-34,20" reads as -3420.00 → -342000
+    // With the remembered decimal ".", "-20,41" reads as -2041.00 → -204100
     // cents — proof the remembered format, not the detected ",", drove parsing.
-    const edeka = preview.rows.find(
-      (r) => r.description === "Lebensmittel EDEKA"
+    const supermarkt = preview.rows.find(
+      (r) => r.description === "MUSTER SUPERMARKT GMBH"
     );
-    expect(edeka?.amount).toBe(-342000);
+    expect(supermarkt?.amount).toBe(-204100);
     expect(preview.decimal).toBe(".");
   });
 

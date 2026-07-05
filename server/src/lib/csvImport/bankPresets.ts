@@ -44,55 +44,47 @@ export interface BankPreset {
 }
 
 export const BANK_PRESETS: Record<string, BankPreset> = {
+  /**
+   * Real Sparkasse Girokonto CSV-CAMT export. Built from an anonymized owner
+   * export: quoted, `;`-delimited, `DD.MM.YY` 2-digit-year dates, decimal
+   * comma, signed `Betrag` (used directly, no inversion). The signature
+   * (`Auftragskonto`, `Sammlerreferenz`, `Kategorie`) is distinctive to this
+   * CSV-CAMT layout so it never collides with a generic import. `Info` carries
+   * "Umsatz vorgemerkt" for not-yet-settled bookings, driving the pending rail.
+   */
   Sparkasse: {
     columns: [
+      "Auftragskonto",
       "Buchungstag",
+      "Valutadatum",
+      "Buchungstext",
       "Verwendungszweck",
+      "Glaeubiger ID",
+      "Mandatsreferenz",
+      "Kundenreferenz (End-to-End)",
+      "Sammlerreferenz",
+      "Lastschrift Ursprungsbetrag",
+      "Auslagenersatz Ruecklastschrift",
       "Beguenstigter/Zahlungspflichtiger",
+      "Kontonummer/IBAN",
+      "BIC (SWIFT-Code)",
       "Betrag",
       "Waehrung",
+      "Info",
+      "Kategorie",
     ],
     map: {
       date: "Buchungstag",
-      description: "Verwendungszweck",
+      description: "Beguenstigter/Zahlungspflichtiger",
       amount: "Betrag",
     },
     decimal: ",",
-    dateFmt: "DD.MM.YYYY",
+    dateFmt: "DD.MM.YY",
     delimiter: ";",
-    headerSignature: ["Buchungstag", "Waehrung"],
-  },
-  DKB: {
-    columns: [
-      "Buchungsdatum",
-      "Auftraggeber / Begünstigter",
-      "Verwendungszweck",
-      "Betrag (€)",
-    ],
-    map: {
-      date: "Buchungsdatum",
-      description: "Verwendungszweck",
-      amount: "Betrag (€)",
-    },
-    decimal: ",",
-    dateFmt: "DD.MM.YYYY",
-    delimiter: ";",
-    headerSignature: ["Buchungsdatum", "Betrag (€)"],
-  },
-  ING: {
-    columns: [
-      "Buchung",
-      "Auftraggeber/Empfänger",
-      "Verwendungszweck",
-      "Betrag",
-      "Saldo",
-    ],
-    map: { date: "Buchung", description: "Verwendungszweck", amount: "Betrag" },
-    decimal: ",",
-    dateFmt: "DD.MM.YYYY",
-    delimiter: ";",
-    headerSignature: ["Buchung", "Saldo"],
-    encoding: "windows-1252",
+    quoted: true,
+    headerSignature: ["Auftragskonto", "Sammlerreferenz", "Kategorie"],
+    pendingColumn: "Info",
+    pendingValues: ["Umsatz vorgemerkt"],
   },
 };
 

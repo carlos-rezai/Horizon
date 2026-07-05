@@ -164,7 +164,9 @@ export function tryParseDate(str: string, dateFmt: string): string | null {
 
 /**
  * Convert a date string to an ISO (`YYYY-MM-DD`) date string given its source
- * format (e.g. `DD.MM.YYYY`).
+ * format (e.g. `DD.MM.YYYY` or `DD.MM.YY`). A 2-digit `YY` year is expanded
+ * unconditionally to `20YY` (bank statements are always current, so there is
+ * no pivot window); a 4-digit `YYYY` year passes through unchanged.
  */
 export function parseDate(str: string, dateFmt: string): string {
   const separator = dateFmt.includes(".")
@@ -178,5 +180,7 @@ export function parseDate(str: string, dateFmt: string): string {
   formatTokens.forEach((token, index) => {
     parts[token] = valueParts[index] ?? "";
   });
-  return `${parts.YYYY}-${parts.MM}-${parts.DD}`;
+  const year =
+    parts.YYYY ?? (parts.YY !== undefined ? `20${parts.YY}` : undefined);
+  return `${year}-${parts.MM}-${parts.DD}`;
 }
