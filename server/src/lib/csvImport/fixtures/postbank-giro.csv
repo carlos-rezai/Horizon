@@ -2,9 +2,9 @@ Umsatzanzeige;Postbank
 Konto;DE00 0000 0000 0000 0000 00
 Zeitraum;01.09.2026 - 31.10.2026
 
-Buchungstag;Wertstellung;Umsatzart;Begünstigter / Auftraggeber;Verwendungszweck;Betrag;Soll;Haben;Währung
-1.9.2026;1.9.2026;Lastschrift;MUSTER SUPERMARKT GMBH;Einkauf Filiale 12;-20,41;20,41;;EUR
-12.9.2026;12.9.2026;Gutschrift;ARBEITGEBER MUSTER AG;Gehalt September;2500,00;;2500,00;EUR
-3.10.2026;3.10.2026;Überweisung;MÜLLER BÄCKEREI;Rechnung Oktober;-9,90;9,90;;EUR
-15.10.2026;15.10.2026;Lastschrift;MUSTER STROM AG;Abschlag Strom;-75,00;75,00;;EUR
-;;Endsaldo;;;1234,56;;;EUR
+Buchungstag;Wert;Umsatzart;Begünstigter / Auftraggeber;Verwendungszweck;IBAN / Kontonummer;BIC;Kundenreferenz;Mandatsreferenz;Gläubiger ID;Fremde Gebühren;Betrag;Abweichender Empfänger;Anzahl der Aufträge;Anzahl der Schecks;Soll;Haben;Währung
+1.9.2026;1.9.2026;Lastschrift;MUSTER SUPERMARKT GMBH;Einkauf Filiale 12;DE00 0000 0000 0000 0000 01;PBNKDEFFXXX;;;;;-20,41;;;;20,41;;EUR
+12.9.2026;12.9.2026;Gutschrift;ARBEITGEBER MUSTER AG;Gehalt September;DE00 0000 0000 0000 0000 02;PBNKDEFFXXX;;;;;2500,00;;;;;2500,00;EUR
+3.10.2026;3.10.2026;Überweisung;MÜLLER BÄCKEREI;Rechnung Oktober;DE00 0000 0000 0000 0000 03;PBNKDEFFXXX;;;;;-9,90;;;;9,90;;EUR
+15.10.2026;15.10.2026;Lastschrift;MUSTER STROM AG;Abschlag Strom;DE00 0000 0000 0000 0000 04;PBNKDEFFXXX;;;;;-75,00;;;;75,00;;EUR
+;;Endsaldo;;;;PBNKDEFFXXX;;;;;1234,56;;;;;;EUR
