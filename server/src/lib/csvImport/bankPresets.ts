@@ -126,6 +126,40 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     delimiter: ";",
     headerSignature: ["Umsatzart", "Soll", "Haben"],
   },
+  /**
+   * Real Postbank credit-card CSV export. Built from an anonymized owner export:
+   * unquoted, `;`-delimited, `D.M.YYYY` single-digit day/month dates, decimal
+   * comma. The export carries TWO columns both named `Betrag` — the
+   * foreign-currency figure and the EUR figure — which the parse engine's header
+   * de-duplication renames `Betrag` and `Betrag (2)`. The EUR `Betrag (2)` is
+   * the amount source (never the foreign-currency `Betrag`); card purchases are
+   * already negative, so the signed amount is used directly. The signature
+   * (`Belegdatum`, `Eingangstag`, `Kurs`) is distinctive to this card layout.
+   * The umlaut headers (`Fremdwährung`, `Währung`) ride the signature-driven
+   * encoding retry in `detectStatement`. No pending marker. Lands against a
+   * CreditCard account.
+   */
+  PostbankCC: {
+    columns: [
+      "Belegdatum",
+      "Eingangstag",
+      "Verwendungszweck",
+      "Fremdwährung",
+      "Betrag",
+      "Kurs",
+      "Betrag (2)",
+      "Währung",
+    ],
+    map: {
+      date: "Belegdatum",
+      description: "Verwendungszweck",
+      amount: "Betrag (2)",
+    },
+    decimal: ",",
+    dateFmt: "DD.MM.YYYY",
+    delimiter: ";",
+    headerSignature: ["Belegdatum", "Eingangstag", "Kurs"],
+  },
 };
 
 /**

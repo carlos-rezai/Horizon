@@ -92,6 +92,22 @@ function isHeaderRow(row: string[], signature: string[]): boolean {
 }
 
 /**
+ * De-duplicate a header row so a bank that ships two columns with the same
+ * literal name (Postbank credit-card exports carry two `Betrag` cells — the
+ * foreign-currency figure and the EUR figure) yields distinct, addressable
+ * names. The first occurrence keeps its bare name; the n-th duplicate (n >= 2)
+ * becomes `X (n)`, so rows keyed by these names never overwrite one another.
+ */
+function dedupeHeader(header: string[]): string[] {
+  const seen = new Map<string, number>();
+  return header.map((name) => {
+    const count = (seen.get(name) ?? 0) + 1;
+    seen.set(name, count);
+    return count === 1 ? name : `${name} (${count})`;
+  });
+}
+
+/**
  * Parse a statement: scan past any metadata preamble to the header row
  * identified by the preset's `headerSignature`, then return that header and
  * each subsequent row mapped by column name. Quote-aware with the preset's
@@ -109,7 +125,7 @@ export function parseStatement(
     return { columns: [], rows: [] };
   }
 
-  const columns = records[headerIndex];
+  const columns = dedupeHeader(records[headerIndex]);
   const rows = records.slice(headerIndex + 1).map((record) => {
     const mapped: Record<string, string> = {};
     columns.forEach((column, index) => {
