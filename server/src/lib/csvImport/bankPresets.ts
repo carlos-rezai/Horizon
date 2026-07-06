@@ -160,6 +160,52 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     delimiter: ";",
     headerSignature: ["Belegdatum", "Eingangstag", "Kurs"],
   },
+  /**
+   * Real Renault Bank (Tagesgeld) CSV export. Built from an anonymized owner
+   * export: unquoted, `;`-delimited, `DD.MM.YYYY` four-digit-year dates, decimal
+   * comma, signed `Betrag` (used directly, no inversion). This is the "easy"
+   * four-digit-year case; it exists partly as a regression guard so the
+   * single-digit / 2-digit-year date hardening from #150/#151 never touches the
+   * plain `DD.MM.YYYY` path. Description maps to `Buchungstext` (the booking-text
+   * label), NOT the counterparty (`Name Zahlungsbeteiligter`): interest
+   * (`Abschluss`) and tax (`Kapitalertragsteuer`) rows carry a blank
+   * counterparty, so a counterparty-based description would read empty while
+   * `Buchungstext` keeps their label. The signature (`Bezeichnung
+   * Auftragskonto`, `Saldo nach Buchung`) is distinctive to this Tagesgeld
+   * layout. No pending marker.
+   */
+  Renault: {
+    columns: [
+      "Bezeichnung Auftragskonto",
+      "IBAN Auftragskonto",
+      "BIC Auftragskonto",
+      "Bankname Auftragskonto",
+      "Buchungstag",
+      "Valutadatum",
+      "Name Zahlungsbeteiligter",
+      "IBAN Zahlungsbeteiligter",
+      "BIC (SWIFT) Zahlungsbeteiligter",
+      "Buchungstext",
+      "Verwendungszweck",
+      "Betrag",
+      "Waehrung",
+      "Saldo nach Buchung",
+      "Bemerkung",
+      "Kategorie",
+      "Steuerrelevant",
+      "Glaeubiger ID",
+      "Mandatsreferenz",
+    ],
+    map: {
+      date: "Buchungstag",
+      description: "Buchungstext",
+      amount: "Betrag",
+    },
+    decimal: ",",
+    dateFmt: "DD.MM.YYYY",
+    delimiter: ";",
+    headerSignature: ["Bezeichnung Auftragskonto", "Saldo nach Buchung"],
+  },
 };
 
 /**
