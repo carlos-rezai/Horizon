@@ -232,6 +232,53 @@ describe("migrate (SQLite)", () => {
     });
   });
 
+  describe("migration 014 (reset import presets)", () => {
+    it("advances PRAGMA user_version to at least 14", async () => {
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const version = db.pragma("user_version", { simple: true }) as number;
+      expect(version).toBeGreaterThanOrEqual(14);
+
+      db.close();
+    });
+
+    it("wipes stale import_presets rows forward-only on upgrade", async () => {
+      const db = new Database(":memory:");
+
+      // Full schema first, then plant a stale remembered preset — as if left
+      // behind by one of the removed guessed banks.
+      await migrate(db);
+      db.prepare(
+        `INSERT INTO import_presets (bank, mapping, delimiter, decimal, date_fmt)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(
+        "DKB",
+        JSON.stringify({ date: "a", description: "b", amount: "c" }),
+        ";",
+        ",",
+        "DD.MM.YYYY"
+      );
+
+      // Rewind to just before 014 and re-run: the reset migration must re-apply
+      // and delete every remembered preset so the corrected built-in defaults
+      // win on the next import.
+      db.pragma("user_version = 13");
+      await migrate(db);
+
+      const count = (
+        db.prepare(`SELECT COUNT(*) AS n FROM import_presets`).get() as {
+          n: number;
+        }
+      ).n;
+      expect(count).toBe(0);
+      expect(db.pragma("user_version", { simple: true }) as number).toBe(14);
+
+      db.close();
+    });
+  });
+
   describe("tempfile lifecycle", () => {
     let dbPath: string;
 
