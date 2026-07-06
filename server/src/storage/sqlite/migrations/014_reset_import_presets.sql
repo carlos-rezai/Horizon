@@ -1,0 +1,12 @@
+-- Reset remembered import presets.
+--
+-- The guessed DKB / ING / fictional-Sparkasse presets were removed during the
+-- Real Bank CSV Import epic (#150–#153) and replaced with presets built from
+-- real bank exports. Any preset a user remembered against a guessed bank — or
+-- against the corrected real banks before this epic landed — could still
+-- override the new correct built-in defaults on the next import. Wipe them all
+-- so the corrected defaults win; the round-trip re-saves a fresh preset the
+-- first time the user commits an import again.
+--
+-- Forward-only: there is no down-migration.
+DELETE FROM import_presets;

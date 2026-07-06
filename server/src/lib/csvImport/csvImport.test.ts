@@ -16,9 +16,10 @@ import type { MappedRow } from "./index.js";
 import type { Transaction, RecurringTransaction } from "../../storage/types.js";
 
 // ---------------------------------------------------------------------------
-// Fixtures — real-shaped Sparkasse / DKB / ING exports with the hard cases:
-// UTF-8 BOM vs Windows-1252, a metadata preamble before the header row,
-// decimal-comma amounts, DD.MM.YYYY dates, and a quote-aware embedded delimiter.
+// Fixtures — real anonymized bank exports (Sparkasse, Postbank, Renault) with
+// the hard cases: UTF-8 BOM vs Windows-1252, a metadata preamble before the
+// header row, decimal-comma amounts, DD.MM.YYYY dates, and a quote-aware
+// embedded delimiter.
 // ---------------------------------------------------------------------------
 
 function fixtureBytes(name: string): Uint8Array {
@@ -106,12 +107,20 @@ describe("BANK_PRESETS", () => {
 
 describe("detectEncoding", () => {
   it("returns 'utf-8' for a BOM-prefixed file", () => {
-    expect(detectEncoding(fixtureBytes("sparkasse.csv"))).toBe("utf-8");
-    expect(detectEncoding(fixtureBytes("dkb.csv"))).toBe("utf-8");
+    // The real bank fixtures ship without a BOM, so synthesise BOM-prefixed
+    // bytes to exercise the UTF-8 branch.
+    const utf8Bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const body = new TextEncoder().encode("Datum;Betrag\n02.11.2026;-12,50\n");
+    const withBom = new Uint8Array([...utf8Bom, ...body]);
+    expect(detectEncoding(withBom)).toBe("utf-8");
   });
 
   it("returns 'windows-1252' for a file with no BOM", () => {
-    expect(detectEncoding(fixtureBytes("ing.csv"))).toBe("windows-1252");
+    // The real German-bank exports (Postbank, Renault) carry no BOM.
+    expect(detectEncoding(fixtureBytes("postbank-giro.csv"))).toBe(
+      "windows-1252"
+    );
+    expect(detectEncoding(fixtureBytes("renault.csv"))).toBe("windows-1252");
     expect(detectEncoding(fixtureBytes("windows1252-umlauts.csv"))).toBe(
       "windows-1252"
     );

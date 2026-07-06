@@ -1,5 +1,5 @@
-Bezeichnung Auftragskonto;IBAN Auftragskonto;BIC Auftragskonto;Bankname Auftragskonto;Buchungstag;Valutadatum;Name Zahlungsbeteiligter;IBAN Zahlungsbeteiligter;BIC (SWIFT) Zahlungsbeteiligter;Buchungstext;Verwendungszweck;Betrag;Waehrung;Saldo nach Buchung;Bemerkung;Kategorie;Steuerrelevant;Glaeubiger ID;Mandatsreferenz
-Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;15.03.2026;15.03.2026;MUSTER ARBEITGEBER AG;DE00 0000 0000 0000 0000 01;MUSTDEFFXXX;Gutschrift;Sparuebertrag Maerz;1.500,00;EUR;3.512,34;;;;;
-Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;18.03.2026;18.03.2026;MUSTER BÄCKEREI;DE00 0000 0000 0000 0000 02;MUSTDEFFXXX;Lastschrift;Einkauf Filiale;-45,90;EUR;3.466,44;;;;;
-Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;31.03.2026;31.03.2026;;;;Abschluss;Zinsen/Kontoabschluss;12,34;EUR;3.478,78;;;;;
-Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;31.03.2026;31.03.2026;;;;Kapitalertragsteuer;Steuerabzug;-3,26;EUR;3.475,52;;;;;
+Bezeichnung Auftragskonto;IBAN Auftragskonto;BIC Auftragskonto;Bankname Auftragskonto;Buchungstag;Valutadatum;Name Zahlungsbeteiligter;IBAN Zahlungsbeteiligter;BIC (SWIFT-Code) Zahlungsbeteiligter;Buchungstext;Verwendungszweck;Betrag;Waehrung;Saldo nach Buchung;Bemerkung;Gekennzeichneter Umsatz;Glaeubiger ID;Mandatsreferenz
+Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;15.03.2026;15.03.2026;MUSTER ARBEITGEBER AG;DE00 0000 0000 0000 0000 01;MUSTDEFFXXX;Gutschrift;Sparuebertrag Maerz;1.500,00;EUR;3.512,34;;;;
+Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;18.03.2026;18.03.2026;MUSTER BüCKEREI;DE00 0000 0000 0000 0000 02;MUSTDEFFXXX;Lastschrift;Einkauf Filiale;-45,90;EUR;3.466,44;;;;
+Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;31.03.2026;31.03.2026;;;;Abschluss;Zinsen/Kontoabschluss;12,34;EUR;3.478,78;;;;
+Tagesgeld;DE00 0000 0000 0000 0000 00;RENADE00XXX;Renault Bank direkt;31.03.2026;31.03.2026;;;;Kapitalertragsteuer;Steuerabzug;-3,26;EUR;3.475,52;;;;

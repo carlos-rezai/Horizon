@@ -321,27 +321,42 @@ async function createRecurring(
 }
 
 describe("POST /imports/preview", () => {
-  it("parses a DKB statement and returns bank, mapping, columns, rows, summary", async () => {
+  it("parses a Sparkasse statement and returns bank, mapping, columns, rows, summary", async () => {
     const account = await createAccount();
 
-    const res = await previewFixture("dkb.csv", account.id);
+    const res = await previewFixture("sparkasse-giro.csv", account.id);
 
     expect(res.status).toBe(200);
-    expect(res.body.bank).toBe("DKB");
+    expect(res.body.bank).toBe("Sparkasse");
     expect(res.body.mapping).toEqual({
-      date: "Buchungsdatum",
-      description: "Verwendungszweck",
-      amount: "Betrag (€)",
+      date: "Buchungstag",
+      description: "Beguenstigter/Zahlungspflichtiger",
+      amount: "Betrag",
     });
     expect(res.body.columns).toEqual([
-      "Buchungsdatum",
-      "Auftraggeber / Begünstigter",
+      "Auftragskonto",
+      "Buchungstag",
+      "Valutadatum",
+      "Buchungstext",
       "Verwendungszweck",
-      "Betrag (€)",
+      "Glaeubiger ID",
+      "Mandatsreferenz",
+      "Kundenreferenz (End-to-End)",
+      "Sammlerreferenz",
+      "Lastschrift Ursprungsbetrag",
+      "Auslagenersatz Ruecklastschrift",
+      "Beguenstigter/Zahlungspflichtiger",
+      "Kontonummer/IBAN",
+      "BIC (SWIFT-Code)",
+      "Betrag",
+      "Waehrung",
+      "Info",
+      "Kategorie",
     ]);
-    expect(res.body.rows).toHaveLength(2);
+    // Four transactions; the dateless Endsaldo footer is dropped.
+    expect(res.body.rows).toHaveLength(4);
     expect(res.body.summary).toMatchObject({
-      total: 2,
+      total: 4,
       duplicates: 0,
       recurring: 0,
     });
@@ -350,47 +365,50 @@ describe("POST /imports/preview", () => {
   it("converts amounts to signed cents, dates to ISO, and auto-categorizes", async () => {
     const account = await createAccount();
 
-    const res = await previewFixture("dkb.csv", account.id);
+    const res = await previewFixture("sparkasse-giro.csv", account.id);
 
-    const edeka = rowByDescription(res.body.rows, "Lebensmittel EDEKA");
-    expect(edeka).toMatchObject({
-      date: "2026-11-03",
-      amount: -3420,
+    const supermarkt = rowByDescription(
+      res.body.rows,
+      "MUSTER SUPERMARKT GMBH"
+    );
+    expect(supermarkt).toMatchObject({
+      date: "2026-06-24",
+      amount: -2041,
       category: "Food",
       duplicate: false,
       recurring: false,
     });
     // Preview is stateless: each returned row carries a server-assigned id.
-    expect(typeof edeka?.id).toBe("string");
+    expect(typeof supermarkt?.id).toBe("string");
 
-    const etf = rowByDescription(res.body.rows, "Sparplan ETF MSCI World");
-    expect(etf).toMatchObject({ amount: -15000, category: "Investment" });
-  });
-
-  it("preserves the sign of a positive credit (Gehalt stays positive)", async () => {
-    const account = await createAccount();
-
-    const res = await previewFixture("sparkasse.csv", account.id);
-
-    expect(res.body.bank).toBe("Sparkasse");
-    const gehalt = rowByDescription(res.body.rows, "Gehalt Oktober");
+    const gehalt = rowByDescription(res.body.rows, "ARBEITGEBER MUSTER AG");
     expect(gehalt).toMatchObject({ amount: 250000, category: "Income" });
   });
 
-  it("detects each target bank and decodes Windows-1252 umlauts in the header", async () => {
+  it("preserves the sign of a positive credit (a salary stays positive)", async () => {
     const account = await createAccount();
 
-    const ing = await previewFixture("ing.csv", account.id);
+    const res = await previewFixture("sparkasse-giro.csv", account.id);
 
-    expect(ing.body.bank).toBe("ING");
-    // Decoded from Windows-1252 — not the mangled "Empf�nger".
-    expect(ing.body.columns).toContain("Auftraggeber/Empfänger");
+    expect(res.body.bank).toBe("Sparkasse");
+    const gehalt = rowByDescription(res.body.rows, "ARBEITGEBER MUSTER AG");
+    expect(gehalt).toMatchObject({ amount: 250000, category: "Income" });
+  });
+
+  it("detects the bank and decodes Windows-1252 umlauts in the header", async () => {
+    const account = await createAccount();
+
+    const res = await previewFixture("postbank-giro.csv", account.id);
+
+    expect(res.body.bank).toBe("PostbankGiro");
+    // Decoded from Windows-1252 — not the mangled "Beg�nstigter".
+    expect(res.body.columns).toContain("Begünstigter / Auftraggeber");
   });
 
   it("writes nothing — history and account transactions stay empty", async () => {
     const account = await createAccount();
 
-    const preview = await previewFixture("dkb.csv", account.id);
+    const preview = await previewFixture("sparkasse-giro.csv", account.id);
     expect(preview.status).toBe(200);
 
     const history = await request(app).get("/imports");
@@ -403,35 +421,42 @@ describe("POST /imports/preview", () => {
   it("flags a row that duplicates an existing account transaction (pre-unchecked but present)", async () => {
     const account = await createAccount();
 
-    // A hand-entered transaction identical to the DKB EDEKA row.
+    // A hand-entered transaction identical to the Sparkasse supermarket row.
     await request(app).post(`/accounts/${account.id}/transactions`).send({
-      date: "2026-11-03",
-      amount: -3420,
-      description: "Lebensmittel EDEKA",
+      date: "2026-06-24",
+      amount: -2041,
+      description: "MUSTER SUPERMARKT GMBH",
       category: "Food",
     });
 
-    const res = await previewFixture("dkb.csv", account.id);
+    const res = await previewFixture("sparkasse-giro.csv", account.id);
 
-    const edeka = rowByDescription(res.body.rows, "Lebensmittel EDEKA");
-    const etf = rowByDescription(res.body.rows, "Sparplan ETF MSCI World");
-    expect(edeka?.duplicate).toBe(true);
-    expect(etf?.duplicate).toBe(false);
+    const supermarkt = rowByDescription(
+      res.body.rows,
+      "MUSTER SUPERMARKT GMBH"
+    );
+    const gehalt = rowByDescription(res.body.rows, "ARBEITGEBER MUSTER AG");
+    expect(supermarkt?.duplicate).toBe(true);
+    expect(gehalt?.duplicate).toBe(false);
     // The duplicate is still returned — the user can re-check it.
-    expect(res.body.rows).toHaveLength(2);
+    expect(res.body.rows).toHaveLength(4);
     expect(res.body.summary.duplicates).toBe(1);
   });
 
   it("flags a row matching an existing recurring transaction (pre-unchecked but present)", async () => {
     const account = await createAccount();
-    await createRecurring(account.id);
+    await createRecurring(account.id, {
+      description: "MUSTER DIENST GMBH",
+      amount: -990,
+      category: "Miscellaneous",
+    });
 
-    const res = await previewFixture("dkb.csv", account.id);
+    const res = await previewFixture("sparkasse-giro.csv", account.id);
 
-    const etf = rowByDescription(res.body.rows, "Sparplan ETF MSCI World");
-    expect(etf?.recurring).toBe(true);
+    const dienst = rowByDescription(res.body.rows, "MUSTER DIENST GMBH");
+    expect(dienst?.recurring).toBe(true);
     expect(res.body.summary.recurring).toBe(1);
-    expect(res.body.rows).toHaveLength(2);
+    expect(res.body.rows).toHaveLength(4);
   });
 
   it("falls back to a sensible adjustable mapping when the bank is unmatched", async () => {
@@ -507,32 +532,33 @@ describe("POST /imports/preview", () => {
   it("remembers the committed format and re-applies it on the next preview", async () => {
     const account = await createAccount();
 
-    // Commit a DKB import carrying a distinctive remembered format. The bank
-    // label must match what detection returns ("DKB") so the preset is found.
+    // Commit a Sparkasse import carrying a distinctive remembered format. The
+    // bank label must match what detection returns ("Sparkasse") so the preset
+    // is found on the next preview.
     const committed = await postImport(account.id, {
-      bank: "DKB",
+      bank: "Sparkasse",
       mapping: {
-        date: "Buchungsdatum",
+        date: "Buchungstag",
         description: "Verwendungszweck",
-        amount: "Betrag (€)",
+        amount: "Betrag",
       },
       decimal: ".",
       dateFmt: "YYYY-MM-DD",
     });
     expect(committed.status).toBe(201);
 
-    const res = await previewFixture("dkb.csv", account.id);
+    const res = await previewFixture("sparkasse-giro.csv", account.id);
 
     expect(res.status).toBe(200);
-    expect(res.body.bank).toBe("DKB");
+    expect(res.body.bank).toBe("Sparkasse");
     // The preview echoes the remembered format, not the detected default —
     // the full preset round-trips, not just the column mapping.
     expect(res.body.decimal).toBe(".");
     expect(res.body.dateFmt).toBe("YYYY-MM-DD");
     expect(res.body.mapping).toEqual({
-      date: "Buchungsdatum",
+      date: "Buchungstag",
       description: "Verwendungszweck",
-      amount: "Betrag (€)",
+      amount: "Betrag",
     });
   });
 

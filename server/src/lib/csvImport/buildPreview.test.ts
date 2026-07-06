@@ -249,15 +249,15 @@ describe("buildPreview", () => {
   });
 
   it("threads a pending count and a per-row pending flag through the summary", async () => {
+    // Postbank giro carries no pendingColumn, so every row is settled — but the
+    // flag and the count must thread through end-to-end regardless.
     const preview = await buildPreview({
-      bytes: fixtureBytes("dkb.csv"),
+      bytes: fixtureBytes("postbank-giro.csv"),
       existingTxns: [],
       recurring: [],
       getRememberedPreset: noPreset,
     });
 
-    // The shipped presets carry no pendingColumn yet, so every row is settled —
-    // but the flag and the count must thread through end-to-end regardless.
     expect(preview.summary.pending).toBe(0);
     expect(preview.rows.every((r) => r.pending === false)).toBe(true);
   });
