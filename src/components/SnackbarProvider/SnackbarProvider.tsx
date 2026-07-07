@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import Snackbar from "../Snackbar/Snackbar";
 import {
   SnackbarContext,
+  SnackbarStackContext,
   type NotifyArg,
   type SnackbarVariant,
   type SnackbarActionConfig,
@@ -25,6 +26,9 @@ interface SnackbarProviderProps {
 
 export default function SnackbarProvider({ children }: SnackbarProviderProps) {
   const [snacks, setSnacks] = useState<Snack[]>([]);
+  // The stack DOM node, exposed so persistent banners can portal into it and
+  // share this single fixed region instead of each self-fixing to the corner.
+  const [stackNode, setStackNode] = useState<HTMLElement | null>(null);
   const nextId = useRef(0);
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -63,19 +67,21 @@ export default function SnackbarProvider({ children }: SnackbarProviderProps) {
 
   return (
     <SnackbarContext.Provider value={{ notify, dismiss }}>
-      {children}
-      <StyledStack>
-        {snacks.map((snack) => (
-          <Snackbar
-            key={snack.id}
-            message={snack.message}
-            variant={snack.variant}
-            action={snack.action}
-            onClose={() => dismiss(snack.id)}
-            positioned={false}
-          />
-        ))}
-      </StyledStack>
+      <SnackbarStackContext.Provider value={stackNode}>
+        {children}
+        <StyledStack ref={setStackNode}>
+          {snacks.map((snack) => (
+            <Snackbar
+              key={snack.id}
+              message={snack.message}
+              variant={snack.variant}
+              action={snack.action}
+              onClose={() => dismiss(snack.id)}
+              positioned={false}
+            />
+          ))}
+        </StyledStack>
+      </SnackbarStackContext.Provider>
     </SnackbarContext.Provider>
   );
 }

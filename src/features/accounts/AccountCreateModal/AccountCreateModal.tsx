@@ -13,7 +13,7 @@ import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
 import Toggle from "../../../primitives/Toggle/Toggle";
 import { TrendingUp } from "lucide-react";
-import Snackbar from "../../../components/Snackbar/Snackbar";
+import StackedSnackbar from "../../../components/SnackbarProvider/StackedSnackbar";
 import CreditCardSettlementFields from "../../settlements/CreditCardSettlementFields/CreditCardSettlementFields";
 import {
   StyledForm,
@@ -277,7 +277,7 @@ export default function AccountCreateModal({
         </StyledActions>
 
         {settlementGenFailed && (
-          <Snackbar
+          <StackedSnackbar
             variant="warning"
             message="Account saved. Settlement generation failed — balances may be out of date. Restart the app to retry."
             onClose={() => setSettlementGenFailed(false)}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Snackbar from "../../../components/Snackbar/Snackbar";
+import StackedSnackbar from "../../../components/SnackbarProvider/StackedSnackbar";
 import { useUpdateStatus } from "../useUpdateStatus";
 
 export default function UpdateBanner() {
@@ -12,7 +12,7 @@ export default function UpdateBanner() {
 
   if (state === "available") {
     return (
-      <Snackbar
+      <StackedSnackbar
         message="A new version of Horizon is available."
         variant="info"
         onClose={() => setDismissed(true)}
@@ -23,7 +23,7 @@ export default function UpdateBanner() {
 
   if (state === "ready") {
     return (
-      <Snackbar
+      <StackedSnackbar
         message="A new version of Horizon is ready."
         variant="info"
         onClose={() => setDismissed(true)}

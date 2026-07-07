@@ -29,3 +29,15 @@ export function useSnackbar(): SnackbarContextValue {
   }
   return ctx;
 }
+
+/**
+ * The provider's single fixed stacking region — the shared DOM node into which
+ * persistent banners portal so they stack with transient snacks instead of
+ * overlapping. `null` outside a provider (e.g. isolated component tests).
+ */
+export const SnackbarStackContext = createContext<HTMLElement | null>(null);
+
+/** Non-throwing: returns the shared stack node, or null outside a provider. */
+export function useSnackbarStack(): HTMLElement | null {
+  return useContext(SnackbarStackContext);
+}

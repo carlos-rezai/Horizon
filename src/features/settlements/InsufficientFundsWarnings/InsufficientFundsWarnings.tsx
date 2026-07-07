@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Snackbar from "../../../components/Snackbar/Snackbar";
+import StackedSnackbar from "../../../components/SnackbarProvider/StackedSnackbar";
 import type { InsufficientFundsWarning } from "../useSettlementWarnings";
 
 interface Props {
@@ -16,7 +16,7 @@ export default function InsufficientFundsWarnings({ warnings }: Props) {
   return (
     <>
       {visible.map((w) => (
-        <Snackbar
+        <StackedSnackbar
           key={w.ccAccountId}
           variant="error"
           message={`Insufficient funds: settlement of ${(w.settlementAmount / 100).toFixed(2)} due ${w.settlementMonth}`}
