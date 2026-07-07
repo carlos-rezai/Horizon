@@ -9,7 +9,6 @@ import {
   StatementParseError,
   MAX_ROWS,
   MAX_COLUMNS,
-  detectEncoding,
   buildPreview,
 } from "./index.js";
 import type { StoredImportPreset } from "../../storage/types.js";
@@ -39,10 +38,9 @@ function fixtureBytes(name: string): Uint8Array {
   return readFileSync(fixturePath(name));
 }
 
-/** Decode a fixture under its own detected encoding (BOM → UTF-8, else 1252). */
+/** The real German-bank fixtures ship no BOM and are Windows-1252-encoded. */
 function fixtureText(name: string): string {
-  const bytes = fixtureBytes(name);
-  return new TextDecoder(detectEncoding(bytes)).decode(bytes);
+  return new TextDecoder("windows-1252").decode(fixtureBytes(name));
 }
 
 /** Encode synthetic statement text with a UTF-8 BOM so the sniff picks UTF-8. */

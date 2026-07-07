@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import {
   BANK_PRESETS,
   DEFAULT_BANK,
-  detectEncoding,
   parseStatement,
   parseAmount,
   parseDate,
@@ -29,8 +28,8 @@ function fixtureBytes(name: string): Uint8Array {
 }
 
 function fixtureText(name: string): string {
-  const bytes = fixtureBytes(name);
-  return new TextDecoder(detectEncoding(bytes)).decode(bytes);
+  // The real German-bank fixtures ship no BOM and are Windows-1252-encoded.
+  return new TextDecoder("windows-1252").decode(fixtureBytes(name));
 }
 
 function makeTxn(
@@ -98,37 +97,6 @@ describe("BANK_PRESETS", () => {
     // The fallback must not collide with a known bank, or a generic import
     // would overwrite that bank's remembered preset.
     expect(BANK_PRESETS[DEFAULT_BANK]).toBeUndefined();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// detectEncoding
-// ---------------------------------------------------------------------------
-
-describe("detectEncoding", () => {
-  it("returns 'utf-8' for a BOM-prefixed file", () => {
-    // The real bank fixtures ship without a BOM, so synthesise BOM-prefixed
-    // bytes to exercise the UTF-8 branch.
-    const utf8Bom = new Uint8Array([0xef, 0xbb, 0xbf]);
-    const body = new TextEncoder().encode("Datum;Betrag\n02.11.2026;-12,50\n");
-    const withBom = new Uint8Array([...utf8Bom, ...body]);
-    expect(detectEncoding(withBom)).toBe("utf-8");
-  });
-
-  it("returns 'windows-1252' for a file with no BOM", () => {
-    // The real German-bank exports (Postbank, Renault) carry no BOM.
-    expect(detectEncoding(fixtureBytes("postbank-giro.csv"))).toBe(
-      "windows-1252"
-    );
-    expect(detectEncoding(fixtureBytes("renault.csv"))).toBe("windows-1252");
-    expect(detectEncoding(fixtureBytes("windows1252-umlauts.csv"))).toBe(
-      "windows-1252"
-    );
-  });
-
-  it("decodes umlauts (ä ö ü ß) correctly from a Windows-1252 fixture", () => {
-    const text = fixtureText("windows1252-umlauts.csv");
-    expect(text).toContain("Große Straße Müller Bäckerei Köln");
   });
 });
 

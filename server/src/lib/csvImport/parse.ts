@@ -1,24 +1,5 @@
 import type { BankPreset } from "./bankPresets.js";
 
-const UTF8_BOM = [0xef, 0xbb, 0xbf] as const;
-
-/**
- * Sniff the byte-level encoding of a raw CSV export. A UTF-8 BOM means UTF-8;
- * the German banks that omit a BOM export Windows-1252 (Latin-1 superset that
- * carries ä ö ü ß).
- */
-export function detectEncoding(bytes: Uint8Array): string {
-  if (
-    bytes.length >= 3 &&
-    bytes[0] === UTF8_BOM[0] &&
-    bytes[1] === UTF8_BOM[1] &&
-    bytes[2] === UTF8_BOM[2]
-  ) {
-    return "utf-8";
-  }
-  return "windows-1252";
-}
-
 /** A parsed statement: the located header row and its mapped data rows. */
 export interface ParsedStatement {
   columns: string[];
