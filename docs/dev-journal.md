@@ -1,5 +1,57 @@
 # Dev Journal
 
+## 2026-07-07 — #155 Real Bank CSV Import refactor (close-out)
+
+Worked the `22-real-bank-csv-import-refactor` plan end to end across eight
+commits, low-risk → high-risk, each leaving `npx vitest run` green. Two latent
+drift risks removed from the parse engine, plus a parsing-consistency fix, two
+mechanical module renames, and two isolated Import-wizard UI fixes.
+
+**Dead `detectEncoding` (drift risk, not just a tidy-up).** `parse.ts` still
+exported the old BOM-or-Windows-1252 guesser, the barrel re-exported it, and
+unit tests pinned it — but production encoding had moved to `detectStatement`'s
+`hasUtf8Bom` + signature-driven retry, and the UTF-8 BOM byte constant lived in
+two files. Deleted the function, its constant, its re-export, and its tests;
+the statement-detection retry is now the single encoding authority (same
+subtraction the #20 refactor did for `detectBank`).
+
+**Hand-synced `preset.columns` (drift risk).** Production parsing derives
+columns from the file's actual (de-duplicated) header and never read
+`preset.columns`; the field survived only because two tests asserted the parsed
+columns _equalled_ it, and the Postbank-CC `Betrag (2)` name had to be
+hand-written to mirror the runtime de-dupe. Dropped the field from the
+interface and all four presets, and re-pointed the two tests to assert against
+the real fixture header literal (ground truth).
+
+**Parsing consistency.** Extracted the copy-pasted record-builder
+(`buildRecord`) shared by the known-bank parser and the generic fallback, and
+brought the known-bank header **de-duplication** to the generic path — an
+unknown bank shipping two identically-named columns now addresses distinct
+cells instead of collapsing them (RED test first). Generic **encoding** stays
+Windows-1252: no header signature exists to act as the "decoded correctly"
+oracle, so a generic encoding retry would be a guess (design log 21, Q7).
+
+**Module renames.** `detect.ts` → `flagRows.ts` (row-level flagging against
+account history) and `preview.ts` → `detectStatement.ts` (statement/bank
+detection); the preview _orchestrator_ keeps its already-correct name
+`buildPreview.ts`. Exported symbol names unchanged, so the barrel and the
+imports route were untouched — only intra-library imports and test imports moved.
+
+**UI fixes.** The Account-step filename now truncates with an ellipsis + hover
+`title` (a missing-truncation bug — any width could be overrun), and the
+review body's fixed 320px cap became `min(56vh, 620px)` so a normal screen
+shows ~12 rows before the internal scroll takes over.
+
+**Out-of-scope observation.** On a clean `main` (before this refactor),
+`RecurringTransactionModal.test.tsx > pre-selects the existing category by name
+and saves it unchanged when editing` fails deterministically — `onSaved` is
+called with `category: ""` instead of the pre-selected `"Housing"`. Unrelated
+to CSV import; left untouched. Worth a separate look: it is a real assertion
+failure, not a flake. (Also note: the server test suite only runs once
+`better-sqlite3` is rebuilt for the Node ABI — `npm rebuild better-sqlite3`;
+it is otherwise built for Electron and every SQLite-backed test fails with a
+`NODE_MODULE_VERSION` mismatch.)
+
 ## 2026-06-25 — #147 Month Year-Comparison refactor (close-out)
 
 Worked the `21-month-year-comparison-refactor` plan end to end across ten
