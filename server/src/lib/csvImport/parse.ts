@@ -79,7 +79,7 @@ function isHeaderRow(row: string[], signature: string[]): boolean {
  * names. The first occurrence keeps its bare name; the n-th duplicate (n >= 2)
  * becomes `X (n)`, so rows keyed by these names never overwrite one another.
  */
-function dedupeHeader(header: string[]): string[] {
+export function dedupeHeader(header: string[]): string[] {
   const seen = new Map<string, number>();
   return header.map((name) => {
     const count = (seen.get(name) ?? 0) + 1;

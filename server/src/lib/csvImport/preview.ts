@@ -6,6 +6,7 @@ import {
   tryParseDate,
   splitRecords,
   buildRecord,
+  dedupeHeader,
 } from "./parse.js";
 import { categorize } from "./categorize.js";
 import type { MappedRow } from "./types.js";
@@ -94,7 +95,10 @@ function locateGeneric(text: string): DetectedStatement {
     throw new StatementParseError("No rows found in file.");
   }
 
-  const columns = records[0];
+  // De-duplicate the header exactly as the known-bank path does, so an unknown
+  // bank shipping two identically-named columns addresses distinct cells rather
+  // than collapsing the second onto the first.
+  const columns = dedupeHeader(records[0]);
   if (columns.length > MAX_COLUMNS) {
     throw new StatementParseError(`Too many columns (max ${MAX_COLUMNS}).`);
   }

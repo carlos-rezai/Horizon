@@ -173,6 +173,30 @@ describe("generic fallback — unknown bank stays importable", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Generic fallback — header de-duplication matches the known-bank path
+// ---------------------------------------------------------------------------
+
+describe("generic fallback — a duplicate header column addresses distinct cells", () => {
+  // An unknown bank that ships two identically-named columns must map both
+  // cells, not collapse the second onto the first — the same de-duplication the
+  // known-bank path applies (Postbank CC's twin `Betrag` columns).
+  const duplicateHeader = [
+    "Datum;Verwendungszweck;Betrag;Betrag",
+    "02.11.2026;EDEKA;1,00;-34,20",
+  ].join("\n");
+
+  it("renames the second duplicate to `Betrag (2)` so both cells are readable", () => {
+    const detected = detectStatement(bytesOf(duplicateHeader));
+
+    expect(detected.bank).toBe(DEFAULT_BANK);
+    expect(detected.columns).toContain("Betrag");
+    expect(detected.columns).toContain("Betrag (2)");
+    expect(detected.records[0].Betrag).toBe("1,00");
+    expect(detected.records[0]["Betrag (2)"]).toBe("-34,20");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // AC3 — an unmatched file with no mappable columns fails loudly
 // ---------------------------------------------------------------------------
 
