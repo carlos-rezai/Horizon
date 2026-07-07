@@ -1,3 +1,10 @@
+/**
+ * Row-flagging against the target account's history: flag each mapped statement
+ * row that duplicates an existing transaction or matches a recurring rule, so
+ * the wizard can pre-uncheck it. This is row-level matching against account
+ * data — distinct from statement/bank detection, which lives in
+ * `detectStatement.ts`.
+ */
 import type { Transaction, RecurringTransaction } from "../../storage/types.js";
 import type { MappedRow } from "./types.js";
 

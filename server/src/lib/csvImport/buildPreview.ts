@@ -6,7 +6,7 @@ import type {
   RecurringTransaction,
 } from "../../storage/types.js";
 import { detectStatement, mapStatementRows } from "./preview.js";
-import { detectDuplicates, detectRecurring } from "./detect.js";
+import { detectDuplicates, detectRecurring } from "./flagRows.js";
 import type { MappedRow } from "./types.js";
 
 /** A previewed row: a normalized row plus its id and detection flags. */
