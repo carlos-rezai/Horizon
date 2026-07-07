@@ -312,7 +312,10 @@ export const StyledReviewHead = styled.div`
 `;
 
 export const StyledReviewBody = styled.div`
-  max-height: 320px;
+  /* Viewport-responsive so a normal screen shows ~12 rows before scrolling;
+     the internal scroll is the safety valve for long statements. The modal is
+     already 90vh-bounded, so this cannot overflow the screen. */
+  max-height: min(56vh, 620px);
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
