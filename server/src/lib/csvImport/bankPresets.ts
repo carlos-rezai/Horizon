@@ -9,8 +9,6 @@ import type { ColumnMapping } from "../../storage/types.js";
  * an optional `encoding` override when a bank does not emit a BOM.
  */
 export interface BankPreset {
-  /** Full ordered header row as the bank exports it. */
-  columns: string[];
   /** Which raw column feeds each Horizon field. */
   map: ColumnMapping;
   /** Decimal separator used in amounts (`,` for the German banks). */
@@ -20,9 +18,9 @@ export interface BankPreset {
   /** Field delimiter (`;` for the German banks). */
   delimiter: string;
   /**
-   * Distinctive subset of `columns`. A parsed row containing all of these
-   * is the header row; `parseStatement` scans past the preamble to the first
-   * row that contains them, and the same containment check drives bank
+   * Distinctive subset of the export's header row. A parsed row containing all
+   * of these is the header row; `parseStatement` scans past the preamble to the
+   * first row that contains them, and the same containment check drives bank
    * detection (the first preset whose signature is found wins).
    */
   headerSignature: string[];
@@ -53,26 +51,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
    * "Umsatz vorgemerkt" for not-yet-settled bookings, driving the pending rail.
    */
   Sparkasse: {
-    columns: [
-      "Auftragskonto",
-      "Buchungstag",
-      "Valutadatum",
-      "Buchungstext",
-      "Verwendungszweck",
-      "Glaeubiger ID",
-      "Mandatsreferenz",
-      "Kundenreferenz (End-to-End)",
-      "Sammlerreferenz",
-      "Lastschrift Ursprungsbetrag",
-      "Auslagenersatz Ruecklastschrift",
-      "Beguenstigter/Zahlungspflichtiger",
-      "Kontonummer/IBAN",
-      "BIC (SWIFT-Code)",
-      "Betrag",
-      "Waehrung",
-      "Info",
-      "Kategorie",
-    ],
     map: {
       date: "Buchungstag",
       description: "Beguenstigter/Zahlungspflichtiger",
@@ -96,26 +74,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
    * encoding retry in `detectStatement`. No pending marker.
    */
   PostbankGiro: {
-    columns: [
-      "Buchungstag",
-      "Wert",
-      "Umsatzart",
-      "Begünstigter / Auftraggeber",
-      "Verwendungszweck",
-      "IBAN / Kontonummer",
-      "BIC",
-      "Kundenreferenz",
-      "Mandatsreferenz",
-      "Gläubiger ID",
-      "Fremde Gebühren",
-      "Betrag",
-      "Abweichender Empfänger",
-      "Anzahl der Aufträge",
-      "Anzahl der Schecks",
-      "Soll",
-      "Haben",
-      "Währung",
-    ],
     map: {
       date: "Buchungstag",
       description: "Begünstigter / Auftraggeber",
@@ -140,16 +98,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
    * CreditCard account.
    */
   PostbankCC: {
-    columns: [
-      "Belegdatum",
-      "Eingangstag",
-      "Verwendungszweck",
-      "Fremdwährung",
-      "Betrag",
-      "Kurs",
-      "Betrag (2)",
-      "Währung",
-    ],
     map: {
       date: "Belegdatum",
       description: "Verwendungszweck",
@@ -175,26 +123,6 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
    * layout. No pending marker.
    */
   Renault: {
-    columns: [
-      "Bezeichnung Auftragskonto",
-      "IBAN Auftragskonto",
-      "BIC Auftragskonto",
-      "Bankname Auftragskonto",
-      "Buchungstag",
-      "Valutadatum",
-      "Name Zahlungsbeteiligter",
-      "IBAN Zahlungsbeteiligter",
-      "BIC (SWIFT-Code) Zahlungsbeteiligter",
-      "Buchungstext",
-      "Verwendungszweck",
-      "Betrag",
-      "Waehrung",
-      "Saldo nach Buchung",
-      "Bemerkung",
-      "Gekennzeichneter Umsatz",
-      "Glaeubiger ID",
-      "Mandatsreferenz",
-    ],
     map: {
       date: "Buchungstag",
       description: "Buchungstext",

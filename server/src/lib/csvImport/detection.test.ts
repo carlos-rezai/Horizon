@@ -121,10 +121,6 @@ describe("Renault preset — faithful to the real export header", () => {
     "Mandatsreferenz",
   ];
 
-  it("declares the real 18-column header on the preset", () => {
-    expect(BANK_PRESETS.Renault.columns).toEqual(REAL_RENAULT_HEADER);
-  });
-
   it("locates the real header in the fixture, and the mapping/signature still hold", () => {
     const detected = detectStatement(fixtureBytes("renault.csv"));
 

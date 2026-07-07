@@ -105,6 +105,30 @@ describe("BANK_PRESETS", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseStatement", () => {
+  // The real Sparkasse CSV-CAMT export header, exactly as the bank emits it —
+  // ground truth for the parsed columns, anchored to the fixture rather than to
+  // a preset field that merely mirrored it.
+  const REAL_SPARKASSE_HEADER = [
+    "Auftragskonto",
+    "Buchungstag",
+    "Valutadatum",
+    "Buchungstext",
+    "Verwendungszweck",
+    "Glaeubiger ID",
+    "Mandatsreferenz",
+    "Kundenreferenz (End-to-End)",
+    "Sammlerreferenz",
+    "Lastschrift Ursprungsbetrag",
+    "Auslagenersatz Ruecklastschrift",
+    "Beguenstigter/Zahlungspflichtiger",
+    "Kontonummer/IBAN",
+    "BIC (SWIFT-Code)",
+    "Betrag",
+    "Waehrung",
+    "Info",
+    "Kategorie",
+  ];
+
   it("skips a metadata preamble and starts at the headerSignature row", () => {
     // The real Sparkasse export leads with its header row; prepend a synthetic
     // preamble to prove the engine scans past non-header lines to the signature.
@@ -116,7 +140,7 @@ describe("parseStatement", () => {
       BANK_PRESETS.Sparkasse
     );
 
-    expect(columns).toEqual(BANK_PRESETS.Sparkasse.columns);
+    expect(columns).toEqual(REAL_SPARKASSE_HEADER);
     // Four transactions plus the dateless Endsaldo footer follow the header.
     expect(rows).toHaveLength(5);
     expect(rows[0].Buchungstag).toBe("24.06.26");
