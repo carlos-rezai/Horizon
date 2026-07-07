@@ -5,7 +5,7 @@ import type {
   Transaction,
   RecurringTransaction,
 } from "../../storage/types.js";
-import { detectStatement, mapStatementRows } from "./preview.js";
+import { detectStatement, mapStatementRows } from "./detectStatement.js";
 import { detectDuplicates, detectRecurring } from "./flagRows.js";
 import type { MappedRow } from "./types.js";
 

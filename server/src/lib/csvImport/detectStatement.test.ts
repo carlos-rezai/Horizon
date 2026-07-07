@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { mapStatementRows } from "./preview.js";
-import type { DetectedStatement } from "./preview.js";
+import { mapStatementRows } from "./detectStatement.js";
+import type { DetectedStatement } from "./detectStatement.js";
 import type { ColumnMapping } from "../../storage/types.js";
 
 // mapStatementRows is the seam where all three cross-cutting rails live:

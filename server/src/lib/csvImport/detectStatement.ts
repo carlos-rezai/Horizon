@@ -1,3 +1,10 @@
+/**
+ * Statement/bank detection: locate the bank (or fall back to generic), choose
+ * the encoding via a signature-driven retry, map the rows, and enforce the hard
+ * caps. This is the statement-level engine; the per-row flagging against account
+ * history lives in `flagRows.ts`, and the preview orchestrator that composes
+ * both is `buildPreview.ts`.
+ */
 import type { ColumnMapping } from "../../storage/types.js";
 import { BANK_PRESETS, DEFAULT_BANK } from "./bankPresets.js";
 import {
