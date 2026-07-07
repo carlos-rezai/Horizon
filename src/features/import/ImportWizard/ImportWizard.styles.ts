@@ -97,6 +97,9 @@ export const StyledFileName = styled.div`
   font-size: 13.5px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.onSurface};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const StyledFileMeta = styled.div`

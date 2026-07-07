@@ -193,7 +193,7 @@ export default function ImportWizard({
                 <Banknote size={20} />
               </StyledFileGlyph>
               <StyledFileInfo>
-                <StyledFileName>{file.name}</StyledFileName>
+                <StyledFileName title={file.name}>{file.name}</StyledFileName>
                 <StyledFileMeta>
                   {loading
                     ? "Detecting…"
