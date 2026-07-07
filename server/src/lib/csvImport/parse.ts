@@ -89,6 +89,22 @@ function dedupeHeader(header: string[]): string[] {
 }
 
 /**
+ * Map a raw record's positional cells onto the (de-duplicated) header column
+ * names. A missing trailing cell becomes `""`. Shared by the known-bank parser
+ * and the generic fallback so a header maps to its rows identically in both.
+ */
+export function buildRecord(
+  columns: string[],
+  cells: string[]
+): Record<string, string> {
+  const mapped: Record<string, string> = {};
+  columns.forEach((column, index) => {
+    mapped[column] = cells[index] ?? "";
+  });
+  return mapped;
+}
+
+/**
  * Parse a statement: scan past any metadata preamble to the header row
  * identified by the preset's `headerSignature`, then return that header and
  * each subsequent row mapped by column name. Quote-aware with the preset's
@@ -107,13 +123,9 @@ export function parseStatement(
   }
 
   const columns = dedupeHeader(records[headerIndex]);
-  const rows = records.slice(headerIndex + 1).map((record) => {
-    const mapped: Record<string, string> = {};
-    columns.forEach((column, index) => {
-      mapped[column] = record[index] ?? "";
-    });
-    return mapped;
-  });
+  const rows = records
+    .slice(headerIndex + 1)
+    .map((record) => buildRecord(columns, record));
 
   return { columns, rows };
 }

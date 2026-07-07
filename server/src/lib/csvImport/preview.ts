@@ -5,6 +5,7 @@ import {
   tryParseAmount,
   tryParseDate,
   splitRecords,
+  buildRecord,
 } from "./parse.js";
 import { categorize } from "./categorize.js";
 import type { MappedRow } from "./types.js";
@@ -107,13 +108,9 @@ function locateGeneric(text: string): DetectedStatement {
     );
   }
 
-  const dataRecords = records.slice(1).map((record) => {
-    const mapped: Record<string, string> = {};
-    columns.forEach((column, index) => {
-      mapped[column] = record[index] ?? "";
-    });
-    return mapped;
-  });
+  const dataRecords = records
+    .slice(1)
+    .map((record) => buildRecord(columns, record));
 
   return {
     bank: DEFAULT_BANK,
