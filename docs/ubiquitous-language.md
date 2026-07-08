@@ -796,6 +796,47 @@
 >
 > **Domain expert:** "Server-side. `GET /reports/year-comparison?month=` does the aggregation and pairing and sends one small payload of `thisYear`/`lastYear` cents. The card just colors each bar from the category name and scales to the shared max. `src/` never touches SQLite."
 
+## Category Management (new)
+
+| Term                      | Definition                                                                                                                                                                                 | Aliases to avoid                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| **Category Management**   | The feature giving the user control over the Category set — add/rename/recolor/delete **Custom Categories**, recolor/hide **Default Categories** — plus per-row category editing in import | Category editor, tag management          |
+| **Custom Category**       | A user-created Category — full CRUD (add, rename, recolor, delete); `is_default = 0`                                                                                                       | User category, added category            |
+| **Default Category**      | One of the eight seeded Categories (`is_default = 1`) — **recolor + hide only**, never renamed or deleted, because some names are referenced in code (`settlement.ts`, `categorize.ts`)    | Seeded category, built-in category       |
+| **Hidden Category**       | A **Default Category** with `hidden = 1` — filtered out of the **CategorySelect** pickers but still valid on existing data and in reports; a picker-visibility filter, never a data filter | Archived/disabled category, blend-out    |
+| **Category Reassignment** | The atomic bulk move of a Category's Transactions **and** RecurringTransactions from one name to another — the shared cascade behind both **rename** and **reassign-on-delete**            | Recategorize, category migration         |
+| **CategoryManagerModal**  | The modal (opened from the **CategoriesCard** in Settings) that is the full CRUD surface — lists Default and Custom Categories with rename/recolor/hide/delete affordances                 | Category modal, manage-categories dialog |
+| **CategoriesCard**        | The Settings-page card with a blurb and a "Manage categories" button that opens the **CategoryManagerModal**                                                                               | Category settings card                   |
+
+## Relationships (Category Management additions)
+
+- A **Category** is referenced by its **name** (TEXT) on both Transactions and RecurringTransactions — never by id; **Category Reassignment** is the only safe way to change a name in use
+- A **rename** of a **Custom Category** runs **Category Reassignment** across `categories` + `transactions` + `recurring_transactions` in one transaction — a **Default Category** is never renamed
+- **Delete** of a **Custom Category** that is in use triggers **reassign-on-delete**: the user picks a target Category (default Miscellaneous) and **Category Reassignment** runs before the row is deleted — data is never orphaned or silently dropped
+- **Category Color** is now authoritative (read from the stored `color` column); `colorForCategoryName` is only a fallback for a **Default Category** whose color is still NULL
+- The category palette (`categoryColorPalette`) is **20** on-theme swatches, mirrored identically in `server/src/storage/categoryColors.ts` and `src/utils/categoryColor/categoryColor.ts`
+- A **Hidden Category** is dropped from **CategorySelect** options everywhere (transaction, recurring, import) except that a Transaction already sitting in it still shows its current value when edited; the **CategoryManagerModal** always lists it (disabled) so it can be un-hidden
+- The CSV **Auto-Categorization** map stays hardcoded to **Default Categories** — flexibility comes from the per-row **CategorySelect** in the import review, not from custom keyword rules
+- Name uniqueness is **case-insensitive**; a colliding create/rename is rejected (409), never silently merged
+
+## Example dialogue (Category Management)
+
+> **Dev:** "If I rename a Custom Category from 'Vet' to 'Pets', what happens to the 30 transactions already tagged 'Vet'?"
+>
+> **Domain expert:** "**Category Reassignment** runs — one transaction updates the `categories` row and every `transactions` and `recurring_transactions` row holding 'Vet' to 'Pets'. Because a Category is referenced by name, rename _is_ a cascade. That's also why you can't rename a Default Category: 'Transfer' and 'Miscellaneous' are hardcoded in settlement and import."
+>
+> **Dev:** "I never use the 'Investment' Default Category. Can I delete it?"
+>
+> **Domain expert:** "No — Default Categories are never deleted. But you can **hide** it. It drops out of the pickers, so you stop seeing it when you add a transaction, while any existing 'Investment' spend still shows in the breakdown donut and year-comparison. Hiding is a picker filter, never a data filter."
+>
+> **Dev:** "I delete a Custom Category that has transactions — do they vanish?"
+>
+> **Domain expert:** "Never. Deleting an in-use Custom Category opens a Modal asking where to move its transactions — default Miscellaneous, or any Category you pick. **Category Reassignment** runs, then the row is deleted. No orphans."
+>
+> **Dev:** "During a CSV import, can I put rows into a Custom Category I just made?"
+>
+> **Domain expert:** "Yes — that's the whole point of slice two. The import review row now uses the same **CategorySelect** as the transaction modal, with inline-add. The auto-categorizer still guesses into Default Categories, but you override any row into any Category, custom included."
+
 ## Flagged ambiguities
 
 - **"ink" / "accent" vs MD3 token names"** (new) — the **Prototype** names colors
@@ -885,3 +926,6 @@
 - **"Betrag"** (new) — not unique. Postbank CC has two columns literally named `Betrag` (foreign-currency and EUR). Always address the EUR one as **`Betrag (2)`** (post **Header De-duplication**); never map `amount → "Betrag"` for that format. The bare name `Betrag` is unambiguous only in the single-`Betrag` presets (Sparkasse, Postbank giro, Renault).
 - **"pending"** (new) — in import context, a **Pending Row** is a bank-provisional entry (Sparkasse `Umsatz vorgemerkt`), flagged and pre-unchecked like duplicates/recurring. Do not conflate with a **Rejected Row** (parse failure) or with any UI loading/submitting state. Only a **Verified Preset** with a **Pending Column** produces Pending Rows.
 - **"description column"** (new) — never assume it is the counterparty. It is a single column chosen per **Verified Preset**: counterparty for Sparkasse / Postbank giro, `Verwendungszweck` for Postbank CC, `Buchungstext` for Renault. There is no counterparty + purpose composite.
+- **"hide" / "delete"** (new) — for Categories these are different operations on different targets. **Hide** applies to **Default Categories** only and is a reversible **picker-visibility** filter — the row and all its data stay. **Delete** applies to **Custom Categories** only and removes the row (via **reassign-on-delete** when in use). Never say "delete" when you mean hide a default, and never expose a hide toggle on a Custom Category or a delete on a Default Category.
+- **"rename" (Category)** (new) — rename is never a rename-in-place of a string key; it is a **Category Reassignment** cascade across `categories` + `transactions` + `recurring_transactions`, because Categories are referenced by name. Never treat a Category rename as a single-row `UPDATE`. A **merge** (rename onto an existing name) is explicitly _not_ rename — it is expressed as **reassign-on-delete**; rename collisions are rejected.
+- **"Category Color" authoritative vs derived** (new) — after Category Management the stored `categories.color` is the source of truth; `colorForCategoryName` is a **NULL-only fallback** for untouched Default Categories. Never re-hash the name for a Category that has a stored color, and never let the two mirrored `categoryColorPalette` files (server + frontend) diverge.
