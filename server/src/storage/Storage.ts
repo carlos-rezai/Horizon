@@ -71,6 +71,7 @@ export interface TransfersRepo {
 export interface CategoriesRepo {
   findAll(): Promise<Category[]>;
   create(input: CategoryCreateInput): Promise<Category>;
+  recolor(id: string, color: string): Promise<Category | null>;
   delete(id: string): Promise<DeleteResult | null>;
 }
 

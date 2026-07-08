@@ -1,6 +1,7 @@
 import PageHeader from "../../components/PageHeader/PageHeader";
 import StorageCard from "../../features/settings/StorageCard/StorageCard";
 import PreferencesCard from "../../features/settings/PreferencesCard/PreferencesCard";
+import CategoriesCard from "../../features/settings/CategoriesCard/CategoriesCard";
 import AboutCard from "../../features/settings/AboutCard/AboutCard";
 import { Container, FullWidth, Grid } from "./SettingsStoragePage.styles";
 
@@ -15,6 +16,7 @@ export default function SettingsStoragePage() {
       <Grid>
         <StorageCard />
         <PreferencesCard />
+        <CategoriesCard />
         <FullWidth>
           <AboutCard />
         </FullWidth>

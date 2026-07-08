@@ -1,5 +1,5 @@
 import { Router, type Request } from "express";
-import { CategoryCreateSchema } from "./category.js";
+import { CategoryCreateSchema, CategoryPatchSchema } from "./category.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
@@ -21,6 +21,28 @@ router.post("/", async (req, res) => {
   }
   const category = await getStorage(req).categories.create(parsed.data);
   res.status(201).json(category);
+});
+
+router.patch("/:id", async (req, res) => {
+  const parsed = CategoryPatchSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
+    return;
+  }
+  const { color } = parsed.data;
+  if (color === undefined) {
+    res.status(400).json({ error: "No supported fields to update" });
+    return;
+  }
+  const updated = await getStorage(req).categories.recolor(
+    req.params.id,
+    color
+  );
+  if (updated === null) {
+    res.status(404).json({ error: "Category not found" });
+    return;
+  }
+  res.status(200).json(updated);
 });
 
 router.delete("/:id", async (req, res) => {

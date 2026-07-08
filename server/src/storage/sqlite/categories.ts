@@ -31,6 +31,9 @@ export function createSqliteCategoriesRepo(
   const insertStmt = db.prepare(
     `INSERT INTO categories (id, name, is_default, color) VALUES (?, ?, 0, ?)`
   );
+  const recolorStmt = db.prepare(
+    `UPDATE categories SET color = ? WHERE id = ?`
+  );
   const deleteStmt = db.prepare(`DELETE FROM categories WHERE id = ?`);
   const checkInUseStmt = db.prepare(
     `SELECT 1 FROM transactions WHERE category = ? LIMIT 1`
@@ -53,6 +56,14 @@ export function createSqliteCategoriesRepo(
         color,
         hidden: false,
       };
+    },
+
+    async recolor(id, color) {
+      if (!isValidUuid(id)) return null;
+      const row = selectByIdStmt.get(id) as CategoryRow | undefined;
+      if (!row) return null;
+      recolorStmt.run(color, id);
+      return toCategoryDTO({ ...row, color });
     },
 
     async delete(id) {
