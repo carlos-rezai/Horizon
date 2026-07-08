@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { categoryColorPalette, colorForCategoryName } from "./categoryColor";
+import type { Category } from "../../types/category";
+import {
+  categoryColorPalette,
+  colorForCategoryName,
+  resolveCategoryColor,
+} from "./categoryColor";
 
 describe("colorForCategoryName", () => {
   it("is deterministic — the same name always maps to the same colour", () => {
@@ -30,5 +35,37 @@ describe("colorForCategoryName", () => {
     // Mirrors the server: an unmapped name hashes deterministically so frontend
     // swatches match the colour persisted/returned by GET /categories.
     expect(colorForCategoryName("Food")).toBe("#C9897F");
+  });
+});
+
+describe("resolveCategoryColor (issue #157)", () => {
+  // Stored `#123456` for Food deliberately differs from its name-hash
+  // (#C9897F) so a passing test can only mean the stored value won, not the
+  // derived one.
+  const categories: Category[] = [
+    { id: "1", name: "Food", isDefault: true, color: "#123456", hidden: false },
+    { id: "2", name: "Vet", isDefault: false, color: "#abcdef", hidden: false },
+  ];
+
+  it("returns the matching category's stored colour", () => {
+    expect(resolveCategoryColor("Food", categories)).toBe("#123456");
+    expect(resolveCategoryColor("Vet", categories)).toBe("#abcdef");
+  });
+
+  it("prefers the stored colour over the name-derived colour — colour is authoritative", () => {
+    expect(resolveCategoryColor("Food", categories)).not.toBe(
+      colorForCategoryName("Food")
+    );
+    expect(resolveCategoryColor("Food", categories)).toBe("#123456");
+  });
+
+  it("falls back to colorForCategoryName when no category matches (fresh install / unknown name)", () => {
+    // colorForCategoryName is now only the NULL/absent fallback.
+    expect(resolveCategoryColor("Groceries", categories)).toBe(
+      colorForCategoryName("Groceries")
+    );
+    expect(resolveCategoryColor("Anything", [])).toBe(
+      colorForCategoryName("Anything")
+    );
   });
 });

@@ -11,6 +11,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Transaction } from "../../../types/transaction";
+import type { Category } from "../../../types/category";
 import SpendingList from "./SpendingList";
 
 const accounts: AccountWithBalance[] = [
@@ -81,6 +82,7 @@ function renderList(
         accounts={accounts}
         transactions={transactions}
         monthLabel="June"
+        categories={props.categories ?? []}
         onAddExpense={props.onAddExpense ?? vi.fn()}
         onEditTransaction={props.onEditTransaction ?? vi.fn()}
       />
@@ -147,6 +149,22 @@ describe("SpendingList", () => {
     renderList();
     expect(screen.getByText("Shopping")).toBeInTheDocument();
     expect(screen.getByText("Groceries")).toBeInTheDocument();
+  });
+
+  it("colours the category badge from the stored category colour (issue #157)", () => {
+    // #0a0b0c differs from colorForCategoryName('Shopping') so only reading the
+    // stored value can make this pass.
+    const categories: Category[] = [
+      {
+        id: "c1",
+        name: "Shopping",
+        isDefault: true,
+        color: "#0a0b0c",
+        hidden: false,
+      },
+    ];
+    renderList({ categories });
+    expect(screen.getByText("Shopping")).toHaveStyle({ color: "#0a0b0c" });
   });
 
   it("renders the day-of-month for each row", () => {

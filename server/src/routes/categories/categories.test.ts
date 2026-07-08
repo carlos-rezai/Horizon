@@ -73,6 +73,27 @@ describe("GET /categories", () => {
     expect(names).toContain("Food");
   });
 
+  it("carries an authoritative hex color and a hidden boolean on every category", async () => {
+    const res = await request(app).get("/categories");
+
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThan(0);
+    for (const cat of res.body as Array<{ color: unknown; hidden: unknown }>) {
+      expect(typeof cat.color).toBe("string");
+      expect(cat.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+      expect(typeof cat.hidden).toBe("boolean");
+    }
+  });
+
+  it("marks seeded default categories as not hidden", async () => {
+    const res = await request(app).get("/categories");
+
+    const food = (res.body as Array<{ name: string; hidden: boolean }>).find(
+      (c) => c.name === "Food"
+    );
+    expect(food?.hidden).toBe(false);
+  });
+
   it("returns the same list regardless of which account is used", async () => {
     const accountA = await createAccount();
     const accountB = await request(app).post("/accounts").send({

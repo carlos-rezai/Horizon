@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Transaction } from "../../types/transaction";
+import type { Category } from "../../types/category";
 import { deriveBreakdown } from "./monthBreakdown";
 import { colorForCategoryName } from "../categoryColor/categoryColor";
 
@@ -70,5 +71,32 @@ describe("deriveBreakdown", () => {
 
   it("returns empty segments and zero total for an empty month", () => {
     expect(deriveBreakdown([])).toEqual({ segments: [], total: 0 });
+  });
+
+  // --- authoritative category colour (issue #157) ---------------------------
+
+  it("reads each slice colour from the matching category, falling back to the name hash", () => {
+    // Stored #111111 for Groceries differs from its name-hash so the stored
+    // value winning is unambiguous; Dining is absent and must fall back.
+    const categories: Category[] = [
+      {
+        id: "1",
+        name: "Groceries",
+        isDefault: true,
+        color: "#111111",
+        hidden: false,
+      },
+    ];
+    const txns = [
+      tx({ amount: -5000, category: "Groceries" }),
+      tx({ amount: -3000, category: "Dining" }),
+    ];
+
+    const { segments } = deriveBreakdown(txns, categories);
+    const groceries = segments.find((s) => s.label === "Groceries");
+    const dining = segments.find((s) => s.label === "Dining");
+
+    expect(groceries?.color).toBe("#111111");
+    expect(dining?.color).toBe(colorForCategoryName("Dining"));
   });
 });

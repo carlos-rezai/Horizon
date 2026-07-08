@@ -279,6 +279,57 @@ describe("migrate (SQLite)", () => {
     });
   });
 
+  describe("migration 015 (category hidden)", () => {
+    it("adds a NOT NULL hidden column defaulting to 0 on categories", async () => {
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const cols = db.prepare(`PRAGMA table_info(categories)`).all() as Array<{
+        name: string;
+        notnull: number;
+        dflt_value: string | null;
+      }>;
+      const hidden = cols.find((c) => c.name === "hidden");
+
+      expect(hidden).toBeDefined();
+      expect(hidden?.notnull).toBe(1);
+      expect(hidden?.dflt_value).toBe("0");
+
+      db.close();
+    });
+
+    it("advances PRAGMA user_version to at least 15", async () => {
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const version = db.pragma("user_version", { simple: true }) as number;
+      expect(version).toBeGreaterThanOrEqual(15);
+
+      db.close();
+    });
+
+    it("backfills hidden = 0 on the pre-existing seeded default categories", async () => {
+      // The default categories are seeded in migration 001 — they exist before
+      // 015 adds the column, so NOT NULL DEFAULT 0 must forward-fill them to 0.
+      const db = new Database(":memory:");
+
+      await migrate(db);
+
+      const rows = db
+        .prepare(`SELECT name, hidden FROM categories WHERE is_default = 1`)
+        .all() as Array<{ name: string; hidden: number }>;
+
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) {
+        expect(row.hidden).toBe(0);
+      }
+
+      db.close();
+    });
+  });
+
   describe("tempfile lifecycle", () => {
     let dbPath: string;
 

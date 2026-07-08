@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import { formatBalance } from "../../../utils/format/format";
+import type { Category } from "../../../types/category";
 import YearComparison from "./YearComparison";
 
 interface Row {
@@ -84,6 +85,30 @@ describe("YearComparison — rows", () => {
     const thisYearBar = within(groceriesRow).getByTestId("yc-bar-thisyear");
     // Groceries resolves to the sage swatch (#74C29B) via colorForCategoryName
     expect(thisYearBar).toHaveStyle({ backgroundColor: "#74C29B" });
+  });
+
+  it("colors the this-year bar from the stored category color (issue #157)", () => {
+    // #654321 differs from colorForCategoryName('Groceries') (#74C29B) so a
+    // pass proves the bar read the stored, authoritative colour.
+    const categories: Category[] = [
+      {
+        id: "1",
+        name: "Groceries",
+        isDefault: true,
+        color: "#654321",
+        hidden: false,
+      },
+    ];
+    render(
+      <ThemeProvider theme={theme}>
+        <YearComparison monthLabel="June" rows={ROWS} categories={categories} />
+      </ThemeProvider>
+    );
+    const groceriesRow = screen
+      .getByText("Groceries")
+      .closest("[data-testid='yc-row']") as HTMLElement;
+    const thisYearBar = within(groceriesRow).getByTestId("yc-bar-thisyear");
+    expect(thisYearBar).toHaveStyle({ backgroundColor: "#654321" });
   });
 });
 

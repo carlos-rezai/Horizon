@@ -1474,6 +1474,46 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Categories — hidden (issue #157)
+  //
+  // Every Category DTO now carries a `hidden` boolean alongside its `color`.
+  // On a fresh install every category is hidden = false, so an untouched
+  // install reads exactly as it did before Category Management. (The colour
+  // NULL-fallback is already covered by the "CategoriesRepo color" block.)
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo hidden", () => {
+    it("returns hidden: false for every seeded default category", async () => {
+      const all = await storage.categories.findAll();
+      const defaults = all.filter((c) =>
+        (DEFAULT_CATEGORY_NAMES as readonly string[]).includes(c.name)
+      );
+
+      expect(defaults).toHaveLength(DEFAULT_CATEGORY_NAMES.length);
+      for (const cat of defaults) {
+        expect(cat.hidden).toBe(false);
+      }
+    });
+
+    it("returns hidden: false from create for a new custom category", async () => {
+      const created = await storage.categories.create({ name: "Vet" });
+      expect(created.hidden).toBe(false);
+
+      const all = await storage.categories.findAll();
+      const fromAll = all.find((c) => c.name === "Vet");
+      expect(fromAll?.hidden).toBe(false);
+    });
+
+    it("exposes hidden as a boolean on every findAll DTO", async () => {
+      const all = await storage.categories.findAll();
+      expect(all.length).toBeGreaterThan(0);
+      for (const cat of all) {
+        expect(typeof cat.hidden).toBe("boolean");
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 
