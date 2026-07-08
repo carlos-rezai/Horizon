@@ -202,3 +202,65 @@ describe("DELETE /categories/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PATCH /categories/:id  { color }
+// ---------------------------------------------------------------------------
+
+describe("PATCH /categories/:id { color }", () => {
+  const NEW_COLOR = "#6FBFBF";
+
+  async function findCategory(name: string) {
+    const list = await request(app).get("/categories");
+    return (
+      list.body as Array<{ id: string; name: string; color: string }>
+    ).find((c) => c.name === name);
+  }
+
+  it("recolors a custom category and returns the updated category", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+
+    const res = await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ color: NEW_COLOR });
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(created.body.id);
+    expect(res.body.name).toBe("Vet");
+    expect(res.body.color).toBe(NEW_COLOR);
+  });
+
+  it("persists the new color so a follow-up GET reflects it", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+
+    await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ color: NEW_COLOR });
+
+    const vet = await findCategory("Vet");
+    expect(vet?.color).toBe(NEW_COLOR);
+  });
+
+  it("recolors a default category", async () => {
+    const food = await findCategory("Food");
+
+    const res = await request(app)
+      .patch(`/categories/${food!.id}`)
+      .send({ color: NEW_COLOR });
+
+    expect(res.status).toBe(200);
+    expect(res.body.color).toBe(NEW_COLOR);
+  });
+
+  it("returns 404 for an unknown id", async () => {
+    const res = await request(app)
+      .patch("/categories/000000000000000000000000")
+      .send({ color: NEW_COLOR });
+
+    expect(res.status).toBe(404);
+  });
+});

@@ -1514,6 +1514,59 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Categories — recolor (issue #158)
+  //
+  // `recolor(id, color)` overwrites the stored colour and returns the updated
+  // Category. It is allowed on defaults (recolour is one of the two operations
+  // a default supports) and returns null for an unknown / unparseable id.
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo.recolor", () => {
+    const NEW_COLOR = "#6FBFBF";
+
+    it("updates a custom category's colour and findAll reflects it", async () => {
+      const created = await storage.categories.create({ name: "Vet" });
+      expect(created.color).not.toBe(NEW_COLOR);
+
+      await storage.categories.recolor(created.id, NEW_COLOR);
+
+      const all = await storage.categories.findAll();
+      const fromAll = all.find((c) => c.name === "Vet");
+      expect(fromAll?.color).toBe(NEW_COLOR);
+    });
+
+    it("is allowed on a default category", async () => {
+      const all = await storage.categories.findAll();
+      const food = all.find((c) => c.name === "Food");
+      expect(food).toBeDefined();
+
+      const updated = await storage.categories.recolor(food!.id, NEW_COLOR);
+
+      expect(updated).not.toBeNull();
+      expect(updated?.color).toBe(NEW_COLOR);
+
+      const reread = await storage.categories.findAll();
+      expect(reread.find((c) => c.name === "Food")?.color).toBe(NEW_COLOR);
+    });
+
+    it("returns the updated Category carrying the new colour", async () => {
+      const created = await storage.categories.create({ name: "Vet" });
+
+      const updated = await storage.categories.recolor(created.id, NEW_COLOR);
+
+      expect(updated).not.toBeNull();
+      expect(updated?.id).toBe(created.id);
+      expect(updated?.name).toBe("Vet");
+      expect(updated?.color).toBe(NEW_COLOR);
+    });
+
+    it("returns null for an unparseable id", async () => {
+      const result = await storage.categories.recolor("not-an-id", NEW_COLOR);
+      expect(result).toBeNull();
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 
