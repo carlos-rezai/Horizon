@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Transaction } from "../../../types/transaction";
+import type { Category } from "../../../types/category";
 import Button from "../../../primitives/Button/Button";
 import Chip from "../../../primitives/Chip/Chip";
 import Badge from "../../../primitives/Badge/Badge";
@@ -10,7 +11,7 @@ import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { colorForCategoryName } from "../../../utils/categoryColor/categoryColor";
+import { resolveCategoryColor } from "../../../utils/categoryColor/categoryColor";
 import {
   StyledTabsWrap,
   StyledDay,
@@ -46,6 +47,8 @@ interface Props {
   accounts: AccountWithBalance[];
   /** Variable spending for the month across all spendable accounts. */
   transactions: Transaction[];
+  /** Categories, for resolving each badge's authoritative stored colour. */
+  categories: Category[];
   /** Full month label (e.g. "June") for the section title. */
   monthLabel: string;
   onAddExpense: (accountId: string) => void;
@@ -59,6 +62,7 @@ interface Props {
 export default function SpendingList({
   accounts,
   transactions,
+  categories,
   monthLabel,
   onAddExpense,
   onEditTransaction,
@@ -136,7 +140,7 @@ export default function SpendingList({
                     </StyledAccountName>
                   </StyledAccountLine>
                 </div>
-                <Badge color={colorForCategoryName(t.category)}>
+                <Badge color={resolveCategoryColor(t.category, categories)}>
                   {t.category}
                 </Badge>
                 <Money cents={t.amount} sign />

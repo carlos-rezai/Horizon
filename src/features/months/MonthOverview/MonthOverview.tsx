@@ -15,6 +15,7 @@ import MonthBreakdown from "../MonthBreakdown/MonthBreakdown";
 import YearComparison from "../YearComparison/YearComparison";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison";
+import { useCategories } from "../../categories/useCategories";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
 import {
@@ -66,6 +67,7 @@ export default function MonthOverview({ accounts }: Props) {
   );
   const { rows: yearComparisonRows, error: yearComparisonError } =
     useYearComparison(monthStr);
+  const { categories } = useCategories();
 
   const variableSpending = selectVariableSpending(transactions);
   const stats = deriveMonthStats(transactions, monthStr);
@@ -112,15 +114,20 @@ export default function MonthOverview({ accounts }: Props) {
         <SpendingList
           accounts={spendingAccounts}
           transactions={variableSpending}
+          categories={categories}
           monthLabel={monthLabel}
           onAddExpense={(accountId) => setCreateAccountId(accountId)}
           onEditTransaction={(tx) => setSelectedTransaction(tx)}
         />
         <StyledRightColumn>
-          <MonthBreakdown transactions={variableSpending} />
+          <MonthBreakdown
+            transactions={variableSpending}
+            categories={categories}
+          />
           <YearComparison
             monthLabel={monthLabel}
             rows={yearComparisonRows}
+            categories={categories}
             error={yearComparisonError}
           />
         </StyledRightColumn>

@@ -1,7 +1,8 @@
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import { formatBalance } from "../../../utils/format/format";
-import { colorForCategoryName } from "../../../utils/categoryColor/categoryColor";
+import { resolveCategoryColor } from "../../../utils/categoryColor/categoryColor";
+import type { Category } from "../../../types/category";
 import type { YearComparisonRow } from "../useYearComparison";
 import {
   StyledIntro,
@@ -26,6 +27,8 @@ interface Props {
   monthLabel: string;
   /** Ranked category rows, this year against the same span last year. */
   rows: YearComparisonRow[];
+  /** Categories, for resolving each bar's authoritative stored colour. */
+  categories?: Category[];
   /** Fetch failure message, if the comparison could not be loaded. */
   error?: string | null;
 }
@@ -42,7 +45,12 @@ function widthPct(value: number, max: number): string {
  * category: this year in the category colour, last year muted. All bars share a
  * single maximum so magnitudes read against each other across both years.
  */
-export default function YearComparison({ monthLabel, rows, error }: Props) {
+export default function YearComparison({
+  monthLabel,
+  rows,
+  categories = [],
+  error,
+}: Props) {
   const sharedMax = Math.max(
     0,
     ...rows.map((r) => Math.max(r.thisYear, r.lastYear))
@@ -95,7 +103,10 @@ export default function YearComparison({ monthLabel, rows, error }: Props) {
                   data-testid="yc-bar-thisyear"
                   style={{
                     width: widthPct(row.thisYear, sharedMax),
-                    backgroundColor: colorForCategoryName(row.category),
+                    backgroundColor: resolveCategoryColor(
+                      row.category,
+                      categories
+                    ),
                   }}
                 />
               </StyledTrack>

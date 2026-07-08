@@ -1,5 +1,6 @@
 import type { Transaction } from "../../types/transaction";
-import { colorForCategoryName } from "../categoryColor/categoryColor";
+import type { Category } from "../../types/category";
+import { resolveCategoryColor } from "../categoryColor/categoryColor";
 import { selectVariableSpending } from "../monthStats/monthStats";
 
 /**
@@ -22,10 +23,14 @@ export interface Breakdown {
 
 /**
  * Group a month's variable spending by category into donut slices. Amounts are
- * absolute magnitudes so the ring renders regardless of expense sign; colours
- * are resolved deterministically from each category name.
+ * absolute magnitudes so the ring renders regardless of expense sign; each
+ * slice's colour is the matching Category's authoritative stored colour,
+ * falling back to the name-derived colour for categories not in the list.
  */
-export function deriveBreakdown(transactions: Transaction[]): Breakdown {
+export function deriveBreakdown(
+  transactions: Transaction[],
+  categories: Category[] = []
+): Breakdown {
   const byCategory = new Map<string, number>();
   for (const t of selectVariableSpending(transactions)) {
     byCategory.set(
@@ -37,7 +42,7 @@ export function deriveBreakdown(transactions: Transaction[]): Breakdown {
   const segments: BreakdownSlice[] = [...byCategory.entries()]
     .map(([label, amount]) => ({
       label,
-      color: colorForCategoryName(label),
+      color: resolveCategoryColor(label, categories),
       amount,
     }))
     .sort((a, b) => b.amount - a.amount);

@@ -10,6 +10,7 @@ interface CategoryRow {
   name: string;
   is_default: number;
   color: string | null;
+  hidden: number;
 }
 
 function toCategoryDTO(row: CategoryRow): Category {
@@ -18,6 +19,7 @@ function toCategoryDTO(row: CategoryRow): Category {
     name: row.name,
     isDefault: row.is_default === 1,
     color: row.color ?? colorForCategoryName(row.name),
+    hidden: row.hidden === 1,
   };
 }
 
@@ -49,6 +51,7 @@ export function createSqliteCategoriesRepo(
         name: input.name,
         isDefault: false,
         color,
+        hidden: false,
       };
     },
 

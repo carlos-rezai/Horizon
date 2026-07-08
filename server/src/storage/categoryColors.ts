@@ -18,6 +18,16 @@ export const categoryColorPalette = [
   "#909AAE", // slate
   "#D08AB0", // pink
   "#9FBF6F", // olive
+  "#6F9FBF", // dusk
+  "#BF6F8F", // mauve
+  "#6FBF9F", // jade
+  "#BFA36F", // wheat
+  "#8FBF6F", // fern
+  "#6F8FBF", // denim
+  "#BF7F6F", // brick
+  "#9F6FBF", // amethyst
+  "#6FBFBF", // cyan
+  "#BF8F6F", // caramel
 ] as const;
 
 // The canonical breakdown categories carry hand-authored swatches (from the

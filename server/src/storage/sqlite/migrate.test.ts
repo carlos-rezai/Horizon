@@ -263,7 +263,10 @@ describe("migrate (SQLite)", () => {
 
       // Rewind to just before 014 and re-run: the reset migration must re-apply
       // and delete every remembered preset so the corrected built-in defaults
-      // win on the next import.
+      // win on the next import. Replaying the forward chain also re-runs 015,
+      // whose plain ADD COLUMN is not idempotent, so drop the column it adds
+      // before rewinding.
+      db.exec(`ALTER TABLE categories DROP COLUMN hidden`);
       db.pragma("user_version = 13");
       await migrate(db);
 
@@ -273,7 +276,7 @@ describe("migrate (SQLite)", () => {
         }
       ).n;
       expect(count).toBe(0);
-      expect(db.pragma("user_version", { simple: true }) as number).toBe(14);
+      expect(db.pragma("user_version", { simple: true }) as number).toBe(15);
 
       db.close();
     });

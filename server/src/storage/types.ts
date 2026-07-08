@@ -73,6 +73,7 @@ export interface Category {
   name: string;
   isDefault: boolean;
   color: string;
+  hidden: boolean;
 }
 
 export interface CategoryCreateInput {

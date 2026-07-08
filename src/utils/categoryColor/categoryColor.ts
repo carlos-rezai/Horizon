@@ -7,6 +7,8 @@
 // concern. The palette mirrors `accountColorPalette` so categories and accounts
 // share one visual language.
 
+import type { Category } from "../../types/category";
+
 export const categoryColorPalette = [
   "#7FA7D9", // steel
   "#74C29B", // sage
@@ -18,6 +20,16 @@ export const categoryColorPalette = [
   "#909AAE", // slate
   "#D08AB0", // pink
   "#9FBF6F", // olive
+  "#6F9FBF", // dusk
+  "#BF6F8F", // mauve
+  "#6FBF9F", // jade
+  "#BFA36F", // wheat
+  "#8FBF6F", // fern
+  "#6F8FBF", // denim
+  "#BF7F6F", // brick
+  "#9F6FBF", // amethyst
+  "#6FBFBF", // cyan
+  "#BF8F6F", // caramel
 ] as const;
 
 // The canonical breakdown categories carry hand-authored swatches (from the
@@ -42,4 +54,20 @@ export function colorForCategoryName(name: string): string {
     hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   }
   return categoryColorPalette[hash % categoryColorPalette.length];
+}
+
+/**
+ * Authoritative category colour (issue #157). The stored `categories.color`
+ * is the source of truth: when a Category with the given name is present its
+ * stored colour wins. `colorForCategoryName` is only the fallback for names
+ * with no matching Category — a fresh install (colours seeded NULL and thus
+ * resolved to the derived value already) or a name that no longer maps to a
+ * Category — so an untouched install renders exactly as before.
+ */
+export function resolveCategoryColor(
+  name: string,
+  categories: Pick<Category, "name" | "color">[]
+): string {
+  const match = categories.find((c) => c.name === name);
+  return match?.color ?? colorForCategoryName(name);
 }
