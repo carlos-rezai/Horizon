@@ -99,4 +99,32 @@ describe("deriveBreakdown", () => {
     expect(groceries?.color).toBe("#111111");
     expect(dining?.color).toBe(colorForCategoryName("Dining"));
   });
+
+  // --- hidden is picker-only, never a data filter (issue #162) --------------
+
+  it("still includes spending for a category flagged hidden", () => {
+    // Hiding a Default Category removes it from the pickers, but its spend must
+    // keep showing in the breakdown donut — hidden is never a data filter.
+    const categories: Category[] = [
+      {
+        id: "1",
+        name: "Groceries",
+        isDefault: true,
+        color: "#111111",
+        hidden: true,
+      },
+    ];
+    const txns = [
+      tx({ amount: -5000, category: "Groceries" }),
+      tx({ amount: -3000, category: "Dining" }),
+    ];
+
+    const { segments, total } = deriveBreakdown(txns, categories);
+    const groceries = segments.find((s) => s.label === "Groceries");
+
+    expect(groceries?.amount).toBe(5000);
+    // the hidden category keeps its authoritative stored colour, too
+    expect(groceries?.color).toBe("#111111");
+    expect(total).toBe(8000);
+  });
 });

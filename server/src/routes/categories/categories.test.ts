@@ -495,3 +495,77 @@ describe("PATCH /categories/:id { name }", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PATCH /categories/:id  { hidden }  — hide / un-hide a Default (issue #162)
+// ---------------------------------------------------------------------------
+
+describe("PATCH /categories/:id { hidden }", () => {
+  async function findCategory(name: string) {
+    const list = await request(app).get("/categories");
+    return (
+      list.body as Array<{
+        id: string;
+        name: string;
+        isDefault: boolean;
+        hidden: boolean;
+      }>
+    ).find((c) => c.name === name);
+  }
+
+  it("hides a default category and returns the updated category", async () => {
+    const food = await findCategory("Food");
+
+    const res = await request(app)
+      .patch(`/categories/${food!.id}`)
+      .send({ hidden: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(food!.id);
+    expect(res.body.hidden).toBe(true);
+  });
+
+  it("persists the hidden flag so a follow-up GET reflects it", async () => {
+    const food = await findCategory("Food");
+
+    await request(app).patch(`/categories/${food!.id}`).send({ hidden: true });
+
+    expect((await findCategory("Food"))?.hidden).toBe(true);
+  });
+
+  it("un-hides a default category (reversible)", async () => {
+    const food = await findCategory("Food");
+    await request(app).patch(`/categories/${food!.id}`).send({ hidden: true });
+
+    const res = await request(app)
+      .patch(`/categories/${food!.id}`)
+      .send({ hidden: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.hidden).toBe(false);
+    expect((await findCategory("Food"))?.hidden).toBe(false);
+  });
+
+  it("returns 409 when hiding a custom category", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+
+    const res = await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ hidden: true });
+
+    expect(res.status).toBe(409);
+    expect(typeof res.body.error).toBe("string");
+    // the custom category is left visible after a rejected hide
+    expect((await findCategory("Vet"))?.hidden).toBe(false);
+  });
+
+  it("returns 404 for an unknown id", async () => {
+    const res = await request(app)
+      .patch("/categories/000000000000000000000000")
+      .send({ hidden: true });
+
+    expect(res.status).toBe(404);
+  });
+});

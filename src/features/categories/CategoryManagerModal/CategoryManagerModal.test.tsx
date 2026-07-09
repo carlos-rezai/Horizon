@@ -482,3 +482,107 @@ describe("CategoryManagerModal — delete a custom category (issue #161)", () =>
     });
   });
 });
+
+describe("CategoryManagerModal — hide / un-hide a default category (issue #162)", () => {
+  const foodHidden: Category = { ...foodDefault, hidden: true };
+
+  it("exposes a hide toggle on default rows only, never on custom rows", async () => {
+    renderModal([foodDefault, vetCustom]);
+
+    const defaultRow = await screen.findByTestId(
+      `category-row-${foodDefault.id}`
+    );
+    expect(
+      within(defaultRow).getByRole("button", { name: /^hide$/i })
+    ).toBeInTheDocument();
+
+    const customRow = screen.getByTestId(`category-row-${vetCustom.id}`);
+    expect(
+      within(customRow).queryByRole("button", { name: /hide/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("PATCHes { hidden: true } and marks the row hidden/disabled when Hide is clicked", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, incomeDefault],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...foodDefault, hidden: true }),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${foodDefault.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /^hide$/i }));
+
+    await waitFor(() => {
+      const patchCall = fetchSpy.mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes(`/categories/${foodDefault.id}`) &&
+          (init as RequestInit | undefined)?.method === "PATCH"
+      );
+      expect(patchCall).toBeDefined();
+      const body = JSON.parse((patchCall![1] as RequestInit).body as string);
+      expect(body.hidden).toBe(true);
+    });
+
+    await waitFor(() => {
+      const updated = screen.getByTestId(`category-row-${foodDefault.id}`);
+      expect(updated).toHaveAttribute("aria-disabled", "true");
+      expect(
+        within(updated).getByRole("button", { name: /un-?hide/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("renders an already-hidden default as disabled with an Un-hide toggle, and un-hides it (reversible)", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodHidden, incomeDefault],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...foodHidden, hidden: false }),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${foodHidden.id}`);
+    expect(row).toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.click(within(row).getByRole("button", { name: /un-?hide/i }));
+
+    await waitFor(() => {
+      const patchCall = fetchSpy.mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes(`/categories/${foodHidden.id}`) &&
+          (init as RequestInit | undefined)?.method === "PATCH"
+      );
+      expect(patchCall).toBeDefined();
+      const body = JSON.parse((patchCall![1] as RequestInit).body as string);
+      expect(body.hidden).toBe(false);
+    });
+
+    await waitFor(() => {
+      const updated = screen.getByTestId(`category-row-${foodHidden.id}`);
+      expect(updated).not.toHaveAttribute("aria-disabled", "true");
+      expect(
+        within(updated).getByRole("button", { name: /^hide$/i })
+      ).toBeInTheDocument();
+    });
+  });
+});

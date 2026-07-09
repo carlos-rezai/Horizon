@@ -197,3 +197,62 @@ describe("CategorySelect — inline category add", () => {
     });
   });
 });
+
+describe("CategorySelect — hidden categories (issue #162)", () => {
+  const withHidden: Category[] = [
+    {
+      id: "cat-food",
+      name: "Food",
+      isDefault: true,
+      color: "#74C29B",
+      hidden: false,
+    },
+    {
+      id: "cat-archived",
+      name: "Archived",
+      isDefault: true,
+      color: "#909AAE",
+      hidden: true,
+    },
+  ];
+
+  it("omits hidden categories from the dropdown", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => withHidden,
+    } as Response);
+
+    renderSelect();
+
+    expect(
+      await screen.findByRole("option", { name: "Food" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Archived" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("always includes the currently-selected category, even if it is hidden", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => withHidden,
+    } as Response);
+
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider theme={theme}>
+        <CategorySelect onChange={onChange} initialCategory="Archived" />
+      </ThemeProvider>
+    );
+
+    // the hidden category the row already sits in is still offered + selected
+    expect(
+      await screen.findByRole("option", { name: "Archived" })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/category/i)).toHaveValue("cat-archived");
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith("Archived");
+    });
+  });
+});

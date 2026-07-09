@@ -2108,6 +2108,114 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Categories — hide / un-hide a Default Category (issue #162)
+  //
+  // `setHidden(id, hidden)` flips the picker-visibility flag on a Default
+  // Category. It is the ONLY write allowed to hide, and it is default-only:
+  // a Custom Category is rejected with { ok: false, reason: "is_custom" }
+  // (custom categories are removed via delete, never hidden). It returns the
+  // updated Category on success, is fully reversible (hidden can go back to
+  // false), and returns null for an unparseable / unknown id. Crucially,
+  // hiding is picker-only — it NEVER touches data: a transaction sitting in a
+  // now-hidden Default Category is left exactly as it was, so it still counts
+  // in the breakdown donut and year-comparison.
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo.setHidden", () => {
+    async function defaultByName(name: string): Promise<Category> {
+      const all = await storage.categories.findAll();
+      const found = all.find((c) => c.name === name);
+      expect(found).toBeDefined();
+      return found!;
+    }
+
+    it("hides a default category and findAll reflects hidden: true", async () => {
+      const food = await defaultByName("Food");
+      expect(food.hidden).toBe(false);
+
+      const result = await storage.categories.setHidden(food.id, true);
+
+      expect(result).toEqual({ ok: true, category: expect.any(Object) });
+      if (!result || !result.ok) return;
+      expect(result.category.hidden).toBe(true);
+
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === food.id)?.hidden).toBe(true);
+    });
+
+    it("un-hides a previously hidden default category (reversible)", async () => {
+      const food = await defaultByName("Food");
+      await storage.categories.setHidden(food.id, true);
+
+      const result = await storage.categories.setHidden(food.id, false);
+
+      expect(result).not.toBeNull();
+      if (!result || !result.ok) return;
+      expect(result.category.hidden).toBe(false);
+
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === food.id)?.hidden).toBe(false);
+    });
+
+    it("returns the updated Category carrying the new hidden flag", async () => {
+      const food = await defaultByName("Food");
+
+      const result = await storage.categories.setHidden(food.id, true);
+
+      expect(result).not.toBeNull();
+      if (!result || !result.ok) return;
+      expect(result.category.id).toBe(food.id);
+      expect(result.category.name).toBe("Food");
+      expect(result.category.isDefault).toBe(true);
+      expect(result.category.hidden).toBe(true);
+    });
+
+    it('rejects a custom category with { ok: false, reason: "is_custom" } and leaves it unchanged', async () => {
+      const vet = await createCategory("Vet");
+      expect(vet.hidden).toBe(false);
+
+      const result = await storage.categories.setHidden(vet.id, true);
+
+      expect(result).toEqual({ ok: false, reason: "is_custom" });
+
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)?.hidden).toBe(false);
+    });
+
+    it("returns null for an unparseable id", async () => {
+      const result = await storage.categories.setHidden("not-an-id", true);
+      expect(result).toBeNull();
+    });
+
+    it("returns null for a well-formed but unknown id", async () => {
+      const result = await storage.categories.setHidden(
+        "00000000-0000-0000-0000-000000000000",
+        true
+      );
+      expect(result).toBeNull();
+    });
+
+    it("never touches data: a transaction in a now-hidden default is left intact", async () => {
+      const food = await defaultByName("Food");
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -5000,
+        description: "Groceries",
+        category: "Food",
+      });
+
+      await storage.categories.setHidden(food.id, true);
+
+      const txs = await storage.transactions.findAll();
+      const groceries = txs.find((t) => t.description === "Groceries");
+      expect(groceries).toBeDefined();
+      expect(groceries?.category).toBe("Food");
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 
