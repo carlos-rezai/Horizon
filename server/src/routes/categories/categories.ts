@@ -81,7 +81,12 @@ router.patch("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const result = await getStorage(req).categories.delete(req.params.id);
+  const reassignTo =
+    typeof req.query.reassignTo === "string" ? req.query.reassignTo : undefined;
+  const result = await getStorage(req).categories.delete(
+    req.params.id,
+    reassignTo
+  );
   if (result === null) {
     res.status(404).json({ error: "Category not found" });
     return;

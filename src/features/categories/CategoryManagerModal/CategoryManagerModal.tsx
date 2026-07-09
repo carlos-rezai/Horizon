@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Modal from "../../../components/Modal/Modal";
+import Select from "../../../primitives/Select/Select";
 import type { Category } from "../../../types/category";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";
 import { useCategoryManager } from "../useCategoryManager";
@@ -19,8 +20,13 @@ import {
   NameInput,
   AddButton,
   RenameButton,
+  DeleteButton,
+  ReassignText,
+  ConfirmDeleteButton,
   ErrorText,
 } from "./CategoryManagerModal.styles";
+
+const MISCELLANEOUS = "Miscellaneous";
 
 interface CategoryManagerModalProps {
   onClose: () => void;
@@ -30,10 +36,12 @@ function CategoryRow({
   category,
   onRecolor,
   onRename,
+  onDelete,
 }: {
   category: Category;
   onRecolor: (id: string, color: string) => void;
   onRename?: (id: string, name: string) => Promise<RenameCategoryResult>;
+  onDelete?: (category: Category) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(category.name);
@@ -90,8 +98,56 @@ function CategoryRow({
             Rename
           </RenameButton>
         ))}
+      {onDelete && (
+        <DeleteButton type="button" onClick={() => onDelete(category)}>
+          Delete
+        </DeleteButton>
+      )}
       {error !== null && <ErrorText role="alert">{error}</ErrorText>}
     </Row>
+  );
+}
+
+function ReassignPrompt({
+  category,
+  targets,
+  onConfirm,
+  onCancel,
+}: {
+  category: Category;
+  targets: Category[];
+  onConfirm: (targetId: string) => void;
+  onCancel: () => void;
+}) {
+  const misc = targets.find((t) => t.name === MISCELLANEOUS);
+  const [targetId, setTargetId] = useState(misc?.id ?? targets[0]?.id ?? "");
+
+  return (
+    <Modal
+      onClose={onCancel}
+      title={`Delete ${category.name}`}
+      footer={
+        <ConfirmDeleteButton type="button" onClick={() => onConfirm(targetId)}>
+          Reassign and delete
+        </ConfirmDeleteButton>
+      }
+    >
+      <ReassignText>
+        Move its transactions to another category, then delete “{category.name}
+        ”.
+      </ReassignText>
+      <Select
+        aria-label="Reassign transactions to"
+        value={targetId}
+        onChange={(e) => setTargetId(e.target.value)}
+      >
+        {targets.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </Select>
+    </Modal>
   );
 }
 
@@ -150,10 +206,26 @@ function CategoryAddRow({
 export default function CategoryManagerModal({
   onClose,
 }: CategoryManagerModalProps) {
-  const { defaults, customs, recolor, create, rename } = useCategoryManager();
+  const { defaults, customs, recolor, create, rename, remove } =
+    useCategoryManager();
+  const [reassignFor, setReassignFor] = useState<Category | null>(null);
 
   function handleRecolor(id: string, color: string): void {
     void recolor(id, color);
+  }
+
+  async function handleDelete(category: Category): Promise<void> {
+    const result = await remove(category.id);
+    if (!result.ok) {
+      // In use — reassign its transactions before it can be removed.
+      setReassignFor(category);
+    }
+  }
+
+  async function handleConfirmReassign(targetId: string): Promise<void> {
+    if (reassignFor === null) return;
+    await remove(reassignFor.id, targetId);
+    setReassignFor(null);
   }
 
   return (
@@ -179,11 +251,22 @@ export default function CategoryManagerModal({
               category={category}
               onRecolor={handleRecolor}
               onRename={rename}
+              onDelete={(c) => void handleDelete(c)}
             />
           ))
         )}
         <CategoryAddRow onCreate={create} />
       </Section>
+      {reassignFor !== null && (
+        <ReassignPrompt
+          category={reassignFor}
+          targets={[...defaults, ...customs].filter(
+            (c) => c.id !== reassignFor.id
+          )}
+          onConfirm={(targetId) => void handleConfirmReassign(targetId)}
+          onCancel={() => setReassignFor(null)}
+        />
+      )}
     </Modal>
   );
 }

@@ -107,6 +107,37 @@ export const RenameButton = styled.button`
   cursor: pointer;
 `;
 
+export const DeleteButton = styled.button`
+  flex: 0 0 auto;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space4}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.error};
+  background-color: transparent;
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  cursor: pointer;
+`;
+
+export const ReassignText = styled.p`
+  margin: 0 0 ${({ theme }) => theme.spacing.space4}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.onSurface};
+`;
+
+export const ConfirmDeleteButton = styled.button`
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space5}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.onError};
+  background-color: ${({ theme }) => theme.colors.error};
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  cursor: pointer;
+`;
+
 export const ErrorText = styled.p`
   flex: 1 0 100%;
   margin: ${({ theme }) => theme.spacing.space2}px 0 0;

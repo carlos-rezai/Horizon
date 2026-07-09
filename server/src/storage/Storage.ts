@@ -75,7 +75,7 @@ export interface CategoriesRepo {
   create(input: CategoryCreateInput): Promise<CategoryCreateResult>;
   recolor(id: string, color: string): Promise<Category | null>;
   rename(id: string, name: string): Promise<CategoryRenameResult | null>;
-  delete(id: string): Promise<DeleteResult | null>;
+  delete(id: string, reassignTo?: string): Promise<DeleteResult | null>;
 }
 
 export interface RecurringTransactionsRepo {

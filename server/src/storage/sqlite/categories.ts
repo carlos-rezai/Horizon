@@ -58,6 +58,16 @@ export function createSqliteCategoriesRepo(
   const checkInUseStmt = db.prepare(
     `SELECT 1 FROM transactions WHERE category = ? LIMIT 1`
   );
+  // Reassign-on-delete: the same Category Reassignment primitive behind rename
+  // (bulk-move transactions + recurring to the target name) then remove the
+  // row, all in one transaction so no rows are ever orphaned.
+  const reassignAndDelete = db.transaction(
+    (id: string, oldName: string, newName: string) => {
+      cascadeTxStmt.run(newName, oldName);
+      cascadeRecurringStmt.run(newName, oldName);
+      deleteStmt.run(id);
+    }
+  );
 
   return {
     async findAll() {
@@ -109,11 +119,22 @@ export function createSqliteCategoriesRepo(
       return { ok: true, category: toCategoryDTO({ ...row, name: trimmed }) };
     },
 
-    async delete(id) {
+    async delete(id, reassignTo) {
       if (!isValidUuid(id)) return null;
       const row = selectByIdStmt.get(id) as CategoryRow | undefined;
       if (!row) return null;
       if (row.is_default === 1) return { ok: false, reason: "is_default" };
+
+      const target =
+        reassignTo !== undefined && isValidUuid(reassignTo)
+          ? (selectByIdStmt.get(reassignTo) as CategoryRow | undefined)
+          : undefined;
+
+      if (target) {
+        reassignAndDelete(id, row.name, target.name);
+        return { ok: true };
+      }
+
       const inUse = checkInUseStmt.get(row.name);
       if (inUse) return { ok: false, reason: "in_use" };
       deleteStmt.run(id);

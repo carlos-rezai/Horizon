@@ -4,6 +4,14 @@ import { API_BASE } from "../../utils/api/api";
 
 export type CreateCategoryResult = { ok: true } | { ok: false; error: string };
 export type RenameCategoryResult = { ok: true } | { ok: false; error: string };
+/**
+ * A plain delete that succeeds returns `{ ok: true }`. An in-use custom
+ * category blocks with `{ ok: false, reason: "in_use" }` so the manager can
+ * open the reassign prompt and retry with a target.
+ */
+export type DeleteCategoryResult =
+  | { ok: true }
+  | { ok: false; reason: "in_use" };
 
 interface UseCategoryManagerResult {
   defaults: Category[];
@@ -12,6 +20,7 @@ interface UseCategoryManagerResult {
   recolor: (id: string, color: string) => Promise<void>;
   create: (name: string, color: string) => Promise<CreateCategoryResult>;
   rename: (id: string, name: string) => Promise<RenameCategoryResult>;
+  remove: (id: string, reassignTo?: string) => Promise<DeleteCategoryResult>;
 }
 
 /**
@@ -112,6 +121,21 @@ export function useCategoryManager(): UseCategoryManagerResult {
     return { ok: true };
   }
 
+  async function remove(
+    id: string,
+    reassignTo?: string
+  ): Promise<DeleteCategoryResult> {
+    const query = reassignTo ? `?reassignTo=${reassignTo}` : "";
+    const res = await fetch(`${API_BASE}/categories/${id}${query}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+      return { ok: true };
+    }
+    return { ok: false, reason: "in_use" };
+  }
+
   return {
     defaults: categories.filter((c) => c.isDefault),
     customs: categories.filter((c) => !c.isDefault),
@@ -119,5 +143,6 @@ export function useCategoryManager(): UseCategoryManagerResult {
     recolor,
     create,
     rename,
+    remove,
   };
 }
