@@ -20,6 +20,7 @@ import {
   NameInput,
   AddButton,
   RenameButton,
+  HideButton,
   DeleteButton,
   ReassignText,
   ConfirmDeleteButton,
@@ -36,11 +37,13 @@ function CategoryRow({
   category,
   onRecolor,
   onRename,
+  onToggleHidden,
   onDelete,
 }: {
   category: Category;
   onRecolor: (id: string, color: string) => void;
   onRename?: (id: string, name: string) => Promise<RenameCategoryResult>;
+  onToggleHidden?: (category: Category) => void;
   onDelete?: (category: Category) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -58,7 +61,10 @@ function CategoryRow({
   }
 
   return (
-    <Row data-testid={`category-row-${category.id}`}>
+    <Row
+      data-testid={`category-row-${category.id}`}
+      aria-disabled={category.hidden ? "true" : undefined}
+    >
       <RowName>{category.name}</RowName>
       {editing && (
         <NameInput
@@ -98,6 +104,11 @@ function CategoryRow({
             Rename
           </RenameButton>
         ))}
+      {onToggleHidden && (
+        <HideButton type="button" onClick={() => onToggleHidden(category)}>
+          {category.hidden ? "Un-hide" : "Hide"}
+        </HideButton>
+      )}
       {onDelete && (
         <DeleteButton type="button" onClick={() => onDelete(category)}>
           Delete
@@ -206,7 +217,7 @@ function CategoryAddRow({
 export default function CategoryManagerModal({
   onClose,
 }: CategoryManagerModalProps) {
-  const { defaults, customs, recolor, create, rename, remove } =
+  const { defaults, customs, recolor, create, rename, setHidden, remove } =
     useCategoryManager();
   const [reassignFor, setReassignFor] = useState<Category | null>(null);
 
@@ -237,6 +248,7 @@ export default function CategoryManagerModal({
             key={category.id}
             category={category}
             onRecolor={handleRecolor}
+            onToggleHidden={(c) => void setHidden(c.id, !c.hidden)}
           />
         ))}
       </Section>

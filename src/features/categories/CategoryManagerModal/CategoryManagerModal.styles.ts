@@ -25,6 +25,13 @@ export const Row = styled.div`
   & + & {
     border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   }
+
+  &[aria-disabled="true"]
+    ${() => RowName},
+    &[aria-disabled="true"]
+    ${() => Swatches} {
+    opacity: 0.45;
+  }
 `;
 
 export const RowName = styled.span`
@@ -94,6 +101,20 @@ export const AddButton = styled.button`
 `;
 
 export const RenameButton = styled.button`
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space4}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.onSurface};
+  background-color: transparent;
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  cursor: pointer;
+`;
+
+export const HideButton = styled.button`
   flex: 0 0 auto;
   margin-left: auto;
   padding: ${({ theme }) => theme.spacing.space2}px

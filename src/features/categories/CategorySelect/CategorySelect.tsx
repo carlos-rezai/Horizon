@@ -99,11 +99,13 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
           onChange={(e) => handleCategoryChange(e.target.value)}
           disabled={isAdding}
         >
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
+          {categories
+            .filter((cat) => !cat.hidden || cat.id === selectedCategoryId)
+            .map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
           <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
         </Select>
       </StyledLabel>

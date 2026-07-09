@@ -17,4 +17,5 @@ export const CategoryPatchSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
+  hidden: z.boolean().optional(),
 });

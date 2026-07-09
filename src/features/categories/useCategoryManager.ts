@@ -20,6 +20,7 @@ interface UseCategoryManagerResult {
   recolor: (id: string, color: string) => Promise<void>;
   create: (name: string, color: string) => Promise<CreateCategoryResult>;
   rename: (id: string, name: string) => Promise<RenameCategoryResult>;
+  setHidden: (id: string, hidden: boolean) => Promise<void>;
   remove: (id: string, reassignTo?: string) => Promise<DeleteCategoryResult>;
 }
 
@@ -121,6 +122,19 @@ export function useCategoryManager(): UseCategoryManagerResult {
     return { ok: true };
   }
 
+  async function setHidden(id: string, hidden: boolean): Promise<void> {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hidden }),
+    });
+    if (!res.ok) return;
+    const updated = (await res.json()) as Category;
+    setCategories((prev) =>
+      prev.map((c) => (c.id === updated.id ? updated : c))
+    );
+  }
+
   async function remove(
     id: string,
     reassignTo?: string
@@ -143,6 +157,7 @@ export function useCategoryManager(): UseCategoryManagerResult {
     recolor,
     create,
     rename,
+    setHidden,
     remove,
   };
 }

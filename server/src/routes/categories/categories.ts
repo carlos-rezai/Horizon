@@ -39,7 +39,24 @@ router.patch("/:id", async (req, res) => {
     res.status(400).json({ issues: parsed.error.issues });
     return;
   }
-  const { color, name } = parsed.data;
+  const { color, name, hidden } = parsed.data;
+
+  if (hidden !== undefined) {
+    const result = await getStorage(req).categories.setHidden(
+      req.params.id,
+      hidden
+    );
+    if (result === null) {
+      res.status(404).json({ error: "Category not found" });
+      return;
+    }
+    if (!result.ok) {
+      res.status(409).json({ error: "Custom categories cannot be hidden" });
+      return;
+    }
+    res.status(200).json(result.category);
+    return;
+  }
 
   if (name !== undefined) {
     const result = await getStorage(req).categories.rename(req.params.id, name);

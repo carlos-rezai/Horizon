@@ -41,6 +41,9 @@ export function createSqliteCategoriesRepo(
     `SELECT 1 FROM categories WHERE lower(name) = lower(?) AND id != ? LIMIT 1`
   );
   const renameStmt = db.prepare(`UPDATE categories SET name = ? WHERE id = ?`);
+  const setHiddenStmt = db.prepare(
+    `UPDATE categories SET hidden = ? WHERE id = ?`
+  );
   const cascadeTxStmt = db.prepare(
     `UPDATE transactions SET category = ? WHERE category = ?`
   );
@@ -117,6 +120,22 @@ export function createSqliteCategoriesRepo(
 
       renameCascade(id, row.name, trimmed);
       return { ok: true, category: toCategoryDTO({ ...row, name: trimmed }) };
+    },
+
+    async setHidden(id, hidden) {
+      if (!isValidUuid(id)) return null;
+      const row = selectByIdStmt.get(id) as CategoryRow | undefined;
+      if (!row) return null;
+      // Hidden is a picker-visibility flag for defaults only; custom
+      // categories are removed via delete, never hidden.
+      if (row.is_default !== 1) return { ok: false, reason: "is_custom" };
+
+      const nextHidden = hidden ? 1 : 0;
+      setHiddenStmt.run(nextHidden, id);
+      return {
+        ok: true,
+        category: toCategoryDTO({ ...row, hidden: nextHidden }),
+      };
     },
 
     async delete(id, reassignTo) {
