@@ -30,6 +30,13 @@ const incomeDefault: Category = {
   color: "#7FA7D9",
   hidden: false,
 };
+const miscDefault: Category = {
+  id: "d-misc",
+  name: "Miscellaneous",
+  isDefault: true,
+  color: "#909AAE",
+  hidden: false,
+};
 const vetCustom: Category = {
   id: "c-vet",
   name: "Vet",
@@ -338,5 +345,140 @@ describe("CategoryManagerModal — rename a custom category (issue #160)", () =>
     expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
     // the row keeps its original name after a rejected rename
     expect(screen.getByText("Vet")).toBeInTheDocument();
+  });
+});
+
+describe("CategoryManagerModal — delete a custom category (issue #161)", () => {
+  it("exposes a delete control on custom rows only, never on default rows", async () => {
+    renderModal([foodDefault, miscDefault, vetCustom]);
+
+    const customRow = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    expect(
+      within(customRow).getByRole("button", { name: /delete/i })
+    ).toBeInTheDocument();
+
+    const defaultRow = screen.getByTestId(`category-row-${foodDefault.id}`);
+    expect(
+      within(defaultRow).queryByRole("button", { name: /delete/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("deletes an unused custom category outright and removes it from the list", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, miscDefault, vetCustom],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      json: async () => ({}),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /delete/i }));
+
+    await waitFor(() => {
+      const deleteCall = fetchSpy.mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes(`/categories/${vetCustom.id}`) &&
+          (init as RequestInit | undefined)?.method === "DELETE"
+      );
+      expect(deleteCall).toBeDefined();
+      // an unused delete never carries a reassign target
+      expect(deleteCall![0] as string).not.toContain("reassignTo");
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Vet")).not.toBeInTheDocument();
+    });
+  });
+
+  it("opens a reassign prompt for an in-use custom category, excluding it from the target picker and defaulting to Miscellaneous", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, miscDefault, vetCustom],
+    } as Response);
+    // the plain delete is blocked because the category is in use
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: "Category is referenced by transactions" }),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /delete/i }));
+
+    const picker = (await screen.findByRole("combobox")) as HTMLSelectElement;
+    // the category being deleted is never a reassign target
+    expect(
+      within(picker).queryByRole("option", { name: "Vet" })
+    ).not.toBeInTheDocument();
+    // a real target is offered, defaulting to Miscellaneous
+    expect(
+      within(picker).getByRole("option", { name: "Miscellaneous" })
+    ).toBeInTheDocument();
+    expect(picker.value).toBe(miscDefault.id);
+  });
+
+  it("confirming the reassign prompt DELETEs with the chosen reassign target and removes the row", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, miscDefault, vetCustom],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: "Category is referenced by transactions" }),
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      json: async () => ({}),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /delete/i }));
+
+    await screen.findByRole("combobox");
+    fireEvent.click(
+      screen.getByRole("button", { name: /reassign and delete/i })
+    );
+
+    await waitFor(() => {
+      const reassignCall = fetchSpy.mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes(`/categories/${vetCustom.id}`) &&
+          url.includes(`reassignTo=${miscDefault.id}`) &&
+          (init as RequestInit | undefined)?.method === "DELETE"
+      );
+      expect(reassignCall).toBeDefined();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Vet")).not.toBeInTheDocument();
+    });
   });
 });

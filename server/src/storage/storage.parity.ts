@@ -1904,6 +1904,210 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Categories — delete a Custom Category with reassignment (issue #161)
+  //
+  // `delete(id, reassignTo?)` extends the delete contract with the reassign
+  // cascade. Without a `reassignTo`, an in-use custom category still blocks
+  // ({ ok: false, reason: "in_use" }) exactly as before. With a `reassignTo`
+  // (a target category id), the same Category Reassignment primitive behind
+  // rename runs first — every `transactions` and `recurring_transactions` row
+  // holding the deleted category's name is bulk-moved to the target category's
+  // name — and then the row is deleted, all in ONE transaction, so there are
+  // never orphaned rows. Defaults are still never deleted, even with a target,
+  // and an unparseable / unknown id still returns null.
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo.delete with reassignment", () => {
+    async function miscTarget(): Promise<Category> {
+      const all = await storage.categories.findAll();
+      const misc = all.find((c) => c.name === "Miscellaneous");
+      expect(misc).toBeDefined();
+      return misc!;
+    }
+
+    it("reassigns the deleted category's transactions to the target name, then removes the row", async () => {
+      const vet = await createCategory("Vet");
+      const misc = await miscTarget();
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+      await storage.transactions.create(account.id, {
+        date: "2026-03-08",
+        amount: -1999,
+        description: "Cat food",
+        category: "Vet",
+      });
+
+      const result = await storage.categories.delete(vet.id, misc.id);
+
+      expect(result).toEqual({ ok: true });
+
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)).toBeUndefined();
+
+      const txs = await storage.transactions.findAll();
+      expect(txs.every((t) => t.category !== "Vet")).toBe(true);
+      expect(txs.filter((t) => t.category === "Miscellaneous")).toHaveLength(2);
+    });
+
+    it("reassigns the deleted category's recurring transactions to the target name", async () => {
+      const vet = await createCategory("Vet");
+      const misc = await miscTarget();
+      const account = await makeAccount();
+
+      await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: -1999,
+        description: "Monthly cat food",
+        category: "Vet",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      const result = await storage.categories.delete(vet.id, misc.id);
+
+      expect(result).toEqual({ ok: true });
+
+      const recurring = await storage.recurringTransactions.findAll();
+      expect(recurring.every((r) => r.category !== "Vet")).toBe(true);
+      expect(
+        recurring.filter((r) => r.category === "Miscellaneous")
+      ).toHaveLength(1);
+    });
+
+    it("reassigns transactions and recurring transactions in one call, leaving zero orphaned rows", async () => {
+      const vet = await createCategory("Vet");
+      const misc = await miscTarget();
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+      await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: -1999,
+        description: "Monthly cat food",
+        category: "Vet",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      await storage.categories.delete(vet.id, misc.id);
+
+      const txs = await storage.transactions.findAll();
+      const recurring = await storage.recurringTransactions.findAll();
+      expect(txs.find((t) => t.description === "Lassie")?.category).toBe(
+        "Miscellaneous"
+      );
+      expect(
+        recurring.find((r) => r.description === "Monthly cat food")?.category
+      ).toBe("Miscellaneous");
+    });
+
+    it("can reassign to another custom category, not only a default", async () => {
+      const vet = await createCategory("Vet");
+      const pets = await createCategory("Pets");
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+
+      const result = await storage.categories.delete(vet.id, pets.id);
+
+      expect(result).toEqual({ ok: true });
+      const txs = await storage.transactions.findAll();
+      expect(txs.find((t) => t.description === "Lassie")?.category).toBe(
+        "Pets"
+      );
+    });
+
+    it("deletes an unused custom category cleanly even when a reassign target is supplied", async () => {
+      const vet = await createCategory("Vet");
+      const misc = await miscTarget();
+
+      const result = await storage.categories.delete(vet.id, misc.id);
+
+      expect(result).toEqual({ ok: true });
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)).toBeUndefined();
+    });
+
+    it('still blocks an in-use custom category with { ok: false, reason: "in_use" } when no reassign target is supplied', async () => {
+      const vet = await createCategory("Vet");
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+
+      const result = await storage.categories.delete(vet.id);
+
+      expect(result).toEqual({ ok: false, reason: "in_use" });
+
+      // nothing moved, nothing deleted
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)).toBeDefined();
+      const txs = await storage.transactions.findAll();
+      expect(txs.find((t) => t.description === "Lassie")?.category).toBe("Vet");
+    });
+
+    it('never deletes or reassigns a default category, even with a reassign target — reason "is_default"', async () => {
+      const all = await storage.categories.findAll();
+      const food = all.find((c) => c.name === "Food");
+      const misc = await miscTarget();
+      expect(food).toBeDefined();
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -5000,
+        description: "Groceries",
+        category: "Food",
+      });
+
+      const result = await storage.categories.delete(food!.id, misc.id);
+
+      expect(result).toEqual({ ok: false, reason: "is_default" });
+      const after = await storage.categories.findAll();
+      expect(after.find((c) => c.name === "Food")).toBeDefined();
+      const txs = await storage.transactions.findAll();
+      expect(txs.find((t) => t.description === "Groceries")?.category).toBe(
+        "Food"
+      );
+    });
+
+    it("returns null for an unparseable id even when a reassign target is supplied", async () => {
+      const misc = await miscTarget();
+      const result = await storage.categories.delete("not-an-id", misc.id);
+      expect(result).toBeNull();
+    });
+
+    it("returns null for a well-formed but unknown id even when a reassign target is supplied", async () => {
+      const misc = await miscTarget();
+      const result = await storage.categories.delete(
+        "00000000-0000-0000-0000-000000000000",
+        misc.id
+      );
+      expect(result).toBeNull();
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 

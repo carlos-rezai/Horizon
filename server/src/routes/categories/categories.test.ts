@@ -260,6 +260,82 @@ describe("DELETE /categories/:id", () => {
 });
 
 // ---------------------------------------------------------------------------
+// DELETE /categories/:id?reassignTo=<id>  — reassign-on-delete (issue #161)
+// ---------------------------------------------------------------------------
+
+describe("DELETE /categories/:id?reassignTo=<id>", () => {
+  async function categoryByName(name: string): Promise<{ id: string }> {
+    const list = await request(app).get("/categories");
+    const found = (list.body as Array<{ id: string; name: string }>).find(
+      (c) => c.name === name
+    );
+    if (!found) throw new Error(`category ${name} not found`);
+    return found;
+  }
+
+  it("reassigns an in-use custom category's transactions to the target, then deletes it (204)", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+    const misc = await categoryByName("Miscellaneous");
+    const account = await createAccount();
+
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -6425,
+      description: "Lassie",
+      category: "Vet",
+    });
+
+    const res = await request(app).delete(
+      `/categories/${created.body.id}?reassignTo=${misc.id}`
+    );
+
+    expect(res.status).toBe(204);
+
+    const list = await request(app).get("/categories");
+    const names = list.body.map((c: { name: string }) => c.name);
+    expect(names).not.toContain("Vet");
+
+    const txs = await request(app).get(`/accounts/${account.id}/transactions`);
+    expect(
+      (txs.body as Array<{ description: string; category: string }>).find(
+        (t) => t.description === "Lassie"
+      )?.category
+    ).toBe("Miscellaneous");
+  });
+
+  it("returns 409 for an in-use custom category when no reassign target is supplied", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+    const account = await createAccount();
+
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -6425,
+      description: "Lassie",
+      category: "Vet",
+    });
+
+    const res = await request(app).delete(`/categories/${created.body.id}`);
+
+    expect(res.status).toBe(409);
+  });
+
+  it("returns 409 for a default category even with a reassign target", async () => {
+    const food = await categoryByName("Food");
+    const misc = await categoryByName("Miscellaneous");
+
+    const res = await request(app).delete(
+      `/categories/${food.id}?reassignTo=${misc.id}`
+    );
+
+    expect(res.status).toBe(409);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // PATCH /categories/:id  { color }
 // ---------------------------------------------------------------------------
 
