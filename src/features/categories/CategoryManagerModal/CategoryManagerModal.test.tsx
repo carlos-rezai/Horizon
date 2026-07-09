@@ -240,3 +240,103 @@ describe("CategoryManagerModal — add a custom category (issue #159)", () => {
     expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
   });
 });
+
+describe("CategoryManagerModal — rename a custom category (issue #160)", () => {
+  it("exposes a rename control on custom rows only, never on default rows", async () => {
+    renderModal([foodDefault, incomeDefault, vetCustom]);
+
+    const customRow = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    expect(
+      within(customRow).getByRole("button", { name: /rename/i })
+    ).toBeInTheDocument();
+
+    const defaultRow = screen.getByTestId(`category-row-${foodDefault.id}`);
+    expect(
+      within(defaultRow).queryByRole("button", { name: /rename/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("PATCHes the new name and reflects it in the row immediately", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, vetCustom],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...vetCustom, name: "Pets" }),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /rename/i }));
+
+    const input = within(
+      screen.getByTestId(`category-row-${vetCustom.id}`)
+    ).getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Pets" } });
+    fireEvent.click(
+      within(screen.getByTestId(`category-row-${vetCustom.id}`)).getByRole(
+        "button",
+        { name: /save/i }
+      )
+    );
+
+    await waitFor(() => {
+      const patchCall = fetchSpy.mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes(`/categories/${vetCustom.id}`) &&
+          (init as RequestInit | undefined)?.method === "PATCH"
+      );
+      expect(patchCall).toBeDefined();
+      const body = JSON.parse((patchCall![1] as RequestInit).body as string);
+      expect(body.name).toBe("Pets");
+    });
+
+    expect(await screen.findByText("Pets")).toBeInTheDocument();
+    expect(screen.queryByText("Vet")).not.toBeInTheDocument();
+  });
+
+  it("surfaces a clear error message when the rename is rejected", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, vetCustom],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: 'A category named "Food" already exists' }),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /rename/i }));
+
+    const input = within(
+      screen.getByTestId(`category-row-${vetCustom.id}`)
+    ).getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Food" } });
+    fireEvent.click(
+      within(screen.getByTestId(`category-row-${vetCustom.id}`)).getByRole(
+        "button",
+        { name: /save/i }
+      )
+    );
+
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+    // the row keeps its original name after a rejected rename
+    expect(screen.getByText("Vet")).toBeInTheDocument();
+  });
+});

@@ -320,3 +320,102 @@ describe("PATCH /categories/:id { color }", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PATCH /categories/:id  { name }  — rename a Custom Category (issue #160)
+// ---------------------------------------------------------------------------
+
+describe("PATCH /categories/:id { name }", () => {
+  async function findCategory(name: string) {
+    const list = await request(app).get("/categories");
+    return (
+      list.body as Array<{ id: string; name: string; isDefault: boolean }>
+    ).find((c) => c.name === name);
+  }
+
+  it("renames a custom category and returns the updated category", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+
+    const res = await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ name: "Pets" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(created.body.id);
+    expect(res.body.name).toBe("Pets");
+  });
+
+  it("cascades the new name to the category's transactions", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+    const account = await createAccount();
+
+    await request(app).post(`/accounts/${account.id}/transactions`).send({
+      date: "2026-03-01",
+      amount: -6425,
+      description: "Lassie",
+      category: "Vet",
+    });
+
+    await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ name: "Pets" });
+
+    const txs = await request(app).get(`/accounts/${account.id}/transactions`);
+    const categories = (txs.body as Array<{ category: string }>).map(
+      (t) => t.category
+    );
+    expect(categories).toContain("Pets");
+    expect(categories).not.toContain("Vet");
+  });
+
+  it("returns 409 on a case-insensitive collision", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+    await request(app).post("/categories").send({ name: "Pets" });
+
+    const res = await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ name: "PETS" });
+
+    expect(res.status).toBe(409);
+    expect(typeof res.body.error).toBe("string");
+  });
+
+  it("returns 409 when renaming a default category", async () => {
+    const food = await findCategory("Food");
+
+    const res = await request(app)
+      .patch(`/categories/${food!.id}`)
+      .send({ name: "Groceries" });
+
+    expect(res.status).toBe(409);
+    expect(typeof res.body.error).toBe("string");
+    expect(await findCategory("Food")).toBeDefined();
+    expect(await findCategory("Groceries")).toBeUndefined();
+  });
+
+  it("returns 400 for a whitespace-only name", async () => {
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Vet" });
+
+    const res = await request(app)
+      .patch(`/categories/${created.body.id}`)
+      .send({ name: "   " });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 for an unknown id", async () => {
+    const res = await request(app)
+      .patch("/categories/000000000000000000000000")
+      .send({ name: "Pets" });
+
+    expect(res.status).toBe(404);
+  });
+});

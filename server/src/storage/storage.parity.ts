@@ -1708,6 +1708,202 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Categories — rename a Custom Category (issue #160)
+  //
+  // `rename(id, name)` is the Category Reassignment primitive: in one atomic
+  // transaction it updates the `categories` row and every `transactions` and
+  // `recurring_transactions` row holding the old name, so no spending is
+  // stranded under the old label. It returns null for an unparseable / unknown
+  // id, and a { ok: false, reason } union for a rejected rename — default
+  // (is_default), case-insensitive collision, or invalid name — surfacing the
+  // reason rather than silently succeeding. The new name is trimmed and capped
+  // at 40 chars, exactly like create.
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo.rename", () => {
+    it("renames a custom category and findAll reflects the new name", async () => {
+      const vet = await createCategory("Vet");
+
+      const result = await storage.categories.rename(vet.id, "Pets");
+
+      expect(result).not.toBeNull();
+      expect(result).toMatchObject({ ok: true });
+      if (!result || !result.ok) return;
+      expect(result.category.id).toBe(vet.id);
+      expect(result.category.name).toBe("Pets");
+
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)?.name).toBe("Pets");
+      expect(all.find((c) => c.name === "Vet")).toBeUndefined();
+    });
+
+    it("cascades the new name to every transaction holding the old name", async () => {
+      const vet = await createCategory("Vet");
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+      await storage.transactions.create(account.id, {
+        date: "2026-03-08",
+        amount: -1999,
+        description: "Cat food",
+        category: "Vet",
+      });
+
+      await storage.categories.rename(vet.id, "Pets");
+
+      const txs = await storage.transactions.findAll();
+      expect(txs.every((t) => t.category !== "Vet")).toBe(true);
+      expect(txs.filter((t) => t.category === "Pets")).toHaveLength(2);
+    });
+
+    it("cascades the new name to every recurring transaction holding the old name", async () => {
+      const vet = await createCategory("Vet");
+      const account = await makeAccount();
+
+      await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: -1999,
+        description: "Monthly cat food",
+        category: "Vet",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      await storage.categories.rename(vet.id, "Pets");
+
+      const recurring = await storage.recurringTransactions.findAll();
+      expect(recurring.every((r) => r.category !== "Vet")).toBe(true);
+      expect(recurring.filter((r) => r.category === "Pets")).toHaveLength(1);
+    });
+
+    it("cascades across transactions and recurring transactions in one call", async () => {
+      const vet = await createCategory("Vet");
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+      await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: -1999,
+        description: "Monthly cat food",
+        category: "Vet",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      await storage.categories.rename(vet.id, "Pets");
+
+      const txs = await storage.transactions.findAll();
+      const recurring = await storage.recurringTransactions.findAll();
+      expect(txs.find((t) => t.description === "Lassie")?.category).toBe(
+        "Pets"
+      );
+      expect(
+        recurring.find((r) => r.description === "Monthly cat food")?.category
+      ).toBe("Pets");
+    });
+
+    it("trims and truncates the new name to 40 characters", async () => {
+      const vet = await createCategory("Vet");
+
+      const result = await storage.categories.rename(
+        vet.id,
+        `  ${"P".repeat(45)}  `
+      );
+
+      expect(result).toMatchObject({ ok: true });
+      if (!result || !result.ok) return;
+      expect(result.category.name).toBe("P".repeat(40));
+    });
+
+    it("returns null for an unparseable id", async () => {
+      const result = await storage.categories.rename("not-an-id", "Pets");
+      expect(result).toBeNull();
+    });
+
+    it("returns null for a well-formed but unknown id", async () => {
+      const result = await storage.categories.rename(
+        "00000000-0000-0000-0000-000000000000",
+        "Pets"
+      );
+      expect(result).toBeNull();
+    });
+
+    it('rejects renaming a default category with reason "is_default"', async () => {
+      const all = await storage.categories.findAll();
+      const food = all.find((c) => c.name === "Food");
+      expect(food).toBeDefined();
+
+      const result = await storage.categories.rename(food!.id, "Groceries");
+
+      expect(result).toEqual({ ok: false, reason: "is_default" });
+      const after = await storage.categories.findAll();
+      expect(after.find((c) => c.name === "Food")).toBeDefined();
+      expect(after.find((c) => c.name === "Groceries")).toBeUndefined();
+    });
+
+    it('rejects a case-insensitive collision with reason "collision"', async () => {
+      const vet = await createCategory("Vet");
+      await createCategory("Pets");
+
+      const result = await storage.categories.rename(vet.id, "PETS");
+
+      expect(result).toEqual({ ok: false, reason: "collision" });
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)?.name).toBe("Vet");
+    });
+
+    it('rejects an empty / whitespace-only name with reason "invalid_name"', async () => {
+      const vet = await createCategory("Vet");
+
+      const result = await storage.categories.rename(vet.id, "   ");
+
+      expect(result).toEqual({ ok: false, reason: "invalid_name" });
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)?.name).toBe("Vet");
+    });
+
+    it("strands no data when a rename is rejected — the old name stays on transactions", async () => {
+      const vet = await createCategory("Vet");
+      await createCategory("Pets");
+      const account = await makeAccount();
+
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+
+      const result = await storage.categories.rename(vet.id, "Pets");
+      expect(result).toEqual({ ok: false, reason: "collision" });
+
+      const txs = await storage.transactions.findAll();
+      expect(txs.find((t) => t.description === "Lassie")?.category).toBe("Vet");
+    });
+
+    it("renaming a category to a new name is idempotent when re-renaming back", async () => {
+      const vet = await createCategory("Vet");
+
+      await storage.categories.rename(vet.id, "Pets");
+      const back = await storage.categories.rename(vet.id, "Vet");
+
+      expect(back).toMatchObject({ ok: true });
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.id === vet.id)?.name).toBe("Vet");
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // RecurringTransactions
   // -------------------------------------------------------------------------
 
