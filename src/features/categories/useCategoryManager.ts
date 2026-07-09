@@ -3,6 +3,7 @@ import type { Category } from "../../types/category";
 import { API_BASE } from "../../utils/api/api";
 
 export type CreateCategoryResult = { ok: true } | { ok: false; error: string };
+export type RenameCategoryResult = { ok: true } | { ok: false; error: string };
 
 interface UseCategoryManagerResult {
   defaults: Category[];
@@ -10,6 +11,7 @@ interface UseCategoryManagerResult {
   isLoading: boolean;
   recolor: (id: string, color: string) => Promise<void>;
   create: (name: string, color: string) => Promise<CreateCategoryResult>;
+  rename: (id: string, name: string) => Promise<RenameCategoryResult>;
 }
 
 /**
@@ -84,11 +86,38 @@ export function useCategoryManager(): UseCategoryManagerResult {
     return { ok: true };
   }
 
+  async function rename(
+    id: string,
+    name: string
+  ): Promise<RenameCategoryResult> {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      let error = "Could not rename category";
+      try {
+        const body = (await res.json()) as { error?: string };
+        if (body.error) error = body.error;
+      } catch {
+        // response had no JSON body — keep the generic message
+      }
+      return { ok: false, error };
+    }
+    const updated = (await res.json()) as Category;
+    setCategories((prev) =>
+      prev.map((c) => (c.id === updated.id ? updated : c))
+    );
+    return { ok: true };
+  }
+
   return {
     defaults: categories.filter((c) => c.isDefault),
     customs: categories.filter((c) => !c.isDefault),
     isLoading,
     recolor,
     create,
+    rename,
   };
 }

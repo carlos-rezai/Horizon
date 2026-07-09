@@ -39,7 +39,32 @@ router.patch("/:id", async (req, res) => {
     res.status(400).json({ issues: parsed.error.issues });
     return;
   }
-  const { color } = parsed.data;
+  const { color, name } = parsed.data;
+
+  if (name !== undefined) {
+    const result = await getStorage(req).categories.rename(req.params.id, name);
+    if (result === null) {
+      res.status(404).json({ error: "Category not found" });
+      return;
+    }
+    if (!result.ok) {
+      if (result.reason === "invalid_name") {
+        res.status(400).json({ error: "Category name must not be empty" });
+        return;
+      }
+      if (result.reason === "is_default") {
+        res.status(409).json({ error: "Default categories cannot be renamed" });
+        return;
+      }
+      res
+        .status(409)
+        .json({ error: `A category named "${name.trim()}" already exists` });
+      return;
+    }
+    res.status(200).json(result.category);
+    return;
+  }
+
   if (color === undefined) {
     res.status(400).json({ error: "No supported fields to update" });
     return;

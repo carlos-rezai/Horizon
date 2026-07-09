@@ -18,6 +18,7 @@ export const SectionLabel = styled.h3`
 export const Row = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.space4}px;
   padding: ${({ theme }) => theme.spacing.space3}px 0;
 
@@ -92,7 +93,22 @@ export const AddButton = styled.button`
   cursor: pointer;
 `;
 
+export const RenameButton = styled.button`
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space4}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.onSurface};
+  background-color: transparent;
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  cursor: pointer;
+`;
+
 export const ErrorText = styled.p`
+  flex: 1 0 100%;
   margin: ${({ theme }) => theme.spacing.space2}px 0 0;
   font-size: ${({ theme }) => theme.typography.sizes.xs}px;
   color: ${({ theme }) => theme.colors.error};

@@ -12,6 +12,7 @@ export const CategoryCreateSchema = z.object({
 // Freeform hex outside the palette is still a valid hex here; the palette is
 // enforced by the UI (the manager only offers the 20 swatches).
 export const CategoryPatchSchema = z.object({
+  name: z.string().min(1).optional(),
   color: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)

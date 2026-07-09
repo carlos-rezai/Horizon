@@ -3,7 +3,10 @@ import Modal from "../../../components/Modal/Modal";
 import type { Category } from "../../../types/category";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";
 import { useCategoryManager } from "../useCategoryManager";
-import type { CreateCategoryResult } from "../useCategoryManager";
+import type {
+  CreateCategoryResult,
+  RenameCategoryResult,
+} from "../useCategoryManager";
 import {
   Section,
   SectionLabel,
@@ -15,6 +18,7 @@ import {
   AddRow,
   NameInput,
   AddButton,
+  RenameButton,
   ErrorText,
 } from "./CategoryManagerModal.styles";
 
@@ -25,13 +29,37 @@ interface CategoryManagerModalProps {
 function CategoryRow({
   category,
   onRecolor,
+  onRename,
 }: {
   category: Category;
   onRecolor: (id: string, color: string) => void;
+  onRename?: (id: string, name: string) => Promise<RenameCategoryResult>;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(category.name);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave(): Promise<void> {
+    setError(null);
+    const result = await onRename!(category.id, draft);
+    if (result.ok) {
+      setEditing(false);
+    } else {
+      setError(result.error);
+    }
+  }
+
   return (
     <Row data-testid={`category-row-${category.id}`}>
       <RowName>{category.name}</RowName>
+      {editing && (
+        <NameInput
+          type="text"
+          aria-label="Rename category"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+      )}
       <Swatches>
         {categoryColorPalette.map((hex) => (
           <Swatch
@@ -45,6 +73,24 @@ function CategoryRow({
           />
         ))}
       </Swatches>
+      {onRename &&
+        (editing ? (
+          <RenameButton type="button" onClick={() => void handleSave()}>
+            Save
+          </RenameButton>
+        ) : (
+          <RenameButton
+            type="button"
+            onClick={() => {
+              setDraft(category.name);
+              setError(null);
+              setEditing(true);
+            }}
+          >
+            Rename
+          </RenameButton>
+        ))}
+      {error !== null && <ErrorText role="alert">{error}</ErrorText>}
     </Row>
   );
 }
@@ -104,7 +150,7 @@ function CategoryAddRow({
 export default function CategoryManagerModal({
   onClose,
 }: CategoryManagerModalProps) {
-  const { defaults, customs, recolor, create } = useCategoryManager();
+  const { defaults, customs, recolor, create, rename } = useCategoryManager();
 
   function handleRecolor(id: string, color: string): void {
     void recolor(id, color);
@@ -132,6 +178,7 @@ export default function CategoryManagerModal({
               key={category.id}
               category={category}
               onRecolor={handleRecolor}
+              onRename={rename}
             />
           ))
         )}

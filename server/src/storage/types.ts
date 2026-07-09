@@ -85,6 +85,10 @@ export type CategoryCreateResult =
   | { ok: true; category: Category }
   | { ok: false; reason: "invalid_name" | "collision" };
 
+export type CategoryRenameResult =
+  | { ok: true; category: Category }
+  | { ok: false; reason: "invalid_name" | "collision" | "is_default" };
+
 export type Frequency = "monthly" | "quarterly" | "annual";
 
 export interface RecurringTransaction {

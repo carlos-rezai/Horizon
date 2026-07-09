@@ -6,6 +6,7 @@ import type {
   Category,
   CategoryCreateInput,
   CategoryCreateResult,
+  CategoryRenameResult,
   DeleteResult,
   ImportRecord,
   ImportCreateInput,
@@ -73,6 +74,7 @@ export interface CategoriesRepo {
   findAll(): Promise<Category[]>;
   create(input: CategoryCreateInput): Promise<CategoryCreateResult>;
   recolor(id: string, color: string): Promise<Category | null>;
+  rename(id: string, name: string): Promise<CategoryRenameResult | null>;
   delete(id: string): Promise<DeleteResult | null>;
 }
 
