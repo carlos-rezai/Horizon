@@ -147,6 +147,62 @@ describe("POST /categories", () => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /categories  { name, color }  — add a Custom Category (issue #159)
+// ---------------------------------------------------------------------------
+
+describe("POST /categories { name, color }", () => {
+  const CHOSEN_COLOR = "#6FBFBF";
+
+  it("stores the chosen color and returns isDefault:false, hidden:false", async () => {
+    const res = await request(app)
+      .post("/categories")
+      .send({ name: "Vet", color: CHOSEN_COLOR });
+
+    expect(res.status).toBe(201);
+    expect(res.body.name).toBe("Vet");
+    expect(res.body.color).toBe(CHOSEN_COLOR);
+    expect(res.body.isDefault).toBe(false);
+    expect(res.body.hidden).toBe(false);
+  });
+
+  it("returns 409 on a case-insensitive collision with an existing custom category", async () => {
+    await request(app).post("/categories").send({ name: "Vet" });
+
+    const res = await request(app)
+      .post("/categories")
+      .send({ name: "vet", color: CHOSEN_COLOR });
+
+    expect(res.status).toBe(409);
+  });
+
+  it("returns 409 on a case-insensitive collision with a default category", async () => {
+    const res = await request(app)
+      .post("/categories")
+      .send({ name: "food", color: CHOSEN_COLOR });
+
+    expect(res.status).toBe(409);
+  });
+
+  it("returns 400 for a whitespace-only name", async () => {
+    const res = await request(app)
+      .post("/categories")
+      .send({ name: "   ", color: CHOSEN_COLOR });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("does not create a second row when a collision is rejected", async () => {
+    await request(app).post("/categories").send({ name: "food" });
+
+    const list = await request(app).get("/categories");
+    const foods = (list.body as Array<{ name: string }>).filter(
+      (c) => c.name.toLowerCase() === "food"
+    );
+    expect(foods).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // DELETE /categories/:id
 // ---------------------------------------------------------------------------
 

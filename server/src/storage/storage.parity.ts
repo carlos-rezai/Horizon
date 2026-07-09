@@ -5,7 +5,11 @@ import os from "os";
 import path from "path";
 import { createStorage } from "../storage/index.js";
 import type { Storage } from "../storage/Storage.js";
-import type { Account, RecurringTransaction } from "../storage/types.js";
+import type {
+  Account,
+  Category,
+  RecurringTransaction,
+} from "../storage/types.js";
 import { DEFAULT_CATEGORY_NAMES } from "../storage/defaultCategories.js";
 import { StorageIntegrityError } from "../storage/sqlite/errors.js";
 
@@ -50,6 +54,26 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       openingDate: "2026-01-01",
       ...overrides,
     });
+  }
+
+  // Unwraps CategoriesRepo.create for the many tests that only need the happy
+  // path. Resilient to both the pre-#159 contract (create returned a Category
+  // directly) and the #159 contract (create returns a { ok, category } union),
+  // so unrelated create call sites stay green while the union lands.
+  async function createCategory(
+    name: string,
+    color?: string
+  ): Promise<Category> {
+    const result = await storage.categories.create(
+      color === undefined ? { name } : { name, color }
+    );
+    if (result && typeof result === "object" && "ok" in result) {
+      if (!result.ok) {
+        throw new Error(`createCategory failed: ${result.reason}`);
+      }
+      return result.category;
+    }
+    return result as unknown as Category;
   }
 
   // -------------------------------------------------------------------------
@@ -1334,7 +1358,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
   describe("CategoriesRepo.create", () => {
     it("creates a custom category with isDefault: false", async () => {
-      const cat = await storage.categories.create({ name: "Vet" });
+      const cat = await createCategory("Vet");
 
       expect(cat.name).toBe("Vet");
       expect(cat.isDefault).toBe(false);
@@ -1344,7 +1368,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
   describe("CategoriesRepo.delete", () => {
     it("returns { ok: true } and removes a custom category with no transactions", async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
 
       const result = await storage.categories.delete(created.id);
 
@@ -1366,7 +1390,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it('returns { ok: false, reason: "in_use" } when a transaction references the category', async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
 
       const account = await makeAccount();
 
@@ -1417,7 +1441,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("assigns a hex colour to a newly created category and findAll returns the same value", async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
 
       expect(created.color).toMatch(HEX);
 
@@ -1427,14 +1451,14 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("derives the colour deterministically from the name (delete + recreate is identical)", async () => {
-      const first = await storage.categories.create({ name: "Vet" });
+      const first = await createCategory("Vet");
       const firstColor = first.color;
       expect(firstColor).toMatch(HEX);
 
       const deleted = await storage.categories.delete(first.id);
       expect(deleted).toEqual({ ok: true });
 
-      const second = await storage.categories.create({ name: "Vet" });
+      const second = await createCategory("Vet");
       expect(second.color).toBe(firstColor);
     });
 
@@ -1450,7 +1474,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("round-trips the colour through a backup and reopen", async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
       const expectedColor = created.color;
       expect(expectedColor).toMatch(HEX);
 
@@ -1496,7 +1520,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("returns hidden: false from create for a new custom category", async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
       expect(created.hidden).toBe(false);
 
       const all = await storage.categories.findAll();
@@ -1525,7 +1549,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     const NEW_COLOR = "#6FBFBF";
 
     it("updates a custom category's colour and findAll reflects it", async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
       expect(created.color).not.toBe(NEW_COLOR);
 
       await storage.categories.recolor(created.id, NEW_COLOR);
@@ -1550,7 +1574,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("returns the updated Category carrying the new colour", async () => {
-      const created = await storage.categories.create({ name: "Vet" });
+      const created = await createCategory("Vet");
 
       const updated = await storage.categories.recolor(created.id, NEW_COLOR);
 
@@ -1563,6 +1587,123 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     it("returns null for an unparseable id", async () => {
       const result = await storage.categories.recolor("not-an-id", NEW_COLOR);
       expect(result).toBeNull();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Categories — add a Custom Category (issue #159)
+  //
+  // `create` now carries an explicit chosen colour and returns a discriminated
+  // union: { ok: true, category } on success, { ok: false, reason } on a
+  // rejected create. The chosen colour is authoritative from creation (no
+  // name-hash), the name is trimmed and truncated to 40 chars, empty /
+  // whitespace-only names are rejected as "invalid_name", and any
+  // case-insensitive collision with an existing category — default or custom —
+  // is rejected as "collision" (never a silent merge).
+  // -------------------------------------------------------------------------
+
+  describe("CategoriesRepo.create — chosen colour, validation & collisions", () => {
+    const CHOSEN_COLOR = "#6FBFBF"; // a palette swatch, distinct from Vet's name-hash
+
+    it("stores the chosen colour rather than deriving it from the name", async () => {
+      const result = await storage.categories.create({
+        name: "Vet",
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.category.color).toBe(CHOSEN_COLOR);
+
+      const all = await storage.categories.findAll();
+      expect(all.find((c) => c.name === "Vet")?.color).toBe(CHOSEN_COLOR);
+    });
+
+    it("returns a custom category with isDefault: false and hidden: false", async () => {
+      const result = await storage.categories.create({
+        name: "Vet",
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.category.isDefault).toBe(false);
+      expect(result.category.hidden).toBe(false);
+      expect(typeof result.category.id).toBe("string");
+    });
+
+    it("trims surrounding whitespace from the name", async () => {
+      const result = await storage.categories.create({
+        name: "  Vet  ",
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.category.name).toBe("Vet");
+    });
+
+    it("truncates a name longer than 40 characters to its first 40 characters", async () => {
+      const longName = "A".repeat(45);
+      const result = await storage.categories.create({
+        name: longName,
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.category.name).toBe("A".repeat(40));
+    });
+
+    it('rejects an empty / whitespace-only name with reason "invalid_name"', async () => {
+      const before = await storage.categories.findAll();
+
+      const result = await storage.categories.create({
+        name: "   ",
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result).toEqual({ ok: false, reason: "invalid_name" });
+
+      const after = await storage.categories.findAll();
+      expect(after).toHaveLength(before.length);
+    });
+
+    it('rejects a case-insensitive collision with a default category with reason "collision"', async () => {
+      const before = await storage.categories.findAll();
+
+      const result = await storage.categories.create({
+        name: "food", // seeded default is "Food"
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result).toEqual({ ok: false, reason: "collision" });
+
+      const after = await storage.categories.findAll();
+      expect(after).toHaveLength(before.length);
+    });
+
+    it('rejects a case-insensitive collision with an existing custom category with reason "collision"', async () => {
+      await createCategory("Vet");
+
+      const result = await storage.categories.create({
+        name: "VET",
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result).toEqual({ ok: false, reason: "collision" });
+
+      const all = await storage.categories.findAll();
+      expect(all.filter((c) => c.name.toLowerCase() === "vet")).toHaveLength(1);
+    });
+
+    it("treats the trimmed name when checking a collision", async () => {
+      const result = await storage.categories.create({
+        name: "  Food  ",
+        color: CHOSEN_COLOR,
+      });
+
+      expect(result).toEqual({ ok: false, reason: "collision" });
     });
   });
 

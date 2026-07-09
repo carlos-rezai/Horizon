@@ -138,3 +138,105 @@ describe("CategoryManagerModal — recolor swatches", () => {
     });
   });
 });
+
+describe("CategoryManagerModal — add a custom category (issue #159)", () => {
+  const createdVet: Category = {
+    id: "c-new-vet",
+    name: "Vet",
+    isDefault: false,
+    color: NEW_COLOR,
+    hidden: false,
+  };
+
+  it("renders an inline add-row in the Custom section (name field + palette swatches + confirm)", async () => {
+    renderModal([foodDefault, incomeDefault]);
+
+    const addRow = await screen.findByTestId("category-add-row");
+    expect(
+      within(addRow).getByLabelText(/new category name/i)
+    ).toBeInTheDocument();
+    expect(
+      within(addRow).getByRole("button", { name: /add category/i })
+    ).toBeInTheDocument();
+    // the same fixed palette used for recolor is offered for the new category
+    for (const hex of categoryColorPalette) {
+      expect(
+        within(addRow).getByRole("button", { name: hex })
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("POSTs the name and chosen color, then shows the new category in the Custom section", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, incomeDefault],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => createdVet,
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const addRow = await screen.findByTestId("category-add-row");
+    fireEvent.change(within(addRow).getByLabelText(/new category name/i), {
+      target: { value: "Vet" },
+    });
+    fireEvent.click(within(addRow).getByRole("button", { name: NEW_COLOR }));
+    fireEvent.click(
+      within(addRow).getByRole("button", { name: /add category/i })
+    );
+
+    await waitFor(() => {
+      const postCall = fetchSpy.mock.calls.find(
+        ([url, init]) =>
+          typeof url === "string" &&
+          url.includes("/categories") &&
+          (init as RequestInit | undefined)?.method === "POST"
+      );
+      expect(postCall).toBeDefined();
+      const body = JSON.parse((postCall![1] as RequestInit).body as string);
+      expect(body.name).toBe("Vet");
+      expect(body.color).toBe(NEW_COLOR);
+    });
+
+    expect(await screen.findByText("Vet")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/no custom categories yet/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("surfaces a clear error message when the create is rejected", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [foodDefault, incomeDefault],
+    } as Response);
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: 'A category named "Food" already exists' }),
+    } as Response);
+
+    render(
+      <ThemeProvider theme={theme}>
+        <CategoryManagerModal onClose={vi.fn()} />
+      </ThemeProvider>
+    );
+
+    const addRow = await screen.findByTestId("category-add-row");
+    fireEvent.change(within(addRow).getByLabelText(/new category name/i), {
+      target: { value: "Food" },
+    });
+    fireEvent.click(
+      within(addRow).getByRole("button", { name: /add category/i })
+    );
+
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+  });
+});
