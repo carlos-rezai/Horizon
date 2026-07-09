@@ -4,6 +4,7 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
 import { resolveAccountColor } from "../../../utils/color/color";
 import Modal from "../../../components/Modal/Modal";
+import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import Button from "../../../primitives/Button/Button";
 import Select from "../../../primitives/Select/Select";
 import Spinner from "../../../primitives/Spinner/Spinner";
@@ -90,7 +91,6 @@ export default function ImportWizard({
     blocked,
     rows,
     map,
-    categoryOptions,
     summary,
     submitting,
     submitError,
@@ -321,17 +321,10 @@ export default function ImportWizard({
                   </StyledCheck>
                   <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
                   <StyledReviewDesc>{r.description}</StyledReviewDesc>
-                  <Select
-                    value={r.category}
-                    aria-label="category"
-                    onChange={(e) => setCategory(r.id, e.target.value)}
-                  >
-                    {categoryOptions.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </Select>
+                  <CategorySelect
+                    initialCategory={r.category}
+                    onChange={(name) => setCategory(r.id, name)}
+                  />
                   <span>
                     {r.duplicate ? (
                       <StyledFlagBadge $tone="warn">
