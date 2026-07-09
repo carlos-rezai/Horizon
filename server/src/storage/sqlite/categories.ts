@@ -31,6 +31,9 @@ export function createSqliteCategoriesRepo(
   const insertStmt = db.prepare(
     `INSERT INTO categories (id, name, is_default, color) VALUES (?, ?, 0, ?)`
   );
+  const collisionStmt = db.prepare(
+    `SELECT 1 FROM categories WHERE lower(name) = lower(?) LIMIT 1`
+  );
   const recolorStmt = db.prepare(
     `UPDATE categories SET color = ? WHERE id = ?`
   );
@@ -46,15 +49,22 @@ export function createSqliteCategoriesRepo(
     },
 
     async create(input) {
+      const name = input.name.trim().slice(0, 40);
+      if (name.length === 0) return { ok: false, reason: "invalid_name" };
+      if (collisionStmt.get(name)) return { ok: false, reason: "collision" };
+
       const id = randomUUID();
-      const color = colorForCategoryName(input.name);
-      insertStmt.run(id, input.name, color);
+      const color = input.color ?? colorForCategoryName(name);
+      insertStmt.run(id, name, color);
       return {
-        id,
-        name: input.name,
-        isDefault: false,
-        color,
-        hidden: false,
+        ok: true,
+        category: {
+          id,
+          name,
+          isDefault: false,
+          color,
+          hidden: false,
+        },
       };
     },
 

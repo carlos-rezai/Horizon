@@ -60,3 +60,40 @@ export const EmptyState = styled.p`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   font-style: italic;
 `;
+
+export const AddRow = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.space3}px;
+  border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+`;
+
+export const NameInput = styled.input`
+  flex: 0 0 auto;
+  min-width: 120px;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space3}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  color: ${({ theme }) => theme.colors.onSurface};
+  background-color: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+`;
+
+export const AddButton = styled.button`
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space4}px;
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  color: ${({ theme }) => theme.colors.onPrimary};
+  background-color: ${({ theme }) => theme.colors.primary};
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  cursor: pointer;
+`;
+
+export const ErrorText = styled.p`
+  margin: ${({ theme }) => theme.spacing.space2}px 0 0;
+  font-size: ${({ theme }) => theme.typography.sizes.xs}px;
+  color: ${({ theme }) => theme.colors.error};
+`;

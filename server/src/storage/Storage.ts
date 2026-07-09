@@ -5,6 +5,7 @@ import type {
   AccountWithBalance,
   Category,
   CategoryCreateInput,
+  CategoryCreateResult,
   DeleteResult,
   ImportRecord,
   ImportCreateInput,
@@ -70,7 +71,7 @@ export interface TransfersRepo {
 
 export interface CategoriesRepo {
   findAll(): Promise<Category[]>;
-  create(input: CategoryCreateInput): Promise<Category>;
+  create(input: CategoryCreateInput): Promise<CategoryCreateResult>;
   recolor(id: string, color: string): Promise<Category | null>;
   delete(id: string): Promise<DeleteResult | null>;
 }

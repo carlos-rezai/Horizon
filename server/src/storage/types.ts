@@ -78,7 +78,12 @@ export interface Category {
 
 export interface CategoryCreateInput {
   name: string;
+  color?: string;
 }
+
+export type CategoryCreateResult =
+  | { ok: true; category: Category }
+  | { ok: false; reason: "invalid_name" | "collision" };
 
 export type Frequency = "monthly" | "quarterly" | "annual";
 

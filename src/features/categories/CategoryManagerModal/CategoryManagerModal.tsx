@@ -1,7 +1,9 @@
+import { useState } from "react";
 import Modal from "../../../components/Modal/Modal";
 import type { Category } from "../../../types/category";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";
 import { useCategoryManager } from "../useCategoryManager";
+import type { CreateCategoryResult } from "../useCategoryManager";
 import {
   Section,
   SectionLabel,
@@ -10,6 +12,10 @@ import {
   Swatches,
   Swatch,
   EmptyState,
+  AddRow,
+  NameInput,
+  AddButton,
+  ErrorText,
 } from "./CategoryManagerModal.styles";
 
 interface CategoryManagerModalProps {
@@ -43,10 +49,62 @@ function CategoryRow({
   );
 }
 
+function CategoryAddRow({
+  onCreate,
+}: {
+  onCreate: (name: string, color: string) => Promise<CreateCategoryResult>;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(categoryColorPalette[0]);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleAdd(): Promise<void> {
+    setError(null);
+    const result = await onCreate(name, color);
+    if (result.ok) {
+      setName("");
+      setColor(categoryColorPalette[0]);
+    } else {
+      setError(result.error);
+    }
+  }
+
+  return (
+    <AddRow data-testid="category-add-row">
+      <Row>
+        <NameInput
+          type="search"
+          aria-label="New category name"
+          placeholder="New category name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Swatches>
+          {categoryColorPalette.map((hex) => (
+            <Swatch
+              key={hex}
+              type="button"
+              aria-label={hex}
+              aria-pressed={color.toLowerCase() === hex.toLowerCase()}
+              $color={hex}
+              $selected={color.toLowerCase() === hex.toLowerCase()}
+              onClick={() => setColor(hex)}
+            />
+          ))}
+        </Swatches>
+        <AddButton type="button" onClick={() => void handleAdd()}>
+          Add category
+        </AddButton>
+      </Row>
+      {error !== null && <ErrorText role="alert">{error}</ErrorText>}
+    </AddRow>
+  );
+}
+
 export default function CategoryManagerModal({
   onClose,
 }: CategoryManagerModalProps) {
-  const { defaults, customs, recolor } = useCategoryManager();
+  const { defaults, customs, recolor, create } = useCategoryManager();
 
   function handleRecolor(id: string, color: string): void {
     void recolor(id, color);
@@ -77,6 +135,7 @@ export default function CategoryManagerModal({
             />
           ))
         )}
+        <CategoryAddRow onCreate={create} />
       </Section>
     </Modal>
   );

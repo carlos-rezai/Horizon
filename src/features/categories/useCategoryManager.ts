@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import type { Category } from "../../types/category";
 import { API_BASE } from "../../utils/api/api";
 
+export type CreateCategoryResult = { ok: true } | { ok: false; error: string };
+
 interface UseCategoryManagerResult {
   defaults: Category[];
   customs: Category[];
   isLoading: boolean;
   recolor: (id: string, color: string) => Promise<void>;
+  create: (name: string, color: string) => Promise<CreateCategoryResult>;
 }
 
 /**
@@ -57,10 +60,35 @@ export function useCategoryManager(): UseCategoryManagerResult {
     );
   }
 
+  async function create(
+    name: string,
+    color: string
+  ): Promise<CreateCategoryResult> {
+    const res = await fetch(`${API_BASE}/categories`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, color }),
+    });
+    if (!res.ok) {
+      let error = "Could not add category";
+      try {
+        const body = (await res.json()) as { error?: string };
+        if (body.error) error = body.error;
+      } catch {
+        // response had no JSON body — keep the generic message
+      }
+      return { ok: false, error };
+    }
+    const created = (await res.json()) as Category;
+    setCategories((prev) => [...prev, created]);
+    return { ok: true };
+  }
+
   return {
     defaults: categories.filter((c) => c.isDefault),
     customs: categories.filter((c) => !c.isDefault),
     isLoading,
     recolor,
+    create,
   };
 }

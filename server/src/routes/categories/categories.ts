@@ -19,8 +19,18 @@ router.post("/", async (req, res) => {
     res.status(400).json({ issues: parsed.error.issues });
     return;
   }
-  const category = await getStorage(req).categories.create(parsed.data);
-  res.status(201).json(category);
+  const result = await getStorage(req).categories.create(parsed.data);
+  if (!result.ok) {
+    if (result.reason === "invalid_name") {
+      res.status(400).json({ error: "Category name must not be empty" });
+      return;
+    }
+    res
+      .status(409)
+      .json({ error: `A category named "${parsed.data.name}" already exists` });
+    return;
+  }
+  res.status(201).json(result.category);
 });
 
 router.patch("/:id", async (req, res) => {
