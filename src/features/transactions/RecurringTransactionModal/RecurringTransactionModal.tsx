@@ -63,7 +63,10 @@ export default function RecurringTransactionModal({
   const [monthOfYear, setMonthOfYear] = useState<number>(
     transaction?.monthOfYear ?? new Date().getMonth() + 1
   );
-  const [category, setCategory] = useState("");
+  // Seeded from the row so saving before the category list loads keeps the
+  // existing category instead of clearing it. CategorySelect re-confirms it
+  // via onChange once the fetch resolves.
+  const [category, setCategory] = useState(transaction?.category ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const handleSave = (e: React.FormEvent) => {
