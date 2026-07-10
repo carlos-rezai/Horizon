@@ -28,6 +28,14 @@ export function createSqliteCategoriesRepo(
 ): CategoriesRepo {
   const selectAllStmt = db.prepare(`SELECT * FROM categories`);
   const selectByIdStmt = db.prepare(`SELECT * FROM categories WHERE id = ?`);
+
+  // Shared guard prelude for the mutation methods: reject a malformed id and
+  // load the row, returning null when the id is invalid or unknown.
+  function loadRow(id: string): CategoryRow | null {
+    if (!isValidUuid(id)) return null;
+    return (selectByIdStmt.get(id) as CategoryRow | undefined) ?? null;
+  }
+
   const insertStmt = db.prepare(
     `INSERT INTO categories (id, name, is_default, color) VALUES (?, ?, 0, ?)`
   );
@@ -99,16 +107,14 @@ export function createSqliteCategoriesRepo(
     },
 
     async recolor(id, color) {
-      if (!isValidUuid(id)) return null;
-      const row = selectByIdStmt.get(id) as CategoryRow | undefined;
+      const row = loadRow(id);
       if (!row) return null;
       recolorStmt.run(color, id);
       return toCategoryDTO({ ...row, color });
     },
 
     async rename(id, name) {
-      if (!isValidUuid(id)) return null;
-      const row = selectByIdStmt.get(id) as CategoryRow | undefined;
+      const row = loadRow(id);
       if (!row) return null;
       if (row.is_default === 1) return { ok: false, reason: "is_default" };
 
@@ -123,8 +129,7 @@ export function createSqliteCategoriesRepo(
     },
 
     async setHidden(id, hidden) {
-      if (!isValidUuid(id)) return null;
-      const row = selectByIdStmt.get(id) as CategoryRow | undefined;
+      const row = loadRow(id);
       if (!row) return null;
       // Hidden is a picker-visibility flag for defaults only; custom
       // categories are removed via delete, never hidden.
@@ -139,8 +144,7 @@ export function createSqliteCategoriesRepo(
     },
 
     async delete(id, reassignTo) {
-      if (!isValidUuid(id)) return null;
-      const row = selectByIdStmt.get(id) as CategoryRow | undefined;
+      const row = loadRow(id);
       if (!row) return null;
       if (row.is_default === 1) return { ok: false, reason: "is_default" };
 
