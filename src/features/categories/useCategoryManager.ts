@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import type { Category } from "../../types/category";
-import { API_BASE } from "../../utils/api/api";
+import {
+  createCategory,
+  deleteCategory,
+  fetchCategories,
+  patchCategory,
+  readErrorMessage,
+} from "./categoriesApi";
 
 export type CreateCategoryResult = { ok: true } | { ok: false; error: string };
 export type RenameCategoryResult = { ok: true } | { ok: false; error: string };
@@ -38,12 +44,7 @@ export function useCategoryManager(): UseCategoryManagerResult {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_BASE}/categories`)
-      .then((res) => {
-        if (!res.ok)
-          throw new Error(`Failed to fetch categories: ${res.status}`);
-        return res.json() as Promise<Category[]>;
-      })
+    fetchCategories()
       .then((data) => {
         if (!cancelled) {
           setCategories(data);
@@ -59,37 +60,39 @@ export function useCategoryManager(): UseCategoryManagerResult {
     };
   }, []);
 
-  async function recolor(id: string, color: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/categories/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ color }),
-    });
-    if (!res.ok) return;
-    const updated = (await res.json()) as Category;
+  // Folds a server-returned Category back into local state so the manager and
+  // every surface reading `category.color`/`hidden` update without a refetch.
+  function foldCategory(updated: Category): void {
     setCategories((prev) =>
       prev.map((c) => (c.id === updated.id ? updated : c))
     );
+  }
+
+  // Shared write path for the two silent-on-failure PATCH mutations (recolor,
+  // setHidden): a rejected write leaves local state untouched.
+  async function applyPatch(
+    id: string,
+    body: { color: string } | { hidden: boolean }
+  ): Promise<void> {
+    const res = await patchCategory(id, body);
+    if (!res.ok) return;
+    foldCategory((await res.json()) as Category);
+  }
+
+  async function recolor(id: string, color: string): Promise<void> {
+    await applyPatch(id, { color });
   }
 
   async function create(
     name: string,
     color: string
   ): Promise<CreateCategoryResult> {
-    const res = await fetch(`${API_BASE}/categories`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, color }),
-    });
+    const res = await createCategory({ name, color });
     if (!res.ok) {
-      let error = "Could not add category";
-      try {
-        const body = (await res.json()) as { error?: string };
-        if (body.error) error = body.error;
-      } catch {
-        // response had no JSON body — keep the generic message
-      }
-      return { ok: false, error };
+      return {
+        ok: false,
+        error: await readErrorMessage(res, "Could not add category"),
+      };
     }
     const created = (await res.json()) as Category;
     setCategories((prev) => [...prev, created]);
@@ -100,49 +103,26 @@ export function useCategoryManager(): UseCategoryManagerResult {
     id: string,
     name: string
   ): Promise<RenameCategoryResult> {
-    const res = await fetch(`${API_BASE}/categories/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
+    const res = await patchCategory(id, { name });
     if (!res.ok) {
-      let error = "Could not rename category";
-      try {
-        const body = (await res.json()) as { error?: string };
-        if (body.error) error = body.error;
-      } catch {
-        // response had no JSON body — keep the generic message
-      }
-      return { ok: false, error };
+      return {
+        ok: false,
+        error: await readErrorMessage(res, "Could not rename category"),
+      };
     }
-    const updated = (await res.json()) as Category;
-    setCategories((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c))
-    );
+    foldCategory((await res.json()) as Category);
     return { ok: true };
   }
 
   async function setHidden(id: string, hidden: boolean): Promise<void> {
-    const res = await fetch(`${API_BASE}/categories/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hidden }),
-    });
-    if (!res.ok) return;
-    const updated = (await res.json()) as Category;
-    setCategories((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c))
-    );
+    await applyPatch(id, { hidden });
   }
 
   async function remove(
     id: string,
     reassignTo?: string
   ): Promise<DeleteCategoryResult> {
-    const query = reassignTo ? `?reassignTo=${reassignTo}` : "";
-    const res = await fetch(`${API_BASE}/categories/${id}${query}`, {
-      method: "DELETE",
-    });
+    const res = await deleteCategory(id, reassignTo);
     if (res.ok) {
       setCategories((prev) => prev.filter((c) => c.id !== id));
       return { ok: true };
