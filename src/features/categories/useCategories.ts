@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Category } from "../../types/category";
-import { API_BASE } from "../../utils/api/api";
+import { fetchCategories } from "./categoriesApi";
 
 /**
  * Fetches the full Category list once on mount. Read-only — the source of
@@ -16,12 +16,7 @@ export function useCategories(): { categories: Category[] } {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_BASE}/categories`)
-      .then((res) => {
-        if (!res.ok)
-          throw new Error(`Failed to fetch categories: ${res.status}`);
-        return res.json() as Promise<Category[]>;
-      })
+    fetchCategories()
       .then((data) => {
         if (!cancelled) setCategories(data);
       })

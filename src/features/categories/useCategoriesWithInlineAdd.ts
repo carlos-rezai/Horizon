@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Category } from "../../types/category";
 import { API_BASE } from "../../utils/api/api";
+import { fetchCategories } from "./categoriesApi";
 
 interface UseCategoriesWithInlineAddResult {
   categories: Category[];
@@ -26,12 +27,7 @@ export function useCategoriesWithInlineAdd(
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_BASE}/categories`)
-      .then((res) => {
-        if (!res.ok)
-          throw new Error(`Failed to fetch categories: ${res.status}`);
-        return res.json() as Promise<Category[]>;
-      })
+    fetchCategories()
       .then((data) => {
         if (!cancelled) {
           setCategories(data);
