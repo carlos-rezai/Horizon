@@ -1,4 +1,4 @@
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
 import { CategoryCreateSchema, CategoryPatchSchema } from "./category.js";
 import type { Storage } from "../../storage/Storage.js";
 
@@ -6,6 +6,45 @@ const router = Router();
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
+}
+
+interface HttpError {
+  status: number;
+  error: string;
+}
+
+function sendNotFound(res: Response): void {
+  res.status(404).json({ error: "Category not found" });
+}
+
+// Single source for the name-collision message shared by create and rename.
+function collisionMessage(name: string): string {
+  return `A category named "${name}" already exists`;
+}
+
+// Maps a category mutation result to its HTTP response: null is 404, a
+// { ok: false, reason } is looked up in `failures` (falling back to
+// `otherwise` for reasons a given call does not special-case), and success
+// is handed to `onOk`.
+function respondToMutation<
+  T extends { ok: true } | { ok: false; reason: string },
+>(
+  res: Response,
+  result: T | null,
+  failures: Record<string, HttpError>,
+  onOk: (result: Extract<T, { ok: true }>) => void,
+  otherwise?: HttpError
+): void {
+  if (result === null) {
+    sendNotFound(res);
+    return;
+  }
+  if (!result.ok) {
+    const mapped = failures[result.reason] ?? otherwise;
+    res.status(mapped.status).json({ error: mapped.error });
+    return;
+  }
+  onOk(result as Extract<T, { ok: true }>);
 }
 
 router.get("/", async (req, res) => {
@@ -20,17 +59,15 @@ router.post("/", async (req, res) => {
     return;
   }
   const result = await getStorage(req).categories.create(parsed.data);
-  if (!result.ok) {
-    if (result.reason === "invalid_name") {
-      res.status(400).json({ error: "Category name must not be empty" });
-      return;
-    }
-    res
-      .status(409)
-      .json({ error: `A category named "${parsed.data.name}" already exists` });
-    return;
-  }
-  res.status(201).json(result.category);
+  respondToMutation(
+    res,
+    result,
+    {
+      invalid_name: { status: 400, error: "Category name must not be empty" },
+      collision: { status: 409, error: collisionMessage(parsed.data.name) },
+    },
+    (ok) => res.status(201).json(ok.category)
+  );
 });
 
 router.patch("/:id", async (req, res) => {
@@ -46,39 +83,32 @@ router.patch("/:id", async (req, res) => {
       req.params.id,
       hidden
     );
-    if (result === null) {
-      res.status(404).json({ error: "Category not found" });
-      return;
-    }
-    if (!result.ok) {
-      res.status(409).json({ error: "Custom categories cannot be hidden" });
-      return;
-    }
-    res.status(200).json(result.category);
+    respondToMutation(
+      res,
+      result,
+      {
+        is_custom: { status: 409, error: "Custom categories cannot be hidden" },
+      },
+      (ok) => res.status(200).json(ok.category)
+    );
     return;
   }
 
   if (name !== undefined) {
     const result = await getStorage(req).categories.rename(req.params.id, name);
-    if (result === null) {
-      res.status(404).json({ error: "Category not found" });
-      return;
-    }
-    if (!result.ok) {
-      if (result.reason === "invalid_name") {
-        res.status(400).json({ error: "Category name must not be empty" });
-        return;
-      }
-      if (result.reason === "is_default") {
-        res.status(409).json({ error: "Default categories cannot be renamed" });
-        return;
-      }
-      res
-        .status(409)
-        .json({ error: `A category named "${name.trim()}" already exists` });
-      return;
-    }
-    res.status(200).json(result.category);
+    respondToMutation(
+      res,
+      result,
+      {
+        invalid_name: { status: 400, error: "Category name must not be empty" },
+        is_default: {
+          status: 409,
+          error: "Default categories cannot be renamed",
+        },
+        collision: { status: 409, error: collisionMessage(name.trim()) },
+      },
+      (ok) => res.status(200).json(ok.category)
+    );
     return;
   }
 
@@ -91,7 +121,7 @@ router.patch("/:id", async (req, res) => {
     color
   );
   if (updated === null) {
-    res.status(404).json({ error: "Category not found" });
+    sendNotFound(res);
     return;
   }
   res.status(200).json(updated);
@@ -104,19 +134,18 @@ router.delete("/:id", async (req, res) => {
     req.params.id,
     reassignTo
   );
-  if (result === null) {
-    res.status(404).json({ error: "Category not found" });
-    return;
-  }
-  if (!result.ok) {
-    if (result.reason === "is_default") {
-      res.status(409).json({ error: "Default categories cannot be deleted" });
-      return;
-    }
-    res.status(409).json({ error: "Category is referenced by transactions" });
-    return;
-  }
-  res.status(204).send();
+  respondToMutation(
+    res,
+    result,
+    {
+      is_default: {
+        status: 409,
+        error: "Default categories cannot be deleted",
+      },
+    },
+    () => res.status(204).send(),
+    { status: 409, error: "Category is referenced by transactions" }
+  );
 });
 
 export default router;
