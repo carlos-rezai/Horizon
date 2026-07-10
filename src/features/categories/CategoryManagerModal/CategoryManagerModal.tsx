@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Modal from "../../../components/Modal/Modal";
 import Select from "../../../primitives/Select/Select";
+import SwatchPicker from "../../../primitives/SwatchPicker/SwatchPicker";
 import type { Category } from "../../../types/category";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";
 import { useCategoryManager } from "../useCategoryManager";
@@ -13,8 +14,6 @@ import {
   SectionLabel,
   Row,
   RowName,
-  Swatches,
-  Swatch,
   EmptyState,
   AddRow,
   NameInput,
@@ -74,19 +73,11 @@ function CategoryRow({
           onChange={(e) => setDraft(e.target.value)}
         />
       )}
-      <Swatches>
-        {categoryColorPalette.map((hex) => (
-          <Swatch
-            key={hex}
-            type="button"
-            aria-label={hex}
-            aria-pressed={category.color.toLowerCase() === hex.toLowerCase()}
-            $color={hex}
-            $selected={category.color.toLowerCase() === hex.toLowerCase()}
-            onClick={() => onRecolor(category.id, hex)}
-          />
-        ))}
-      </Swatches>
+      <SwatchPicker
+        palette={categoryColorPalette}
+        value={category.color}
+        onChange={(hex) => onRecolor(category.id, hex)}
+      />
       {onRename &&
         (editing ? (
           <RenameButton type="button" onClick={() => void handleSave()}>
@@ -192,19 +183,11 @@ function CategoryAddRow({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <Swatches>
-          {categoryColorPalette.map((hex) => (
-            <Swatch
-              key={hex}
-              type="button"
-              aria-label={hex}
-              aria-pressed={color.toLowerCase() === hex.toLowerCase()}
-              $color={hex}
-              $selected={color.toLowerCase() === hex.toLowerCase()}
-              onClick={() => setColor(hex)}
-            />
-          ))}
-        </Swatches>
+        <SwatchPicker
+          palette={categoryColorPalette}
+          value={color}
+          onChange={setColor}
+        />
         <AddButton type="button" onClick={() => void handleAdd()}>
           Add category
         </AddButton>

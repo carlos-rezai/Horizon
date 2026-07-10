@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { SwatchGrid } from "../../../primitives/SwatchPicker/SwatchPicker.styles";
 
 export const Section = styled.section`
   & + & {
@@ -29,7 +30,7 @@ export const Row = styled.div`
   &[aria-disabled="true"]
     ${() => RowName},
     &[aria-disabled="true"]
-    ${() => Swatches} {
+    ${SwatchGrid} {
     opacity: 0.45;
   }
 `;
@@ -40,25 +41,6 @@ export const RowName = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-weight: ${({ theme }) => theme.typography.weights.medium};
   color: ${({ theme }) => theme.colors.onSurface};
-`;
-
-export const Swatches = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.space2}px;
-`;
-
-export const Swatch = styled.button<{ $color: string; $selected: boolean }>`
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border-radius: ${({ theme }) => theme.radius.pill}px;
-  background-color: ${({ $color }) => $color};
-  border: 2px solid
-    ${({ $selected, theme }) =>
-      $selected ? theme.colors.onSurface : "transparent"};
-  outline: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  cursor: pointer;
 `;
 
 export const EmptyState = styled.p`
