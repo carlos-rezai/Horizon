@@ -168,7 +168,7 @@ function CategoryAddRow({
   onCreate: (name: string, color: string) => Promise<CreateCategoryResult>;
 }) {
   const [name, setName] = useState("");
-  const [color, setColor] = useState(categoryColorPalette[0]);
+  const [color, setColor] = useState<string>(categoryColorPalette[0]);
   const [error, setError] = useState<string | null>(null);
 
   async function handleAdd(): Promise<void> {

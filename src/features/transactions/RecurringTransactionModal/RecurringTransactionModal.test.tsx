@@ -14,7 +14,13 @@ afterEach(() => {
 });
 
 const categories: Category[] = [
-  { id: "cat-1", name: "Housing", isDefault: true },
+  {
+    id: "cat-1",
+    name: "Housing",
+    isDefault: true,
+    color: "#7FA7D9",
+    hidden: false,
+  },
 ];
 
 const otherAccounts: AccountWithBalance[] = [

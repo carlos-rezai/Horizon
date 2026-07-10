@@ -45,8 +45,20 @@ afterEach(() => {
 });
 
 const categories: Category[] = [
-  { id: "cat-1", name: "Food", isDefault: true },
-  { id: "cat-2", name: "Income", isDefault: false },
+  {
+    id: "cat-1",
+    name: "Food",
+    isDefault: true,
+    color: "#74C29B",
+    hidden: false,
+  },
+  {
+    id: "cat-2",
+    name: "Income",
+    isDefault: false,
+    color: "#7FA7D9",
+    hidden: false,
+  },
 ];
 
 const renderModal = (

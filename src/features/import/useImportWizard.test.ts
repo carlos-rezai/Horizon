@@ -38,8 +38,14 @@ const accounts: AccountWithBalance[] = [
 ];
 
 const categories: Category[] = [
-  { id: "c1", name: "Food", isDefault: true },
-  { id: "c2", name: "Income", isDefault: false },
+  { id: "c1", name: "Food", isDefault: true, color: "#74C29B", hidden: false },
+  {
+    id: "c2",
+    name: "Income",
+    isDefault: false,
+    color: "#7FA7D9",
+    hidden: false,
+  },
 ];
 
 const file = new File(["x"], "dkb-2026-03.csv", { type: "text/csv" });

@@ -204,6 +204,7 @@ describe("SpendingList", () => {
         <SpendingList
           accounts={accounts}
           transactions={[]}
+          categories={[]}
           monthLabel="June"
           onAddExpense={vi.fn()}
           onEditTransaction={vi.fn()}
