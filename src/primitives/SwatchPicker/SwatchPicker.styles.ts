@@ -1,9 +1,11 @@
 import styled from "styled-components";
 
-export const SwatchGrid = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+export const SwatchGrid = styled.div<{ $columns?: number }>`
   gap: ${({ theme }) => theme.spacing.space2}px;
+  ${({ $columns }) =>
+    $columns
+      ? `display: grid; grid-template-columns: repeat(${$columns}, min-content);`
+      : "display: flex; flex-wrap: wrap;"}
 `;
 
 export const Swatch = styled.button<{ $color: string; $selected: boolean }>`

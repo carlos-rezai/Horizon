@@ -7,6 +7,8 @@ export interface SwatchPickerProps {
   value: string;
   /** Called with the chosen hex when a swatch is clicked. */
   onChange: (hex: string) => void;
+  /** Lay the swatches out in a fixed-column grid; defaults to a wrapping row. */
+  columns?: number;
 }
 
 /**
@@ -19,9 +21,10 @@ export default function SwatchPicker({
   palette,
   value,
   onChange,
+  columns,
 }: SwatchPickerProps): React.ReactElement {
   return (
-    <SwatchGrid>
+    <SwatchGrid $columns={columns}>
       {palette.map((hex) => {
         const selected = value.toLowerCase() === hex.toLowerCase();
         return (

@@ -77,6 +77,7 @@ function CategoryRow({
         palette={categoryColorPalette}
         value={category.color}
         onChange={(hex) => onRecolor(category.id, hex)}
+        columns={10}
       />
       {onRename &&
         (editing ? (
@@ -187,6 +188,7 @@ function CategoryAddRow({
           palette={categoryColorPalette}
           value={color}
           onChange={setColor}
+          columns={10}
         />
         <AddButton type="button" onClick={() => void handleAdd()}>
           Add category
