@@ -11,13 +11,16 @@ export const StyledOverlay = styled.div`
   z-index: 100;
 `;
 
-export const StyledDialog = styled.div`
+export const StyledDialog = styled.div<{ $width?: number }>`
   display: flex;
   flex-direction: column;
   background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
   border: 1px solid ${({ theme }) => theme.colors.outline};
   border-radius: ${({ theme }) => theme.radius.xl}px;
-  min-width: ${({ theme }) => theme.layout.modalWidth}px;
+  ${({ $width, theme }) =>
+    $width !== undefined
+      ? `width: ${$width}px;`
+      : `min-width: ${theme.layout.modalWidth}px;`}
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;

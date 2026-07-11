@@ -255,6 +255,7 @@ function ReassignPrompt({
     <Modal
       onClose={onCancel}
       title={`Delete “${category.name}”`}
+      width={440}
       footer={
         <>
           <Button variant="secondary" onClick={onCancel}>
@@ -394,6 +395,7 @@ export default function CategoryManagerModal({
     <Modal
       onClose={onClose}
       title="Manage categories"
+      width={480}
       footer={
         <Button variant="secondary" onClick={onClose}>
           Done
