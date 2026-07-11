@@ -12,6 +12,9 @@ export const GlobalStyle = createGlobalStyle`
   html {
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
+    /* Reserve the scrollbar gutter so pages whose height crosses the viewport
+       don't toggle the window scrollbar and shift the whole app horizontally. */
+    scrollbar-gutter: stable;
   }
 
   body {
