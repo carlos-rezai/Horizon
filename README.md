@@ -254,7 +254,7 @@ The generated installer will be signed with your local certificate and will inst
 | CSV / Bank Statement Import (backend)     | ✅ Complete |
 | Month Year-Comparison                     | ✅ Complete |
 | Real Bank CSV Import                      | ✅ Complete |
-| Category Management                       | 🔜 Planned  |
+| Category Management                       | ✅ Complete |
 | Historical Month Navigation               | 🔜 Planned  |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
