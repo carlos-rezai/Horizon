@@ -95,6 +95,8 @@ describe("CategoryManagerModal — recolor swatches", () => {
     renderModal([foodDefault, incomeDefault]);
 
     const row = await screen.findByTestId(`category-row-${foodDefault.id}`);
+    // the palette lives in a popover opened from the row's swatch dot
+    fireEvent.click(within(row).getByRole("button", { name: /change color/i }));
 
     for (const hex of categoryColorPalette) {
       expect(
@@ -124,6 +126,7 @@ describe("CategoryManagerModal — recolor swatches", () => {
     );
 
     const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /change color/i }));
     const swatch = within(row).getByRole("button", { name: NEW_COLOR });
 
     fireEvent.click(swatch);
@@ -135,12 +138,14 @@ describe("CategoryManagerModal — recolor swatches", () => {
       );
     });
 
+    // reopen the popover to confirm the new colour is now the selected swatch
     await waitFor(() => {
+      const updated = screen.getByTestId(`category-row-${vetCustom.id}`);
+      fireEvent.click(
+        within(updated).getByRole("button", { name: /change color/i })
+      );
       expect(
-        within(screen.getByTestId(`category-row-${vetCustom.id}`)).getByRole(
-          "button",
-          { name: NEW_COLOR }
-        )
+        within(updated).getByRole("button", { name: NEW_COLOR })
       ).toHaveAttribute("aria-pressed", "true");
     });
   });
@@ -158,14 +163,20 @@ describe("CategoryManagerModal — add a custom category (issue #159)", () => {
   it("renders an inline add-row in the Custom section (name field + palette swatches + confirm)", async () => {
     renderModal([foodDefault, incomeDefault]);
 
-    const addRow = await screen.findByTestId("category-add-row");
+    // the add affordance expands into the inline form on click
+    fireEvent.click(await screen.findByTestId("category-add-row"));
+    const addRow = screen.getByTestId("category-add-row");
+
     expect(
       within(addRow).getByLabelText(/new category name/i)
     ).toBeInTheDocument();
     expect(
       within(addRow).getByRole("button", { name: /add category/i })
     ).toBeInTheDocument();
-    // the same fixed palette used for recolor is offered for the new category
+    // the same fixed palette used for recolor is offered, via the swatch popover
+    fireEvent.click(
+      within(addRow).getByRole("button", { name: /change color/i })
+    );
     for (const hex of categoryColorPalette) {
       expect(
         within(addRow).getByRole("button", { name: hex })
@@ -190,10 +201,14 @@ describe("CategoryManagerModal — add a custom category (issue #159)", () => {
       </ThemeProvider>
     );
 
-    const addRow = await screen.findByTestId("category-add-row");
+    fireEvent.click(await screen.findByTestId("category-add-row"));
+    const addRow = screen.getByTestId("category-add-row");
     fireEvent.change(within(addRow).getByLabelText(/new category name/i), {
       target: { value: "Vet" },
     });
+    fireEvent.click(
+      within(addRow).getByRole("button", { name: /change color/i })
+    );
     fireEvent.click(within(addRow).getByRole("button", { name: NEW_COLOR }));
     fireEvent.click(
       within(addRow).getByRole("button", { name: /add category/i })
@@ -236,7 +251,8 @@ describe("CategoryManagerModal — add a custom category (issue #159)", () => {
       </ThemeProvider>
     );
 
-    const addRow = await screen.findByTestId("category-add-row");
+    fireEvent.click(await screen.findByTestId("category-add-row"));
+    const addRow = screen.getByTestId("category-add-row");
     fireEvent.change(within(addRow).getByLabelText(/new category name/i), {
       target: { value: "Food" },
     });
@@ -343,7 +359,14 @@ describe("CategoryManagerModal — rename a custom category (issue #160)", () =>
     );
 
     expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
-    // the row keeps its original name after a rejected rename
+    // the rejected rename leaves the row in edit mode; cancelling restores the
+    // original name, proving the category was never renamed
+    fireEvent.click(
+      within(screen.getByTestId(`category-row-${vetCustom.id}`)).getByRole(
+        "button",
+        { name: /cancel/i }
+      )
+    );
     expect(screen.getByText("Vet")).toBeInTheDocument();
   });
 });
@@ -462,9 +485,7 @@ describe("CategoryManagerModal — delete a custom category (issue #161)", () =>
     fireEvent.click(within(row).getByRole("button", { name: /delete/i }));
 
     await screen.findByRole("combobox");
-    fireEvent.click(
-      screen.getByRole("button", { name: /reassign and delete/i })
-    );
+    fireEvent.click(screen.getByRole("button", { name: /reassign & delete/i }));
 
     await waitFor(() => {
       const reassignCall = fetchSpy.mock.calls.find(
