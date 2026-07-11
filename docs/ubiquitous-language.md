@@ -929,3 +929,52 @@
 - **"hide" / "delete"** (new) — for Categories these are different operations on different targets. **Hide** applies to **Default Categories** only and is a reversible **picker-visibility** filter — the row and all its data stay. **Delete** applies to **Custom Categories** only and removes the row (via **reassign-on-delete** when in use). Never say "delete" when you mean hide a default, and never expose a hide toggle on a Custom Category or a delete on a Default Category.
 - **"rename" (Category)** (new) — rename is never a rename-in-place of a string key; it is a **Category Reassignment** cascade across `categories` + `transactions` + `recurring_transactions`, because Categories are referenced by name. Never treat a Category rename as a single-row `UPDATE`. A **merge** (rename onto an existing name) is explicitly _not_ rename — it is expressed as **reassign-on-delete**; rename collisions are rejected.
 - **"Category Color" authoritative vs derived** (new) — after Category Management the stored `categories.color` is the source of truth; `colorForCategoryName` is a **NULL-only fallback** for untouched Default Categories. Never re-hash the name for a Category that has a stored color, and never let the two mirrored `categoryColorPalette` files (server + frontend) diverge.
+
+## Historical Month Navigation (new)
+
+| Term                      | Definition                                                                                                                                                                                                               | Aliases to avoid                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| **History** (page/nav)    | The `/history` route and its sidebar nav item (Clock icon, between Month and Import) — the multi-year backward-looking view of Reconstructed Actuals                                                                     | Past view, archive page                   |
+| **Historical Trajectory** | The title and concept of the History page's chart — the actuals-only counterpart to the forward-looking **Trajectory Horizon**; right edge is always today, no Payoff Marker, no Freedom Phase                           | Past trajectory, history graph            |
+| **Reconstructed Actuals** | The per-month historical balance series derived by replaying the ledger (Opening Balance + reconciled Transactions per month) — cash lines use the account `actual`, Restschuld uses the mortgage `projected` (replayed) | Historical balances, past actuals         |
+| **HistoryPoint**          | The purpose-built per-month DTO returned by `GET /projection/history` — `{ month, totalLiquid, restschuld, netCashflow, accounts: Record<id, balance> }`, all cents                                                      | History row, history snapshot             |
+| **HistoryChart**          | The actuals-only Recharts chart on the History page — reuses the Trajectory Horizon's visual language (per-account lines, dashed Restschuld, toggle-chip legend) with its own independent visibility state               | History graph, actuals chart              |
+| **Year Archive**          | The import-gated, expandable year list on the History page — one row per year with ≥1 imported Statement, showing that year's end-of-data Total Liquid / Restschuld / Net Cashflow + a statement badge                   | Year list, history accordion              |
+| **MonthYearPicker**       | The jump-to popover on Month Overview (label + chevron between the unchanged prev/next arrows) — `◀ year ▶` + 3×4 month grid, portaled to `document.body`, out-of-**Browsable Range** months disabled                    | Jump-to picker, month picker, date picker |
+| **Browsable Range**       | The window of navigable months: from the **earliest imported Transaction month** through the current month — bounds the Historical Trajectory span and the MonthYearPicker's enabled months                              | Data range, history range                 |
+
+## Relationships (Historical Month Navigation additions)
+
+- **Reconstructed Actuals** are produced by `GET /projection/history`, which runs the existing **Projection Engine** with `from` = the earliest imported Transaction month and `currentDate` = the current month — no new balance math
+- A **HistoryPoint**'s cash figures (per-account balances, **Total Liquid**) come from each account's `actual`; its **Restschuld** comes from the mortgage's replayed `projected` — because a Mortgage's `actual` is just its flat un-replayed Opening Balance
+- A **HistoryPoint**'s **Net Cashflow** is the real sum of that month's stored Transactions — never the recurring/projected figure
+- The **Year Archive** shows only years present in **Import History** (≥1 Statement) — it can never display a year with no imported data behind it
+- A **Year Archive** month row deep-links to the existing **Month Overview** (`/months/:month`); the statement badge links to the **Import** page
+- The **MonthYearPicker** derives its lower bound from `GET /imports` (min `startDate` month), not from the full **HistoryPoint** series — keeping the heavy history fetch off the Month page
+- **HistoryChart** persists its own series visibility (`horizon.history.visibility.v1`), independent of the **Trajectory Horizon**'s (`horizon.trajectory.visibility.v2`)
+- With no imported Statements, **History** shows an EmptyState and the **Browsable Range** collapses to the current month
+
+## Example dialogue (Historical Month Navigation)
+
+> **Dev:** "The History chart says 'reconstructed actuals' — is that the same `actual` we already had?"
+>
+> **Domain expert:** "It's that `actual`, but as a multi-month series. For every past month, a HistoryPoint's cash balances are `Opening Balance + reconciled Transactions through that month` — and since imported Statements are the real ledger, that's the true historical balance."
+>
+> **Dev:** "Then why does the Restschuld line still slope down if the mortgage's `actual` is flat?"
+>
+> **Domain expert:** "Because Restschuld is the one exception — it uses the replayed `projected`, exactly like the Projection Accordion. A Mortgage's `actual` is just its un-replayed Opening Balance; Sondertilgung is modelled as a Recurring Transfer, not a stored Transaction."
+>
+> **Dev:** "How far back can I go?"
+>
+> **Domain expert:** "The Browsable Range — earliest imported Transaction month through today. That's the lower bound the MonthYearPicker greys out below, and it's where the Historical Trajectory's left edge sits. No imports, no history: the picker pins to the current month."
+>
+> **Dev:** "And the Year Archive only lists years I've imported?"
+>
+> **Domain expert:** "Right — it's gated on Import History. A year with zero Statements never appears, because there'd be nothing real behind it."
+
+## Flagged ambiguities (Historical Month Navigation)
+
+- **"Trajectory"** (new) — now two charts. **Trajectory Horizon** is forward-looking (240-month projection, Payoff Marker, Freedom Phase); **Historical Trajectory** is backward-looking (Reconstructed Actuals, right edge = today, no payoff/freedom concepts). Never use "Trajectory" unqualified when both could be meant.
+- **"Actual" vs "Reconstructed Actuals"** (new) — **Actual** is a single account/month real balance; **Reconstructed Actuals** is the per-month historical series rendered on the History page. The series is honest cash _except_ Restschuld, which is the replayed `projected` — never claim the History Restschuld line is an `actual`.
+- **"history"** (new) — overloaded three ways: **Recurring History** (the Replay Loop's past recurring firings), **Import History** (persisted Statements/Import Records), and **History** (the `/history` page). Always qualify; the History page is driven by Reconstructed Actuals, not by Recurring History.
+- **"current month"** (updated) — in the **MonthYearPicker** and **Browsable Range**, "current month" is today's real calendar month (the upper bound), _not_ the navigable **Viewed Month** used by the Year Comparison card. The two senses coexist on the Month Overview screen.
