@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
@@ -37,13 +43,31 @@ function renderCard() {
 }
 
 describe("PreferencesCard", () => {
-  it("renders the three preference rows", () => {
+  it("renders the preference rows, including Categories", () => {
     mockHorizon();
     renderCard();
 
     expect(screen.getByText("Automatic updates")).toBeInTheDocument();
     expect(screen.getByText("Appearance")).toBeInTheDocument();
+    expect(screen.getByText("Categories")).toBeInTheDocument();
     expect(screen.getByText("Privacy")).toBeInTheDocument();
+  });
+
+  it("opens the CategoryManagerModal from the Categories 'Manage' button", async () => {
+    mockHorizon();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    } as Response);
+    renderCard();
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /manage/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
   });
 
   it("wires the auto-update toggle to the loaded value", async () => {
