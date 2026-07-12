@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTheme } from "styled-components";
 import {
   CartesianGrid,
@@ -15,15 +15,10 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../historyTypes";
 import {
   computeVisibleYDomain,
-  deriveDefaultVisibility,
-  isolateSeries,
-  loadVisibility,
-  saveVisibility,
-  showAllSeries,
-  toggleSeries,
   type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
+import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
@@ -263,28 +258,14 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
     showInTrajectory: a.showInTrajectory ?? true,
   }));
 
-  const [visibility, setVisibility] = useState<SeriesVisibility>(() => {
-    const defaults = deriveDefaultVisibility(visibilityAccounts);
-    const persisted =
-      typeof window !== "undefined"
-        ? loadVisibility(window.localStorage, VISIBILITY_KEY)
-        : null;
-    return persisted ? { ...defaults, ...persisted } : defaults;
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      saveVisibility(window.localStorage, VISIBILITY_KEY, visibility);
-    }
-  }, [visibility]);
-
   const seriesKeys = series.map((s) => s.key);
-  const handleToggle = (key: string) =>
-    setVisibility((v) => toggleSeries(v, key));
-  const handleIsolate = (key: string) =>
-    setVisibility(isolateSeries(seriesKeys, key));
-  const handleShowAll = () => setVisibility(showAllSeries(seriesKeys));
-  const visibleCount = series.filter((s) => visibility[s.key] === true).length;
+  const {
+    visibility,
+    visibleCount,
+    toggle: handleToggle,
+    isolate: handleIsolate,
+    showAll: handleShowAll,
+  } = useSeriesVisibility(visibilityAccounts, seriesKeys, VISIBILITY_KEY);
 
   // Range narrows from the right edge (TODAY), so a shorter window always keeps
   // the most recent months rather than the earliest.
