@@ -24,7 +24,6 @@ import {
   type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
-import type { TrajectoryDataPoint } from "../../../types/projection";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
@@ -306,10 +305,7 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
     [windowed]
   );
 
-  const [, yMax] = computeVisibleYDomain(
-    data as unknown as TrajectoryDataPoint[],
-    visibility
-  );
+  const [, yMax] = computeVisibleYDomain(data, visibility);
 
   const liquidVisible = visibility[TOTAL_LIQUID_KEY] === true;
   const todayIndex = data.length - 1;

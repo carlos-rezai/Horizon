@@ -1,11 +1,18 @@
 import type { AccountKind } from "../../types/account";
-import type { TrajectoryDataPoint } from "../../types/projection";
 
 /**
  * Maps a series key (per-account id, "restschuld", or "totalLiquid") to whether
  * its line is currently rendered in the Trajectory Horizon chart.
  */
 export type SeriesVisibility = Record<string, boolean>;
+
+/**
+ * The minimal shape `computeVisibleYDomain` needs from a chart data point: a
+ * keyed bag of cell values. Both the Dashboard's `TrajectoryDataPoint` and the
+ * History chart's own row shape satisfy it structurally, so the domain math is
+ * shared without either caller casting.
+ */
+export type ChartRow = Record<string, number | string | boolean | null>;
 
 /** The minimal account shape needed to derive default series visibility. */
 export interface VisibilityAccount {
@@ -89,7 +96,7 @@ export function showAllSeries(keys: string[]): SeriesVisibility {
  * step, falling back to a single step when nothing visible has a value.
  */
 export function computeVisibleYDomain(
-  data: TrajectoryDataPoint[],
+  data: ChartRow[],
   visibility: SeriesVisibility
 ): [number, number] {
   let max = 0;
