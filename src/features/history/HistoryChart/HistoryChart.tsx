@@ -10,17 +10,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Filter, RotateCcw } from "lucide-react";
+import { Filter } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../historyTypes";
 import {
   buildSeriesDescriptors,
   computeVisibleYDomain,
   type SeriesDescriptor,
-  type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
 import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
+import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
@@ -39,11 +39,6 @@ import {
   StyledTooltipRowLabel,
   StyledTooltipSwatch,
   StyledTooltipNetRow,
-  StyledLegend,
-  StyledChip,
-  StyledChipSwatch,
-  StyledSumBadge,
-  StyledShowAllButton,
 } from "./HistoryChart.styles";
 
 const VISIBILITY_KEY = "horizon.history.visibility.v1";
@@ -118,57 +113,6 @@ export function HistoryChartTooltip({
         <span>{formatBalance(point.netCashflow)}</span>
       </StyledTooltipNetRow>
     </StyledTooltipBox>
-  );
-}
-
-interface HistoryLegendProps {
-  series: SeriesDescriptor[];
-  visibility: SeriesVisibility;
-  onToggle: (key: string) => void;
-  onIsolate: (key: string) => void;
-  onShowAll: () => void;
-}
-
-function HistoryLegend({
-  series,
-  visibility,
-  onToggle,
-  onIsolate,
-  onShowAll,
-}: HistoryLegendProps) {
-  const hiddenCount = series.filter((s) => !visibility[s.key]).length;
-
-  return (
-    <StyledLegend data-testid="history-legend">
-      {series.map((s) => {
-        const on = visibility[s.key] === true;
-        return (
-          <StyledChip
-            key={s.key}
-            type="button"
-            $on={on}
-            aria-pressed={on}
-            onClick={() => onToggle(s.key)}
-            onDoubleClick={() => onIsolate(s.key)}
-            title={
-              on ? `Hide ${s.name} (double-click to isolate)` : `Show ${s.name}`
-            }
-          >
-            <StyledChipSwatch $color={s.color} $on={on} $dashed={s.dashed} />
-            {s.name}
-            {s.kind === "liquid" && (
-              <StyledSumBadge $on={on}>SUM</StyledSumBadge>
-            )}
-          </StyledChip>
-        );
-      })}
-      {hiddenCount > 0 && (
-        <StyledShowAllButton type="button" onClick={onShowAll}>
-          <RotateCcw size={13} />
-          Show all
-        </StyledShowAllButton>
-      )}
-    </StyledLegend>
   );
 }
 
@@ -398,12 +342,13 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
               </ComposedChart>
             </ResponsiveContainer>
           </StyledChartWrapper>
-          <HistoryLegend
+          <SeriesLegend
             series={series}
             visibility={visibility}
             onToggle={handleToggle}
             onIsolate={handleIsolate}
             onShowAll={handleShowAll}
+            testId="history-legend"
           />
         </>
       )}
