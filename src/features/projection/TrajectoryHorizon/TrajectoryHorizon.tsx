@@ -34,20 +34,16 @@ import {
 import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
+import ChartFrame from "../../../components/ChartFrame/ChartFrame";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { Clock, ArrowRight } from "lucide-react";
 import {
-  StyledSection,
-  StyledHeader,
-  StyledOverline,
-  StyledTitle,
   StyledHeaderControls,
   StyledHeaderDivider,
   StyledViewHistoryLink,
   StyledChartWrapper,
   StyledEmptyState,
-  StyledLoadingState,
   StyledPayoffMarker,
   StyledTooltipBox,
   StyledTooltipLabel,
@@ -268,13 +264,13 @@ export default function TrajectoryHorizon({
   const todayIndex = data.findIndex((p) => p.label === currentMonth);
 
   return (
-    <StyledSection>
-      <StyledHeader>
-        <div>
-          <StyledOverline>Trajectory Horizon</StyledOverline>
-          <StyledTitle>10-Year Projection</StyledTitle>
-        </div>
-        {(!isLoading && accounts.length > 0) || onViewHistory ? (
+    <ChartFrame
+      overline="Trajectory Horizon"
+      title="10-Year Projection"
+      isLoading={isLoading}
+      loadingTestId="trajectory-horizon-loading"
+      controls={
+        (!isLoading && accounts.length > 0) || onViewHistory ? (
           <StyledHeaderControls>
             {!isLoading && accounts.length > 0 && (
               <SeriesToggleIndicator
@@ -293,13 +289,10 @@ export default function TrajectoryHorizon({
               </StyledViewHistoryLink>
             )}
           </StyledHeaderControls>
-        ) : null}
-      </StyledHeader>
-      {isLoading ? (
-        <StyledLoadingState data-testid="trajectory-horizon-loading">
-          Loading…
-        </StyledLoadingState>
-      ) : accounts.length === 0 ? (
+        ) : null
+      }
+    >
+      {accounts.length === 0 ? (
         <StyledEmptyState data-testid="trajectory-horizon-empty">
           Add accounts to see your 20-year financial trajectory.
         </StyledEmptyState>
@@ -479,6 +472,6 @@ export default function TrajectoryHorizon({
           </StyledChartWrapper>
         </>
       )}
-    </StyledSection>
+    </ChartFrame>
   );
 }
