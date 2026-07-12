@@ -36,14 +36,44 @@ export const StyledTitle = styled.div`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
+export const StyledHeaderControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  align-self: flex-end;
+`;
+
 export const StyledSeriesToggle = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  align-self: flex-end;
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: 12.5px;
   color: ${({ theme }) => theme.colors.onSurfaceDim};
+`;
+
+export const StyledHeaderDivider = styled.span`
+  width: 1px;
+  height: 14px;
+  background: ${({ theme }) => theme.colors.outlineVariant};
+`;
+
+export const StyledViewHistoryLink = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  transition: color 0.14s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.onSurface};
+  }
 `;
 
 export const StyledChartWrapper = styled.div`

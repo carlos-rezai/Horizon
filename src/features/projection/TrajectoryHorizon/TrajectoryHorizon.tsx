@@ -38,13 +38,16 @@ import {
 } from "../../../utils/trajectory/trajectory";
 import { formatBalance } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { Filter, RotateCcw } from "lucide-react";
+import { Filter, RotateCcw, Clock, ArrowRight } from "lucide-react";
 import {
   StyledSection,
   StyledHeader,
   StyledOverline,
   StyledTitle,
+  StyledHeaderControls,
   StyledSeriesToggle,
+  StyledHeaderDivider,
+  StyledViewHistoryLink,
   StyledChartWrapper,
   StyledEmptyState,
   StyledLoadingState,
@@ -99,6 +102,7 @@ interface Props {
   accounts: AccountWithBalance[];
   recurringTransactions: RecurringTransaction[];
   isLoading: boolean;
+  onViewHistory?: () => void;
 }
 
 const HORIZON_MONTHS = 120;
@@ -268,6 +272,7 @@ export default function TrajectoryHorizon({
   accounts,
   recurringTransactions,
   isLoading,
+  onViewHistory,
 }: Props) {
   const theme = useTheme();
 
@@ -390,12 +395,26 @@ export default function TrajectoryHorizon({
           <StyledOverline>Trajectory Horizon</StyledOverline>
           <StyledTitle>10-Year Projection</StyledTitle>
         </div>
-        {!isLoading && accounts.length > 0 && (
-          <StyledSeriesToggle>
-            <Filter size={14} />
-            {visibleCount} of {series.length} series · click to toggle
-          </StyledSeriesToggle>
-        )}
+        {(!isLoading && accounts.length > 0) || onViewHistory ? (
+          <StyledHeaderControls>
+            {!isLoading && accounts.length > 0 && (
+              <StyledSeriesToggle>
+                <Filter size={14} />
+                {visibleCount} of {series.length} series · click to toggle
+              </StyledSeriesToggle>
+            )}
+            {!isLoading && accounts.length > 0 && onViewHistory && (
+              <StyledHeaderDivider aria-hidden="true" />
+            )}
+            {onViewHistory && (
+              <StyledViewHistoryLink type="button" onClick={onViewHistory}>
+                <Clock size={13} />
+                View history
+                <ArrowRight size={12} />
+              </StyledViewHistoryLink>
+            )}
+          </StyledHeaderControls>
+        ) : null}
       </StyledHeader>
       {isLoading ? (
         <StyledLoadingState data-testid="trajectory-horizon-loading">

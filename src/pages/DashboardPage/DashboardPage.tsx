@@ -88,6 +88,7 @@ export default function DashboardPage() {
         accounts={accounts}
         recurringTransactions={recurringTransactions}
         isLoading={false}
+        onViewHistory={() => navigate("/history")}
       />
       <StyledGrid>
         <div>
