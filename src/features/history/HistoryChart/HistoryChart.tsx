@@ -14,7 +14,9 @@ import { Filter, RotateCcw } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../historyTypes";
 import {
+  buildSeriesDescriptors,
   computeVisibleYDomain,
+  type SeriesDescriptor,
   type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
@@ -59,14 +61,6 @@ interface HistoryChartDataPoint {
   [accountId: string]: number | string;
 }
 
-interface HistorySeries {
-  key: string;
-  name: string;
-  color: string;
-  kind: "liquid" | "account" | "debt";
-  dashed: boolean;
-}
-
 interface RangeOption {
   value: string;
   label: string;
@@ -86,7 +80,7 @@ interface HistoryTooltipPayloadItem {
 interface HistoryChartTooltipProps {
   active?: boolean;
   payload?: readonly HistoryTooltipPayloadItem[];
-  series: HistorySeries[];
+  series: SeriesDescriptor[];
 }
 
 /**
@@ -128,7 +122,7 @@ export function HistoryChartTooltip({
 }
 
 interface HistoryLegendProps {
-  series: HistorySeries[];
+  series: SeriesDescriptor[];
   visibility: SeriesVisibility;
   onToggle: (key: string) => void;
   onIsolate: (key: string) => void;
@@ -223,34 +217,14 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
   const hasMortgage = accounts.some((a) => a.kind === "Mortgage");
 
-  const series = useMemo<HistorySeries[]>(() => {
-    const list: HistorySeries[] = [
-      {
-        key: TOTAL_LIQUID_KEY,
-        name: "Total Liquid",
-        color: theme.colors.liquid,
-        kind: "liquid",
-        dashed: false,
-      },
-      ...nonMortgageAccounts.map<HistorySeries>((a) => ({
-        key: a.id,
-        name: a.name,
-        color: resolveAccountColor(a),
-        kind: "account",
-        dashed: false,
-      })),
-    ];
-    if (hasMortgage) {
-      list.push({
-        key: RESTSCHULD_KEY,
-        name: "Restschuld",
-        color: theme.colors.restschuldStrokeColor,
-        kind: "debt",
-        dashed: true,
-      });
-    }
-    return list;
-  }, [nonMortgageAccounts, hasMortgage, theme]);
+  const series = useMemo<SeriesDescriptor[]>(
+    () =>
+      buildSeriesDescriptors(nonMortgageAccounts, hasMortgage, {
+        liquid: theme.colors.liquid,
+        restschuld: theme.colors.restschuldStrokeColor,
+      }),
+    [nonMortgageAccounts, hasMortgage, theme]
+  );
 
   const visibilityAccounts: VisibilityAccount[] = accounts.map((a) => ({
     id: a.id,
