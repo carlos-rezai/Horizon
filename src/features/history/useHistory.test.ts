@@ -93,6 +93,15 @@ describe("useHistory — fetch", () => {
 
     expect(result.current.years).toEqual([2021, 2023]);
   });
+
+  it("derives per-year statement counts from the import startDates", async () => {
+    const { result } = renderHook(() => useHistory());
+
+    await act(async () => {});
+
+    // IMPORTS has two 2023 statements and one 2021 statement.
+    expect(result.current.statementCounts).toEqual({ 2021: 1, 2023: 2 });
+  });
 });
 
 describe("useHistory — no imports", () => {
@@ -105,6 +114,7 @@ describe("useHistory — no imports", () => {
 
     expect(result.current.points).toEqual([]);
     expect(result.current.years).toEqual([]);
+    expect(result.current.statementCounts).toEqual({});
     expect(result.current.error).toBeNull();
   });
 });
