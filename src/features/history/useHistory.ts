@@ -8,6 +8,8 @@ interface UseHistoryResult {
   points: HistoryPoint[];
   /** Distinct years-with-imports, ascending, derived from import startDates. */
   years: number[];
+  /** Imported-statement count per year, keyed by the import startDate year. */
+  statementCounts: Record<number, number>;
   isLoading: boolean;
   error: Error | null;
 }
@@ -20,6 +22,9 @@ interface UseHistoryResult {
 export function useHistory(): UseHistoryResult {
   const [points, setPoints] = useState<HistoryPoint[]>([]);
   const [years, setYears] = useState<number[]>([]);
+  const [statementCounts, setStatementCounts] = useState<
+    Record<number, number>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -40,15 +45,25 @@ export function useHistory(): UseHistoryResult {
         const derivedYears = Array.from(
           new Set(imports.map((record) => Number(record.startDate.slice(0, 4))))
         ).sort((a, b) => a - b);
+        const derivedCounts = imports.reduce<Record<number, number>>(
+          (counts, record) => {
+            const year = Number(record.startDate.slice(0, 4));
+            counts[year] = (counts[year] ?? 0) + 1;
+            return counts;
+          },
+          {}
+        );
         if (!cancelled) {
           setPoints(fetchedPoints);
           setYears(derivedYears);
+          setStatementCounts(derivedCounts);
           setIsLoading(false);
         }
       } catch (err) {
         if (!cancelled) {
           setPoints([]);
           setYears([]);
+          setStatementCounts({});
           setError(err instanceof Error ? err : new Error(String(err)));
           setIsLoading(false);
         }
@@ -62,5 +77,5 @@ export function useHistory(): UseHistoryResult {
     };
   }, []);
 
-  return { points, years, isLoading, error };
+  return { points, years, statementCounts, isLoading, error };
 }
