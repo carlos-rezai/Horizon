@@ -1,6 +1,7 @@
 export { default as BrandMark } from "./BrandMark/BrandMark";
 export { default as Card } from "./Card/Card";
 export { default as CardHeader } from "./CardHeader/CardHeader";
+export { default as ChartFrame } from "./ChartFrame/ChartFrame";
 export { default as DataRow } from "./DataRow/DataRow";
 export { default as Donut } from "./Donut/Donut";
 export { default as EmptyState } from "./EmptyState/EmptyState";
