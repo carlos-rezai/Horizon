@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import TrajectoryHorizon from "./TrajectoryHorizon";
@@ -347,6 +347,72 @@ describe("TrajectoryHorizon", () => {
         "data-color",
         "#0088FF"
       );
+    });
+  });
+
+  describe("view history link", () => {
+    it("renders a View history control in the header when onViewHistory is provided", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+          onViewHistory={() => {}}
+        />
+      );
+
+      expect(
+        screen.getByRole("button", { name: /view history/i })
+      ).toBeInTheDocument();
+    });
+
+    it("calls onViewHistory when the View history control is clicked", () => {
+      const onViewHistory = vi.fn();
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+          onViewHistory={onViewHistory}
+        />
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /view history/i }));
+
+      expect(onViewHistory).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not render a View history control when onViewHistory is omitted", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+        />
+      );
+
+      expect(
+        screen.queryByRole("button", { name: /view history/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders the View history control even when there are no accounts", () => {
+      renderWithTheme(
+        <TrajectoryHorizon
+          snapshots={[]}
+          accounts={[]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+          onViewHistory={() => {}}
+        />
+      );
+
+      expect(
+        screen.getByRole("button", { name: /view history/i })
+      ).toBeInTheDocument();
     });
   });
 });

@@ -1,7 +1,19 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  fireEvent,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
+
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+vi.mock("react-router-dom", async (importActual) => {
+  const actual = await importActual<typeof import("react-router-dom")>();
+  return { ...actual, useNavigate: () => mockNavigate };
+});
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import DashboardPage from "./DashboardPage";
@@ -107,6 +119,26 @@ describe("DashboardPage — composition", () => {
     await waitFor(() => {
       expect(screen.getByText("Plan Summary")).toBeInTheDocument();
     });
+  });
+});
+
+describe("DashboardPage — history navigation", () => {
+  beforeEach(() => {
+    mockNavigate.mockClear();
+    mockAllSuccess();
+  });
+
+  it("navigates to /history when the Trajectory Horizon View history link is clicked", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("trajectory-horizon-chart")
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /view history/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/history");
   });
 });
 
