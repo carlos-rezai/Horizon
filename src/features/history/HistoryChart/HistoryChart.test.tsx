@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { describe, it, expect, afterEach, beforeEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import HistoryChart, { HistoryChartTooltip } from "./HistoryChart";
@@ -493,6 +493,12 @@ describe("HistoryChartTooltip", () => {
     );
 
     expect(screen.getByText(/Net Cashflow/i)).toBeInTheDocument();
-    expect(screen.getByText(formatBalance(120000))).toBeInTheDocument();
+    // formatBalance emits a U+00A0 no-break space that the default normalizer
+    // collapses, so a string matcher can never equal it — compare the exact
+    // formatted value against the element's raw textContent instead (the same
+    // pattern used in YearComparison.test.tsx).
+    expect(
+      screen.getByText((_, el) => el?.textContent === formatBalance(120000))
+    ).toBeInTheDocument();
   });
 });
