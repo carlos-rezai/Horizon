@@ -1,4 +1,5 @@
 import type { AccountKind } from "../../types/account";
+import { resolveAccountColor } from "../color/color";
 
 /**
  * Maps a series key (per-account id, "restschuld", or "totalLiquid") to whether
@@ -32,6 +33,75 @@ const TICK_STEP = 2_500_000;
 
 const RESTSCHULD_KEY = "restschuld";
 const TOTAL_LIQUID_KEY = "totalLiquid";
+
+/**
+ * A single legend/line entry: the Total Liquid (SUM) series, a per-account
+ * series, or the Restschuld (debt) series. Shared by the Trajectory Horizon
+ * and History charts so their legends and lines agree on order and identity.
+ */
+export interface SeriesDescriptor {
+  key: string;
+  name: string;
+  color: string;
+  kind: "liquid" | "account" | "debt";
+  dashed: boolean;
+}
+
+/** The two theme colours the descriptor list needs beyond per-account colours. */
+export interface SeriesColors {
+  liquid: string;
+  restschuld: string;
+}
+
+/** The minimal account shape needed to build a per-account series descriptor. */
+export interface SeriesAccount {
+  id: string;
+  name: string;
+  color?: string | null;
+  kind: AccountKind;
+}
+
+/**
+ * Build the ordered series list a chart renders: the gold Total Liquid (SUM)
+ * series first, then one series per non-Mortgage account (in the given order),
+ * then the dashed Restschuld series when a Mortgage exists. Per-account colours
+ * resolve through `resolveAccountColor`; the liquid and Restschuld colours are
+ * passed in so this stays React-free.
+ */
+export function buildSeriesDescriptors(
+  nonMortgageAccounts: SeriesAccount[],
+  hasMortgage: boolean,
+  colors: SeriesColors
+): SeriesDescriptor[] {
+  const descriptors: SeriesDescriptor[] = [
+    {
+      key: TOTAL_LIQUID_KEY,
+      name: "Total Liquid",
+      color: colors.liquid,
+      kind: "liquid",
+      dashed: false,
+    },
+    ...nonMortgageAccounts.map<SeriesDescriptor>((account) => ({
+      key: account.id,
+      name: account.name,
+      color: resolveAccountColor(account),
+      kind: "account",
+      dashed: false,
+    })),
+  ];
+
+  if (hasMortgage) {
+    descriptors.push({
+      key: RESTSCHULD_KEY,
+      name: "Restschuld",
+      color: colors.restschuld,
+      kind: "debt",
+      dashed: true,
+    });
+  }
+
+  return descriptors;
+}
 
 /**
  * Default visibility: each non-Mortgage account follows its own
