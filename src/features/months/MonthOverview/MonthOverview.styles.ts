@@ -50,10 +50,3 @@ export const StyledStepButton = styled.button`
     outline-offset: 2px;
   }
 `;
-
-export const StyledStepLabel = styled.span`
-  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.onSurface};
-  padding: 0 10px;
-`;

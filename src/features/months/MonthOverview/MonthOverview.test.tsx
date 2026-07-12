@@ -24,6 +24,11 @@ vi.mock("../useYearComparison", () => ({
   useYearComparison: (...args: unknown[]) => mockUseYearComparison(...args),
 }));
 
+const mockUseImportStartDates = vi.fn();
+vi.mock("../useImportStartDates", () => ({
+  useImportStartDates: (...args: unknown[]) => mockUseImportStartDates(...args),
+}));
+
 let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
   null;
 
@@ -127,6 +132,10 @@ beforeEach(() => {
     rows: [{ category: "Groceries", thisYear: 12000, lastYear: 9000 }],
     isLoading: false,
   });
+  mockUseImportStartDates.mockReturnValue({
+    startDates: [],
+    isLoading: false,
+  });
 });
 
 afterEach(() => {
@@ -163,7 +172,16 @@ describe("MonthOverview — header", () => {
 
   it("renders the month overline", () => {
     renderOverview();
-    expect(screen.getByText("June 2026")).toBeInTheDocument();
+    expect(
+      screen.getByText("June 2026", { selector: "div" })
+    ).toBeInTheDocument();
+  });
+
+  it("renders the MonthYearPicker trigger for the current month", () => {
+    renderOverview();
+    expect(
+      screen.getByRole("button", { name: /June 2026/i })
+    ).toBeInTheDocument();
   });
 });
 

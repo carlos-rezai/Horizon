@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import type { Transaction } from "../../../types/transaction";
 import PageHeader from "../../../components/PageHeader/PageHeader";
-import { formatMonthLong, formatMonth } from "../../../utils/format/format";
+import { formatMonthLong } from "../../../utils/format/format";
 import {
   deriveMonthStats,
   selectVariableSpending,
@@ -13,8 +13,10 @@ import MonthStatStrip from "../MonthStatStrip/MonthStatStrip";
 import SpendingList from "../SpendingList/SpendingList";
 import MonthBreakdown from "../MonthBreakdown/MonthBreakdown";
 import YearComparison from "../YearComparison/YearComparison";
+import MonthYearPicker from "../MonthYearPicker/MonthYearPicker";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison";
+import { useImportStartDates } from "../useImportStartDates";
 import { useCategories } from "../../categories/useCategories";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
@@ -24,7 +26,6 @@ import {
   StyledRightColumn,
   StyledStepper,
   StyledStepButton,
-  StyledStepLabel,
 } from "./MonthOverview.styles";
 
 // Variable Spending lives only on liquid spending accounts — Mortgage and
@@ -67,6 +68,7 @@ export default function MonthOverview({ accounts }: Props) {
   );
   const { rows: yearComparisonRows, error: yearComparisonError } =
     useYearComparison(monthStr);
+  const { startDates: importStartDates } = useImportStartDates();
   const { categories } = useCategories();
 
   const variableSpending = selectVariableSpending(transactions);
@@ -97,7 +99,11 @@ export default function MonthOverview({ accounts }: Props) {
             >
               <ArrowLeft size={16} />
             </StyledStepButton>
-            <StyledStepLabel>{formatMonth(monthStr)}</StyledStepLabel>
+            <MonthYearPicker
+              month={monthStr}
+              importStartDates={importStartDates}
+              onJump={(target) => navigate(`/months/${target}`)}
+            />
             <StyledStepButton
               aria-label="Next month"
               onClick={() => navigate(`/months/${shiftMonth(monthStr, 1)}`)}
