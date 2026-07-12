@@ -22,14 +22,13 @@ import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
 import ChartFrame from "../../../components/ChartFrame/ChartFrame";
+import ChartTooltip from "../../../components/ChartTooltip/ChartTooltip";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
   StyledRangeChips,
   StyledRangeChip,
   StyledChartWrapper,
-  StyledTooltipBox,
-  StyledTooltipLabel,
   StyledTooltipRow,
   StyledTooltipRowLabel,
   StyledTooltipSwatch,
@@ -88,8 +87,7 @@ export function HistoryChartTooltip({
   if (!point) return null;
 
   return (
-    <StyledTooltipBox>
-      <StyledTooltipLabel>{formatMonth(point.label)}</StyledTooltipLabel>
+    <ChartTooltip label={formatMonth(point.label)}>
       {series.map((s) => {
         const value = point[s.key];
         if (typeof value !== "number") return null;
@@ -107,7 +105,7 @@ export function HistoryChartTooltip({
         <span>Net Cashflow</span>
         <span>{formatBalance(point.netCashflow)}</span>
       </StyledTooltipNetRow>
-    </StyledTooltipBox>
+    </ChartTooltip>
   );
 }
 
