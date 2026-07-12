@@ -26,7 +26,9 @@ import {
   findMortgagePayoffMonth,
 } from "../../../utils/projection/projection";
 import {
+  buildSeriesDescriptors,
   computeVisibleYDomain,
+  type SeriesDescriptor,
   type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
@@ -63,14 +65,6 @@ const VISIBILITY_KEY = "horizon.trajectory.visibility.v2";
 
 const TOTAL_LIQUID_KEY = "totalLiquid";
 const RESTSCHULD_KEY = "restschuld";
-
-interface TrajectorySeries {
-  key: string;
-  name: string;
-  color: string;
-  kind: "liquid" | "account" | "debt";
-  dashed: boolean;
-}
 
 interface Props {
   snapshots: MonthlySnapshot[];
@@ -124,7 +118,7 @@ function ChartTooltip({
 }
 
 interface TrajectoryLegendProps {
-  series: TrajectorySeries[];
+  series: SeriesDescriptor[];
   visibility: SeriesVisibility;
   onToggle: (key: string) => void;
   onIsolate: (key: string) => void;
@@ -285,34 +279,14 @@ export default function TrajectoryHorizon({
   // Legend order (prototype): the gold Total Liquid "SUM" line first, then each
   // account, then Restschuld. The `<Line>` elements are rendered separately so
   // their draw order (liquid on top) is unaffected by this list order.
-  const series = useMemo<TrajectorySeries[]>(() => {
-    const list: TrajectorySeries[] = [
-      {
-        key: TOTAL_LIQUID_KEY,
-        name: "Total Liquid",
-        color: theme.colors.liquid,
-        kind: "liquid",
-        dashed: false,
-      },
-      ...nonMortgageAccounts.map<TrajectorySeries>((a) => ({
-        key: a.id,
-        name: a.name,
-        color: resolveAccountColor(a),
-        kind: "account",
-        dashed: false,
-      })),
-    ];
-    if (hasMortgage) {
-      list.push({
-        key: RESTSCHULD_KEY,
-        name: "Restschuld",
-        color: theme.colors.restschuldStrokeColor,
-        kind: "debt",
-        dashed: true,
-      });
-    }
-    return list;
-  }, [nonMortgageAccounts, hasMortgage, theme]);
+  const series = useMemo<SeriesDescriptor[]>(
+    () =>
+      buildSeriesDescriptors(nonMortgageAccounts, hasMortgage, {
+        liquid: theme.colors.liquid,
+        restschuld: theme.colors.restschuldStrokeColor,
+      }),
+    [nonMortgageAccounts, hasMortgage, theme]
+  );
 
   const visibilityAccounts: VisibilityAccount[] = accounts.map((a) => ({
     id: a.id,
