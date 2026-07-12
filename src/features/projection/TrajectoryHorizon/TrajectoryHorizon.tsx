@@ -33,16 +33,16 @@ import {
 } from "../../../utils/trajectory/trajectory";
 import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
+import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { Filter, Clock, ArrowRight } from "lucide-react";
+import { Clock, ArrowRight } from "lucide-react";
 import {
   StyledSection,
   StyledHeader,
   StyledOverline,
   StyledTitle,
   StyledHeaderControls,
-  StyledSeriesToggle,
   StyledHeaderDivider,
   StyledViewHistoryLink,
   StyledChartWrapper,
@@ -277,10 +277,10 @@ export default function TrajectoryHorizon({
         {(!isLoading && accounts.length > 0) || onViewHistory ? (
           <StyledHeaderControls>
             {!isLoading && accounts.length > 0 && (
-              <StyledSeriesToggle>
-                <Filter size={14} />
-                {visibleCount} of {series.length} series · click to toggle
-              </StyledSeriesToggle>
+              <SeriesToggleIndicator
+                visibleCount={visibleCount}
+                total={series.length}
+              />
             )}
             {!isLoading && accounts.length > 0 && onViewHistory && (
               <StyledHeaderDivider aria-hidden="true" />
