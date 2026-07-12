@@ -36,7 +36,7 @@ import {
   type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
-import { formatBalance } from "../../../utils/format/format";
+import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { Filter, RotateCcw, Clock, ArrowRight } from "lucide-react";
 import {
@@ -75,26 +75,6 @@ interface TrajectorySeries {
   color: string;
   kind: "liquid" | "account" | "debt";
   dashed: boolean;
-}
-
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function formatMonthLabel(yyyyMM: string): string {
-  const [year, month] = yyyyMM.split("-");
-  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
 }
 
 interface Props {
@@ -374,7 +354,7 @@ export default function TrajectoryHorizon({
     ? data.findIndex((p) => p.label === payoffMonth)
     : -1;
   const payoffDateLabel = payoffMonth
-    ? formatMonthLabel(payoffMonth).toUpperCase()
+    ? formatMonth(payoffMonth).toUpperCase()
     : "";
   const liquidVisible = visibility[TOTAL_LIQUID_KEY] === true;
 
@@ -428,7 +408,7 @@ export default function TrajectoryHorizon({
         <>
           {payoffMonth && (
             <StyledPayoffMarker data-testid="payoff-marker" aria-hidden="true">
-              Payoff: {formatMonthLabel(payoffMonth)}
+              Payoff: {formatMonth(payoffMonth)}
             </StyledPayoffMarker>
           )}
           {nonMortgageAccounts.map((a) => (

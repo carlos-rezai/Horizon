@@ -25,7 +25,7 @@ import {
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
 import type { TrajectoryDataPoint } from "../../../types/projection";
-import { formatBalance } from "../../../utils/format/format";
+import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
   StyledCard,
@@ -54,26 +54,6 @@ const VISIBILITY_KEY = "horizon.history.visibility.v1";
 
 const TOTAL_LIQUID_KEY = "totalLiquid";
 const RESTSCHULD_KEY = "restschuld";
-
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function formatMonthLabel(yyyyMM: string): string {
-  const [year, month] = yyyyMM.split("-");
-  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
-}
 
 /** A single reconstructed month projected onto the chart's flat data shape. */
 interface HistoryChartDataPoint {
@@ -131,7 +111,7 @@ export function HistoryChartTooltip({
 
   return (
     <StyledTooltipBox>
-      <StyledTooltipLabel>{formatMonthLabel(point.label)}</StyledTooltipLabel>
+      <StyledTooltipLabel>{formatMonth(point.label)}</StyledTooltipLabel>
       {series.map((s) => {
         const value = point[s.key];
         if (typeof value !== "number") return null;

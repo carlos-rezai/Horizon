@@ -30,7 +30,9 @@ export function formatFileSizeKB(bytes: number): number {
   return Math.max(1, Math.round(bytes / 1024));
 }
 
-const MONTHS = [
+/** Short month names, index 0 = January. Shared by the chart axes,
+ *  tooltips, and the Month Overview picker grid. */
+export const MONTHS = [
   "Jan",
   "Feb",
   "Mar",

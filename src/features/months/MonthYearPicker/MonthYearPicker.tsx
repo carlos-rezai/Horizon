@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
-import { formatMonthLong } from "../../../utils/format/format";
+import { formatMonthLong, MONTHS } from "../../../utils/format/format";
 import {
   deriveMonthPickerBounds,
   buildMonthGrid,
@@ -17,21 +17,6 @@ import {
   StyledGrid,
   StyledMonthCell,
 } from "./MonthYearPicker.styles";
-
-const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 interface Props {
   /** The currently displayed month, "YYYY-MM". */
@@ -162,7 +147,7 @@ export default function MonthYearPicker({
             </StyledYearHeader>
 
             <StyledGrid>
-              {MONTHS_SHORT.map((label, monthIndex) => (
+              {MONTHS.map((label, monthIndex) => (
                 <StyledMonthCell
                   key={label}
                   type="button"
