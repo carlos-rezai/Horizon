@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   TrendingUp,
   Calendar,
+  Clock as ClockIcon,
   Upload,
   Settings,
 } from "lucide-react";
@@ -77,6 +78,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
             >
               <Calendar size={16} />
               Month
+            </StyledNavLink>
+            <StyledNavLink
+              as={Link}
+              to="/history"
+              aria-current={pathname === "/history" ? "page" : undefined}
+            >
+              <ClockIcon size={16} />
+              History
             </StyledNavLink>
             <StyledNavLink
               as={Link}

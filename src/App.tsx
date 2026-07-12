@@ -7,6 +7,7 @@ import {
   SettingsStoragePage,
   MonthPage,
   ImportPage,
+  HistoryPage,
 } from "./pages";
 
 export default function App() {
@@ -50,6 +51,14 @@ export default function App() {
           element={
             <AppLayout>
               <MonthPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <AppLayout>
+              <HistoryPage />
             </AppLayout>
           }
         />
