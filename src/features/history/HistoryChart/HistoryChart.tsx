@@ -21,17 +21,13 @@ import {
 import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
+import ChartFrame from "../../../components/ChartFrame/ChartFrame";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
-  StyledCard,
-  StyledHeader,
-  StyledOverline,
-  StyledTitle,
   StyledRangeChips,
   StyledRangeChip,
   StyledChartWrapper,
-  StyledLoadingState,
   StyledTooltipBox,
   StyledTooltipLabel,
   StyledTooltipRow,
@@ -209,13 +205,14 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
   const todayIndex = data.length - 1;
 
   return (
-    <StyledCard>
-      <StyledHeader>
-        <div>
-          <StyledOverline>Actuals</StyledOverline>
-          <StyledTitle>Historical Trajectory</StyledTitle>
-        </div>
-        {!isLoading && (
+    <ChartFrame
+      overline="Actuals"
+      title="Historical Trajectory"
+      isLoading={isLoading}
+      loadingTestId="history-chart-loading"
+      topSpacing={theme.spacing.space5}
+      controls={
+        !isLoading && (
           <StyledRangeChips role="group" aria-label="History range">
             {RANGE_OPTIONS.map((o) => {
               const active = range === o.value;
@@ -232,125 +229,119 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
               );
             })}
           </StyledRangeChips>
-        )}
-      </StyledHeader>
-
-      {isLoading ? (
-        <StyledLoadingState data-testid="history-chart-loading">
-          Loading…
-        </StyledLoadingState>
-      ) : (
-        <>
-          <SeriesToggleIndicator
-            visibleCount={visibleCount}
-            total={series.length}
+        )
+      }
+    >
+      <>
+        <SeriesToggleIndicator
+          visibleCount={visibleCount}
+          total={series.length}
+        />
+        {nonMortgageAccounts.map((a) => (
+          <span
+            key={a.id}
+            data-testid={`chart-line-${a.id}`}
+            data-color={resolveAccountColor(a)}
+            aria-hidden="true"
+            style={{ display: "none" }}
           />
-          {nonMortgageAccounts.map((a) => (
-            <span
-              key={a.id}
-              data-testid={`chart-line-${a.id}`}
-              data-color={resolveAccountColor(a)}
-              aria-hidden="true"
-              style={{ display: "none" }}
-            />
-          ))}
-          <StyledChartWrapper
-            data-testid="history-chart"
-            data-months={data.length}
-          >
-            <ResponsiveContainer width="100%" height={320}>
-              <ComposedChart
-                data={data}
-                margin={{ top: 8, right: 16, left: 20, bottom: 8 }}
-              >
-                <CartesianGrid
-                  stroke={theme.colors.outlineVariant}
-                  strokeDasharray="3 3"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="monthIndex"
-                  tick={
-                    <YearTick
-                      data={data}
-                      mutedColor={theme.colors.onSurfaceVariant}
-                    />
-                  }
-                  interval={0}
-                />
-                <YAxis yAxisId="left" domain={[0, yMax]} hide />
-                <Tooltip
-                  content={(props) => (
-                    <HistoryChartTooltip
-                      {...props}
-                      series={series.filter((s) => visibility[s.key] === true)}
-                    />
-                  )}
-                />
-                {todayIndex >= 0 && (
-                  <ReferenceLine
-                    yAxisId="left"
-                    x={todayIndex}
-                    stroke={theme.colors.outline}
-                    strokeDasharray="3 4"
-                    strokeWidth={1}
-                    label={{
-                      value: "TODAY",
-                      position: "insideTopRight",
-                      fill: theme.colors.onSurfaceVariant,
-                      fontSize: 10,
-                    }}
+        ))}
+        <StyledChartWrapper
+          data-testid="history-chart"
+          data-months={data.length}
+        >
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart
+              data={data}
+              margin={{ top: 8, right: 16, left: 20, bottom: 8 }}
+            >
+              <CartesianGrid
+                stroke={theme.colors.outlineVariant}
+                strokeDasharray="3 3"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="monthIndex"
+                tick={
+                  <YearTick
+                    data={data}
+                    mutedColor={theme.colors.onSurfaceVariant}
+                  />
+                }
+                interval={0}
+              />
+              <YAxis yAxisId="left" domain={[0, yMax]} hide />
+              <Tooltip
+                content={(props) => (
+                  <HistoryChartTooltip
+                    {...props}
+                    series={series.filter((s) => visibility[s.key] === true)}
                   />
                 )}
-                {nonMortgageAccounts.map((a) => (
-                  <Line
-                    key={a.id}
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey={a.id}
-                    name={a.name}
-                    dot={false}
-                    stroke={resolveAccountColor(a)}
-                    strokeWidth={1.75}
-                    strokeOpacity={0.85}
-                    hide={visibility[a.id] !== true}
-                  />
-                ))}
+              />
+              {todayIndex >= 0 && (
+                <ReferenceLine
+                  yAxisId="left"
+                  x={todayIndex}
+                  stroke={theme.colors.outline}
+                  strokeDasharray="3 4"
+                  strokeWidth={1}
+                  label={{
+                    value: "TODAY",
+                    position: "insideTopRight",
+                    fill: theme.colors.onSurfaceVariant,
+                    fontSize: 10,
+                  }}
+                />
+              )}
+              {nonMortgageAccounts.map((a) => (
                 <Line
+                  key={a.id}
                   yAxisId="left"
                   type="monotone"
-                  dataKey="restschuld"
-                  name="Restschuld"
+                  dataKey={a.id}
+                  name={a.name}
                   dot={false}
-                  stroke={theme.colors.restschuldStrokeColor}
-                  strokeDasharray="6 3"
-                  strokeWidth={2}
-                  connectNulls={false}
-                  hide={visibility[RESTSCHULD_KEY] !== true}
+                  stroke={resolveAccountColor(a)}
+                  strokeWidth={1.75}
+                  strokeOpacity={0.85}
+                  hide={visibility[a.id] !== true}
                 />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="totalLiquid"
-                  name="Total Liquid"
-                  dot={false}
-                  stroke={theme.colors.liquid}
-                  strokeWidth={3}
-                  hide={!liquidVisible}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </StyledChartWrapper>
-          <SeriesLegend
-            series={series}
-            visibility={visibility}
-            onToggle={handleToggle}
-            onIsolate={handleIsolate}
-            onShowAll={handleShowAll}
-            testId="history-legend"
-          />
-        </>
-      )}
-    </StyledCard>
+              ))}
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="restschuld"
+                name="Restschuld"
+                dot={false}
+                stroke={theme.colors.restschuldStrokeColor}
+                strokeDasharray="6 3"
+                strokeWidth={2}
+                connectNulls={false}
+                hide={visibility[RESTSCHULD_KEY] !== true}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="totalLiquid"
+                name="Total Liquid"
+                dot={false}
+                stroke={theme.colors.liquid}
+                strokeWidth={3}
+                hide={!liquidVisible}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </StyledChartWrapper>
+        <SeriesLegend
+          series={series}
+          visibility={visibility}
+          onToggle={handleToggle}
+          onIsolate={handleIsolate}
+          onShowAll={handleShowAll}
+          testId="history-legend"
+        />
+      </>
+    </ChartFrame>
   );
 }
