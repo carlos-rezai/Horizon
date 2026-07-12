@@ -36,6 +36,14 @@ function renderAtRoute(path: string) {
             }
           />
           <Route
+            path="/history"
+            element={
+              <AppLayout>
+                <p>History content</p>
+              </AppLayout>
+            }
+          />
+          <Route
             path="/import"
             element={
               <AppLayout>
@@ -120,7 +128,7 @@ describe("AppLayout — content", () => {
 });
 
 describe("AppLayout — nav set", () => {
-  it("renders the five nav links in order: Dashboard, Outlook, Month, Import, Settings", () => {
+  it("renders the six nav links in order: Dashboard, Outlook, Month, History, Import, Settings", () => {
     renderAtRoute("/");
     const names = screen
       .getAllByRole("link")
@@ -129,6 +137,7 @@ describe("AppLayout — nav set", () => {
       "Dashboard",
       "Outlook",
       "Month",
+      "History",
       "Import",
       "Settings",
     ]);
@@ -156,6 +165,29 @@ describe("AppLayout — nav set", () => {
       "href",
       `/months/${currentMonth()}`
     );
+  });
+
+  it("History link targets /history", () => {
+    renderAtRoute("/");
+    expect(screen.getByRole("link", { name: /history/i })).toHaveAttribute(
+      "href",
+      "/history"
+    );
+  });
+
+  it("History link sits between Month and Import", () => {
+    renderAtRoute("/");
+    const monthLink = screen.getByRole("link", { name: /month/i });
+    const historyLink = screen.getByRole("link", { name: /history/i });
+    const importLink = screen.getByRole("link", { name: /import/i });
+    expect(
+      monthLink.compareDocumentPosition(historyLink) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      historyLink.compareDocumentPosition(importLink) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it("Import link targets /import", () => {
@@ -211,6 +243,22 @@ describe("AppLayout — active nav state", () => {
     // prove highlighting matches the route family, not an exact href.
     renderAtRoute("/months/2026-05");
     expect(screen.getByRole("link", { name: /month/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("History is active at /history", () => {
+    renderAtRoute("/history");
+    expect(screen.getByRole("link", { name: /history/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("History is not active at /import", () => {
+    renderAtRoute("/import");
+    expect(screen.getByRole("link", { name: /history/i })).not.toHaveAttribute(
       "aria-current",
       "page"
     );
