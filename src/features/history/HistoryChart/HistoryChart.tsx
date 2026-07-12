@@ -10,7 +10,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Filter } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../historyTypes";
 import {
@@ -21,6 +20,7 @@ import {
 } from "../../../utils/trajectory/trajectory";
 import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
+import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
@@ -28,7 +28,6 @@ import {
   StyledHeader,
   StyledOverline,
   StyledTitle,
-  StyledSeriesToggle,
   StyledRangeChips,
   StyledRangeChip,
   StyledChartWrapper,
@@ -242,10 +241,10 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
         </StyledLoadingState>
       ) : (
         <>
-          <StyledSeriesToggle>
-            <Filter size={14} />
-            {visibleCount} of {series.length} series · click to toggle
-          </StyledSeriesToggle>
+          <SeriesToggleIndicator
+            visibleCount={visibleCount}
+            total={series.length}
+          />
           {nonMortgageAccounts.map((a) => (
             <span
               key={a.id}

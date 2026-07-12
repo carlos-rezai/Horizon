@@ -36,16 +36,6 @@ export const StyledTitle = styled.div`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
-export const StyledSeriesToggle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-end;
-  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
-  font-size: 12.5px;
-  color: ${({ theme }) => theme.colors.onSurfaceDim};
-`;
-
 export const StyledRangeChips = styled.div`
   display: inline-flex;
   align-items: center;
