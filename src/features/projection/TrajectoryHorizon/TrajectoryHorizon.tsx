@@ -66,19 +66,19 @@ interface Props {
 
 const HORIZON_MONTHS = 120;
 
-interface ChartTooltipProps {
+interface TrajectoryTooltipProps {
   active?: boolean;
   payload?: readonly { payload?: TrajectoryDataPoint }[];
   nonMortgageAccounts: AccountWithBalance[];
   getColor: (account: AccountWithBalance) => string;
 }
 
-function ChartTooltip({
+function TrajectoryTooltip({
   active,
   payload,
   nonMortgageAccounts,
   getColor,
-}: ChartTooltipProps) {
+}: TrajectoryTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
   const point = payload[0].payload as TrajectoryDataPoint;
@@ -348,7 +348,7 @@ export default function TrajectoryHorizon({
                 <YAxis yAxisId="left" domain={[0, yMax]} hide />
                 <Tooltip
                   content={(props) => (
-                    <ChartTooltip
+                    <TrajectoryTooltip
                       {...props}
                       nonMortgageAccounts={nonMortgageAccounts}
                       getColor={resolveAccountColor}
