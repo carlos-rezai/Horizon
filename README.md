@@ -255,7 +255,7 @@ The generated installer will be signed with your local certificate and will inst
 | Month Year-Comparison                     | ✅ Complete |
 | Real Bank CSV Import                      | ✅ Complete |
 | Category Management                       | ✅ Complete |
-| Historical Month Navigation               | 🔜 Planned  |
+| Historical Month Navigation               | ✅ Complete |
 | Native Application Menu                   | 🔜 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
