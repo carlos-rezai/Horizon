@@ -1,5 +1,58 @@
 # Dev Journal
 
+## 2026-07-12 — #172 Historical Month Navigation refactor (close-out)
+
+Worked the `24-history-navigation-refactor` plan end to end across 21 commits,
+cheapest → highest-blast-radius, each leaving the frontend suite green. The
+feature shipped `HistoryChart` as a deliberate **sibling** of the Dashboard's
+`TrajectoryHorizon` (design log 23 deferred the shared-chrome extraction to a
+future refactor plan). This was that plan: the two charts shared, essentially
+byte-for-byte, a month-label helper, the series interface + builder, the whole
+visibility block, the toggle-chip legend, the series-toggle indicator, and ~13
+styled components. All of it is now extracted into the correct layers and
+consumed by both charts, which keep only their divergent `<ComposedChart>`
+bodies.
+
+**New shared layers.** `hooks/useSeriesVisibility` (the `hooks/` directory's
+first resident — the "used across 2+ features" rule) bundles the
+`useState`(defaults + persisted-merge) + `useEffect`(save) + toggle/isolate/
+showAll handlers, composing the pure math already in `utils/trajectory`.
+`utils/trajectory` gained `buildSeriesDescriptors` (+ the `SeriesDescriptor` /
+`SeriesColors` / `SeriesAccount` types) and a loosened `computeVisibleYDomain`
+row type (`ChartRow`) that deleted HistoryChart's `as unknown as
+TrajectoryDataPoint[]` cast. Four dumb, chart-agnostic `components/` were added
+and barrel-registered: `SeriesLegend`, `SeriesToggleIndicator`, `ChartFrame`
+(card + header with a `controls` slot + loading state), and `ChartTooltip`
+(the box + label shell; each chart still renders its own rows as children).
+
+**Month-name dedup.** Both charts and `MonthYearPicker` each carried a private
+copy of the month-name array despite `utils/format` already exporting an
+identical `formatMonth`/`MONTHS`. Exported `MONTHS` and routed all three through
+it — one source of truth.
+
+**ChartFrame boundary — a deliberate narrowing of the plan.** The plan listed
+the chart _wrapper_ as part of `ChartFrame`, but the wrapper carries
+feature-specific test affordances (`data-testid`, History's `data-months`) and
+wraps feature-specific chart content, so pulling it into a domain-agnostic shell
+would leak feature test concerns. `ChartFrame` therefore owns card + header +
+loading-or-children; each feature keeps its own trivial `StyledChartWrapper`,
+and the feature's empty-state stays in the feature (passed as children). The
+card's top margin is a `topSpacing` prop (defaults to the Dashboard value) so
+History's slightly smaller gap is preserved rather than silently changed.
+
+**Legend testIds preserved.** `SeriesLegend` takes a `testId` prop so both
+charts keep their existing `history-legend` / `trajectory-legend` hooks — the
+existing `HistoryChart` / `TrajectoryHorizon` behavioural suites stayed green and
+untouched across every adopt commit, which is the proof the extraction preserved
+behaviour. Also swept out the already-dead `StyledTooltipRowAccent` (unused
+before this refactor).
+
+**Test note (unchanged from prior close-outs).** The full `vitest run` still
+shows the 33 `server/*` failures from the `better-sqlite3` NODE_MODULE_VERSION
+mismatch (the native module is built for Electron, not Node — `npm rebuild
+better-sqlite3` to run the server suite). This refactor is entirely frontend;
+every `src/` test passes, plus 24 new tests across the six extracted modules.
+
 ## 2026-07-07 — #155 Real Bank CSV Import refactor (close-out)
 
 Worked the `22-real-bank-csv-import-refactor` plan end to end across eight
