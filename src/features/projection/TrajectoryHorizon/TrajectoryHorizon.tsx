@@ -29,13 +29,13 @@ import {
   buildSeriesDescriptors,
   computeVisibleYDomain,
   type SeriesDescriptor,
-  type SeriesVisibility,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
 import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
+import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { Filter, RotateCcw, Clock, ArrowRight } from "lucide-react";
+import { Filter, Clock, ArrowRight } from "lucide-react";
 import {
   StyledSection,
   StyledHeader,
@@ -54,11 +54,6 @@ import {
   StyledTooltipRowPositive,
   StyledTooltipRowWarning,
   StyledTooltipRowMuted,
-  StyledLegend,
-  StyledChip,
-  StyledChipSwatch,
-  StyledSumBadge,
-  StyledShowAllButton,
 } from "./TrajectoryHorizon.styles";
 
 const VISIBILITY_KEY = "horizon.trajectory.visibility.v2";
@@ -114,57 +109,6 @@ function ChartTooltip({
         </StyledTooltipRowWarning>
       )}
     </StyledTooltipBox>
-  );
-}
-
-interface TrajectoryLegendProps {
-  series: SeriesDescriptor[];
-  visibility: SeriesVisibility;
-  onToggle: (key: string) => void;
-  onIsolate: (key: string) => void;
-  onShowAll: () => void;
-}
-
-function TrajectoryLegend({
-  series,
-  visibility,
-  onToggle,
-  onIsolate,
-  onShowAll,
-}: TrajectoryLegendProps) {
-  const hiddenCount = series.filter((s) => !visibility[s.key]).length;
-
-  return (
-    <StyledLegend data-testid="trajectory-legend">
-      {series.map((s) => {
-        const on = visibility[s.key] === true;
-        return (
-          <StyledChip
-            key={s.key}
-            type="button"
-            $on={on}
-            aria-pressed={on}
-            onClick={() => onToggle(s.key)}
-            onDoubleClick={() => onIsolate(s.key)}
-            title={
-              on ? `Hide ${s.name} (double-click to isolate)` : `Show ${s.name}`
-            }
-          >
-            <StyledChipSwatch $color={s.color} $on={on} $dashed={s.dashed} />
-            {s.name}
-            {s.kind === "liquid" && (
-              <StyledSumBadge $on={on}>SUM</StyledSumBadge>
-            )}
-          </StyledChip>
-        );
-      })}
-      {hiddenCount > 0 && (
-        <StyledShowAllButton type="button" onClick={onShowAll}>
-          <RotateCcw size={13} />
-          Show all
-        </StyledShowAllButton>
-      )}
-    </StyledLegend>
   );
 }
 
@@ -423,12 +367,13 @@ export default function TrajectoryHorizon({
                 <Legend
                   verticalAlign="bottom"
                   content={() => (
-                    <TrajectoryLegend
+                    <SeriesLegend
                       series={series}
                       visibility={visibility}
                       onToggle={handleToggle}
                       onIsolate={handleIsolate}
                       onShowAll={handleShowAll}
+                      testId="trajectory-legend"
                     />
                   )}
                 />
