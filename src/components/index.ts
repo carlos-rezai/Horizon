@@ -8,6 +8,7 @@ export { default as FormField } from "./FormField/FormField";
 export { default as Modal } from "./Modal/Modal";
 export { default as PageHeader } from "./PageHeader/PageHeader";
 export { default as SectionHead } from "./SectionHead/SectionHead";
+export { default as SeriesLegend } from "./SeriesLegend/SeriesLegend";
 export { default as SettingRow } from "./SettingRow/SettingRow";
 export { default as Snackbar } from "./Snackbar/Snackbar";
 export { default as SnackbarProvider } from "./SnackbarProvider/SnackbarProvider";
