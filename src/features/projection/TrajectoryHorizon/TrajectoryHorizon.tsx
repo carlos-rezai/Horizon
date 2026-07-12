@@ -35,6 +35,7 @@ import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
 import ChartFrame from "../../../components/ChartFrame/ChartFrame";
+import ChartTooltip from "../../../components/ChartTooltip/ChartTooltip";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { Clock, ArrowRight } from "lucide-react";
@@ -45,8 +46,6 @@ import {
   StyledChartWrapper,
   StyledEmptyState,
   StyledPayoffMarker,
-  StyledTooltipBox,
-  StyledTooltipLabel,
   StyledTooltipRowPositive,
   StyledTooltipRowWarning,
   StyledTooltipRowMuted,
@@ -85,8 +84,7 @@ function ChartTooltip({
   const point = payload[0].payload as TrajectoryDataPoint;
 
   return (
-    <StyledTooltipBox>
-      <StyledTooltipLabel>{point.label}</StyledTooltipLabel>
+    <ChartTooltip label={point.label}>
       <StyledTooltipRowPositive>
         Liquid: {formatBalance(point.totalLiquid)}
       </StyledTooltipRowPositive>
@@ -104,7 +102,7 @@ function ChartTooltip({
           Restschuld: {formatBalance(point.restschuld)}
         </StyledTooltipRowWarning>
       )}
-    </StyledTooltipBox>
+    </ChartTooltip>
   );
 }
 
