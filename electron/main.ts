@@ -1,20 +1,13 @@
 import path from "node:path";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import {
-  BrowserWindow,
-  Menu,
-  app,
-  dialog,
-  ipcMain,
-  shell,
-  type MenuItemConstructorOptions,
-} from "electron";
+import { BrowserWindow, Menu, app, dialog, ipcMain, shell } from "electron";
 import electronUpdaterPkg from "electron-updater";
 import ElectronStore from "electron-store";
 import { resolveDbPath } from "./paths/paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig/resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle/serverHandle.js";
+import { buildMenu } from "./buildMenu/buildMenu.js";
 const devAppVersion = (
   JSON.parse(
     readFileSync(
@@ -86,41 +79,48 @@ function showFatalDialog(kind: "integrity" | "unknown", message: string): void {
   });
 }
 
-function buildProdMenu(): Menu {
-  const template: MenuItemConstructorOptions[] = [
-    { label: "File", submenu: [{ role: "quit" }] },
-    {
-      label: "Edit",
-      submenu: [
-        { role: "undo" },
-        { role: "redo" },
-        { type: "separator" },
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        { role: "selectAll" },
-      ],
-    },
-    {
-      label: "View",
-      submenu: [
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-      ],
-    },
-    {
-      label: "Window",
-      submenu: [{ role: "minimize" }, { role: "close" }],
-    },
-    {
-      label: "Help",
-      submenu: [{ label: "Horizon", enabled: false }],
-    },
-  ];
-  return Menu.buildFromTemplate(template);
+function appVersion(): string {
+  return app.isPackaged ? app.getVersion() : devAppVersion;
+}
+
+function showDataFolder(): void {
+  shell.showItemInFolder(resolveDbPath());
+}
+
+function showAbout(): void {
+  const choice = dialog.showMessageBoxSync({
+    type: "info",
+    title: "About Horizon",
+    message: `Horizon ${appVersion()}`,
+    detail: [
+      `Electron ${process.versions.electron}`,
+      `Chromium ${process.versions.chrome}`,
+      `Node ${process.versions.node}`,
+    ].join("\n"),
+    buttons: ["OK", "Show data folder"],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  });
+  if (choice === 1) {
+    showDataFolder();
+  }
+}
+
+function installApplicationMenu(): void {
+  const menu = Menu.buildFromTemplate(
+    buildMenu({
+      isDev,
+      settings: () => {},
+      backup: () => {},
+      restore: () => {},
+      startFresh: () => {},
+      checkUpdates: () => {},
+      about: showAbout,
+      showDataFolder,
+    })
+  );
+  Menu.setApplicationMenu(menu);
 }
 
 async function createWindow(port: number): Promise<void> {
@@ -210,9 +210,7 @@ async function main(): Promise<void> {
 
   await app.whenReady();
 
-  if (loadProdRenderer) {
-    Menu.setApplicationMenu(buildProdMenu());
-  }
+  installApplicationMenu();
 
   try {
     const { port } = await serverHandle.start();
