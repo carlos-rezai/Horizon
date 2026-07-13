@@ -72,6 +72,9 @@ function mockHorizon(
         .mockResolvedValue(overrides.autoDownload ?? true),
       setAutoDownload,
     },
+    menu: {
+      onNavigate: () => () => {},
+    },
   };
   return { setAutoDownload };
 }

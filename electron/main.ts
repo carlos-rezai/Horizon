@@ -111,7 +111,9 @@ function installApplicationMenu(): void {
   const menu = Menu.buildFromTemplate(
     buildMenu({
       isDev,
-      settings: () => {},
+      settings: () => {
+        mainWindow?.webContents.send("menu:navigate", "/settings/storage");
+      },
       backup: () => {},
       restore: () => {},
       startFresh: () => {},

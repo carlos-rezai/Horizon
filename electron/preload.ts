@@ -37,4 +37,11 @@ contextBridge.exposeInMainWorld("horizon", {
       ) as Promise<void>;
     },
   },
+  menu: {
+    onNavigate(cb: (route: string) => void) {
+      const handler = (_event: unknown, route: string) => cb(route);
+      ipcRenderer.on("menu:navigate", handler);
+      return () => ipcRenderer.removeListener("menu:navigate", handler);
+    },
+  },
 });

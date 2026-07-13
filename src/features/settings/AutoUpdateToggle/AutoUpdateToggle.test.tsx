@@ -38,6 +38,9 @@ function makeHorizon(
       getAutoDownload,
       setAutoDownload,
     },
+    menu: {
+      onNavigate: () => () => {},
+    },
   };
   return setAutoDownload;
 }

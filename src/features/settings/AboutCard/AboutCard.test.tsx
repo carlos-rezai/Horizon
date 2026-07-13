@@ -32,6 +32,9 @@ function mockHorizon(appVersion = "1.0.1") {
       getAutoDownload: vi.fn().mockResolvedValue(true),
       setAutoDownload: vi.fn().mockResolvedValue(undefined),
     },
+    menu: {
+      onNavigate: () => () => {},
+    },
   };
 }
 

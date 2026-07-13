@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout/AppLayout";
+import { useMenuNavigation } from "./features/menu/useMenuNavigation";
 import {
   DashboardPage,
   AccountDetailPage,
@@ -10,9 +11,15 @@ import {
   HistoryPage,
 } from "./pages";
 
+function MenuNavigationListener() {
+  useMenuNavigation();
+  return null;
+}
+
 export default function App() {
   return (
     <HashRouter>
+      <MenuNavigationListener />
       <Routes>
         <Route
           path="/"

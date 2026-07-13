@@ -31,6 +31,9 @@ function mockHorizon(autoDownload = true) {
       getAutoDownload: vi.fn().mockResolvedValue(autoDownload),
       setAutoDownload: vi.fn().mockResolvedValue(undefined),
     },
+    menu: {
+      onNavigate: () => () => {},
+    },
   };
 }
 

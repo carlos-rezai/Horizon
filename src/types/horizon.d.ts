@@ -15,6 +15,9 @@ declare global {
         getAutoDownload: () => Promise<boolean>;
         setAutoDownload: (enabled: boolean) => Promise<void>;
       };
+      menu: {
+        onNavigate: (cb: (route: string) => void) => () => void;
+      };
     };
   }
 }

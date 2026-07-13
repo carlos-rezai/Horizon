@@ -24,6 +24,9 @@ describe("useUpdateStatus", () => {
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
+      menu: {
+        onNavigate: () => () => {},
+      },
     };
 
     const { result } = renderHook(() => useUpdateStatus());
@@ -47,6 +50,9 @@ describe("useUpdateStatus", () => {
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
       },
     };
 
@@ -74,6 +80,9 @@ describe("useUpdateStatus", () => {
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
       },
     };
 
@@ -104,6 +113,9 @@ describe("useUpdateStatus", () => {
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
+      menu: {
+        onNavigate: () => () => {},
+      },
     };
 
     const { result } = renderHook(() => useUpdateStatus());
@@ -130,6 +142,9 @@ describe("useUpdateStatus", () => {
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
       },
     };
 
@@ -163,6 +178,9 @@ describe("useUpdateStatus", () => {
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
       },
     };
 
