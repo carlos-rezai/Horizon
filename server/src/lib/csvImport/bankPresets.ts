@@ -46,9 +46,12 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
    * Real Sparkasse Girokonto CSV-CAMT export. Built from an anonymized owner
    * export: quoted, `;`-delimited, `DD.MM.YY` 2-digit-year dates, decimal
    * comma, signed `Betrag` (used directly, no inversion). The signature
-   * (`Auftragskonto`, `Sammlerreferenz`, `Kategorie`) is distinctive to this
-   * CSV-CAMT layout so it never collides with a generic import. `Info` carries
-   * "Umsatz vorgemerkt" for not-yet-settled bookings, driving the pending rail.
+   * (`Auftragskonto`, `Sammlerreferenz`) is distinctive to this CSV-CAMT layout
+   * so it never collides with a generic import — and, unlike the earlier
+   * `Kategorie`-bearing signature, it matches the real CSV-CAMT V2/V8 exports,
+   * whose 17-column header ends at `Info` and carries no `Kategorie` column.
+   * `Info` carries "Umsatz vorgemerkt" for not-yet-settled bookings, driving
+   * the pending rail.
    */
   Sparkasse: {
     map: {
@@ -60,7 +63,7 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     dateFmt: "DD.MM.YY",
     delimiter: ";",
     quoted: true,
-    headerSignature: ["Auftragskonto", "Sammlerreferenz", "Kategorie"],
+    headerSignature: ["Auftragskonto", "Sammlerreferenz"],
     pendingColumn: "Info",
     pendingValues: ["Umsatz vorgemerkt"],
   },

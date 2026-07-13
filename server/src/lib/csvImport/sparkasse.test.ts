@@ -12,7 +12,7 @@ import type { StoredImportPreset } from "../../storage/types.js";
 // Replaces the three guessed presets (Sparkasse / DKB / ING) with the single
 // real Sparkasse preset built from an anonymized CSV-CAMT export:
 //   - quoted, ';'-delimited, DD.MM.YY (2-digit year) dates, decimal comma
-//   - signature: Auftragskonto, Sammlerreferenz, Kategorie
+//   - signature: Auftragskonto, Sammlerreferenz
 //   - map: date Buchungstag, description Beguenstigter/Zahlungspflichtiger,
 //     amount signed Betrag
 //   - pendingColumn Info, pendingValues ["Umsatz vorgemerkt"]
@@ -64,7 +64,7 @@ describe("BANK_PRESETS — real Sparkasse only", () => {
     expect(preset.delimiter).toBe(";");
     expect(preset.quoted).toBe(true);
     expect(preset.headerSignature).toEqual(
-      expect.arrayContaining(["Auftragskonto", "Sammlerreferenz", "Kategorie"])
+      expect.arrayContaining(["Auftragskonto", "Sammlerreferenz"])
     );
     expect(preset.pendingColumn).toBe("Info");
     expect(preset.pendingValues).toEqual(["Umsatz vorgemerkt"]);
