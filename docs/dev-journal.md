@@ -488,3 +488,52 @@ balance (90.000) while the accordion/trajectory show the projected start
 (72.000). Both are defensible (account balance vs modelled trajectory) but
 inconsistent across screens. A future consistency pass should pick one
 convention for "current Restschuld" project-wide.
+
+---
+
+## 2026-07-14 — In-app dialogs for menu actions (supersedes design-log 24 update-messaging)
+
+Refactor plan 25 (issue #180) moved the native Windows message boxes that the
+application menu used for **result notifications** and **destructive
+confirmations** into in-app Horizon UI: success/info become transient
+snackbars, errors become a blocking `AlertModal`, and the Start-Fresh /
+Restore-overwrite prompts become a danger-tone `ConfirmModal`. Manual
+"Check for Updates" outcomes (checking / up-to-date / error / dev-unavailable)
+now flow through the existing `useUpdateStatus` / `UpdateBanner` machine
+instead of native boxes. File pickers, the fatal startup dialog, and About
+stay native by necessity/choice.
+
+**Supersedes a recorded decision:** design-log `24-native-application-menu.md`
+deliberately chose native message boxes for the update up-to-date / error /
+dev-unpackaged outcomes. Design-logs are immutable snapshots, so that log is
+left untouched; **this entry is the record of the reversal.** The split it
+created — an available update surfaced as an on-brand snackbar while
+"you're up to date" popped a grey Windows dialog — is what this refactor
+removes.
+
+**Plan deviation (commit 8):** the plan's commit 8 introduced the `main.ts`
+IPC helpers (`notifyRenderer`, `confirmViaRenderer`) as a dormant, unused
+commit. The electron tsconfig enables `noUnusedLocals`, which rejects unused
+module-level functions, so a truly-dormant helper commit cannot build. The
+helpers were instead introduced in the commit that first uses each one —
+`notifyRenderer` with createBackup (commit 9), the confirm infrastructure with
+restoreFromBackup (commit 10) — which keeps every commit building and leaves no
+dead code. Net result is identical to the plan.
+
+**No leftover native code to delete:** because each action's wiring commit
+(9–12) rewrote its handler to delegate to the extracted orchestrator, it
+removed its own `showMessageBoxSync` calls inline. By the cleanup commit the
+only native boxes remaining are the intended ones — the fatal startup dialog
+and About.
+
+**Out-of-scope observations:**
+
+- `src/features/import/ImportWizard/ImportWizard.test.tsx` >
+  "commits the category created inline during review…" is flaky under full-suite
+  load (passes in isolation and on re-run). Pre-existing, unrelated to this
+  refactor. Worth stabilising separately.
+- Every renderer test that needs `window.horizon` builds its own inline mock of
+  the full bridge. Extending the bridge in this refactor forced edits across
+  seven test files. A shared `makeHorizonMock(overrides)` factory would make
+  future bridge changes a one-line update; deferred to keep this refactor within
+  the plan's scope.
