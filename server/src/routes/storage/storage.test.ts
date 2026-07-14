@@ -147,6 +147,81 @@ describe("POST /storage/backup — SQLite driver", () => {
   });
 });
 
+describe("POST /storage/backup-to — SQLite driver", () => {
+  let app: Express;
+  let storage: Storage;
+  let livePath: string;
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-to-route-"));
+    livePath = path.join(tmpDir, "live.db");
+    storage = await createStorage({ path: livePath });
+    app = await createApp(storage);
+  });
+
+  afterEach(async () => {
+    await storage.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("returns 204 and writes a valid SQLite database at the given path", async () => {
+    const outPath = path.join(tmpDir, "backup.db");
+
+    const res = await request(app)
+      .post("/storage/backup-to")
+      .send({ path: outPath });
+
+    expect(res.status).toBe(204);
+    expect(fs.existsSync(outPath)).toBe(true);
+
+    const header = fs.readFileSync(outPath).subarray(0, 16).toString("utf8");
+    expect(header).toBe("SQLite format 3\0");
+  });
+
+  it("captures committed data at the destination (WAL-safe online backup)", async () => {
+    const seeded = await storage.accounts.create({
+      name: "Backed up",
+      kind: "Girokonto",
+      openingBalance: 4242,
+      openingDate: "2026-01-01",
+    });
+
+    const outPath = path.join(tmpDir, "backup.db");
+    const res = await request(app)
+      .post("/storage/backup-to")
+      .send({ path: outPath });
+    expect(res.status).toBe(204);
+
+    const copy = await createStorage({ path: outPath });
+    try {
+      const copyApp = await createApp(copy);
+      const accountsRes = await request(copyApp).get("/accounts");
+      expect(accountsRes.status).toBe(200);
+      const ids = (accountsRes.body as Array<{ id: string }>).map((a) => a.id);
+      expect(ids).toContain(seeded.id);
+    } finally {
+      await copy.close();
+    }
+  });
+
+  it("returns 400 when path is missing from the body", async () => {
+    const res = await request(app).post("/storage/backup-to").send({});
+    expect(res.status).toBe(400);
+  });
+
+  it("returns a non-success error when the destination cannot be written", async () => {
+    const unwritable = path.join(tmpDir, "no-such-dir", "backup.db");
+
+    const res = await request(app)
+      .post("/storage/backup-to")
+      .send({ path: unwritable });
+
+    expect(res.status).toBe(500);
+    expect(fs.existsSync(unwritable)).toBe(false);
+  });
+});
+
 describe("POST /storage/restore — SQLite driver", () => {
   let app: Express;
   let storage: Storage;
