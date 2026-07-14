@@ -13,9 +13,12 @@ import {
   useSettlementWarnings,
   InsufficientFundsWarnings,
 } from "../../features/settlements";
+import { useMenuDialogs } from "../../features/menu/useMenuDialogs";
 import Clock from "../../components/Clock/Clock";
 import BrandMark from "../../components/BrandMark/BrandMark";
 import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
+import AlertProvider from "../../components/AlertProvider/AlertProvider";
+import ConfirmProvider from "../../components/ConfirmProvider/ConfirmProvider";
 import {
   StyledWrapper,
   StyledSidebar,
@@ -40,79 +43,91 @@ function currentMonth(): string {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const warnings = useSettlementWarnings();
-  const { pathname } = useLocation();
-
   return (
     <SnackbarProvider>
-      <StyledWrapper>
-        <StyledSidebar>
-          <StyledBrand>
-            <BrandMark size={30} label="Horizon" />
-            <StyledWordmark>HORIZON</StyledWordmark>
-          </StyledBrand>
-          <StyledNavLabel>Navigation</StyledNavLabel>
-          <StyledNav>
-            <StyledNavLink
-              as={Link}
-              to="/"
-              aria-current={pathname === "/" ? "page" : undefined}
-            >
-              <LayoutDashboard size={16} />
-              Dashboard
-            </StyledNavLink>
-            <StyledNavLink
-              as={Link}
-              to="/plan"
-              aria-current={pathname === "/plan" ? "page" : undefined}
-            >
-              <TrendingUp size={16} />
-              Outlook
-            </StyledNavLink>
-            <StyledNavLink
-              as={Link}
-              to={`/months/${currentMonth()}`}
-              aria-current={
-                pathname.startsWith("/months/") ? "page" : undefined
-              }
-            >
-              <Calendar size={16} />
-              Month
-            </StyledNavLink>
-            <StyledNavLink
-              as={Link}
-              to="/history"
-              aria-current={pathname === "/history" ? "page" : undefined}
-            >
-              <ClockIcon size={16} />
-              History
-            </StyledNavLink>
-            <StyledNavLink
-              as={Link}
-              to="/import"
-              aria-current={pathname === "/import" ? "page" : undefined}
-            >
-              <Upload size={16} />
-              Import
-            </StyledNavLink>
-          </StyledNav>
-          <StyledSpacer />
-          <Clock />
+      <AlertProvider>
+        <ConfirmProvider>
+          <AppLayoutContent>{children}</AppLayoutContent>
+        </ConfirmProvider>
+      </AlertProvider>
+    </SnackbarProvider>
+  );
+}
+
+// The chrome plus the dialog hosts. Split out so it renders inside the Snackbar,
+// Alert, and Confirm providers, which the menu dialog host and update banner
+// both depend on.
+function AppLayoutContent({ children }: AppLayoutProps) {
+  const warnings = useSettlementWarnings();
+  const { pathname } = useLocation();
+  useMenuDialogs();
+
+  return (
+    <StyledWrapper>
+      <StyledSidebar>
+        <StyledBrand>
+          <BrandMark size={30} label="Horizon" />
+          <StyledWordmark>HORIZON</StyledWordmark>
+        </StyledBrand>
+        <StyledNavLabel>Navigation</StyledNavLabel>
+        <StyledNav>
           <StyledNavLink
             as={Link}
-            to="/settings/storage"
-            aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+            to="/"
+            aria-current={pathname === "/" ? "page" : undefined}
           >
-            <Settings size={16} />
-            Settings
+            <LayoutDashboard size={16} />
+            Dashboard
           </StyledNavLink>
-        </StyledSidebar>
-        <StyledMain>
-          <StyledContent>{children}</StyledContent>
-        </StyledMain>
-        <UpdateBanner />
-        <InsufficientFundsWarnings warnings={warnings} />
-      </StyledWrapper>
-    </SnackbarProvider>
+          <StyledNavLink
+            as={Link}
+            to="/plan"
+            aria-current={pathname === "/plan" ? "page" : undefined}
+          >
+            <TrendingUp size={16} />
+            Outlook
+          </StyledNavLink>
+          <StyledNavLink
+            as={Link}
+            to={`/months/${currentMonth()}`}
+            aria-current={pathname.startsWith("/months/") ? "page" : undefined}
+          >
+            <Calendar size={16} />
+            Month
+          </StyledNavLink>
+          <StyledNavLink
+            as={Link}
+            to="/history"
+            aria-current={pathname === "/history" ? "page" : undefined}
+          >
+            <ClockIcon size={16} />
+            History
+          </StyledNavLink>
+          <StyledNavLink
+            as={Link}
+            to="/import"
+            aria-current={pathname === "/import" ? "page" : undefined}
+          >
+            <Upload size={16} />
+            Import
+          </StyledNavLink>
+        </StyledNav>
+        <StyledSpacer />
+        <Clock />
+        <StyledNavLink
+          as={Link}
+          to="/settings/storage"
+          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+        >
+          <Settings size={16} />
+          Settings
+        </StyledNavLink>
+      </StyledSidebar>
+      <StyledMain>
+        <StyledContent>{children}</StyledContent>
+      </StyledMain>
+      <UpdateBanner />
+      <InsufficientFundsWarnings warnings={warnings} />
+    </StyledWrapper>
   );
 }
