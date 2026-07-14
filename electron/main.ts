@@ -11,6 +11,7 @@ import { buildMenu } from "./buildMenu/buildMenu.js";
 import { runManualUpdateCheck } from "./runManualUpdateCheck/runManualUpdateCheck.js";
 import { createBackup as runCreateBackup } from "./createBackup/createBackup.js";
 import { restoreFromBackup as runRestoreFromBackup } from "./restoreFromBackup/restoreFromBackup.js";
+import { startFresh as runStartFresh } from "./startFresh/startFresh.js";
 const devAppVersion = (
   JSON.parse(
     readFileSync(
@@ -287,55 +288,47 @@ function restoreFromBackup(): Promise<void> {
   });
 }
 
-async function startFresh(): Promise<void> {
-  if (!mainWindow || serverPort === null) {
-    return;
+function startFresh(): Promise<void> {
+  const window = mainWindow;
+  const port = serverPort;
+  if (!window || port === null) {
+    return Promise.resolve();
   }
 
-  const confirm = dialog.showMessageBoxSync(mainWindow, {
-    type: "warning",
-    title: "Start Fresh",
-    message: "Erase all Horizon data and start over?",
-    detail:
-      "Every account, transaction, recurring entry, and import will be " +
-      "permanently deleted, leaving Horizon as it was on first launch. " +
-      "This cannot be undone.\n\nTo keep a copy, cancel and use " +
-      "File → Create Backup first.",
-    buttons: ["Cancel", "Erase everything"],
-    defaultId: 0,
-    cancelId: 0,
-    noLink: true,
-  });
-
-  if (confirm !== 1) {
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:${serverPort}/storage/reset`,
-      {
+  return runStartFresh({
+    confirm: () =>
+      confirmViaRenderer({
+        title: "Start Fresh",
+        message: "Erase all Horizon data and start over?",
+        detail:
+          "Every account, transaction, recurring entry, and import will be " +
+          "permanently deleted, leaving Horizon as it was on first launch. " +
+          "This cannot be undone.\n\nTo keep a copy, cancel and use " +
+          "File → Create Backup first.",
+        tone: "danger",
+        confirmLabel: "Erase everything",
+        cancelLabel: "Cancel",
+      }),
+    reset: async () => {
+      const response = await fetch(`http://127.0.0.1:${port}/storage/reset`, {
         method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Reset request failed with status ${response.status}`);
       }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Reset request failed with status ${response.status}`);
-    }
-
-    mainWindow.webContents.reload();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    dialog.showMessageBoxSync(mainWindow, {
-      type: "error",
-      title: "Start Fresh failed",
-      message: "Horizon could not reset your data.",
-      detail: message,
-      buttons: ["OK"],
-      defaultId: 0,
-      noLink: true,
-    });
-  }
+    },
+    reloadWindow: () => {
+      window.webContents.reload();
+    },
+    onError: (message) => {
+      notifyRenderer({
+        tone: "error",
+        title: "Start Fresh failed",
+        message: "Horizon could not reset your data.",
+        detail: message,
+      });
+    },
+  });
 }
 
 function checkForUpdatesManual(): Promise<void> {
