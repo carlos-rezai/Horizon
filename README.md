@@ -256,7 +256,7 @@ The generated installer will be signed with your local certificate and will inst
 | Real Bank CSV Import                      | ✅ Complete |
 | Category Management                       | ✅ Complete |
 | Historical Month Navigation               | ✅ Complete |
-| Native Application Menu                   | 🔜 Planned  |
+| Native Application Menu                   | ✅ Complete |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
