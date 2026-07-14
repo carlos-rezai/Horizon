@@ -9,6 +9,7 @@ import { resolveRendererConfig } from "./resolveRendererConfig/resolveRendererCo
 import { createServerHandle } from "./serverHandle/serverHandle.js";
 import { buildMenu } from "./buildMenu/buildMenu.js";
 import { runManualUpdateCheck } from "./runManualUpdateCheck/runManualUpdateCheck.js";
+import { createBackup as runCreateBackup } from "./createBackup/createBackup.js";
 const devAppVersion = (
   JSON.parse(
     readFileSync(
@@ -39,6 +40,22 @@ let serverPort: number | null = null;
 let fatalDialogShown = false;
 let serverShuttingDown = false;
 let serverShutdownComplete = false;
+
+// Menu-driven in-app notifications. The application menu fires in the main
+// process, but its result messages render in the renderer. This shape mirrors
+// the renderer contract in src/types/horizon.d.ts (the two sides sit across the
+// IPC boundary and cannot share a module).
+interface MenuNotification {
+  tone: "success" | "info" | "error";
+  title: string;
+  message: string;
+  detail?: string;
+}
+
+/** Pushes a one-way notification to the renderer (menu:notify). */
+function notifyRenderer(notification: MenuNotification): void {
+  mainWindow?.webContents.send("menu:notify", notification);
+}
 
 function focusExistingWindow(): void {
   if (!mainWindow) {
@@ -109,56 +126,52 @@ function showAbout(): void {
   }
 }
 
-async function createBackup(): Promise<void> {
-  if (!mainWindow || serverPort === null) {
-    return;
+function createBackup(): Promise<void> {
+  const window = mainWindow;
+  const port = serverPort;
+  if (!window || port === null) {
+    return Promise.resolve();
   }
 
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: "Create Backup",
-    defaultPath: "horizon-backup.db",
-    filters: [{ name: "Horizon backup", extensions: ["db"] }],
-  });
-
-  if (result.canceled || !result.filePath) {
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:${serverPort}/storage/backup-to`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: result.filePath }),
+  return runCreateBackup({
+    pickSavePath: async () => {
+      const result = await dialog.showSaveDialog(window, {
+        title: "Create Backup",
+        defaultPath: "horizon-backup.db",
+        filters: [{ name: "Horizon backup", extensions: ["db"] }],
+      });
+      return result.canceled || !result.filePath ? null : result.filePath;
+    },
+    backupTo: async (path) => {
+      const response = await fetch(
+        `http://127.0.0.1:${port}/storage/backup-to`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`Backup request failed with status ${response.status}`);
       }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Backup request failed with status ${response.status}`);
-    }
-
-    dialog.showMessageBoxSync(mainWindow, {
-      type: "info",
-      title: "Backup created",
-      message: "Your Horizon backup was created successfully.",
-      detail: result.filePath,
-      buttons: ["OK"],
-      defaultId: 0,
-      noLink: true,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    dialog.showMessageBoxSync(mainWindow, {
-      type: "error",
-      title: "Backup failed",
-      message: "Horizon could not create the backup.",
-      detail: message,
-      buttons: ["OK"],
-      defaultId: 0,
-      noLink: true,
-    });
-  }
+    },
+    onSuccess: (path) => {
+      notifyRenderer({
+        tone: "success",
+        title: "Backup created",
+        message: "Your Horizon backup was created successfully.",
+        detail: path,
+      });
+    },
+    onError: (message) => {
+      notifyRenderer({
+        tone: "error",
+        title: "Backup failed",
+        message: "Horizon could not create the backup.",
+        detail: message,
+      });
+    },
+  });
 }
 
 async function restoreFromBackup(): Promise<void> {
