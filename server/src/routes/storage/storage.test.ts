@@ -427,3 +427,80 @@ describe("POST /storage/restore-from — SQLite driver", () => {
     });
   });
 });
+
+describe("POST /storage/reset — SQLite driver", () => {
+  let app: Express;
+  let storage: Storage;
+  let livePath: string;
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-reset-route-"));
+    livePath = path.join(tmpDir, "live.db");
+    storage = await createStorage({ path: livePath });
+    app = await createApp(storage);
+  });
+
+  afterEach(async () => {
+    await storage.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("returns 204 and afterward accounts and transactions are empty", async () => {
+    const account = await storage.accounts.create({
+      name: "Pre-reset",
+      kind: "Girokonto",
+      openingBalance: 5000,
+      openingDate: "2026-01-01",
+    });
+    await storage.transactions.create(account.id, {
+      date: "2026-01-05",
+      amount: -1500,
+      description: "Groceries",
+      category: "Food",
+    });
+
+    const res = await request(app).post("/storage/reset");
+    expect(res.status).toBe(204);
+
+    const accountsRes = await request(app).get("/accounts");
+    expect(accountsRes.status).toBe(200);
+    expect(accountsRes.body).toEqual([]);
+
+    const txRes = await request(app).get(
+      `/accounts/${account.id}/transactions`
+    );
+    // The account is gone, so its transactions are unreachable/empty.
+    expect(Array.isArray(txRes.body) ? (txRes.body as unknown[]) : []).toEqual(
+      []
+    );
+  });
+
+  it("leaves the default seeded categories after a reset", async () => {
+    const res = await request(app).post("/storage/reset");
+    expect(res.status).toBe(204);
+
+    const categoriesRes = await request(app).get("/categories");
+    expect(categoriesRes.status).toBe(200);
+    const names = (categoriesRes.body as Array<{ name: string }>)
+      .map((c) => c.name)
+      .sort();
+    expect(names).toEqual(
+      [
+        "Entertainment",
+        "Food",
+        "Housing",
+        "Income",
+        "Investment",
+        "Miscellaneous",
+        "Subscriptions",
+        "Transfer",
+      ].sort()
+    );
+  });
+
+  it("succeeds on an already-empty database", async () => {
+    const res = await request(app).post("/storage/reset");
+    expect(res.status).toBe(204);
+  });
+});
