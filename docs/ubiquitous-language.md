@@ -978,3 +978,63 @@
 - **"Actual" vs "Reconstructed Actuals"** (new) — **Actual** is a single account/month real balance; **Reconstructed Actuals** is the per-month historical series rendered on the History page. The series is honest cash _except_ Restschuld, which is the replayed `projected` — never claim the History Restschuld line is an `actual`.
 - **"history"** (new) — overloaded three ways: **Recurring History** (the Replay Loop's past recurring firings), **Import History** (persisted Statements/Import Records), and **History** (the `/history` page). Always qualify; the History page is driven by Reconstructed Actuals, not by Recurring History.
 - **"current month"** (updated) — in the **MonthYearPicker** and **Browsable Range**, "current month" is today's real calendar month (the upper bound), _not_ the navigable **Viewed Month** used by the Year Comparison card. The two senses coexist on the Month Overview screen.
+
+## Savings Streak (new)
+
+| Term                       | Definition                                                                                                                                                                         | Aliases to avoid                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Savings Streak**         | The count of consecutive most-recent months in which every **Tracked Account** met its **Monthly Savings Target** — the motivational metric on the Dashboard's Savings Streak card | Streak counter, saving run        |
+| **Current Streak**         | The Savings Streak measured backward from the latest reconstructed month — resets to zero on the first missed month                                                                | Active streak, streak count       |
+| **Best Streak**            | The longest run of consecutive met months ever recorded across all reconstructed history                                                                                           | Record streak, longest streak     |
+| **Savings Goal**           | The single persisted configuration behind the Savings Streak: a mode, a milestone target, a start month, and per-account monthly targets — one per Horizon database                | Savings plan, target config       |
+| **Monthly Savings Target** | The cents-per-month a **Tracked Account** must grow by for that month to count as met — `balance[thisMonth] − balance[lastMonth] ≥ target`                                         | Monthly goal, save rate           |
+| **Trackable Account**      | Any account eligible for a savings target — kind `Girokonto`, `Tagesgeld`, or `Investment`; **Mortgage** and **CreditCard** are never trackable                                    | Eligible account, savings account |
+| **Tracked Account**        | A Trackable Account whose Monthly Savings Target is greater than zero — the ones the streak actually evaluates                                                                     | Active account, targeted account  |
+| **Not Tracked**            | The dimmed row state for a Trackable Account with a zero target — shown, not hidden, so the user can enable it                                                                     | Untracked, disabled, excluded     |
+| **Milestone Mode**         | The Savings Goal mode where the user sets one total amount + target month; Horizon auto-derives each Monthly Savings Target, weighted by the account's recent savings pace         | Goal mode, target mode            |
+| **Manual Mode**            | The Savings Goal mode where the user sets each Monthly Savings Target directly; editing any target in Milestone Mode silently converts the goal to Manual                          | Custom mode, direct mode          |
+| **Recent Savings Pace**    | An account's trailing-12-month average of its positive month-over-month balance gains — the weight used to split a Milestone target across Tracked Accounts (never raw balance)    | Balance weight, average gain      |
+| **Goal Start Month**       | The `startedAt` month the Savings Goal was first saved — fixed thereafter, not user-editable; anchors the per-account cumulative progress bars                                     | Start date, since date            |
+| **Calendar Strip**         | The Jan→Dec tile row on the Savings Streak card — one tile per month of the current year: filled = met, muted = missed, dashed = **Upcoming**                                      | Month strip, streak bar           |
+| **Upcoming Month**         | A calendar-strip month not yet resolved — either a future month or a past month with no reconstructed history behind it (rendered as a dashed outline)                             | Future month, pending month       |
+
+## Relationships (Savings Streak additions)
+
+- A **Savings Goal** is a single per-database configuration — persisted in the one-row `savings_goal` table, covered by **Online Backup**/**Restore** like any other data
+- A **Savings Goal** is either in **Milestone Mode** or **Manual Mode** — never both
+- A **Monthly Savings Target** applies to exactly one **Trackable Account**; an account becomes a **Tracked Account** only when its target is greater than zero
+- The **Savings Streak** evaluates only **Tracked Accounts** — a month is "met" when every Tracked Account's month-over-month balance gain reaches its **Monthly Savings Target**
+- The month-over-month balances come from the **Reconstructed Actuals** (`GET /projection/history`) — the Savings Streak adds no new balance math, it reuses the History feed
+- The **Calendar Strip**, **Current Streak**, and **Best Streak** scan all available reconstructed history — independent of the **Goal Start Month**
+- The **Goal Start Month** anchors only the per-account cumulative progress bars ("saved of target since the goal started")
+- In **Milestone Mode** the per-account split is derived from **Recent Savings Pace** and never stored; only **Manual Mode** targets are persisted
+- The Savings Streak is deliberately **not** part of the **Trajectory Horizon** — that chart is a forward projection; a Savings Goal is a manual aspirational target layered on actual history
+
+## Example dialogue (Savings Streak)
+
+> **Dev:** "What makes a month count toward the Savings Streak?"
+>
+> **Domain expert:** "Every Tracked Account has to have grown by at least its Monthly Savings Target that month — `balance this month minus balance last month ≥ target`. Miss on even one Tracked Account and the month is missed, and the Current Streak resets."
+>
+> **Dev:** "Where do those balances come from — do we recompute them?"
+>
+> **Domain expert:** "No. Same Reconstructed Actuals the History page uses — `GET /projection/history`. The Savings Streak is a read on that series, not new balance math."
+>
+> **Dev:** "The dashboard shows Main and Tagesgeld greyed out with 'Not tracked' — why not just hide them?"
+>
+> **Domain expert:** "Because they're Trackable — Girokonto and Tagesgeld both qualify by kind. They're just at a zero target, so they're Not Tracked. We show them dimmed so the user can turn them on; a Mortgage or CreditCard would never appear at all."
+>
+> **Dev:** "In Milestone Mode, how does Horizon decide how much each account should save?"
+>
+> **Domain expert:** "By Recent Savings Pace — each account's trailing-12-month average of its positive monthly gains. Not by balance. A big idle balance that never moves shouldn't get a big target it can't hit — that's the failure mode we designed around."
+>
+> **Dev:** "And if I hand-edit one account's target while in Milestone Mode?"
+>
+> **Domain expert:** "The whole goal silently converts to Manual Mode, pre-filled with the milestone's derived split. You never lose your starting point — you just take the wheel."
+
+## Flagged ambiguities (Savings Streak)
+
+- **"Goal"** (new) — a **Savings Goal** is unrelated to the removed dashboard **Milestone** concept. Do not resurrect "Milestone" as a synonym for a savings target; **Milestone Mode** here names a _mode of the Savings Goal_, not a standalone tracked target.
+- **"Target"** (new) — overloaded: **Monthly Savings Target** (cents/month per account) vs. the Milestone Mode **milestone target** (one total amount + target month). Qualify which is meant.
+- **"Tracked"** (new) — **Trackable Account** (eligible by kind) is not the same as **Tracked Account** (eligible _and_ target > 0). A Trackable Account can be **Not Tracked**.
+- **"met / missed / upcoming"** (new) — an **Upcoming Month** is not a missed month: it is unresolved (future, or past-with-no-data). Only a resolved month with a shortfall is "missed".
