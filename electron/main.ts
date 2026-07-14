@@ -34,6 +34,7 @@ const { loadProdRenderer } = resolveRendererConfig(app.isPackaged, process.env);
 const serverHandle = createServerHandle({ isDev });
 
 let mainWindow: BrowserWindow | null = null;
+let serverPort: number | null = null;
 let fatalDialogShown = false;
 let serverShuttingDown = false;
 let serverShutdownComplete = false;
@@ -107,6 +108,58 @@ function showAbout(): void {
   }
 }
 
+async function createBackup(): Promise<void> {
+  if (!mainWindow || serverPort === null) {
+    return;
+  }
+
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: "Create Backup",
+    defaultPath: "horizon-backup.db",
+    filters: [{ name: "Horizon backup", extensions: ["db"] }],
+  });
+
+  if (result.canceled || !result.filePath) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${serverPort}/storage/backup-to`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: result.filePath }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Backup request failed with status ${response.status}`);
+    }
+
+    dialog.showMessageBoxSync(mainWindow, {
+      type: "info",
+      title: "Backup created",
+      message: "Your Horizon backup was created successfully.",
+      detail: result.filePath,
+      buttons: ["OK"],
+      defaultId: 0,
+      noLink: true,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    dialog.showMessageBoxSync(mainWindow, {
+      type: "error",
+      title: "Backup failed",
+      message: "Horizon could not create the backup.",
+      detail: message,
+      buttons: ["OK"],
+      defaultId: 0,
+      noLink: true,
+    });
+  }
+}
+
 function installApplicationMenu(): void {
   const menu = Menu.buildFromTemplate(
     buildMenu({
@@ -114,7 +167,9 @@ function installApplicationMenu(): void {
       settings: () => {
         mainWindow?.webContents.send("menu:navigate", "/settings/storage");
       },
-      backup: () => {},
+      backup: () => {
+        void createBackup();
+      },
       restore: () => {},
       startFresh: () => {},
       checkUpdates: () => {},
@@ -216,6 +271,7 @@ async function main(): Promise<void> {
 
   try {
     const { port } = await serverHandle.start();
+    serverPort = port;
     await createWindow(port);
     setupAutoUpdater();
   } catch (err) {

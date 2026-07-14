@@ -51,6 +51,22 @@ router.post("/backup", (req, res, next) => {
   }
 });
 
+router.post("/backup-to", async (req, res, next) => {
+  const destPath = (req.body as { path?: unknown }).path;
+
+  if (typeof destPath !== "string" || destPath.length === 0) {
+    res.status(400).json({ error: "Missing 'path' in request body" });
+    return;
+  }
+
+  try {
+    await getStorage(req).backup(destPath);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/restore", upload.single("file"), async (req, res, next) => {
   const uploaded = req.file;
 
