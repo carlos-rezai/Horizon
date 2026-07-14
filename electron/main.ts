@@ -10,6 +10,7 @@ import { createServerHandle } from "./serverHandle/serverHandle.js";
 import { buildMenu } from "./buildMenu/buildMenu.js";
 import { runManualUpdateCheck } from "./runManualUpdateCheck/runManualUpdateCheck.js";
 import { createBackup as runCreateBackup } from "./createBackup/createBackup.js";
+import { restoreFromBackup as runRestoreFromBackup } from "./restoreFromBackup/restoreFromBackup.js";
 const devAppVersion = (
   JSON.parse(
     readFileSync(
@@ -52,9 +53,60 @@ interface MenuNotification {
   detail?: string;
 }
 
+interface MenuConfirmRequest {
+  title: string;
+  message: string;
+  detail?: string;
+  tone?: "default" | "danger";
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
+let nextConfirmId = 0;
+const pendingConfirms = new Map<number, (confirmed: boolean) => void>();
+
 /** Pushes a one-way notification to the renderer (menu:notify). */
 function notifyRenderer(notification: MenuNotification): void {
   mainWindow?.webContents.send("menu:notify", notification);
+}
+
+/**
+ * Asks the renderer a yes/no question and awaits the answer (menu:confirm →
+ * menu:confirm-result, correlated by id). Fails closed: with no live renderer
+ * to answer, it resolves false so a destructive action never proceeds
+ * unconfirmed.
+ */
+function confirmViaRenderer(request: MenuConfirmRequest): Promise<boolean> {
+  if (!mainWindow) {
+    return Promise.resolve(false);
+  }
+  const id = ++nextConfirmId;
+  return new Promise<boolean>((resolve) => {
+    pendingConfirms.set(id, resolve);
+    mainWindow?.webContents.send("menu:confirm", { id, ...request });
+  });
+}
+
+// Resolve every pending confirm as cancelled — used when the renderer goes away
+// mid-question so its awaiter never hangs on a destructive prompt.
+function cancelPendingConfirms(): void {
+  for (const resolve of pendingConfirms.values()) {
+    resolve(false);
+  }
+  pendingConfirms.clear();
+}
+
+function setupMenuDialogIpc(): void {
+  ipcMain.on(
+    "menu:confirm-result",
+    (_event, payload: { id: number; confirmed: boolean }) => {
+      const resolve = pendingConfirms.get(payload.id);
+      if (resolve) {
+        pendingConfirms.delete(payload.id);
+        resolve(payload.confirmed);
+      }
+    }
+  );
 }
 
 function focusExistingWindow(): void {
@@ -174,72 +226,65 @@ function createBackup(): Promise<void> {
   });
 }
 
-async function restoreFromBackup(): Promise<void> {
-  if (!mainWindow || serverPort === null) {
-    return;
+function restoreFromBackup(): Promise<void> {
+  const window = mainWindow;
+  const port = serverPort;
+  if (!window || port === null) {
+    return Promise.resolve();
   }
 
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: "Restore from Backup",
-    filters: [{ name: "Horizon backup", extensions: ["db"] }],
-    properties: ["openFile"],
-  });
-
-  if (result.canceled || result.filePaths.length === 0) {
-    return;
-  }
-
-  const sourcePath = result.filePaths[0];
-
-  const confirm = dialog.showMessageBoxSync(mainWindow, {
-    type: "warning",
-    title: "Restore from Backup",
-    message: "Replace all current data with this backup?",
-    detail:
-      "Your current Horizon data will be permanently overwritten by the " +
-      `backup at:\n${sourcePath}\n\nThis cannot be undone.`,
-    buttons: ["Cancel", "Restore"],
-    defaultId: 0,
-    cancelId: 0,
-    noLink: true,
-  });
-
-  if (confirm !== 1) {
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:${serverPort}/storage/restore-from`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: sourcePath }),
-      }
-    );
-
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      throw new Error(
-        body?.error ?? `Restore request failed with status ${response.status}`
+  return runRestoreFromBackup({
+    pickOpenPath: async () => {
+      const result = await dialog.showOpenDialog(window, {
+        title: "Restore from Backup",
+        filters: [{ name: "Horizon backup", extensions: ["db"] }],
+        properties: ["openFile"],
+      });
+      return result.canceled || result.filePaths.length === 0
+        ? null
+        : result.filePaths[0];
+    },
+    confirm: (path) =>
+      confirmViaRenderer({
+        title: "Restore from Backup",
+        message: "Replace all current data with this backup?",
+        detail:
+          "Your current Horizon data will be permanently overwritten by the " +
+          `backup at:\n${path}\n\nThis cannot be undone.`,
+        tone: "danger",
+        confirmLabel: "Restore",
+        cancelLabel: "Cancel",
+      }),
+    restoreFrom: async (path) => {
+      const response = await fetch(
+        `http://127.0.0.1:${port}/storage/restore-from`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path }),
+        }
       );
-    }
-
-    mainWindow.webContents.reload();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    dialog.showMessageBoxSync(mainWindow, {
-      type: "error",
-      title: "Restore failed",
-      message: "Horizon could not restore from the backup.",
-      detail: message,
-      buttons: ["OK"],
-      defaultId: 0,
-      noLink: true,
-    });
-  }
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(
+          body?.error ?? `Restore request failed with status ${response.status}`
+        );
+      }
+    },
+    reloadWindow: () => {
+      window.webContents.reload();
+    },
+    onError: (message) => {
+      notifyRenderer({
+        tone: "error",
+        title: "Restore failed",
+        message: "Horizon could not restore from the backup.",
+        detail: message,
+      });
+    },
+  });
 }
 
 async function startFresh(): Promise<void> {
@@ -389,6 +434,7 @@ async function createWindow(port: number): Promise<void> {
 
   mainWindow.on("closed", () => {
     mainWindow = null;
+    cancelPendingConfirms();
   });
 
   if (loadProdRenderer) {
@@ -450,6 +496,7 @@ async function main(): Promise<void> {
 
   await app.whenReady();
 
+  setupMenuDialogIpc();
   installApplicationMenu();
 
   try {
