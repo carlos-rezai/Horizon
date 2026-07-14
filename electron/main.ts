@@ -8,6 +8,7 @@ import { resolveDbPath } from "./paths/paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig/resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle/serverHandle.js";
 import { buildMenu } from "./buildMenu/buildMenu.js";
+import { runManualUpdateCheck } from "./runManualUpdateCheck/runManualUpdateCheck.js";
 const devAppVersion = (
   JSON.parse(
     readFileSync(
@@ -279,6 +280,50 @@ async function startFresh(): Promise<void> {
   }
 }
 
+function checkForUpdatesManual(): Promise<void> {
+  return runManualUpdateCheck({
+    isPackaged: app.isPackaged,
+    checkForUpdates: async () => {
+      const result = await autoUpdater.checkForUpdates();
+      return result ? { isUpdateAvailable: result.isUpdateAvailable } : null;
+    },
+    onUpToDate: () => {
+      dialog.showMessageBoxSync({
+        type: "info",
+        title: "Check for Updates",
+        message: "You're up to date.",
+        detail: `Horizon ${appVersion()} is the latest version.`,
+        buttons: ["OK"],
+        defaultId: 0,
+        noLink: true,
+      });
+    },
+    onError: (message) => {
+      dialog.showMessageBoxSync({
+        type: "error",
+        title: "Check for Updates",
+        message: "Horizon could not check for updates.",
+        detail: message,
+        buttons: ["OK"],
+        defaultId: 0,
+        noLink: true,
+      });
+    },
+    onDevUnavailable: () => {
+      dialog.showMessageBoxSync({
+        type: "info",
+        title: "Check for Updates",
+        message: "Updates are only available in the installed app.",
+        detail:
+          "You're running Horizon from a development build. Install the packaged app to receive updates.",
+        buttons: ["OK"],
+        defaultId: 0,
+        noLink: true,
+      });
+    },
+  });
+}
+
 function installApplicationMenu(): void {
   const menu = Menu.buildFromTemplate(
     buildMenu({
@@ -295,7 +340,9 @@ function installApplicationMenu(): void {
       startFresh: () => {
         void startFresh();
       },
-      checkUpdates: () => {},
+      checkUpdates: () => {
+        void checkForUpdatesManual();
+      },
       about: showAbout,
       showDataFolder,
     })

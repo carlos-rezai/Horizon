@@ -14,7 +14,22 @@ export interface ManualUpdateCheckDeps {
 }
 
 export async function runManualUpdateCheck(
-  _deps: ManualUpdateCheckDeps
+  deps: ManualUpdateCheckDeps
 ): Promise<void> {
-  // Intentionally unimplemented — RED phase. `/build` implements the routing.
+  if (!deps.isPackaged) {
+    deps.onDevUnavailable();
+    return;
+  }
+
+  try {
+    const result = await deps.checkForUpdates();
+    if (result?.isUpdateAvailable) {
+      // The in-app banner/snackbar already surfaces this via the update IPC —
+      // no native box, no duplicate UI.
+      return;
+    }
+    deps.onUpToDate();
+  } catch (err) {
+    deps.onError(err instanceof Error ? err.message : String(err));
+  }
 }
