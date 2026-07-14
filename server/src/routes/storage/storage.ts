@@ -89,4 +89,24 @@ router.post("/restore", upload.single("file"), async (req, res, next) => {
   }
 });
 
+router.post("/restore-from", async (req, res, next) => {
+  const sourcePath = (req.body as { path?: unknown }).path;
+
+  if (typeof sourcePath !== "string" || sourcePath.length === 0) {
+    res.status(400).json({ error: "Missing 'path' in request body" });
+    return;
+  }
+
+  try {
+    await getStorage(req).restore(sourcePath);
+    res.status(204).end();
+  } catch (err) {
+    if (err instanceof StorageIntegrityError) {
+      res.status(400).json({ error: mapIntegrityErrorMessage(err) });
+      return;
+    }
+    next(err);
+  }
+});
+
 export default router;

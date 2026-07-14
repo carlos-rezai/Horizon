@@ -160,6 +160,74 @@ async function createBackup(): Promise<void> {
   }
 }
 
+async function restoreFromBackup(): Promise<void> {
+  if (!mainWindow || serverPort === null) {
+    return;
+  }
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Restore from Backup",
+    filters: [{ name: "Horizon backup", extensions: ["db"] }],
+    properties: ["openFile"],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return;
+  }
+
+  const sourcePath = result.filePaths[0];
+
+  const confirm = dialog.showMessageBoxSync(mainWindow, {
+    type: "warning",
+    title: "Restore from Backup",
+    message: "Replace all current data with this backup?",
+    detail:
+      "Your current Horizon data will be permanently overwritten by the " +
+      `backup at:\n${sourcePath}\n\nThis cannot be undone.`,
+    buttons: ["Cancel", "Restore"],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  });
+
+  if (confirm !== 1) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${serverPort}/storage/restore-from`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: sourcePath }),
+      }
+    );
+
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      throw new Error(
+        body?.error ?? `Restore request failed with status ${response.status}`
+      );
+    }
+
+    mainWindow.webContents.reload();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    dialog.showMessageBoxSync(mainWindow, {
+      type: "error",
+      title: "Restore failed",
+      message: "Horizon could not restore from the backup.",
+      detail: message,
+      buttons: ["OK"],
+      defaultId: 0,
+      noLink: true,
+    });
+  }
+}
+
 function installApplicationMenu(): void {
   const menu = Menu.buildFromTemplate(
     buildMenu({
@@ -170,7 +238,9 @@ function installApplicationMenu(): void {
       backup: () => {
         void createBackup();
       },
-      restore: () => {},
+      restore: () => {
+        void restoreFromBackup();
+      },
       startFresh: () => {},
       checkUpdates: () => {},
       about: showAbout,
