@@ -19,6 +19,11 @@ export default function UpdateBanner() {
       notify("Checking for updates…", "info");
     } else if (state === "uptodate") {
       notify(message ?? "Horizon is up to date.", "success");
+    } else if (state === "dev-unavailable") {
+      notify(
+        message ?? "Updates are only available in the installed app.",
+        "info"
+      );
     } else if (state === "error") {
       alert({
         title: "Check for Updates",

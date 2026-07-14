@@ -206,6 +206,22 @@ describe("UpdateBanner — manual check outcomes", () => {
     expect(snack).toHaveTextContent("Horizon 1.0.1 is the latest version.");
   });
 
+  it("shows a transient info snackbar when updates are dev-unavailable", () => {
+    const capture = installHorizon();
+    renderBanner();
+    act(() => {
+      capture.manualCb?.({
+        state: "dev-unavailable",
+        message: "Install the packaged app to receive updates.",
+      });
+    });
+    const snack = screen.getByRole("status");
+    expect(snack).toHaveAttribute("data-variant", "info");
+    expect(snack).toHaveTextContent(
+      "Install the packaged app to receive updates."
+    );
+  });
+
   it("raises a blocking alert modal on a check error", () => {
     const capture = installHorizon();
     renderBanner();

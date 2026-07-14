@@ -11,6 +11,7 @@ function createDeps(
   return {
     isPackaged: true,
     checkForUpdates: vi.fn().mockResolvedValue({ isUpdateAvailable: false }),
+    onChecking: vi.fn(),
     onUpToDate: vi.fn(),
     onError: vi.fn(),
     onDevUnavailable: vi.fn(),
@@ -36,11 +37,12 @@ describe("runManualUpdateCheck", () => {
       expect(deps.checkForUpdates).not.toHaveBeenCalled();
     });
 
-    it("shows no up-to-date or error box", async () => {
+    it("emits no checking, up-to-date, or error signal", async () => {
       const deps = createDeps({ isPackaged: false });
 
       await runManualUpdateCheck(deps);
 
+      expect(deps.onChecking).not.toHaveBeenCalled();
       expect(deps.onUpToDate).not.toHaveBeenCalled();
       expect(deps.onError).not.toHaveBeenCalled();
     });
@@ -54,6 +56,22 @@ describe("runManualUpdateCheck", () => {
 
       expect(deps.checkForUpdates).toHaveBeenCalledTimes(1);
       expect(deps.onDevUnavailable).not.toHaveBeenCalled();
+    });
+
+    it("signals checking before running the check", async () => {
+      const order: string[] = [];
+      const deps = createDeps({
+        onChecking: vi.fn(() => order.push("checking")),
+        checkForUpdates: vi.fn(async () => {
+          order.push("check");
+          return { isUpdateAvailable: false };
+        }),
+      });
+
+      await runManualUpdateCheck(deps);
+
+      expect(deps.onChecking).toHaveBeenCalledTimes(1);
+      expect(order).toEqual(["checking", "check"]);
     });
   });
 

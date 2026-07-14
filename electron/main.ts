@@ -66,9 +66,19 @@ interface MenuConfirmRequest {
 let nextConfirmId = 0;
 const pendingConfirms = new Map<number, (confirmed: boolean) => void>();
 
+interface ManualUpdateResult {
+  state: "checking" | "uptodate" | "error" | "dev-unavailable";
+  message?: string;
+}
+
 /** Pushes a one-way notification to the renderer (menu:notify). */
 function notifyRenderer(notification: MenuNotification): void {
   mainWindow?.webContents.send("menu:notify", notification);
+}
+
+/** Relays a manual "Check for Updates" outcome to the renderer's update UI. */
+function sendManualUpdateResult(result: ManualUpdateResult): void {
+  mainWindow?.webContents.send("update-manual-result", result);
 }
 
 /**
@@ -338,38 +348,23 @@ function checkForUpdatesManual(): Promise<void> {
       const result = await autoUpdater.checkForUpdates();
       return result ? { isUpdateAvailable: result.isUpdateAvailable } : null;
     },
+    onChecking: () => {
+      sendManualUpdateResult({ state: "checking" });
+    },
     onUpToDate: () => {
-      dialog.showMessageBoxSync({
-        type: "info",
-        title: "Check for Updates",
-        message: "You're up to date.",
-        detail: `Horizon ${appVersion()} is the latest version.`,
-        buttons: ["OK"],
-        defaultId: 0,
-        noLink: true,
+      sendManualUpdateResult({
+        state: "uptodate",
+        message: `Horizon ${appVersion()} is the latest version.`,
       });
     },
     onError: (message) => {
-      dialog.showMessageBoxSync({
-        type: "error",
-        title: "Check for Updates",
-        message: "Horizon could not check for updates.",
-        detail: message,
-        buttons: ["OK"],
-        defaultId: 0,
-        noLink: true,
-      });
+      sendManualUpdateResult({ state: "error", message });
     },
     onDevUnavailable: () => {
-      dialog.showMessageBoxSync({
-        type: "info",
-        title: "Check for Updates",
-        message: "Updates are only available in the installed app.",
-        detail:
+      sendManualUpdateResult({
+        state: "dev-unavailable",
+        message:
           "You're running Horizon from a development build. Install the packaged app to receive updates.",
-        buttons: ["OK"],
-        defaultId: 0,
-        noLink: true,
       });
     },
   });
