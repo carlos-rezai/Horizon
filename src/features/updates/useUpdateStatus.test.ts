@@ -20,12 +20,16 @@ describe("useUpdateStatus", () => {
         onUpdateAvailable: () => () => {},
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        onManualResult: () => () => {},
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
       menu: {
         onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
       },
     };
 
@@ -47,12 +51,16 @@ describe("useUpdateStatus", () => {
         onUpdateAvailable: () => () => {},
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        onManualResult: () => () => {},
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
       menu: {
         onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
       },
     };
 
@@ -77,12 +85,16 @@ describe("useUpdateStatus", () => {
         onUpdateAvailable: () => () => {},
         quitAndInstall,
         downloadUpdate: vi.fn(),
+        onManualResult: () => () => {},
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
       menu: {
         onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
       },
     };
 
@@ -109,12 +121,16 @@ describe("useUpdateStatus", () => {
         },
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        onManualResult: () => () => {},
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
       menu: {
         onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
       },
     };
 
@@ -139,12 +155,16 @@ describe("useUpdateStatus", () => {
         onUpdateAvailable: () => () => {},
         quitAndInstall: vi.fn(),
         downloadUpdate,
+        onManualResult: () => () => {},
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
       menu: {
         onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
       },
     };
 
@@ -175,12 +195,16 @@ describe("useUpdateStatus", () => {
         },
         quitAndInstall: vi.fn(),
         downloadUpdate: vi.fn(),
+        onManualResult: () => () => {},
         getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
         getAutoDownload: vi.fn().mockResolvedValue(true),
         setAutoDownload: vi.fn().mockResolvedValue(undefined),
       },
       menu: {
         onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
       },
     };
 

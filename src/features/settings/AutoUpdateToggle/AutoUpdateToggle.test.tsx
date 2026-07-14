@@ -32,6 +32,7 @@ function makeHorizon(
     updates: {
       onUpdateDownloaded: () => () => {},
       onUpdateAvailable: () => () => {},
+      onManualResult: () => () => {},
       quitAndInstall: vi.fn(),
       downloadUpdate: vi.fn(),
       getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
@@ -40,6 +41,9 @@ function makeHorizon(
     },
     menu: {
       onNavigate: () => () => {},
+      onNotify: () => () => {},
+      onConfirm: () => () => {},
+      respondConfirm: vi.fn(),
     },
   };
   return setAutoDownload;

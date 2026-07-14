@@ -31,6 +31,7 @@ function installHorizon(capture: {
     updates: {
       onUpdateDownloaded: () => () => {},
       onUpdateAvailable: () => () => {},
+      onManualResult: () => () => {},
       quitAndInstall: vi.fn(),
       downloadUpdate: vi.fn(),
       getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
@@ -42,6 +43,9 @@ function installHorizon(capture: {
         capture.cb = cb;
         return unsubscribe;
       },
+      onNotify: () => () => {},
+      onConfirm: () => () => {},
+      respondConfirm: vi.fn(),
     },
   };
 }

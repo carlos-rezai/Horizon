@@ -64,6 +64,7 @@ function mockHorizon(
     updates: {
       onUpdateDownloaded: () => () => {},
       onUpdateAvailable: () => () => {},
+      onManualResult: () => () => {},
       quitAndInstall: vi.fn(),
       downloadUpdate: vi.fn(),
       getAppVersion: vi.fn().mockResolvedValue(overrides.appVersion ?? "1.4.2"),
@@ -74,6 +75,9 @@ function mockHorizon(
     },
     menu: {
       onNavigate: () => () => {},
+      onNotify: () => () => {},
+      onConfirm: () => () => {},
+      respondConfirm: vi.fn(),
     },
   };
   return { setAutoDownload };

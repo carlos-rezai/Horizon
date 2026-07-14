@@ -25,6 +25,7 @@ function mockHorizon(autoDownload = true) {
     updates: {
       onUpdateDownloaded: () => () => {},
       onUpdateAvailable: () => () => {},
+      onManualResult: () => () => {},
       quitAndInstall: vi.fn(),
       downloadUpdate: vi.fn(),
       getAppVersion: vi.fn().mockResolvedValue("1.0.1"),
@@ -33,6 +34,9 @@ function mockHorizon(autoDownload = true) {
     },
     menu: {
       onNavigate: () => () => {},
+      onNotify: () => () => {},
+      onConfirm: () => () => {},
+      respondConfirm: vi.fn(),
     },
   };
 }
