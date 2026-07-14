@@ -220,4 +220,85 @@ describe("useUpdateStatus", () => {
     });
     expect(result.current.state).toBe("ready");
   });
+
+  it("reflects a manual up-to-date result with its message", () => {
+    let registeredManualCb:
+      | ((result: { state: "uptodate"; message?: string }) => void)
+      | null = null;
+    window.horizon = {
+      apiBaseUrl: "",
+      platform: "win32",
+      electronVersion: "0.0.0",
+      updates: {
+        onUpdateDownloaded: () => () => {},
+        onUpdateAvailable: () => () => {},
+        onManualResult: (cb) => {
+          registeredManualCb = cb;
+          return () => {};
+        },
+        quitAndInstall: vi.fn(),
+        downloadUpdate: vi.fn(),
+        getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
+        getAutoDownload: vi.fn().mockResolvedValue(true),
+        setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
+      },
+    };
+
+    const { result } = renderHook(() => useUpdateStatus());
+
+    act(() => {
+      registeredManualCb?.({
+        state: "uptodate",
+        message: "Horizon 1.0.1 is the latest version.",
+      });
+    });
+
+    expect(result.current.state).toBe("uptodate");
+    expect(result.current.message).toBe("Horizon 1.0.1 is the latest version.");
+  });
+
+  it("reflects a manual check error with its message", () => {
+    let registeredManualCb:
+      | ((result: { state: "error"; message?: string }) => void)
+      | null = null;
+    window.horizon = {
+      apiBaseUrl: "",
+      platform: "win32",
+      electronVersion: "0.0.0",
+      updates: {
+        onUpdateDownloaded: () => () => {},
+        onUpdateAvailable: () => () => {},
+        onManualResult: (cb) => {
+          registeredManualCb = cb;
+          return () => {};
+        },
+        quitAndInstall: vi.fn(),
+        downloadUpdate: vi.fn(),
+        getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
+        getAutoDownload: vi.fn().mockResolvedValue(true),
+        setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
+      },
+    };
+
+    const { result } = renderHook(() => useUpdateStatus());
+
+    act(() => {
+      registeredManualCb?.({ state: "error", message: "offline" });
+    });
+
+    expect(result.current.state).toBe("error");
+    expect(result.current.message).toBe("offline");
+  });
 });
