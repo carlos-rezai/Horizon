@@ -129,5 +129,6 @@ export interface Storage {
   serialize(): Buffer;
   backup(destPath: string): Promise<void>;
   restore(srcPath: string): Promise<void>;
+  reset(): Promise<void>;
   status(): Promise<StorageStatus>;
 }

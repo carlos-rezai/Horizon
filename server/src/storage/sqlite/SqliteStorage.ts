@@ -122,6 +122,16 @@ export async function createSqliteStorage(
       db = openConnection(path, options);
       repos = buildRepos(db);
     },
+    async reset() {
+      closeConnection(db);
+      if (path !== ":memory:") {
+        fs.rmSync(path, { force: true });
+        fs.rmSync(`${path}-wal`, { force: true });
+        fs.rmSync(`${path}-shm`, { force: true });
+      }
+      db = openConnection(path, options);
+      repos = buildRepos(db);
+    },
     async status(): Promise<StorageStatus> {
       const schemaVersion = db.pragma("user_version", {
         simple: true,

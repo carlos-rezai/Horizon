@@ -109,4 +109,13 @@ router.post("/restore-from", async (req, res, next) => {
   }
 });
 
+router.post("/reset", async (req, res, next) => {
+  try {
+    await getStorage(req).reset();
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

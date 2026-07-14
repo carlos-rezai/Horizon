@@ -228,6 +228,57 @@ async function restoreFromBackup(): Promise<void> {
   }
 }
 
+async function startFresh(): Promise<void> {
+  if (!mainWindow || serverPort === null) {
+    return;
+  }
+
+  const confirm = dialog.showMessageBoxSync(mainWindow, {
+    type: "warning",
+    title: "Start Fresh",
+    message: "Erase all Horizon data and start over?",
+    detail:
+      "Every account, transaction, recurring entry, and import will be " +
+      "permanently deleted, leaving Horizon as it was on first launch. " +
+      "This cannot be undone.\n\nTo keep a copy, cancel and use " +
+      "File → Create Backup first.",
+    buttons: ["Cancel", "Erase everything"],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  });
+
+  if (confirm !== 1) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${serverPort}/storage/reset`,
+      {
+        method: "POST",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Reset request failed with status ${response.status}`);
+    }
+
+    mainWindow.webContents.reload();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    dialog.showMessageBoxSync(mainWindow, {
+      type: "error",
+      title: "Start Fresh failed",
+      message: "Horizon could not reset your data.",
+      detail: message,
+      buttons: ["OK"],
+      defaultId: 0,
+      noLink: true,
+    });
+  }
+}
+
 function installApplicationMenu(): void {
   const menu = Menu.buildFromTemplate(
     buildMenu({
@@ -241,7 +292,9 @@ function installApplicationMenu(): void {
       restore: () => {
         void restoreFromBackup();
       },
-      startFresh: () => {},
+      startFresh: () => {
+        void startFresh();
+      },
       checkUpdates: () => {},
       about: showAbout,
       showDataFolder,
