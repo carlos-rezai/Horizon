@@ -2,6 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { useSavingsGoal } from "./useSavingsGoal";
+import type { SavingsGoalConfig } from "./savingsTypes";
 
 // ---------------------------------------------------------------------------
 // useSavingsGoal — read-only in Phase 1. It derives the trackable account ids
@@ -67,7 +68,7 @@ const POINTS = [
 
 const IMPORTS = [{ id: "imp-1", startDate: "2026-01-01" }];
 
-const CONFIG = {
+const CONFIG: SavingsGoalConfig = {
   mode: "manual",
   targetTotal: 0,
   targetDate: "2026-12",

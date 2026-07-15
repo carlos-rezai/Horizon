@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../utils/api/api";
 import type { AccountKind } from "../../types/account";
 import { useAccounts } from "../accounts/useAccounts";
@@ -9,6 +9,8 @@ import type { SavingsGoal, SavingsGoalConfig } from "./savingsTypes";
 interface UseSavingsGoalResult {
   goal: SavingsGoal;
   isLoading: boolean;
+  /** PUT the config, then re-derive the goal from the persisted result. */
+  save: (config: SavingsGoalConfig) => Promise<void>;
 }
 
 // Only liquid + investment accounts fit a "save X per month" target;
@@ -87,7 +89,19 @@ export function useSavingsGoal(): UseSavingsGoalResult {
     [config, points, trackableIds]
   );
 
+  const save = useCallback(async (next: SavingsGoalConfig) => {
+    const res = await fetch(`${API_BASE}/savings-goal`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    });
+    // The route stamps/fixes `startedAt`, so the persisted config is the
+    // authority — re-derive from it rather than the optimistic input.
+    const saved = (await res.json()) as unknown;
+    if (isSavingsGoalConfig(saved)) setConfig(saved);
+  }, []);
+
   const isLoading = historyLoading || accountsLoading || configLoading;
 
-  return { goal, isLoading };
+  return { goal, isLoading, save };
 }

@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { Flame, ChevronDown } from "lucide-react";
+import { Flame, ChevronDown, Pencil } from "lucide-react";
 import Card from "../../../components/Card/Card";
 import Avatar from "../../../primitives/Avatar/Avatar";
 import Badge from "../../../primitives/Badge/Badge";
 import ProgressBar from "../../../primitives/ProgressBar/ProgressBar";
 import { formatBalance } from "../../../utils/format/format";
-import type { SavingsGoal, PerAccountGoal } from "../savingsTypes";
+import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
+import SavingsGoalModal from "../SavingsGoalModal/SavingsGoalModal";
+import type {
+  SavingsGoal,
+  SavingsGoalConfig,
+  PerAccountGoal,
+} from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import {
   StyledHeader,
   StyledTitleGroup,
+  StyledActions,
+  StyledEditButton,
   StyledToggle,
   StyledFlameBadge,
   StyledOverline,
@@ -38,6 +46,8 @@ import {
 interface SavingsStreakCardProps {
   goal: SavingsGoal;
   accounts: AccountWithBalance[];
+  /** Persist an edited goal config. When omitted, the edit pencil is hidden. */
+  onSave?: (config: SavingsGoalConfig) => Promise<void> | void;
 }
 
 const MONTHS = [
@@ -77,8 +87,11 @@ function formatMonthlyTarget(cents: number): string {
 export default function SavingsStreakCard({
   goal,
   accounts,
+  onSave,
 }: SavingsStreakCardProps) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const { notify } = useSnackbar();
   const { current, best, yearTicks } = goal.streak;
   const isRecord = current > 0 && current >= best;
   const anyTracked = goal.perAccount.some((p) => p.tracked);
@@ -88,6 +101,18 @@ export default function SavingsStreakCard({
     accounts.find((account) => account.id === id);
 
   const toggle = () => setOpen((o) => !o);
+
+  // The editor lists exactly the trackable accounts, in perAccount order —
+  // mortgage/credit-card are excluded from the streak and so from the editor.
+  const trackableAccounts = goal.perAccount
+    .map((entry) => accountById(entry.id))
+    .filter((account): account is AccountWithBalance => account !== undefined);
+
+  const handleSave = async (config: SavingsGoalConfig) => {
+    await onSave?.(config);
+    setEditing(false);
+    notify("Savings goal updated", "success");
+  };
 
   return (
     <Card>
@@ -109,14 +134,25 @@ export default function SavingsStreakCard({
             </StyledTitleRow>
           </div>
         </StyledTitleGroup>
-        <StyledToggle
-          type="button"
-          onClick={toggle}
-          $open={open}
-          aria-label={open ? "Collapse" : "Expand"}
-        >
-          <ChevronDown size={17} />
-        </StyledToggle>
+        <StyledActions>
+          {onSave && (
+            <StyledEditButton
+              type="button"
+              aria-label="Edit savings goal"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil size={16} />
+            </StyledEditButton>
+          )}
+          <StyledToggle
+            type="button"
+            onClick={toggle}
+            $open={open}
+            aria-label={open ? "Collapse" : "Expand"}
+          >
+            <ChevronDown size={17} />
+          </StyledToggle>
+        </StyledActions>
       </StyledHeader>
 
       {hasHistory && (
@@ -167,6 +203,15 @@ export default function SavingsStreakCard({
             );
           })}
         </StyledRows>
+      )}
+
+      {editing && (
+        <SavingsGoalModal
+          config={goal}
+          accounts={trackableAccounts}
+          onClose={() => setEditing(false)}
+          onSave={handleSave}
+        />
       )}
     </Card>
   );
