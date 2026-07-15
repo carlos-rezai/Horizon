@@ -131,8 +131,28 @@ describe("SavingsGoalModal — Manual mode", () => {
         />
       )
     ).not.toThrow();
-    // All three accounts default to 0.00 — never a blank or broken form.
-    expect(screen.getAllByDisplayValue("0.00")).toHaveLength(3);
+    // Every account input defaults to 0.00 — never a blank or broken form.
+    for (const account of ACCOUNTS) {
+      expect(
+        screen.getByLabelText(`${account.name} monthly target`)
+      ).toHaveValue("0.00");
+    }
+  });
+
+  it("keeps the Milestone fields mounted in Manual mode so the dialog height stays fixed", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={CONFIG}
+        accounts={ACCOUNTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+    // CONFIG opens in Manual. The Milestone target inputs stay in the DOM
+    // (hidden) so their height is reserved and switching modes never resizes
+    // the dialog. querySelector is used because they are aria-hidden here.
+    expect(document.querySelector('[aria-label="Target amount"]')).toBeTruthy();
+    expect(document.querySelector('[aria-label="Target month"]')).toBeTruthy();
   });
 
   it("saves per-account targets as integer cents", () => {

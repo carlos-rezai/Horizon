@@ -21,6 +21,26 @@ export const StyledModeToggle = styled.div`
   gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
+/**
+ * Holds both modes' intro content (hint + optional Milestone fields) stacked in
+ * a single grid cell. The cell sizes to the taller mode, so switching between
+ * Milestone and Manual never changes the dialog's height — no reserved pixel
+ * magic number, and it stays correct if the copy changes.
+ */
+export const StyledModeSection = styled.div`
+  display: grid;
+`;
+
+/** One mode's intro, occupying the shared grid cell. The inactive mode keeps its
+ *  layout box (so the taller mode's height is reserved) but is not painted. */
+export const StyledModePane = styled.div<{ $active: boolean }>`
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.space5}px;
+  visibility: ${({ $active }) => ($active ? "visible" : "hidden")};
+`;
+
 export const StyledMilestoneFields = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

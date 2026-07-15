@@ -13,6 +13,8 @@ import {
   StyledBody,
   StyledFieldLabel,
   StyledModeToggle,
+  StyledModeSection,
+  StyledModePane,
   StyledHint,
   StyledMilestoneFields,
   StyledAccountRows,
@@ -166,8 +168,14 @@ export default function SavingsGoalModal({
           </StyledModeToggle>
         </div>
 
-        {mode === "milestone" ? (
-          <>
+        {/* Both modes' intros share one grid cell so the dialog keeps a fixed
+            height — the cell sizes to the taller (Milestone) content and Manual
+            reserves the same space. Only the active pane is interactive. */}
+        <StyledModeSection>
+          <StyledModePane
+            $active={mode === "milestone"}
+            aria-hidden={mode !== "milestone"}
+          >
             <StyledHint>
               Set a total amount and a target month — Horizon splits the monthly
               savings across your tracked accounts automatically, weighted by
@@ -192,13 +200,17 @@ export default function SavingsGoalModal({
                 />
               </div>
             </StyledMilestoneFields>
-          </>
-        ) : (
-          <StyledHint>
-            Set the monthly savings target per account directly. Leave an
-            account at €0 to exclude it from tracking.
-          </StyledHint>
-        )}
+          </StyledModePane>
+          <StyledModePane
+            $active={mode === "manual"}
+            aria-hidden={mode !== "manual"}
+          >
+            <StyledHint>
+              Set the monthly savings target per account directly. Leave an
+              account at €0 to exclude it from tracking.
+            </StyledHint>
+          </StyledModePane>
+        </StyledModeSection>
 
         <div>
           <StyledFieldLabel>
