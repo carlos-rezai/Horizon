@@ -4,7 +4,7 @@ import Card from "../../../components/Card/Card";
 import Avatar from "../../../primitives/Avatar/Avatar";
 import Badge from "../../../primitives/Badge/Badge";
 import ProgressBar from "../../../primitives/ProgressBar/ProgressBar";
-import { formatBalance } from "../../../utils/format/format";
+import { formatBalance, formatEuroWhole } from "../../../utils/format/format";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import SavingsGoalModal from "../SavingsGoalModal/SavingsGoalModal";
 import type {
@@ -69,15 +69,6 @@ const MONTHS = [
   "November",
   "December",
 ];
-
-/** Whole-euro target (no cents), matching the design's "8 €/mo". */
-function formatMonthlyTarget(cents: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
 
 /** "YYYY-MM" → "January 2028" for the Milestone goal summary line. */
 function formatTargetMonth(ym: string): string {
@@ -204,7 +195,7 @@ export default function SavingsStreakCard({
         <StyledGoalSummary>
           Goal: save{" "}
           <StyledGoalEmphasis>
-            {formatMonthlyTarget(goal.targetTotal)}
+            {formatEuroWhole(goal.targetTotal)}
           </StyledGoalEmphasis>{" "}
           by {formatTargetMonth(goal.targetDate)} · auto-split across tracked
           accounts by recent savings pace
@@ -285,7 +276,7 @@ function PerAccountRow({ entry, account, last }: PerAccountRowProps) {
       <div>
         {entry.tracked && (
           <StyledMonthly className="mono">
-            {formatMonthlyTarget(entry.target)}
+            {formatEuroWhole(entry.target)}
             <StyledPerMonth> /mo</StyledPerMonth>
           </StyledMonthly>
         )}

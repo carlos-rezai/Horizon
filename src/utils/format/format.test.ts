@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   formatBalance,
+  formatEuroWhole,
   formatBytes,
   formatFileSizeKB,
   formatMonth,
@@ -23,6 +24,25 @@ describe("formatBalance", () => {
 
   it("formats a negative value", () => {
     expect(formatBalance(-5050)).toBe("-50,50 €");
+  });
+});
+
+describe("formatEuroWhole", () => {
+  // de-DE currency joins the amount and the € symbol with a no-break space.
+  it("formats a whole-euro value with no cents", () => {
+    expect(formatEuroWhole(800)).toBe("8 €");
+  });
+
+  it("rounds to the nearest whole euro", () => {
+    expect(formatEuroWhole(1250)).toBe("13 €");
+  });
+
+  it("formats zero", () => {
+    expect(formatEuroWhole(0)).toBe("0 €");
+  });
+
+  it("groups thousands with a German-locale separator", () => {
+    expect(formatEuroWhole(1_234_500)).toBe("12.345 €");
   });
 });
 

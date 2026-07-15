@@ -5,6 +5,18 @@ export function formatBalance(cents: number): string {
   }).format(cents / 100);
 }
 
+/**
+ * A whole-euro `de-DE` currency string with no cents — e.g. `8 €`. Used where
+ * the design shows rounded monthly figures (the Savings Streak targets).
+ */
+export function formatEuroWhole(cents: number): string {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
+}
+
 const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
 
 export function formatBytes(bytes: number): string {
