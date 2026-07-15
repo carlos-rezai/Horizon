@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeSavingsGoal } from "./savingsGoal";
+import { computeSavingsGoal, milestoneSplit } from "./savingsGoal";
 import type { SavingsGoalConfig } from "../../features/savings/savingsTypes";
 import type { HistoryPoint } from "../../features/history/historyTypes";
 
@@ -234,6 +234,48 @@ describe("computeSavingsGoal — milestone weighting", () => {
     expect(goal.monthly.a1).toBe(20000);
     // Floored to a positive share (100/20100 of 20100) — never dropped to zero.
     expect(goal.monthly.a2).toBe(100);
+  });
+});
+
+describe("milestoneSplit — the exported Milestone auto-split", () => {
+  // Same four-point history as the milestone-weighting suite: a1/a2 gain
+  // €100/mo, a3 gains €200/mo → trailing-average weights 10000:10000:20000
+  // (sum 40000). "Today" is the last point (2026-04); the target (2027-04) is
+  // exactly 12 months out → requiredMonthly = 480000 / 12 = 40000.
+  const points: HistoryPoint[] = [
+    pt("2026-01", { a1: 0, a2: 0, a3: 0 }),
+    pt("2026-02", { a1: 10000, a2: 10000, a3: 20000 }),
+    pt("2026-03", { a1: 20000, a2: 20000, a3: 40000 }),
+    pt("2026-04", { a1: 30000, a2: 30000, a3: 60000 }),
+  ];
+  const ids = ["a1", "a2", "a3"];
+
+  it("splits the required monthly amount by each account's trailing average gain", () => {
+    expect(milestoneSplit(480000, "2027-04", points, ids)).toEqual({
+      a1: 10000,
+      a2: 10000,
+      a3: 20000,
+    });
+  });
+
+  it("floors an account with no positive gains to a small share rather than zero", () => {
+    const floorPoints: HistoryPoint[] = [
+      pt("2026-01", { a1: 0, a2: 5000 }),
+      pt("2026-02", { a1: 20000, a2: 5000 }),
+      pt("2026-03", { a1: 40000, a2: 5000 }),
+      pt("2026-04", { a1: 60000, a2: 5000 }),
+    ];
+    const split = milestoneSplit(241200, "2027-04", floorPoints, ["a1", "a2"]);
+    expect(split.a1).toBe(20000);
+    expect(split.a2).toBe(100);
+  });
+
+  it("yields an all-zero map when there is no history to measure from", () => {
+    expect(milestoneSplit(480000, "2027-04", [], ids)).toEqual({
+      a1: 0,
+      a2: 0,
+      a3: 0,
+    });
   });
 });
 

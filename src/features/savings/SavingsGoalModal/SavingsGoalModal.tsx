@@ -5,7 +5,7 @@ import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Button from "../../../primitives/Button/Button";
 import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
-import { computeSavingsGoal } from "../../../utils/savingsGoal/savingsGoal";
+import { milestoneSplit } from "../../../utils/savingsGoal/savingsGoal";
 import type { SavingsGoalConfig, SavingsGoalMode } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../../history/historyTypes";
@@ -68,18 +68,8 @@ export default function SavingsGoalModal({
   const derived = useMemo<Record<string, number>>(() => {
     const cents = eurosToCents(targetTotal);
     if (!cents || Number.isNaN(cents) || points.length === 0) return {};
-    return computeSavingsGoal(
-      {
-        mode: "milestone",
-        targetTotal: cents,
-        targetDate: targetMonth,
-        startedAt: config.startedAt,
-        manualMonthly: {},
-      },
-      points,
-      trackableIds
-    ).monthly;
-  }, [targetTotal, targetMonth, points, trackableIds, config.startedAt]);
+    return milestoneSplit(cents, targetMonth, points, trackableIds);
+  }, [targetTotal, targetMonth, points, trackableIds]);
 
   /** Euros shown in a row: the derived split in Milestone, the input otherwise. */
   const displayValue = (id: string): string =>

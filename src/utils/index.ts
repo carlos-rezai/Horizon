@@ -15,4 +15,4 @@ export type { AccountColumn } from "./projection/projection";
 export { API_BASE } from "./api/api";
 export { resolveAccountColor } from "./color/color";
 export { recurringNetPerMonth } from "./recurring/recurring";
-export { computeSavingsGoal } from "./savingsGoal/savingsGoal";
+export { computeSavingsGoal, milestoneSplit } from "./savingsGoal/savingsGoal";

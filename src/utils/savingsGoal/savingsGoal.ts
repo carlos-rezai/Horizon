@@ -71,8 +71,11 @@ function monthsToTargetFrom(
  * (trailing 12 months, positive contributions only) and floored so no account
  * is ever dropped to zero. Returns a per-account cents map. Empty history — no
  * "today" to measure from — yields an all-zero map.
+ *
+ * Exported because the goal editor's live preview derives the same split; the
+ * engine's Milestone branch and the modal are its two callers.
  */
-function milestoneSplit(
+export function milestoneSplit(
   targetTotal: number,
   targetDate: string,
   points: HistoryPoint[],
