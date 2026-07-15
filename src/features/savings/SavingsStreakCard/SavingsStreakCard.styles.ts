@@ -168,6 +168,19 @@ export const StyledRows = styled.div`
   flex-direction: column;
 `;
 
+export const StyledGoalSummary = styled.div`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  margin-top: ${({ theme }) => theme.spacing.space5}px;
+`;
+
+export const StyledGoalEmphasis = styled.span`
+  color: ${({ theme }) => theme.colors.onSurface};
+  font-weight: 600;
+`;
+
 export const StyledRow = styled.div<{ $tracked: boolean; $last: boolean }>`
   display: grid;
   grid-template-columns: 38px 1fr auto;

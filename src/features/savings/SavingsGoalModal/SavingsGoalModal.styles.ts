@@ -21,22 +21,10 @@ export const StyledModeToggle = styled.div`
   gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
-export const StyledModeChip = styled.button<{ $active: boolean }>`
-  flex: 1;
-  padding: 9px 12px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  border: 1px solid
-    ${({ theme, $active }) =>
-      $active ? theme.colors.primary : theme.colors.outlineVariant};
-  background: ${({ theme, $active }) =>
-    $active ? theme.colors.primaryContainer : "transparent"};
-  color: ${({ theme, $active }) =>
-    $active ? theme.colors.primary : theme.colors.onSurfaceVariant};
-  font-family: ${({ theme }) => theme.typography.scale.bodyMd.fontFamily};
-  font-size: ${({ theme }) => theme.typography.scale.bodyMd.fontSize};
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.14s ease;
+export const StyledMilestoneFields = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: ${({ theme }) => theme.spacing.space4}px;
 `;
 
 export const StyledHint = styled.p`

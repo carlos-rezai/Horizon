@@ -257,7 +257,7 @@ The generated installer will be signed with your local certificate and will inst
 | Category Management                       | ✅ Complete |
 | Historical Month Navigation               | ✅ Complete |
 | Native Application Menu                   | ✅ Complete |
-| Savings Streak                            | 📋 Planned  |
+| Savings Streak                            | ✅ Complete |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |

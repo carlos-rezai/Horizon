@@ -5,9 +5,12 @@ import { useAccounts } from "../accounts/useAccounts";
 import { useHistory } from "../history/useHistory";
 import { computeSavingsGoal } from "./computeSavingsGoal";
 import type { SavingsGoal, SavingsGoalConfig } from "./savingsTypes";
+import type { HistoryPoint } from "../history/historyTypes";
 
 interface UseSavingsGoalResult {
   goal: SavingsGoal;
+  /** Reconstructed monthly history — the source for the Milestone auto-split. */
+  points: HistoryPoint[];
   isLoading: boolean;
   /** PUT the config, then re-derive the goal from the persisted result. */
   save: (config: SavingsGoalConfig) => Promise<void>;
@@ -103,5 +106,5 @@ export function useSavingsGoal(): UseSavingsGoalResult {
 
   const isLoading = historyLoading || accountsLoading || configLoading;
 
-  return { goal, isLoading, save };
+  return { goal, points, isLoading, save };
 }

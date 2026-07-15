@@ -52,7 +52,11 @@ export default function DashboardPage() {
     refetch: refetchProjection,
   } = useProjection();
   const { recurringTransactions } = useAllRecurringTransactions();
-  const { goal: savingsGoal, save: saveSavingsGoal } = useSavingsGoal();
+  const {
+    goal: savingsGoal,
+    points: savingsPoints,
+    save: saveSavingsGoal,
+  } = useSavingsGoal();
 
   if (accountsLoading || projectionLoading) return <Spinner />;
   if (accountsError)
@@ -96,6 +100,7 @@ export default function DashboardPage() {
       <SavingsStreakCard
         goal={savingsGoal}
         accounts={accounts}
+        points={savingsPoints}
         onSave={saveSavingsGoal}
       />
       <StyledGrid>

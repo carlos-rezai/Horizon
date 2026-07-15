@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Modal from "../../../components/Modal/Modal";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";
+import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
+import { computeSavingsGoal } from "../computeSavingsGoal";
 import type { SavingsGoalConfig, SavingsGoalMode } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
+import type { HistoryPoint } from "../../history/historyTypes";
 import {
   StyledBody,
   StyledFieldLabel,
   StyledModeToggle,
-  StyledModeChip,
   StyledHint,
+  StyledMilestoneFields,
   StyledAccountRows,
   StyledAccountRow,
   StyledColorDot,
@@ -20,38 +23,93 @@ import {
 interface Props {
   config: SavingsGoalConfig;
   accounts: AccountWithBalance[];
+  /** Reconstructed monthly history — the source for the Milestone auto-split. */
+  points?: HistoryPoint[];
   onClose: () => void;
   onSave: (config: SavingsGoalConfig) => void;
 }
 
-/** Euros the input should show for an account, from its stored cents target. */
-function initialEuros(config: SavingsGoalConfig, id: string): string {
-  return centsToEuros(config.manualMonthly[id] ?? 0);
-}
-
 /**
- * The Savings Streak goal editor. Manual mode lists every trackable account as
- * a direct euro input, pre-filled from the saved config; values are entered in
- * euros and returned to `onSave` as integer cents. `startedAt` is server-owned
- * and passed straight back through, never surfaced here. The Milestone/Manual
- * toggle is present as the mode affordance; the Milestone auto-split editor and
- * convert-on-edit land in a later phase, so saves persist Manual targets.
+ * The Savings Streak goal editor. Two modes share one per-account row list:
+ *
+ * - **Manual** — each row is a direct euro input, pre-filled from the saved
+ *   config. Values are entered in euros and returned to `onSave` as integer
+ *   cents.
+ * - **Milestone** — one total target amount + one target month drive a live,
+ *   read-only per-account split derived by `computeSavingsGoal` (weighted by
+ *   each account's recent savings pace, floored so no account is dropped).
+ *   Editing any row silently converts the goal to Manual, pre-filled with the
+ *   current derived split — overriding one account never discards the rest.
+ *
+ * `startedAt` is server-owned and passed straight back through, never surfaced.
  */
 export default function SavingsGoalModal({
   config,
   accounts,
+  points = [],
   onClose,
   onSave,
 }: Props) {
   const [mode, setMode] = useState<SavingsGoalMode>(config.mode);
+  const [targetTotal, setTargetTotal] = useState<string>(
+    centsToEuros(config.targetTotal)
+  );
+  const [targetMonth, setTargetMonth] = useState<string>(config.targetDate);
   const [euros, setEuros] = useState<Record<string, string>>(() =>
-    Object.fromEntries(accounts.map((a) => [a.id, initialEuros(config, a.id)]))
+    Object.fromEntries(
+      accounts.map((a) => [a.id, centsToEuros(config.manualMonthly[a.id] ?? 0)])
+    )
   );
 
-  const setAccountEuros = (id: string, value: string) =>
+  const trackableIds = useMemo(() => accounts.map((a) => a.id), [accounts]);
+
+  // The live Milestone split: re-derived whenever the total or month changes.
+  const derived = useMemo<Record<string, number>>(() => {
+    const cents = eurosToCents(targetTotal);
+    if (!cents || Number.isNaN(cents) || points.length === 0) return {};
+    return computeSavingsGoal(
+      {
+        mode: "milestone",
+        targetTotal: cents,
+        targetDate: targetMonth,
+        startedAt: config.startedAt,
+        manualMonthly: {},
+      },
+      points,
+      trackableIds
+    ).monthly;
+  }, [targetTotal, targetMonth, points, trackableIds, config.startedAt]);
+
+  /** Euros shown in a row: the derived split in Milestone, the input otherwise. */
+  const displayValue = (id: string): string =>
+    mode === "milestone" ? centsToEuros(derived[id] ?? 0) : (euros[id] ?? "");
+
+  /** Adopt the current derived split as the manual baseline, then go Manual. */
+  const switchToManual = () => {
+    setEuros(
+      Object.fromEntries(
+        accounts.map((a) => [a.id, centsToEuros(derived[a.id] ?? 0)])
+      )
+    );
+    setMode("manual");
+  };
+
+  const setAccountEuros = (id: string, value: string) => {
+    if (mode === "milestone") switchToManual();
     setEuros((prev) => ({ ...prev, [id]: value }));
+  };
 
   const handleSave = () => {
+    if (mode === "milestone") {
+      onSave({
+        ...config,
+        mode: "milestone",
+        targetTotal: eurosToCents(targetTotal) || 0,
+        targetDate: targetMonth,
+        manualMonthly: {},
+      });
+      return;
+    }
     const manualMonthly = Object.fromEntries(
       accounts.map((a) => {
         const cents = eurosToCents(euros[a.id] ?? "0");
@@ -81,30 +139,62 @@ export default function SavingsGoalModal({
         <div>
           <StyledFieldLabel>Mode</StyledFieldLabel>
           <StyledModeToggle>
-            <StyledModeChip
-              type="button"
-              $active={mode === "milestone"}
+            <ChoiceChip
+              label="Milestone"
+              active={mode === "milestone"}
               onClick={() => setMode("milestone")}
-            >
-              Milestone
-            </StyledModeChip>
-            <StyledModeChip
-              type="button"
-              $active={mode === "manual"}
-              onClick={() => setMode("manual")}
-            >
-              Manual
-            </StyledModeChip>
+            />
+            <ChoiceChip
+              label="Manual"
+              active={mode === "manual"}
+              onClick={() =>
+                mode === "milestone" ? switchToManual() : setMode("manual")
+              }
+            />
           </StyledModeToggle>
         </div>
 
-        <StyledHint>
-          Set the monthly savings target per account directly. Leave an account
-          at €0 to exclude it from tracking.
-        </StyledHint>
+        {mode === "milestone" ? (
+          <>
+            <StyledHint>
+              Set a total amount and a target month — Horizon splits the monthly
+              savings across your tracked accounts automatically, weighted by
+              each account&apos;s recent savings pace.
+            </StyledHint>
+            <StyledMilestoneFields>
+              <div>
+                <StyledFieldLabel>Target amount</StyledFieldLabel>
+                <Input
+                  prefix="€"
+                  aria-label="Target amount"
+                  value={targetTotal}
+                  onChange={(e) => setTargetTotal(e.target.value)}
+                />
+              </div>
+              <div>
+                <StyledFieldLabel>Target month</StyledFieldLabel>
+                <Input
+                  type="month"
+                  aria-label="Target month"
+                  value={targetMonth}
+                  onChange={(e) => setTargetMonth(e.target.value)}
+                />
+              </div>
+            </StyledMilestoneFields>
+          </>
+        ) : (
+          <StyledHint>
+            Set the monthly savings target per account directly. Leave an
+            account at €0 to exclude it from tracking.
+          </StyledHint>
+        )}
 
         <div>
-          <StyledFieldLabel>Monthly target per account</StyledFieldLabel>
+          <StyledFieldLabel>
+            {mode === "milestone"
+              ? "Auto-split by account — edit a value to switch to Manual"
+              : "Monthly target per account"}
+          </StyledFieldLabel>
           <StyledAccountRows>
             {accounts.map((account) => (
               <StyledAccountRow key={account.id}>
@@ -113,7 +203,7 @@ export default function SavingsGoalModal({
                 <Input
                   prefix="€"
                   aria-label={`${account.name} monthly target`}
-                  value={euros[account.id] ?? ""}
+                  value={displayValue(account.id)}
                   onChange={(e) => setAccountEuros(account.id, e.target.value)}
                 />
               </StyledAccountRow>

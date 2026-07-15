@@ -537,3 +537,41 @@ and About.
   seven test files. A shared `makeHorizonMock(overrides)` factory would make
   future bridge changes a one-line update; deferred to keep this refactor within
   the plan's scope.
+
+---
+
+## 2026-07-15 — #185 Savings Streak goal editor: Milestone mode + convert-on-edit (feature close-out)
+
+Closed out the Savings Streak feature (PRD #181, slices #182–#185) with the
+Milestone half of the goal editor. Milestone mode takes one total amount + one
+target month and shows the derived per-account split **live and read-only** in
+the same row list Manual mode uses. No new math: the split is
+`computeSavingsGoal`'s trailing-12-month positive average-gain weighting, ported
+whole in slice 1 — the modal just re-runs it as the user types and reads back
+`.monthly`. That let this slice land with zero changes to the engine and its
+already-green tests.
+
+**Weighted by savings pace, not balance.** The handoff prototype split the
+milestone by _current account balance_; its own `DELTA.md` flagged this as wrong
+(balance and monthly movement are unrelated — a balance-weighted split produced
+targets no account could consistently hit, a permanently-red streak). Both copy
+strings the DELTA called out — the card's milestone summary caption and the
+modal helper text — now read "by each account's recent savings pace". The tests
+assert both the presence of that phrasing and the _absence_ of "by balance", so
+the old copy can't quietly return.
+
+**Convert-on-edit.** Editing any row while in Milestone silently switches the
+goal to Manual, pre-filled with the current derived split, so overriding one
+account never discards the others. Implemented with two composed functional
+`setEuros` updates: `switchToManual` replaces the map with the derived split,
+then the row handler overrides the edited id on top of it — order-independent of
+React batching, no `useEffect`.
+
+**Points plumbing.** The Milestone split needs the reconstructed history, so
+`useSavingsGoal` now also returns `points`, `DashboardPage` threads them into
+`SavingsStreakCard`, and the card forwards them to the modal. The prop is
+optional end-to-end (`points = []`), so Manual-only render paths and the existing
+card tests that never open Milestone are untouched.
+
+Full suite green (1896 tests), `tsc -b` clean. README and the CLAUDE.md roadmap
+now mark Savings Streak complete.

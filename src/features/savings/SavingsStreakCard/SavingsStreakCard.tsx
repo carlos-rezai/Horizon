@@ -13,6 +13,7 @@ import type {
   PerAccountGoal,
 } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
+import type { HistoryPoint } from "../../history/historyTypes";
 import {
   StyledHeader,
   StyledTitleGroup,
@@ -29,6 +30,8 @@ import {
   StyledTile,
   StyledTileLabel,
   StyledCaption,
+  StyledGoalSummary,
+  StyledGoalEmphasis,
   StyledRows,
   StyledRow,
   StyledRowBody,
@@ -46,6 +49,8 @@ import {
 interface SavingsStreakCardProps {
   goal: SavingsGoal;
   accounts: AccountWithBalance[];
+  /** Reconstructed monthly history — forwarded to the editor's Milestone split. */
+  points?: HistoryPoint[];
   /** Persist an edited goal config. When omitted, the edit pencil is hidden. */
   onSave?: (config: SavingsGoalConfig) => Promise<void> | void;
 }
@@ -74,6 +79,12 @@ function formatMonthlyTarget(cents: number): string {
   }).format(cents / 100);
 }
 
+/** "YYYY-MM" → "January 2028" for the Milestone goal summary line. */
+function formatTargetMonth(ym: string): string {
+  const [year, month] = ym.split("-").map(Number);
+  return `${MONTHS[month - 1] ?? ""} ${year}`;
+}
+
 /**
  * The Savings Streak card: a Dashboard accordion. Collapsed, it shows the
  * flame, current-streak count (most prominent), best-ever streak, and the
@@ -87,6 +98,7 @@ function formatMonthlyTarget(cents: number): string {
 export default function SavingsStreakCard({
   goal,
   accounts,
+  points,
   onSave,
 }: SavingsStreakCardProps) {
   const [open, setOpen] = useState(false);
@@ -188,6 +200,17 @@ export default function SavingsStreakCard({
         </>
       )}
 
+      {open && goal.mode === "milestone" && (
+        <StyledGoalSummary>
+          Goal: save{" "}
+          <StyledGoalEmphasis>
+            {formatMonthlyTarget(goal.targetTotal)}
+          </StyledGoalEmphasis>{" "}
+          by {formatTargetMonth(goal.targetDate)} · auto-split across tracked
+          accounts by recent savings pace
+        </StyledGoalSummary>
+      )}
+
       {open && (
         <StyledRows>
           {goal.perAccount.map((entry, index) => {
@@ -209,6 +232,7 @@ export default function SavingsStreakCard({
         <SavingsGoalModal
           config={goal}
           accounts={trackableAccounts}
+          points={points}
           onClose={() => setEditing(false)}
           onSave={handleSave}
         />
