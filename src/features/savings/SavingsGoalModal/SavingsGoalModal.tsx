@@ -5,7 +5,7 @@ import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Button from "../../../primitives/Button/Button";
 import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
-import { computeSavingsGoal } from "../computeSavingsGoal";
+import { computeSavingsGoal } from "../../../utils/savingsGoal/savingsGoal";
 import type { SavingsGoalConfig, SavingsGoalMode } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../../history/historyTypes";

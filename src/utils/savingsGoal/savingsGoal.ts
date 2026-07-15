@@ -1,10 +1,10 @@
-import type { HistoryPoint } from "../history/historyTypes";
+import type { HistoryPoint } from "../../features/history/historyTypes";
 import type {
   PerAccountGoal,
   SavingsGoal,
   SavingsGoalConfig,
   YearTick,
-} from "./savingsTypes";
+} from "../../features/savings/savingsTypes";
 
 // ---------------------------------------------------------------------------
 // computeSavingsGoal — a pure port of the prototype's savings-goal logic

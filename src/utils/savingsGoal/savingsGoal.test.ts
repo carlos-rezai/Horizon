@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { computeSavingsGoal } from "./computeSavingsGoal";
-import type { SavingsGoalConfig } from "./savingsTypes";
-import type { HistoryPoint } from "../history/historyTypes";
+import { computeSavingsGoal } from "./savingsGoal";
+import type { SavingsGoalConfig } from "../../features/savings/savingsTypes";
+import type { HistoryPoint } from "../../features/history/historyTypes";
 
 // ---------------------------------------------------------------------------
 // computeSavingsGoal(config, points, trackableIds) — pure port of the

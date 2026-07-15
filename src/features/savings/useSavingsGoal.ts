@@ -3,7 +3,7 @@ import { API_BASE } from "../../utils/api/api";
 import type { AccountKind } from "../../types/account";
 import { useAccounts } from "../accounts/useAccounts";
 import { useHistory } from "../history/useHistory";
-import { computeSavingsGoal } from "./computeSavingsGoal";
+import { computeSavingsGoal } from "../../utils/savingsGoal/savingsGoal";
 import type { SavingsGoal, SavingsGoalConfig } from "./savingsTypes";
 import type { HistoryPoint } from "../history/historyTypes";
 
