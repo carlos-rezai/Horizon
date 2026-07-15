@@ -312,6 +312,57 @@ describe("SavingsGoalModal — Milestone mode", () => {
     expect(screen.getByDisplayValue("250.00")).toBeTruthy();
   });
 
+  it("preserves manual edits when toggling to Milestone and back to Manual", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+
+    // In Manual, raise the ETF target from 500.00 € to 600.00 €.
+    fireEvent.change(screen.getByDisplayValue("500.00"), {
+      target: { value: "600.00" },
+    });
+
+    // Flip to Milestone (the row now shows the auto-split) and back to Manual.
+    fireEvent.click(screen.getByRole("button", { name: /milestone/i }));
+    fireEvent.click(screen.getByRole("button", { name: /manual/i }));
+
+    // The manual edit survives the round-trip — nothing is re-seeded over it.
+    expect(screen.getByDisplayValue("600.00")).toBeTruthy();
+  });
+
+  it("seeds Manual from the auto-split on first entry, then keeps later edits across toggles", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={MILESTONE_CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+
+    // A goal that opened in Milestone is pristine: first Manual entry adopts the
+    // derived split (100 / 100 / 200) as the editable baseline.
+    fireEvent.click(screen.getByRole("button", { name: /manual/i }));
+    expect(screen.getByDisplayValue("200.00")).toBeTruthy();
+    expect(screen.getAllByDisplayValue("100.00")).toHaveLength(2);
+
+    // Override ETF to 250, then flip Milestone → Manual: the edit is kept, not
+    // re-seeded back to the split's 200.
+    fireEvent.change(screen.getByDisplayValue("200.00"), {
+      target: { value: "250.00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /milestone/i }));
+    fireEvent.click(screen.getByRole("button", { name: /manual/i }));
+    expect(screen.getByDisplayValue("250.00")).toBeTruthy();
+  });
+
   it("saves a milestone config with the total in cents and an empty manual split", () => {
     const onSave = vi.fn();
     renderWithTheme(

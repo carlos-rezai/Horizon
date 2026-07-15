@@ -37,10 +37,15 @@ interface Props {
  *   config. Values are entered in euros and returned to `onSave` as integer
  *   cents.
  * - **Milestone** — one total target amount + one target month drive a live,
- *   read-only per-account split derived by `computeSavingsGoal` (weighted by
- *   each account's recent savings pace, floored so no account is dropped).
- *   Editing any row silently converts the goal to Manual, pre-filled with the
- *   current derived split — overriding one account never discards the rest.
+ *   read-only per-account split derived by `milestoneSplit` (weighted by each
+ *   account's recent savings pace, floored so no account is dropped). Editing
+ *   any row silently converts the goal to Manual, pre-filled with the current
+ *   derived split — overriding one account never discards the rest.
+ *
+ * Switching modes is non-destructive: the manual values persist while you flip
+ * to Milestone and back. Manual is seeded from the live auto-split only while it
+ * is still pristine (a goal that opened in Milestone); once you have typed a
+ * value, your numbers survive every toggle untouched.
  *
  * `startedAt` is server-owned and passed straight back through, never surfaced.
  */
@@ -61,6 +66,11 @@ export default function SavingsGoalModal({
       accounts.map((a) => [a.id, centsToEuros(config.manualMonthly[a.id] ?? 0)])
     )
   );
+  // Whether the manual values represent real user intent yet. A goal that opened
+  // in Manual already carries saved values; one that opened in Milestone starts
+  // pristine, so its first entry into Manual adopts the live auto-split. Once
+  // true, the manual values are never re-seeded from the split behind the user.
+  const [manualDirty, setManualDirty] = useState(config.mode === "manual");
 
   const trackableIds = useMemo(() => accounts.map((a) => a.id), [accounts]);
 
@@ -75,19 +85,30 @@ export default function SavingsGoalModal({
   const displayValue = (id: string): string =>
     mode === "milestone" ? centsToEuros(derived[id] ?? 0) : (euros[id] ?? "");
 
-  /** Adopt the current derived split as the manual baseline, then go Manual. */
-  const switchToManual = () => {
-    setEuros(
-      Object.fromEntries(
-        accounts.map((a) => [a.id, centsToEuros(derived[a.id] ?? 0)])
-      )
+  /** The current derived split as euro strings — the manual seed baseline. */
+  const derivedEuros = (): Record<string, string> =>
+    Object.fromEntries(
+      accounts.map((a) => [a.id, centsToEuros(derived[a.id] ?? 0)])
     );
+
+  /** Enter Manual mode. Seed from the live auto-split only while the manual
+   *  values are still pristine; after any edit, they persist untouched. */
+  const goManual = () => {
+    if (!manualDirty) setEuros(derivedEuros());
     setMode("manual");
   };
 
   const setAccountEuros = (id: string, value: string) => {
-    if (mode === "milestone") switchToManual();
-    setEuros((prev) => ({ ...prev, [id]: value }));
+    // Editing a row while viewing the Milestone split is an explicit override:
+    // adopt the split as the manual baseline, then apply this edit on top of it
+    // so the other accounts are kept, and stay in Manual from here on.
+    if (mode === "milestone") {
+      setEuros({ ...derivedEuros(), [id]: value });
+      setMode("manual");
+    } else {
+      setEuros((prev) => ({ ...prev, [id]: value }));
+    }
+    setManualDirty(true);
   };
 
   const handleSave = () => {
@@ -140,9 +161,7 @@ export default function SavingsGoalModal({
             <ChoiceChip
               label="Manual"
               active={mode === "manual"}
-              onClick={() =>
-                mode === "milestone" ? switchToManual() : setMode("manual")
-              }
+              onClick={goManual}
             />
           </StyledModeToggle>
         </div>
