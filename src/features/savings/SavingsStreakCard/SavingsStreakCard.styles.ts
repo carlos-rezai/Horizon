@@ -8,11 +8,32 @@ export const StyledHeader = styled.div`
   gap: ${({ theme }) => theme.spacing.space3}px;
 `;
 
-export const StyledTitleGroup = styled.div`
+export const StyledTitleGroup = styled.button`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space3}px;
   flex: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+`;
+
+export const StyledToggle = styled.button<{ $open: boolean }>`
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  flex-shrink: 0;
+  transform: ${({ $open }) => ($open ? "rotate(180deg)" : "none")};
+  transition: transform 0.18s ease;
 `;
 
 export const StyledFlameBadge = styled.div`
@@ -111,4 +132,81 @@ export const StyledCaption = styled.div`
   font-size: 11.5px;
   color: ${({ theme }) => theme.colors.onSurfaceFaint};
   margin-top: ${({ theme }) => theme.spacing.space3}px;
+`;
+
+export const StyledRows = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.space5}px;
+  padding-top: ${({ theme }) => theme.spacing.space4}px;
+  border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  display: flex;
+  flex-direction: column;
+`;
+
+export const StyledRow = styled.div<{ $tracked: boolean; $last: boolean }>`
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space3}px;
+  padding: 12px 10px;
+  opacity: ${({ $tracked }) => ($tracked ? 1 : 0.5)};
+  border-bottom: ${({ $last, theme }) =>
+    $last ? "none" : `1px solid ${theme.colors.lineFaint}`};
+`;
+
+export const StyledRowBody = styled.div`
+  min-width: 0;
+`;
+
+export const StyledRowName = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+`;
+
+export const StyledAccountName = styled.span`
+  font-family: ${({ theme }) => theme.typography.scale.bodyMd.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.bodyMd.fontSize};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.onSurface};
+`;
+
+export const StyledProgress = styled.div`
+  margin-top: 7px;
+  max-width: 260px;
+`;
+
+export const StyledAmounts = styled.div`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  margin-top: 5px;
+`;
+
+export const StyledSaved = styled.span<{ $met: boolean }>`
+  color: ${({ theme, $met }) =>
+    $met ? theme.colors.secondary : theme.colors.onSurface};
+`;
+
+export const StyledTargetAmount = styled.span`
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+`;
+
+export const StyledUntrackedHint = styled.div`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.onSurfaceFaint};
+  margin-top: 3px;
+`;
+
+export const StyledMonthly = styled.span`
+  font-family: ${({ theme }) => theme.typography.scale.monoMd.fontFamily};
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const StyledPerMonth = styled.span`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;

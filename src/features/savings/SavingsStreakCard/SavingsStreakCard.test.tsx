@@ -215,7 +215,8 @@ describe("SavingsStreakCard — expanded rows", () => {
     // Sparkasse: 84,00 € saved of 48,00 € target, 8 €/mo.
     expect(screen.getByText(/84,00/)).toBeTruthy();
     expect(screen.getByText(/48,00/)).toBeTruthy();
-    expect(screen.getByText(/\/\s*mo/i)).toBeTruthy();
+    // Both tracked rows (Sparkasse, ETF) show a "/mo" monthly-target label.
+    expect(screen.getAllByText(/\/\s*mo/i).length).toBeGreaterThan(0);
   });
 
   it("renders an untracked account dimmed with a 'Not tracked' badge, not hidden", () => {

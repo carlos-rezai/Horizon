@@ -93,7 +93,7 @@ export default function DashboardPage() {
         isLoading={false}
         onViewHistory={() => navigate("/history")}
       />
-      <SavingsStreakCard goal={savingsGoal} />
+      <SavingsStreakCard goal={savingsGoal} accounts={accounts} />
       <StyledGrid>
         <div>
           <Card>
