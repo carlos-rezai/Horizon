@@ -575,3 +575,67 @@ card tests that never open Milestone are untouched.
 
 Full suite green (1896 tests), `tsc -b` clean. README and the CLAUDE.md roadmap
 now mark Savings Streak complete.
+
+---
+
+## 2026-07-15 — #186 Savings Streak refactor: split the engine, align to conventions
+
+Structure-only pass over the Savings Streak compute layer (refactor plan
+`docs/refactor-plans/26-savings-streak-refactor.md`). No behaviour, schema,
+route, or data-contract change — the `016` migration, `SavingsGoalRepo`, the
+`GET`/`PUT /savings-goal` routes, the balance-delta "met" signal, and every
+rendered string are exactly as shipped. Six commits, each independently green
+(`npx vitest run` + `tsc -b`).
+
+**Module moved to where its siblings live.** `computeSavingsGoal` was the lone
+pure financial-compute function sitting under `src/features/` while every other
+one (`projection`, `trajectory`, `outlook`, `mortgage`, `monthBreakdown`,
+`recurring`, …) lives in `src/utils/<name>/`. It moved to
+`src/utils/savingsGoal/savingsGoal.ts` via `git mv` — same exported name, same
+`(config, points, trackableIds) => SavingsGoal` signature — with the exhaustive
+24-case test moving alongside it, unedited, as the safety net. The move
+introduces the codebase's first `import type` from `features/` into `utils/`
+(`HistoryPoint` and the savings config/derived shapes); accepted as **type-only**
+(erased at compile time, no runtime coupling), since the clean alternative —
+relocating those types into `src/types/` — would ripple through the whole
+history feature and is explicitly out of scope.
+
+**One 140-line procedure became a thin orchestrator over private helpers.** The
+five jobs the body did in one scope — resolve monthly targets, derive
+per-account cumulative progress, scan monthly-met, count current/best streak,
+build the Jan→Dec strip — are now single-purpose private functions
+(`milestoneSplit`, `manualTargets`, `derivePerAccount`, `scanMonthlyMet`,
+`currentStreak`, `bestStreak`, `buildYearTicks`) plus small `parseMonth` /
+`monthsBetween` / `lastMonth` / `balanceOf` primitives. Tested only through the
+public function — the Fowler ideal, matching how `outlook` and `monthBreakdown`
+keep internals private and assert on external behaviour.
+
+**One shared export, not a re-run of the whole engine.** The Milestone
+trailing-12-month weighting is the single helper with a genuine second consumer
+— the goal editor's live preview, which previously built a throwaway `milestone`
+config, ran the entire `computeSavingsGoal`, and kept only `.monthly`. That
+weighting is now the exported `milestoneSplit(targetTotal, targetDate, points,
+ids)`, called directly by both the engine's Milestone branch and the modal's
+`useMemo`. The split is a single source of truth and gets its own direct test
+(exported utils owe one).
+
+**Formatting folded back onto `utils/format`.** The card was hand-rolling a
+12-entry long-month array (dup of `MONTHS_LONG`), a `formatTargetMonth` (dup of
+`formatMonthLong`), a `.slice(0, 3)` short-name derivation (dup of the exported
+short `MONTHS`), and a whole-euro currency formatter. Added `formatEuroWhole`
+beside `formatBalance`, exported `MONTHS_LONG`, and the card now uses `MONTHS`,
+`MONTHS_LONG` / `formatMonthLong`, and `formatEuroWhole` — no local copies. The
+short `MONTHS` entries are identical to `long.slice(0, 3)` for all twelve
+months, so the tile labels render the same strings.
+
+**Out-of-scope observations:**
+
+- `src/features/import/ImportWizard/ImportWizard.test.tsx` >
+  "commits the category created inline during review…" remains flaky under
+  full-suite load (passes in isolation and on re-run). Still pre-existing and
+  unrelated — same flake noted in the #180 native-dialogs entry. Worth
+  stabilising on its own.
+- `SavingsGoal extends SavingsGoalConfig` mixes the persisted and derived shapes
+  in one interface. Left untouched; a possible future tidy, not this refactor.
+- The unrelated local `MONTHS` arrays in `Clock` and `ImportHistory` are the
+  same smell in different features — left for their own refactors.
