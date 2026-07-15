@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Modal from "../../../components/Modal/Modal";
 import Input from "../../../primitives/Input/Input";
+import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Button from "../../../primitives/Button/Button";
 import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
@@ -105,7 +106,9 @@ export default function SavingsGoalModal({
         ...config,
         mode: "milestone",
         targetTotal: eurosToCents(targetTotal) || 0,
-        targetDate: targetMonth,
+        // The day picker yields a full `YYYY-MM-DD`; the goal is month-scoped,
+        // so persist just the month.
+        targetDate: targetMonth.slice(0, 7),
         manualMonthly: {},
       });
       return;
@@ -173,11 +176,10 @@ export default function SavingsGoalModal({
               </div>
               <div>
                 <StyledFieldLabel>Target month</StyledFieldLabel>
-                <Input
-                  type="month"
+                <DatePicker
                   aria-label="Target month"
                   value={targetMonth}
-                  onChange={(e) => setTargetMonth(e.target.value)}
+                  onChange={setTargetMonth}
                 />
               </div>
             </StyledMilestoneFields>

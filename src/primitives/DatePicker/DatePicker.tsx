@@ -24,8 +24,11 @@ const DateInput = forwardRef<
 >((props, ref) => <StyledDateInput {...props} ref={ref} />);
 
 function isoToDate(iso: string): Date {
+  // Accepts both `YYYY-MM-DD` and month-only `YYYY-MM` values (the latter
+  // resolving to the first of the month) so month-scoped callers can pass their
+  // stored value straight through.
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  return new Date(y, m - 1, d || 1);
 }
 
 function dateToIso(date: Date): string {
