@@ -64,7 +64,9 @@ export function formatMonth(yyyyMM: string): string {
   return `${MONTHS[parseInt(month, 10) - 1]} ${year}`;
 }
 
-const MONTHS_LONG = [
+/** Full month names, index 0 = January. Shared by `formatMonthLong` and the
+ *  Savings Streak calendar strip's tile titles and goal summary. */
+export const MONTHS_LONG = [
   "January",
   "February",
   "March",

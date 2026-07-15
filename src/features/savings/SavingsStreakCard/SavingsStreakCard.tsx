@@ -4,7 +4,13 @@ import Card from "../../../components/Card/Card";
 import Avatar from "../../../primitives/Avatar/Avatar";
 import Badge from "../../../primitives/Badge/Badge";
 import ProgressBar from "../../../primitives/ProgressBar/ProgressBar";
-import { formatBalance, formatEuroWhole } from "../../../utils/format/format";
+import {
+  formatBalance,
+  formatEuroWhole,
+  formatMonthLong,
+  MONTHS,
+  MONTHS_LONG,
+} from "../../../utils/format/format";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import SavingsGoalModal from "../SavingsGoalModal/SavingsGoalModal";
 import type {
@@ -53,27 +59,6 @@ interface SavingsStreakCardProps {
   points?: HistoryPoint[];
   /** Persist an edited goal config. When omitted, the edit pencil is hidden. */
   onSave?: (config: SavingsGoalConfig) => Promise<void> | void;
-}
-
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-/** "YYYY-MM" → "January 2028" for the Milestone goal summary line. */
-function formatTargetMonth(ym: string): string {
-  const [year, month] = ym.split("-").map(Number);
-  return `${MONTHS[month - 1] ?? ""} ${year}`;
 }
 
 /**
@@ -173,10 +158,10 @@ export default function SavingsStreakCard({
                   key={`${tick.year}-${tick.month}`}
                   $status={tick.status}
                   $index={index}
-                  title={`${MONTHS[tick.month]} ${tick.year} · ${label}`}
+                  title={`${MONTHS_LONG[tick.month]} ${tick.year} · ${label}`}
                 >
                   <StyledTileLabel $status={tick.status}>
-                    {MONTHS[tick.month].slice(0, 3)}
+                    {MONTHS[tick.month]}
                   </StyledTileLabel>
                 </StyledTile>
               );
@@ -197,7 +182,7 @@ export default function SavingsStreakCard({
           <StyledGoalEmphasis>
             {formatEuroWhole(goal.targetTotal)}
           </StyledGoalEmphasis>{" "}
-          by {formatTargetMonth(goal.targetDate)} · auto-split across tracked
+          by {formatMonthLong(goal.targetDate)} · auto-split across tracked
           accounts by recent savings pace
         </StyledGoalSummary>
       )}

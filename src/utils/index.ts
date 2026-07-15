@@ -1,6 +1,13 @@
 export { computeTotalLiquid } from "./accounts/accounts";
 export { eurosToCents, centsToEuros } from "./currency/currency";
-export { formatBalance, formatEuroWhole, formatMonth } from "./format/format";
+export {
+  formatBalance,
+  formatEuroWhole,
+  formatMonth,
+  formatMonthLong,
+  MONTHS,
+  MONTHS_LONG,
+} from "./format/format";
 export { apiFetch, setSilentRefresh } from "./apiFetch/apiFetch";
 export {
   buildAccountColumns,
