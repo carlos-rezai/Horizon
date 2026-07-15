@@ -122,6 +122,78 @@ describe("useSavingsGoal — compute over config + history", () => {
   });
 });
 
+// A stateful mock: GET returns the current stored config, PUT overwrites it and
+// echoes it back, and every call is recorded so a test can inspect the request.
+function mockStatefulFetch(initial: unknown = CONFIG) {
+  const calls: { url: string; method: string; body?: string }[] = [];
+  let current = initial;
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const url = typeof input === "string" ? input : input.toString();
+    const method = (init?.method ?? "GET").toUpperCase();
+    calls.push({ url, method, body: init?.body as string | undefined });
+    if (url.includes("/savings-goal")) {
+      if (method === "PUT") current = JSON.parse(init!.body as string);
+      return { ok: true, json: async () => current } as Response;
+    }
+    if (url.includes("/projection/history")) {
+      return { ok: true, json: async () => POINTS } as Response;
+    }
+    if (url.includes("/imports")) {
+      return { ok: true, json: async () => IMPORTS } as Response;
+    }
+    if (url.includes("/accounts")) {
+      return { ok: true, json: async () => ACCOUNTS } as Response;
+    }
+    return { ok: true, json: async () => [] } as Response;
+  });
+  return { calls };
+}
+
+describe("useSavingsGoal — save (write path)", () => {
+  it("PUTs the config to /savings-goal", async () => {
+    const { calls } = mockStatefulFetch();
+    const { result } = renderHook(() => useSavingsGoal());
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.save({
+        ...CONFIG,
+        manualMonthly: { a1: 20000, a2: 20000 },
+      });
+    });
+
+    const put = calls.find(
+      (c) => c.url.includes("/savings-goal") && c.method === "PUT"
+    );
+    expect(put).toBeTruthy();
+    expect(JSON.parse(put!.body as string)).toMatchObject({
+      manualMonthly: { a1: 20000, a2: 20000 },
+    });
+  });
+
+  it("re-derives the goal from the new targets without a reload", async () => {
+    mockStatefulFetch();
+    const { result } = renderHook(() => useSavingsGoal());
+    await act(async () => {});
+
+    // Initial targets (€100/mo) are met every month → current streak 2.
+    expect(result.current.goal.streak.current).toBe(2);
+
+    await act(async () => {
+      await result.current.save({
+        ...CONFIG,
+        manualMonthly: { a1: 20000, a2: 20000 },
+      });
+    });
+
+    // €200/mo targets outrun the €100/mo actual gain → no month qualifies.
+    expect(result.current.goal.streak.current).toBe(0);
+    expect(
+      result.current.goal.perAccount.find((row) => row.id === "a1")?.target
+    ).toBe(20000);
+  });
+});
+
 describe("useSavingsGoal — loading state", () => {
   it("is loading before the fetches resolve", () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(

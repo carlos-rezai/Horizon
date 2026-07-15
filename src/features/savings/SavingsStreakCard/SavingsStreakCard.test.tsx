@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
+import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
 import SavingsStreakCard from "./SavingsStreakCard";
 import type { SavingsGoal, YearTick } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
@@ -12,7 +19,11 @@ afterEach(() => {
 });
 
 function renderWithTheme(ui: React.ReactElement) {
-  return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+  return render(
+    <ThemeProvider theme={theme}>
+      <SnackbarProvider>{ui}</SnackbarProvider>
+    </ThemeProvider>
+  );
 }
 
 /** Jan→Dec ticks: Feb/Mar met, Apr missed, everything else upcoming. */
@@ -224,5 +235,33 @@ describe("SavingsStreakCard — expanded rows", () => {
     // Main has a 0/mo target — present, badged, not dropped.
     expect(screen.getByText("Main")).toBeTruthy();
     expect(screen.getByText(/not tracked/i)).toBeTruthy();
+  });
+});
+
+describe("SavingsStreakCard — edit affordance", () => {
+  it("opens the goal editor from a top-right pencil, same gesture as Mortgage Countdown", () => {
+    renderWithTheme(
+      <SavingsStreakCard goal={GOAL} accounts={ACCOUNTS} onSave={vi.fn()} />
+    );
+
+    // The editor is closed until the pencil is pressed.
+    expect(screen.queryByText(/edit savings goal/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /edit savings goal/i }));
+
+    expect(screen.getByText(/edit savings goal/i)).toBeTruthy();
+  });
+
+  it("saves through the editor and confirms with a success snackbar", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    renderWithTheme(
+      <SavingsStreakCard goal={GOAL} accounts={ACCOUNTS} onSave={onSave} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /edit savings goal/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/savings goal updated/i)).toBeTruthy();
   });
 });
