@@ -17,6 +17,7 @@ import {
   createSqliteImportPresetsRepo,
   createSqliteImportsRepo,
 } from "./imports.js";
+import { createSqliteSavingsGoalRepo } from "./savingsGoal.js";
 
 export type SqliteStorageOptions = OpenConnectionOptions;
 
@@ -30,6 +31,7 @@ interface Repos {
   >;
   imports: ReturnType<typeof createSqliteImportsRepo>;
   importPresets: ReturnType<typeof createSqliteImportPresetsRepo>;
+  savingsGoal: ReturnType<typeof createSqliteSavingsGoalRepo>;
 }
 
 function buildRepos(db: Database.Database): Repos {
@@ -40,6 +42,7 @@ function buildRepos(db: Database.Database): Repos {
   const recurringTransactions = createSqliteRecurringTransactionsRepo(db);
   const imports = createSqliteImportsRepo(db);
   const importPresets = createSqliteImportPresetsRepo(db);
+  const savingsGoal = createSqliteSavingsGoalRepo(db);
   return {
     accounts,
     transactions,
@@ -48,6 +51,7 @@ function buildRepos(db: Database.Database): Repos {
     recurringTransactions,
     imports,
     importPresets,
+    savingsGoal,
   };
 }
 
@@ -101,6 +105,9 @@ export async function createSqliteStorage(
     },
     get importPresets() {
       return repos.importPresets;
+    },
+    get savingsGoal() {
+      return repos.savingsGoal;
     },
     async close() {
       closeConnection(db);

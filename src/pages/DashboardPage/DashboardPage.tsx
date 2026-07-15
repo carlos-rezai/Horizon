@@ -9,6 +9,8 @@ import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/Traje
 import AccountOverview from "../../features/accounts/AccountOverview/AccountOverview";
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
+import SavingsStreakCard from "../../features/savings/SavingsStreakCard/SavingsStreakCard";
+import { useSavingsGoal } from "../../features/savings/useSavingsGoal";
 import Card from "../../components/Card/Card";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import SectionHead from "../../components/SectionHead/SectionHead";
@@ -50,6 +52,7 @@ export default function DashboardPage() {
     refetch: refetchProjection,
   } = useProjection();
   const { recurringTransactions } = useAllRecurringTransactions();
+  const { goal: savingsGoal } = useSavingsGoal();
 
   if (accountsLoading || projectionLoading) return <Spinner />;
   if (accountsError)
@@ -90,6 +93,7 @@ export default function DashboardPage() {
         isLoading={false}
         onViewHistory={() => navigate("/history")}
       />
+      <SavingsStreakCard goal={savingsGoal} />
       <StyledGrid>
         <div>
           <Card>

@@ -31,6 +31,9 @@ describe("SQLite Storage Driver — parity", () => {
     get importPresets() {
       return inner.importPresets;
     },
+    get savingsGoal() {
+      return inner.savingsGoal;
+    },
     close: () => inner.close(),
     backup: (destPath: string) => inner.backup(destPath),
     restore: (srcPath: string) => inner.restore(srcPath),

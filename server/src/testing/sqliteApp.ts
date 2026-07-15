@@ -37,6 +37,9 @@ export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
     get importPresets() {
       return inner.importPresets;
     },
+    get savingsGoal() {
+      return inner.savingsGoal;
+    },
     close: () => inner.close(),
     serialize: () => inner.serialize(),
     backup: (destPath: string) => inner.backup(destPath),

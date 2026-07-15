@@ -210,3 +210,22 @@ export interface TransferCreateInput {
   category: string;
   isAutoSettlement?: boolean;
 }
+
+export type SavingsGoalMode = "milestone" | "manual";
+
+/**
+ * The single per-database Savings Streak goal config. Milestone mode derives
+ * its per-account split at read time (never stored); Manual mode stores the
+ * per-account monthly targets directly. All monetary values are integer cents.
+ */
+export interface SavingsGoalConfig {
+  mode: SavingsGoalMode;
+  /** Milestone total target, cents. */
+  targetTotal: number;
+  /** Milestone target month, "YYYY-MM". */
+  targetDate: string;
+  /** Month the goal was first set, "YYYY-MM". */
+  startedAt: string;
+  /** Manual per-account monthly targets, keyed by accountId, cents. */
+  manualMonthly: Record<string, number>;
+}

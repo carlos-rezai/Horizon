@@ -16,6 +16,7 @@ import type {
   RecurringTransaction,
   RecurringTransactionCreateInput,
   RecurringTransactionUpdateInput,
+  SavingsGoalConfig,
   SetMortgageOriginationResult,
   Transaction,
   TransactionCreateInput,
@@ -109,6 +110,11 @@ export interface ImportPresetsRepo {
   upsert(bank: string, preset: StoredImportPreset): Promise<void>;
 }
 
+export interface SavingsGoalRepo {
+  get(): Promise<SavingsGoalConfig | null>;
+  upsert(config: SavingsGoalConfig): Promise<void>;
+}
+
 export interface StorageStatus {
   driver: "mongo" | "sqlite";
   schemaVersion: number;
@@ -125,6 +131,7 @@ export interface Storage {
   recurringTransactions: RecurringTransactionsRepo;
   imports: ImportsRepo;
   importPresets: ImportPresetsRepo;
+  savingsGoal: SavingsGoalRepo;
   close(): Promise<void>;
   serialize(): Buffer;
   backup(destPath: string): Promise<void>;
