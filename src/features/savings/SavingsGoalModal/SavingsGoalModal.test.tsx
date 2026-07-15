@@ -6,6 +6,7 @@ import { theme } from "../../../tokens";
 import SavingsGoalModal from "./SavingsGoalModal";
 import type { SavingsGoalConfig } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
+import type { HistoryPoint } from "../../history/historyTypes";
 
 // ---------------------------------------------------------------------------
 // SavingsGoalModal — Manual mode (Phase 3). The editor lists every trackable
@@ -176,5 +177,163 @@ describe("SavingsGoalModal — Manual mode", () => {
 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SavingsGoalModal — Milestone mode (Phase 4). The user enters one total target
+// amount and one target month; the modal derives the per-account split live via
+// the ported `computeSavingsGoal` weighting (trailing-12-month positive gain,
+// Math.max(avg, 100) floor) and shows it read-only in the same row list Manual
+// mode uses. Editing any row silently converts the goal to Manual, pre-filled
+// with the derived split. Deriving the split needs the reconstructed history,
+// so these tests pass `points`.
+// ---------------------------------------------------------------------------
+
+/**
+ * Four months → three deltas. Main and Sparkasse each gain €100/mo; ETF gains
+ * €200/mo. Trailing weights 10000 : 10000 : 20000 (sum 40000). "Today" is the
+ * last point (2026-04); a target 12 months out makes monthsToTarget = 12.
+ */
+const POINTS: HistoryPoint[] = [
+  {
+    month: "2026-01",
+    totalLiquid: 0,
+    restschuld: 0,
+    netCashflow: 0,
+    accounts: { "a-main": 0, "a-spar": 0, "a-etf": 0 },
+  },
+  {
+    month: "2026-02",
+    totalLiquid: 40000,
+    restschuld: 0,
+    netCashflow: 0,
+    accounts: { "a-main": 10000, "a-spar": 10000, "a-etf": 20000 },
+  },
+  {
+    month: "2026-03",
+    totalLiquid: 80000,
+    restschuld: 0,
+    netCashflow: 0,
+    accounts: { "a-main": 20000, "a-spar": 20000, "a-etf": 40000 },
+  },
+  {
+    month: "2026-04",
+    totalLiquid: 120000,
+    restschuld: 0,
+    netCashflow: 0,
+    accounts: { "a-main": 30000, "a-spar": 30000, "a-etf": 60000 },
+  },
+];
+
+/**
+ * A milestone goal: €4,800 by 2027-04. requiredMonthly = 480000 / 12 = 40000,
+ * split 1:1:2 → Main €100, Sparkasse €100, ETF €200.
+ */
+const MILESTONE_CONFIG: SavingsGoalConfig = {
+  mode: "milestone",
+  targetTotal: 480000,
+  targetDate: "2027-04",
+  startedAt: "2026-01",
+  manualMonthly: {},
+};
+
+describe("SavingsGoalModal — Milestone mode", () => {
+  it("reveals a target-amount and a target-month input when Milestone is chosen", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /milestone/i }));
+
+    expect(screen.getByLabelText(/target amount/i)).toBeTruthy();
+    expect(screen.getByLabelText(/target month/i)).toBeTruthy();
+  });
+
+  it("shows the derived per-account split live, read-only, in the shared row list", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={MILESTONE_CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+
+    // ETF is weighted double → €200; Main and Sparkasse each €100.
+    expect(screen.getByDisplayValue("200.00")).toBeTruthy();
+    expect(screen.getAllByDisplayValue("100.00")).toHaveLength(2);
+  });
+
+  it("describes the split as weighted by recent savings pace, not by balance", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={MILESTONE_CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/recent savings pace/i)).toBeTruthy();
+    expect(screen.queryByText(/by balance/i)).toBeNull();
+  });
+
+  it("silently converts to Manual when a row is edited, pre-filled with the split", () => {
+    renderWithTheme(
+      <SavingsGoalModal
+        config={MILESTONE_CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />
+    );
+
+    // Override ETF's derived €200 with €250.
+    fireEvent.change(screen.getByDisplayValue("200.00"), {
+      target: { value: "250.00" },
+    });
+
+    // The goal is now Manual…
+    expect(
+      screen.getByRole("button", { name: /manual/i, pressed: true })
+    ).toBeTruthy();
+    // …and the other two rows keep their derived €100 (nothing discarded).
+    expect(screen.getAllByDisplayValue("100.00")).toHaveLength(2);
+    expect(screen.getByDisplayValue("250.00")).toBeTruthy();
+  });
+
+  it("saves a milestone config with the total in cents and an empty manual split", () => {
+    const onSave = vi.fn();
+    renderWithTheme(
+      <SavingsGoalModal
+        config={MILESTONE_CONFIG}
+        accounts={ACCOUNTS}
+        points={POINTS}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: "milestone",
+        targetTotal: 480000,
+        targetDate: "2027-04",
+        manualMonthly: {},
+      })
+    );
   });
 });

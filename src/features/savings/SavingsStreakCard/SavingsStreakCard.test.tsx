@@ -265,3 +265,25 @@ describe("SavingsStreakCard — edit affordance", () => {
     expect(await screen.findByText(/savings goal updated/i)).toBeTruthy();
   });
 });
+
+describe("SavingsStreakCard — milestone caption", () => {
+  // A milestone goal reuses the derived rows/streak but frames the plan as a
+  // total-by-date auto-split rather than per-account manual targets.
+  const MILESTONE_GOAL: SavingsGoal = {
+    ...GOAL,
+    mode: "milestone",
+    targetTotal: 1000000, // €10,000
+    targetDate: "2028-01",
+  };
+
+  it("frames the auto-split as weighted by recent savings pace, not by balance", () => {
+    renderWithTheme(
+      <SavingsStreakCard goal={MILESTONE_GOAL} accounts={ACCOUNTS} />
+    );
+    // Expand to reveal the goal summary above the per-account rows.
+    fireEvent.click(toggleControl());
+
+    expect(screen.getByText(/recent savings pace/i)).toBeTruthy();
+    expect(screen.queryByText(/by balance/i)).toBeNull();
+  });
+});
