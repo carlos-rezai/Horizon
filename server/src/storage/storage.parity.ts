@@ -2827,6 +2827,73 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Savings Streak (issue #182) — SavingsGoalRepo
+  //
+  // The Savings Goal is a single per-database config row (mode + milestone
+  // target + start month + manual per-account monthly targets). `get` returns
+  // null until a goal is saved; `upsert` round-trips the whole config and, on a
+  // second call, overwrites the one row rather than inserting a second. Like
+  // every other stored entity it survives backup/restore.
+  // -------------------------------------------------------------------------
+
+  describe("SavingsGoalRepo", () => {
+    const config = {
+      mode: "manual",
+      targetTotal: 1000000,
+      targetDate: "2028-01",
+      startedAt: "2026-01",
+      manualMonthly: { a3: 800, a5: 50000 },
+    };
+
+    it("get returns null when no goal has been saved", async () => {
+      const goal = await storage.savingsGoal.get();
+      expect(goal).toBeNull();
+    });
+
+    it("upsert then get round-trips the full config", async () => {
+      await storage.savingsGoal.upsert(config);
+
+      const goal = await storage.savingsGoal.get();
+      expect(goal).toEqual(config);
+    });
+
+    it("a second upsert overwrites the single row rather than inserting another", async () => {
+      await storage.savingsGoal.upsert(config);
+      const next = {
+        mode: "milestone",
+        targetTotal: 2500000,
+        targetDate: "2030-06",
+        startedAt: "2026-01",
+        manualMonthly: { a1: 20000 },
+      };
+      await storage.savingsGoal.upsert(next);
+
+      const goal = await storage.savingsGoal.get();
+      expect(goal).toEqual(next);
+    });
+
+    it("a saved goal survives a backup and reopen", async () => {
+      await storage.savingsGoal.upsert(config);
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-goal-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        const restored = await createStorage({ path: destPath });
+        try {
+          const goal = await restored.savingsGoal.get();
+          expect(goal).toEqual(config);
+        } finally {
+          await restored.close();
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Storage.backup
   // -------------------------------------------------------------------------
 
