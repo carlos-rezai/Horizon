@@ -258,6 +258,7 @@ The generated installer will be signed with your local certificate and will inst
 | Historical Month Navigation               | ✅ Complete |
 | Native Application Menu                   | ✅ Complete |
 | Savings Streak                            | ✅ Complete |
+| Performance + UX Polish                   | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
