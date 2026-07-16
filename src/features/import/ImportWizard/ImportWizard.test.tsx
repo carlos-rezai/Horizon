@@ -221,8 +221,12 @@ describe("ImportWizard — review-step category picker (#163)", () => {
     await gotoReview();
     await screen.findAllByRole("option", { name: "Food" });
 
-    // Drive the inline-add on the first (included) row's CategorySelect.
+    // Drive the inline-add on the first (included) row's CategorySelect. Each
+    // row fetches its own category list, so waiting on the options above only
+    // proves *some* row loaded — wait for this row's picker specifically, or
+    // the change lands on a still-disabled select.
     const rowPickers = screen.getAllByLabelText(/^category$/i);
+    await waitFor(() => expect(rowPickers[0]).not.toBeDisabled());
     fireEvent.change(rowPickers[0], { target: { value: "__add__" } });
 
     const input = await screen.findByRole("textbox", {
@@ -231,8 +235,15 @@ describe("ImportWizard — review-step category picker (#163)", () => {
     fireEvent.change(input, { target: { value: "Transport" } });
     fireEvent.click(screen.getByRole("button", { name: /add category/i }));
 
-    // The new category is now the row's selection.
+    // The new category is now the row's selection. Waiting for the option to
+    // merely exist isn't enough: it appears in the same commit that sets the
+    // selection, but the row only learns the name via CategorySelect's effect.
     await screen.findAllByRole("option", { name: "Transport" });
+    await waitFor(() =>
+      expect(screen.getAllByLabelText(/^category$/i)[0]).toHaveValue(
+        "c-transport"
+      )
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: /import 1 transaction/i })

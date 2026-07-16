@@ -16,7 +16,10 @@ import { useConfirm, type ConfirmFn } from "./useConfirm";
 let confirm: ConfirmFn;
 
 // Captures the confirm function so tests can drive the provider imperatively.
+// The render-phase write to an outer binding is the point of this component,
+// and is safe here because nothing re-renders it concurrently.
 function Capture() {
+  // eslint-disable-next-line react-hooks/globals
   confirm = useConfirm();
   return null;
 }

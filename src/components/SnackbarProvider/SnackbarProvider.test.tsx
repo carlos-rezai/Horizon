@@ -18,7 +18,10 @@ type NotifyFn = ReturnType<typeof useSnackbar>["notify"];
 let notify: NotifyFn;
 
 // Captures the notify function so tests can drive the provider imperatively.
+// The render-phase write to an outer binding is the point of this component,
+// and is safe here because nothing re-renders it concurrently.
 function Capture() {
+  // eslint-disable-next-line react-hooks/globals
   notify = useSnackbar().notify;
   return null;
 }

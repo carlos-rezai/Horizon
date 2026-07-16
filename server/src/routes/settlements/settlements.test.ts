@@ -71,7 +71,7 @@ async function seedCcWithSpending() {
 
 describe("POST /settlements/generate", () => {
   it("returns the count of newly created settlement pairs", async () => {
-    const { cc: _cc } = await seedCcWithSpending();
+    await seedCcWithSpending();
 
     const res = await request(app).post("/settlements/generate");
 

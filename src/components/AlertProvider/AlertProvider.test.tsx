@@ -18,7 +18,10 @@ type AlertFn = ReturnType<typeof useAlert>["alert"];
 let alert: AlertFn;
 
 // Captures the alert function so tests can drive the provider imperatively.
+// The render-phase write to an outer binding is the point of this component,
+// and is safe here because nothing re-renders it concurrently.
 function Capture() {
+  // eslint-disable-next-line react-hooks/globals
   alert = useAlert().alert;
   return null;
 }

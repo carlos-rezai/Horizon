@@ -403,29 +403,6 @@ describe("DELETE /accounts/:id with transactions", () => {
 // ---------------------------------------------------------------------------
 
 describe("PATCH /transactions/:id — auto-settlement guard", () => {
-  async function createAutoSettlementTransaction() {
-    const cc = await createAccount({ kind: "CreditCard", name: "Visa" });
-    const funding = await createAccount({ name: "Girokonto" });
-
-    // Generate a settlement transfer directly via the settlements route
-    await request(app)
-      .patch(`/accounts/${cc.id}`)
-      .send({ linkedAccountId: funding.id, settlementDay: 17 });
-
-    // Create a manual auto-settlement transaction by inserting one via the DB helper
-    // instead, create a regular CreditCard transaction then use the internal flag
-    // via the settlements generate endpoint
-    await request(app).post(`/accounts/${cc.id}/transactions`).send({
-      date: "2026-04-17",
-      amount: 45000,
-      description: "Auto-settlement",
-      category: "Transfer",
-    });
-
-    const txs = await request(app).get(`/accounts/${cc.id}/transactions`);
-    return txs.body[0] as { id: string };
-  }
-
   it("returns 403 when PATCHing an auto-settlement transaction", async () => {
     // Create a CreditCard with a linked funding account, then generate settlements
     const cc = await createAccount({ kind: "CreditCard", name: "Visa" });
