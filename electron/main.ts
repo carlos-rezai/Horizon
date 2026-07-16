@@ -8,6 +8,7 @@ import { resolveDbPath } from "./paths/paths.js";
 import { resolveRendererConfig } from "./resolveRendererConfig/resolveRendererConfig.js";
 import { createServerHandle } from "./serverHandle/serverHandle.js";
 import { buildMenu } from "./buildMenu/buildMenu.js";
+import { APP_USER_MODEL_ID } from "./appIdentity/appIdentity.js";
 import { runManualUpdateCheck } from "./runManualUpdateCheck/runManualUpdateCheck.js";
 import { createBackup as runCreateBackup } from "./createBackup/createBackup.js";
 import { restoreFromBackup as runRestoreFromBackup } from "./restoreFromBackup/restoreFromBackup.js";
@@ -406,6 +407,16 @@ async function createWindow(port: number): Promise<void> {
     width: 1920,
     height: 1080,
     show: false,
+    // Packaged builds take the window icon from the .exe, which electron-builder
+    // stamps from `build.icon`. In dev there is no .exe, so point at the source
+    // .ico or the dev window falls back to the stock Electron icon.
+    ...(isDev
+      ? {
+          icon: fileURLToPath(
+            new URL("../../src/assets/icon.ico", import.meta.url)
+          ),
+        }
+      : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -467,6 +478,12 @@ function setupAutoUpdater(): void {
 }
 
 async function main(): Promise<void> {
+  // Must precede window creation for Windows to associate the taskbar button
+  // with the installed shortcut.
+  if (process.platform === "win32") {
+    app.setAppUserModelId(APP_USER_MODEL_ID);
+  }
+
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
     app.exit(0);
