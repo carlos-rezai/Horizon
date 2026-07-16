@@ -27,6 +27,7 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
     categories,
     selectedCategoryId,
     setSelectedCategoryId,
+    isLoading,
     isAdding,
     addCategory,
     addError,
@@ -97,7 +98,7 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
           aria-label="Category"
           value={selectedCategoryId}
           onChange={(e) => handleCategoryChange(e.target.value)}
-          disabled={isAdding}
+          disabled={isAdding || isLoading}
         >
           {categories
             .filter((cat) => !cat.hidden || cat.id === selectedCategoryId)

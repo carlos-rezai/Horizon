@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Category } from "../../types/category";
 import { API_BASE } from "../../utils/api/api";
 import { fetchCategories } from "./categoriesApi";
@@ -23,6 +23,16 @@ export function useCategoriesWithInlineAdd(
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  // The initial fetch resolves asynchronously, but the picker is usable before
+  // it lands — so a user can select or inline-add a category while the request
+  // is still in flight. Once they have, the fetch may no longer touch the
+  // selection: it would silently revert their choice to `initialCategoryName`.
+  const chosenRef = useRef(false);
+
+  const selectCategory = useCallback((id: string) => {
+    chosenRef.current = true;
+    setSelectedCategoryId(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,12 +40,18 @@ export function useCategoriesWithInlineAdd(
     fetchCategories()
       .then((data) => {
         if (!cancelled) {
-          setCategories(data);
-          const preferred =
-            data.find((c) => c.name === initialCategoryName)?.id ??
-            data[0]?.id ??
-            "";
-          setSelectedCategoryId(preferred);
+          // An inline-add that beat this fetch isn't in `data` — keep it.
+          setCategories((prev) => [
+            ...data,
+            ...prev.filter((p) => !data.some((d) => d.id === p.id)),
+          ]);
+          if (!chosenRef.current) {
+            const preferred =
+              data.find((c) => c.name === initialCategoryName)?.id ??
+              data[0]?.id ??
+              "";
+            setSelectedCategoryId(preferred);
+          }
           setIsLoading(false);
         }
       })
@@ -74,7 +90,7 @@ export function useCategoriesWithInlineAdd(
 
       const created = (await res.json()) as Category;
       setCategories((prev) => [...prev, created]);
-      setSelectedCategoryId(created.id);
+      selectCategory(created.id);
     } finally {
       setIsAdding(false);
     }
@@ -84,7 +100,7 @@ export function useCategoriesWithInlineAdd(
     categories,
     isLoading,
     selectedCategoryId,
-    setSelectedCategoryId,
+    setSelectedCategoryId: selectCategory,
     isAdding,
     addCategory,
     addError,

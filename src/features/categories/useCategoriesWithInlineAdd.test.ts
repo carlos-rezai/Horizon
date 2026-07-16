@@ -140,6 +140,39 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
     expect(result.current.selectedCategoryId).toBe(newCategory.id);
   });
 
+  it("keeps an inline-added category when the initial fetch resolves after the add", async () => {
+    let landInitialFetch!: (categories: Category[]) => void;
+    const initialFetch = new Promise<Response>((resolve) => {
+      landInitialFetch = (categories) =>
+        resolve({ ok: true, json: async () => categories } as Response);
+    });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+      const method = (init as RequestInit | undefined)?.method ?? "GET";
+      return method === "POST"
+        ? Promise.resolve({
+            ok: true,
+            json: async () => newCategory,
+          } as Response)
+        : initialFetch;
+    });
+
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("Food"));
+
+    // The user reaches inline-add before the category list has loaded.
+    await act(async () => {
+      await result.current.addCategory("Transport");
+    });
+
+    await act(async () => {
+      landInitialFetch(existingCategories);
+      await initialFetch;
+    });
+
+    expect(result.current.selectedCategoryId).toBe(newCategory.id);
+    expect(result.current.categories).toContainEqual(newCategory);
+  });
+
   it("throws when the server returns an error", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({
