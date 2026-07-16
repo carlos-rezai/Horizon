@@ -258,7 +258,7 @@ The generated installer will be signed with your local certificate and will inst
 | Historical Month Navigation               | ✅ Complete |
 | Native Application Menu                   | ✅ Complete |
 | Savings Streak                            | ✅ Complete |
-| Import Duplicate Review                   | 📋 Planned  |
+| Import Review Repair                      | 📋 Planned  |
 | Performance + UX Polish                   | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
