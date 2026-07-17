@@ -204,14 +204,28 @@ export function detectStatement(bytes: Uint8Array): DetectedStatement {
   return detected;
 }
 
-/** The emitted rows plus the count of records that failed to parse. */
+/**
+ * How many rejected records are kept as evidence. A wholly-wrong mapping
+ * rejects every row in the file, and none of those 10,000 belong in the
+ * payload — a handful is enough to read the mapping off.
+ */
+export const MAX_REJECTED_SAMPLES = 5;
+
+/** The raw cells of a rejected record — never parsed, never fabricated. */
+export interface RejectedSample {
+  date: string;
+  amount: string;
+}
+
+/** The emitted rows plus the records that failed to parse. */
 export interface MappedRows {
   rows: MappedRow[];
   /**
    * Records with a non-empty date that failed date/amount parsing. Surfaced as
-   * a count so the user knows a row was dropped — never silently lost.
+   * a count so the user knows a row was dropped — never silently lost — plus
+   * the first few raw cells, which usually diagnose a wrong column mapping.
    */
-  rejected: number;
+  rejected: { count: number; samples: RejectedSample[] };
 }
 
 /** True when the record's pendingColumn cell is one of the preset's pendingValues. */
@@ -230,14 +244,16 @@ function isPending(
  * signed-cents amounts, ISO dates, an auto-assigned category, and a pending
  * flag. Records with an empty date cell are dropped silently (blank lines,
  * balance-footer rows); a record with a non-empty date that fails date/amount
- * parsing is counted as `rejected` and never emitted.
+ * parsing is counted as `rejected`, sampled up to {@link MAX_REJECTED_SAMPLES},
+ * and never emitted.
  */
 export function mapStatementRows(
   detected: DetectedStatement,
   mapping: ColumnMapping
 ): MappedRows {
   const rows: MappedRow[] = [];
-  let rejected = 0;
+  let rejectedCount = 0;
+  const samples: RejectedSample[] = [];
 
   for (const record of detected.records) {
     const rawDate = record[mapping.date] ?? "";
@@ -247,13 +263,16 @@ export function mapStatementRows(
       continue;
     }
 
+    const rawAmount = record[mapping.amount] ?? "";
     const date = tryParseDate(rawDate, detected.dateFmt);
-    const amount = tryParseAmount(
-      record[mapping.amount] ?? "",
-      detected.decimal
-    );
+    const amount = tryParseAmount(rawAmount, detected.decimal);
     if (date === null || amount === null) {
-      rejected += 1;
+      rejectedCount += 1;
+      // The cells are kept exactly as they appeared: reading them against the
+      // mapping is how the user sees which column is wrong.
+      if (samples.length < MAX_REJECTED_SAMPLES) {
+        samples.push({ date: rawDate, amount: rawAmount });
+      }
       continue;
     }
 
@@ -267,5 +286,5 @@ export function mapStatementRows(
     });
   }
 
-  return { rows, rejected };
+  return { rows, rejected: { count: rejectedCount, samples } };
 }

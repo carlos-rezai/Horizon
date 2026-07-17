@@ -5,7 +5,11 @@ import type {
   Transaction,
   RecurringTransaction,
 } from "../../storage/types.js";
-import { detectStatement, mapStatementRows } from "./detectStatement.js";
+import {
+  detectStatement,
+  mapStatementRows,
+  type RejectedSample,
+} from "./detectStatement.js";
 import { detectDuplicates, detectRecurring } from "./flagRows.js";
 import type { MappedRow } from "./types.js";
 
@@ -23,8 +27,11 @@ export interface PreviewSummary {
   recurring: number;
   /** Rows flagged as not-yet-settled (pending / "vorgemerkt"). */
   pending: number;
-  /** Records with a non-empty date that failed to parse — dropped, not lost. */
-  rejected: number;
+  /**
+   * Records with a non-empty date that failed to parse — dropped, not lost.
+   * The samples are the raw cells, which usually diagnose a wrong mapping.
+   */
+  rejected: { count: number; samples: RejectedSample[] };
 }
 
 /** The full stateless-preview payload the wizard renders. */

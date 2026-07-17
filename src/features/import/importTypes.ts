@@ -70,6 +70,12 @@ export interface ImportedStatement {
   txns: ImportedTxn[];
 }
 
+/** The raw cells of a row the parser rejected — never parsed, never fabricated. */
+export interface RejectedSample {
+  date: string;
+  amount: string;
+}
+
 /** Summary counts returned alongside a preview. */
 export interface PreviewSummary {
   total: number;
@@ -77,8 +83,12 @@ export interface PreviewSummary {
   recurring: number;
   /** Rows flagged as not-yet-settled (pending / "vorgemerkt"). */
   pending: number;
-  /** Records with a non-empty date that failed to parse — dropped, not lost. */
-  rejected: number;
+  /**
+   * Records with a non-empty date that failed to parse — dropped, not lost.
+   * A rejected row never reaches the review table; the samples are the raw
+   * cells, which usually diagnose a wrong column mapping rather than bad data.
+   */
+  rejected: { count: number; samples: RejectedSample[] };
 }
 
 /** The `POST /imports/preview` response, with rows mapped to the UI shape. */

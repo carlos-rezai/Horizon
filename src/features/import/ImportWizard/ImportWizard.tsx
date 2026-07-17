@@ -40,6 +40,10 @@ import {
   StyledRawPreview,
   StyledRawRow,
   StyledReviewSummary,
+  StyledRejectedNote,
+  StyledRejectedText,
+  StyledRejectedSamples,
+  StyledRejectedSample,
   StyledSummaryText,
   StyledFlagBadge,
   StyledReviewHead,
@@ -113,6 +117,9 @@ export default function ImportWizard({
 
   const bank = data?.bank ?? "…";
   const columns = data?.columns ?? [];
+  // Rows dropped at parse have no date or amount to render, so they live here
+  // rather than in the table — a diagnostic of the mapping, not a blocked row.
+  const rejected = data?.summary.rejected;
   const rawRows = useMemo(() => rows.slice(0, 3), [rows]);
 
   const next = () => setStep((s) => Math.min(3, s + 1));
@@ -298,6 +305,23 @@ export default function ImportWizard({
                 </StyledFlagBadge>
               )}
             </StyledReviewSummary>
+
+            {rejected && rejected.count > 0 && (
+              <StyledRejectedNote>
+                <StyledRejectedText>
+                  <Info size={13} />
+                  {`${rejected.count} row${rejected.count !== 1 ? "s" : ""} couldn't be read — check your column mapping`}
+                </StyledRejectedText>
+                <StyledRejectedSamples>
+                  {rejected.samples.map((s, i) => (
+                    <StyledRejectedSample key={i}>
+                      <span>{s.date}</span>
+                      <span>{s.amount}</span>
+                    </StyledRejectedSample>
+                  ))}
+                </StyledRejectedSamples>
+              </StyledRejectedNote>
+            )}
 
             <StyledReviewHead>
               <span />

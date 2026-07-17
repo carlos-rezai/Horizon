@@ -11,8 +11,9 @@ export {
   StatementParseError,
   MAX_ROWS,
   MAX_COLUMNS,
+  MAX_REJECTED_SAMPLES,
 } from "./detectStatement.js";
-export type { DetectedStatement } from "./detectStatement.js";
+export type { DetectedStatement, RejectedSample } from "./detectStatement.js";
 export { buildPreview } from "./buildPreview.js";
 export type {
   BuildPreviewInput,

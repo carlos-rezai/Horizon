@@ -292,6 +292,45 @@ export const StyledFlagBadge = styled.span<{ $tone: "warn" | "neutral" }>`
       : theme.colors.surfaceContainerHigh};
 `;
 
+/* A mapping diagnostic, not an apology: it points back at step 2 and never
+   gates the commit, so it reads as information rather than as an error. */
+export const StyledRejectedNote = styled.div`
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  background: ${({ theme }) => theme.colors.surfaceContainerLow};
+`;
+
+export const StyledRejectedText = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+`;
+
+export const StyledRejectedSamples = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
+  font-size: 11.5px;
+  color: ${({ theme }) => theme.colors.onSurfaceFaint};
+`;
+
+export const StyledRejectedSample = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 12px;
+
+  span:last-child {
+    text-align: right;
+  }
+`;
+
 const REVIEW_GRID = "34px 78px minmax(0, 1fr) 130px 72px 96px";
 
 export const StyledReviewHead = styled.div`
