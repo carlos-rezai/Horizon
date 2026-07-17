@@ -166,7 +166,7 @@ describe("generic fallback — unknown bank stays importable", () => {
     expect(typeof preview.mapping.amount).toBe("string");
     // Both rows import cleanly — nothing rejected, nothing silently dropped.
     expect(preview.summary.total).toBe(2);
-    expect(preview.summary.rejected).toBe(0);
+    expect(preview.summary.rejected).toEqual({ count: 0, samples: [] });
     const rewe = preview.rows.find((r) => r.date === "2026-11-02");
     expect(rewe?.amount).toBe(-3420);
   });

@@ -203,7 +203,7 @@ describe("buildPreview — Postbank giro fixture (Windows-1252)", () => {
       duplicates: 0,
       recurring: 0,
       pending: 0,
-      rejected: 0,
+      rejected: { count: 0, samples: [] },
     });
   });
 });

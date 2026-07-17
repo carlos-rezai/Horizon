@@ -79,7 +79,7 @@ describe("buildPreview", () => {
       duplicates: 0,
       recurring: 0,
       pending: 1,
-      rejected: 0,
+      rejected: { count: 0, samples: [] },
     });
   });
 
@@ -245,7 +245,38 @@ describe("buildPreview", () => {
     expect(preview.rows).toHaveLength(1);
     expect(preview.rows[0].description).toBe("REWE SAGT DANKE");
     expect(preview.summary.total).toBe(1);
-    expect(preview.summary.rejected).toBe(1);
+    expect(preview.summary.rejected).toEqual({
+      count: 1,
+      samples: [{ date: "not-a-date", amount: "-9,99" }],
+    });
+  });
+
+  it("threads the rejected samples end-to-end so the wizard can show the raw cells", async () => {
+    // Every row's date is ISO while the generic fallback reads DD.MM.YYYY —
+    // the shape of a wrong mapping, where the samples are the diagnosis.
+    const csv = [
+      "Datum;Beschreibung;Betrag",
+      ...Array.from(
+        { length: 6 },
+        (_, i) => `2026-11-0${i + 1};Zahlung ${i};-1${i},50`
+      ),
+    ].join("\n");
+
+    const preview = await buildPreview({
+      bytes: bytesOf(csv),
+      existingTxns: [],
+      recurring: [],
+      getRememberedPreset: noPreset,
+      generateId: sequentialIds(),
+    });
+
+    expect(preview.rows).toHaveLength(0);
+    expect(preview.summary.rejected.count).toBe(6);
+    expect(preview.summary.rejected.samples).toHaveLength(5);
+    expect(preview.summary.rejected.samples[0]).toEqual({
+      date: "2026-11-01",
+      amount: "-10,50",
+    });
   });
 
   it("threads a pending count and a per-row pending flag through the summary", async () => {

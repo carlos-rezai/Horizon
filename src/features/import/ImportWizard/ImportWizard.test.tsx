@@ -75,7 +75,13 @@ function makePreview(): ImportPreview {
         recurring: true,
       },
     ],
-    summary: { total: 2, duplicates: 0, recurring: 1, pending: 0, rejected: 0 },
+    summary: {
+      total: 2,
+      duplicates: 0,
+      recurring: 1,
+      pending: 0,
+      rejected: { count: 0, samples: [] },
+    },
   };
 }
 
@@ -316,7 +322,13 @@ function makeBlankDescriptionPreview(): ImportPreview {
         category: "Food",
       },
     ],
-    summary: { total: 2, duplicates: 0, recurring: 0, pending: 0, rejected: 0 },
+    summary: {
+      total: 2,
+      duplicates: 0,
+      recurring: 0,
+      pending: 0,
+      rejected: { count: 0, samples: [] },
+    },
   };
 }
 
@@ -474,5 +486,134 @@ describe("ImportWizard — editable description and blockers (#190)", () => {
       description: "REWE",
       category: "Food",
     });
+  });
+});
+
+/**
+ * Issue #191 — rows dropped at parse were counted end-to-end into
+ * `summary.rejected` and rendered by nothing. They now surface under the review
+ * summary as a count plus the raw cells that failed, because a Rejected Row is
+ * usually a symptom of a wrong column mapping rather than of bad data: it is a
+ * Mapping Diagnostic pointing back at step 2, not an apology.
+ *
+ * A Rejected Row is not a blocked row and not a soft exclusion. It has no
+ * parsed date or amount, so it never enters the review table and never gates
+ * the Import button.
+ */
+
+/** A preview where three rows failed to parse — samples carry the raw cells. */
+function makeRejectedPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    summary: {
+      total: 2,
+      duplicates: 0,
+      recurring: 1,
+      pending: 0,
+      rejected: {
+        count: 3,
+        samples: [
+          { date: "2026-03-01", amount: "-12,50" },
+          { date: "2026-03-02", amount: "-8,00" },
+          { date: "2026-03-03", amount: "-45,90" },
+        ],
+      },
+    },
+  };
+}
+
+describe("ImportWizard — rejected-rows note (#191)", () => {
+  it("names the count and points at the column mapping, showing the raw cells that failed", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeRejectedPreview()
+    );
+
+    await gotoReview();
+
+    expect(
+      await screen.findByText(
+        /3 rows couldn't be read — check your column mapping/i
+      )
+    ).toBeInTheDocument();
+
+    // The raw cells are the evidence: reading `2026-03-01` against a DD.MM.YYYY
+    // statement is how the user sees which column is mapped wrong.
+    expect(screen.getByText(/2026-03-01/)).toBeInTheDocument();
+    expect(screen.getByText(/-45,90/)).toBeInTheDocument();
+  });
+
+  it("says nothing at all when every row parsed", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(twoCategories, vi.fn<CommitFn>().mockResolvedValue(undefined));
+
+    await gotoReview();
+    await screen.findAllByRole("option", { name: "Food" });
+
+    expect(screen.queryByText(/couldn't be read/i)).not.toBeInTheDocument();
+  });
+
+  it("does not gate the Import button — a dropped row is a diagnostic, not a blocker", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeRejectedPreview()
+    );
+
+    await gotoReview();
+
+    await screen.findByText(/couldn't be read/i);
+    expect(
+      screen.getByRole("button", { name: /import 1 transaction$/i })
+    ).not.toBeDisabled();
+  });
+
+  it("keeps rejected rows out of the review table entirely", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeRejectedPreview()
+    );
+
+    await gotoReview();
+    await screen.findByText(/couldn't be read/i);
+
+    // Three rejections and two parsed rows still means two rows on screen:
+    // there is no date or amount to render, and inventing one is the
+    // placeholder this feature rules out.
+    expect(descriptionInputs()).toHaveLength(2);
+    expect(screen.queryByDisplayValue("-45,90")).not.toBeInTheDocument();
+  });
+
+  it("keeps the mapping diagnostic distinct from a blocked row's message", async () => {
+    mockCategoryFetch(twoCategories);
+    const blank = makeBlankDescriptionPreview();
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      {
+        ...blank,
+        summary: {
+          ...blank.summary,
+          rejected: makeRejectedPreview().summary.rejected,
+        },
+      }
+    );
+
+    await gotoReview();
+
+    // Two different problems with two different fixes: the note sends the user
+    // back to step 2, the blocker is repaired here — and only the blocker
+    // gates the commit. Merging them would misdirect both repairs.
+    expect(await screen.findByText(/couldn't be read/i)).toBeInTheDocument();
+    expect(descriptionInputs()[1]).toHaveAttribute("aria-invalid", "true");
+    expect(
+      screen.getByRole("button", { name: /import 2 transactions/i })
+    ).toBeDisabled();
   });
 });

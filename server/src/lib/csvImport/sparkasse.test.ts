@@ -207,7 +207,7 @@ describe("buildPreview — Sparkasse CSV-CAMT fixture", () => {
       duplicates: 0,
       recurring: 0,
       pending: 1,
-      rejected: 0,
+      rejected: { count: 0, samples: [] },
     });
   });
 });
