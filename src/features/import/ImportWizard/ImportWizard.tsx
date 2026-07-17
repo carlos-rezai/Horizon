@@ -92,10 +92,12 @@ export default function ImportWizard({
     rows,
     map,
     summary,
+    canCommit,
     submitting,
     submitError,
     toggle,
     setCategory,
+    setDescription,
     updateMap,
     confirm,
   } = useImportWizard({
@@ -154,7 +156,9 @@ export default function ImportWizard({
           variant="primary"
           icon="Check"
           onClick={confirm}
-          disabled={summary.included === 0 || submitting || blocked}
+          disabled={
+            summary.included === 0 || submitting || blocked || !canCommit
+          }
         >
           {`Import ${summary.included} transaction${summary.included !== 1 ? "s" : ""}`}
         </Button>
@@ -304,45 +308,58 @@ export default function ImportWizard({
               <span>Amount</span>
             </StyledReviewHead>
             <StyledReviewBody>
-              {rows.map((r, i) => (
-                <StyledReviewRow
-                  key={r.id}
-                  $included={r.included}
-                  $alt={i % 2 === 1}
-                >
-                  <StyledCheck
-                    type="button"
-                    $on={r.included}
-                    aria-label="toggle"
-                    aria-pressed={r.included}
-                    onClick={() => toggle(r.id)}
+              {rows.map((r, i) => {
+                // A blocker only surfaces on a row that will actually commit;
+                // unchecking is the other way to resolve it.
+                const showsError = r.included && r.blockers.length > 0;
+                return (
+                  <StyledReviewRow
+                    key={r.id}
+                    $included={r.included}
+                    $alt={i % 2 === 1}
+                    $blocked={showsError}
                   >
-                    {r.included && <Check size={12} />}
-                  </StyledCheck>
-                  <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
-                  <StyledReviewDesc>{r.description}</StyledReviewDesc>
-                  <CategorySelect
-                    initialCategory={r.category}
-                    onChange={(name) => setCategory(r.id, name)}
-                  />
-                  <span>
-                    {r.duplicate ? (
-                      <StyledFlagBadge $tone="warn">
-                        <Info size={10} />
-                        Dupe
-                      </StyledFlagBadge>
-                    ) : r.recurring ? (
-                      <StyledFlagBadge $tone="neutral">
-                        <RefreshCw size={10} />
-                        Recur
-                      </StyledFlagBadge>
-                    ) : null}
-                  </span>
-                  <StyledReviewAmount>
-                    <Money cents={r.amount} sign />
-                  </StyledReviewAmount>
-                </StyledReviewRow>
-              ))}
+                    <StyledCheck
+                      type="button"
+                      $on={r.included}
+                      aria-label="toggle"
+                      aria-pressed={r.included}
+                      onClick={() => toggle(r.id)}
+                    >
+                      {r.included && <Check size={12} />}
+                    </StyledCheck>
+                    <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
+                    <StyledReviewDesc
+                      value={r.description}
+                      aria-label="Description"
+                      aria-invalid={showsError}
+                      placeholder={showsError ? "Add a description" : undefined}
+                      $error={showsError}
+                      onChange={(e) => setDescription(r.id, e.target.value)}
+                    />
+                    <CategorySelect
+                      initialCategory={r.category}
+                      onChange={(name) => setCategory(r.id, name)}
+                    />
+                    <span>
+                      {r.duplicate ? (
+                        <StyledFlagBadge $tone="warn">
+                          <Info size={10} />
+                          Dupe
+                        </StyledFlagBadge>
+                      ) : r.recurring ? (
+                        <StyledFlagBadge $tone="neutral">
+                          <RefreshCw size={10} />
+                          Recur
+                        </StyledFlagBadge>
+                      ) : null}
+                    </span>
+                    <StyledReviewAmount>
+                      <Money cents={r.amount} sign />
+                    </StyledReviewAmount>
+                  </StyledReviewRow>
+                );
+              })}
             </StyledReviewBody>
             {submitError && <StyledNote>{submitError}</StyledNote>}
             <StyledFootnote>

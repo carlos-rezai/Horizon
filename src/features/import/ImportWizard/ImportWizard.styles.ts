@@ -322,9 +322,13 @@ export const StyledReviewBody = styled.div`
   border-radius: ${({ theme }) => theme.radius.md}px;
 `;
 
+/* Two orthogonal channels: opacity encodes inclusion, the error accent encodes
+   blocked-and-included. They compose with no special-casing. The accent is an
+   inset shadow rather than a border so it can't shift the grid. */
 export const StyledReviewRow = styled.div<{
   $included: boolean;
   $alt: boolean;
+  $blocked: boolean;
 }>`
   display: grid;
   grid-template-columns: ${REVIEW_GRID};
@@ -338,6 +342,8 @@ export const StyledReviewRow = styled.div<{
       : $alt
         ? theme.colors.lineFaint
         : "transparent"};
+  box-shadow: ${({ theme, $blocked }) =>
+    $blocked ? `inset 2px 0 0 ${theme.colors.error}` : "none"};
   transition: opacity ${({ theme }) => theme.transitions.fast};
 
   &:not(:last-child) {
@@ -369,13 +375,38 @@ export const StyledReviewDate = styled.span`
   color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;
 
-export const StyledReviewDesc = styled.span`
+/* Editable on every row, blocked or not: what the user can fix must not depend
+   on data they can't see. Reads as text until focused or in error. */
+export const StyledReviewDesc = styled.input<{ $error: boolean }>`
+  width: 100%;
+  min-width: 0;
+  padding: 4px 7px;
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: 12.5px;
   color: ${({ theme }) => theme.colors.onSurface};
-  overflow: hidden;
+  background: ${({ theme, $error }) =>
+    $error ? theme.colors.errorContainer : "transparent"};
+  border: 1px solid
+    ${({ theme, $error }) => ($error ? theme.colors.error : "transparent")};
+  border-radius: ${({ theme }) => theme.radius.sm}px;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  transition: all ${({ theme }) => theme.transitions.fast};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.error};
+  }
+
+  &:hover:not(:focus-visible) {
+    border-color: ${({ theme, $error }) =>
+      $error ? theme.colors.error : theme.colors.outlineVariant};
+  }
+
+  &:focus-visible {
+    outline: none;
+    background: ${({ theme }) => theme.colors.surfaceContainerLowest};
+    border-color: ${({ theme, $error }) =>
+      $error ? theme.colors.error : theme.colors.primary};
+  }
 `;
 
 export const StyledReviewAmount = styled.span`

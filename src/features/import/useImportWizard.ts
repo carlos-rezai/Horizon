@@ -7,7 +7,9 @@ import type {
   ImportPreview,
 } from "./importTypes";
 import {
+  blockersFor,
   buildReviewRows,
+  canCommit,
   summarizeReview,
   type ReviewRow,
   type ReviewSummary,
@@ -42,10 +44,13 @@ interface UseImportWizardResult {
   map: ColumnMapping;
   categoryOptions: string[];
   summary: ReviewSummary;
+  /** False while any included row carries a blocker — the commit gate. */
+  canCommit: boolean;
   submitting: boolean;
   submitError: string | null;
   toggle: (id: string) => void;
   setCategory: (id: string, category: string) => void;
+  setDescription: (id: string, description: string) => void;
   updateMap: (patch: Partial<ColumnMapping>) => void;
   confirm: () => Promise<void>;
 }
@@ -144,6 +149,20 @@ export function useImportWizard({
     []
   );
 
+  // Blockers are re-derived from the edited row, never patched: the error state
+  // is a function of what the row holds now, so it clears as the user types.
+  const setDescription = useCallback(
+    (id: string, description: string) =>
+      setRows((rs) =>
+        rs.map((r) => {
+          if (r.id !== id) return r;
+          const next = { ...r, description };
+          return { ...next, blockers: blockersFor(next) };
+        })
+      ),
+    []
+  );
+
   const updateMap = useCallback(
     (patch: Partial<ColumnMapping>) => setMap((m) => ({ ...m, ...patch })),
     []
@@ -206,10 +225,12 @@ export function useImportWizard({
     map,
     categoryOptions,
     summary,
+    canCommit: canCommit(rows),
     submitting,
     submitError,
     toggle,
     setCategory,
+    setDescription,
     updateMap,
     confirm,
   };
