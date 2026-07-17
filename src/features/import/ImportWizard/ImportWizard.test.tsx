@@ -96,8 +96,12 @@ function mockCategoryFetch(list: Category[], created?: Category) {
   );
 }
 
-function renderWizard(categories: Category[], commit: Mock<CommitFn>) {
-  const preview = vi.fn<PreviewFn>().mockResolvedValue(makePreview());
+function renderWizard(
+  categories: Category[],
+  commit: Mock<CommitFn>,
+  data: ImportPreview = makePreview()
+) {
+  const preview = vi.fn<PreviewFn>().mockResolvedValue(data);
   render(
     <ThemeProvider theme={theme}>
       <ImportWizard
@@ -120,7 +124,7 @@ async function gotoReview() {
   const mapBtn = await screen.findByRole("button", { name: /map columns/i });
   await waitFor(() => expect(mapBtn).not.toBeDisabled());
   fireEvent.click(mapBtn);
-  fireEvent.click(screen.getByRole("button", { name: /review 2 rows/i }));
+  fireEvent.click(screen.getByRole("button", { name: /review \d+ rows/i }));
 }
 
 describe("ImportWizard — review-step category picker (#163)", () => {
@@ -259,5 +263,216 @@ describe("ImportWizard — review-step category picker (#163)", () => {
         category: "Transport",
       },
     ]);
+  });
+});
+
+/**
+ * Issue #190 — the review step's description cell is an editable input on every
+ * row, and a blank description is a *hard blocker*: the row stays checked, gates
+ * the commit, and is repaired in place. Previously the preview accepted such a
+ * row, `ImportRowSchema` rejected it on commit, and the user got a bare "Failed
+ * to import statement" with nothing to act on.
+ *
+ * The error state is asserted via `aria-invalid` rather than the border/accent
+ * styling: it is the accessible expression of the same state and survives a
+ * restyle.
+ */
+
+const twoCategories: Category[] = [
+  {
+    id: "c-food",
+    name: "Food",
+    isDefault: true,
+    color: "#74C29B",
+    hidden: false,
+  },
+  {
+    id: "c-income",
+    name: "Income",
+    isDefault: false,
+    color: "#7BA7D9",
+    hidden: false,
+  },
+];
+
+/** A statement whose second row has an empty description column. */
+function makeBlankDescriptionPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "REWE",
+        amount: -1299,
+        category: "Food",
+      },
+      {
+        id: "r1",
+        date: "2026-03-08",
+        description: "",
+        amount: -4500,
+        category: "Food",
+      },
+    ],
+    summary: { total: 2, duplicates: 0, recurring: 0, pending: 0, rejected: 0 },
+  };
+}
+
+const descriptionInputs = () => screen.getAllByLabelText(/^description$/i);
+
+describe("ImportWizard — editable description and blockers (#190)", () => {
+  it("renders every row's description as an editable input, blocked or not", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeBlankDescriptionPreview()
+    );
+
+    await gotoReview();
+
+    // Two identical-looking rows behave identically: editability never depends
+    // on data the user can't see.
+    const inputs = descriptionInputs();
+    expect(inputs).toHaveLength(2);
+    expect(inputs[0]).toHaveValue("REWE");
+    expect(inputs[1]).toHaveValue("");
+  });
+
+  it("marks only the blank-description row as invalid, and offers it the fix as its placeholder", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeBlankDescriptionPreview()
+    );
+
+    await gotoReview();
+
+    const [valid, blocked] = descriptionInputs();
+    expect(blocked).toHaveAttribute("aria-invalid", "true");
+    expect(blocked).toHaveAttribute("placeholder", "Add a description");
+    expect(valid).not.toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("disables Import while an included row is blocked, without changing the button's label", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeBlankDescriptionPreview()
+    );
+
+    await gotoReview();
+
+    // The button doesn't shout — it keeps its count and simply can't be used.
+    // Both rows are checked, so N is 2 even though one of them blocks.
+    const importBtn = screen.getByRole("button", {
+      name: /import 2 transactions/i,
+    });
+    expect(importBtn).toBeDisabled();
+  });
+
+  it("clears the row's error state as soon as a description is typed", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeBlankDescriptionPreview()
+    );
+
+    await gotoReview();
+
+    fireEvent.change(descriptionInputs()[1], {
+      target: { value: "Bäckerei Müller" },
+    });
+
+    await waitFor(() =>
+      expect(descriptionInputs()[1]).not.toHaveAttribute("aria-invalid", "true")
+    );
+    expect(
+      screen.getByRole("button", { name: /import 2 transactions/i })
+    ).not.toBeDisabled();
+  });
+
+  it("lets the user uncheck a row they can't describe, which dims it and drops its error state", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeBlankDescriptionPreview()
+    );
+
+    await gotoReview();
+
+    // The escape hatch: one unusable row can't make the file unimportable.
+    fireEvent.click(screen.getAllByRole("button", { name: /toggle/i })[1]);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /import 1 transaction$/i })
+      ).not.toBeDisabled()
+    );
+    expect(descriptionInputs()[1]).not.toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("imports a blank-description statement once the description is typed, committing what was typed", async () => {
+    mockCategoryFetch(twoCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(twoCategories, commit, makeBlankDescriptionPreview());
+
+    await gotoReview();
+
+    fireEvent.change(descriptionInputs()[1], {
+      target: { value: "Bäckerei Müller" },
+    });
+
+    const importBtn = screen.getByRole("button", {
+      name: /import 2 transactions/i,
+    });
+    await waitFor(() => expect(importBtn).not.toBeDisabled());
+    fireEvent.click(importBtn);
+
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    expect(commit.mock.calls[0][0].rows).toEqual([
+      {
+        date: "2026-03-05",
+        amount: -1299,
+        description: "REWE",
+        category: "Food",
+      },
+      {
+        date: "2026-03-08",
+        amount: -4500,
+        description: "Bäckerei Müller",
+        category: "Food",
+      },
+    ]);
+  });
+
+  it("does not change a row's category when its description is edited", async () => {
+    mockCategoryFetch(twoCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(twoCategories, commit, makeBlankDescriptionPreview());
+
+    await gotoReview();
+    await screen.findAllByRole("option", { name: "Food" });
+
+    // Typing `REWE` must not silently re-run the auto-categorizer.
+    fireEvent.change(descriptionInputs()[1], { target: { value: "REWE" } });
+
+    const importBtn = screen.getByRole("button", {
+      name: /import 2 transactions/i,
+    });
+    await waitFor(() => expect(importBtn).not.toBeDisabled());
+    fireEvent.click(importBtn);
+
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    expect(commit.mock.calls[0][0].rows[1]).toMatchObject({
+      description: "REWE",
+      category: "Food",
+    });
   });
 });
