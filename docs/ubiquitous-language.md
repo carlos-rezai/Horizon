@@ -1038,3 +1038,67 @@
 - **"Target"** (new) — overloaded: **Monthly Savings Target** (cents/month per account) vs. the Milestone Mode **milestone target** (one total amount + target month). Qualify which is meant.
 - **"Tracked"** (new) — **Trackable Account** (eligible by kind) is not the same as **Tracked Account** (eligible _and_ target > 0). A Trackable Account can be **Not Tracked**.
 - **"met / missed / upcoming"** (new) — an **Upcoming Month** is not a missed month: it is unresolved (future, or past-with-no-data). Only a resolved month with a shortfall is "missed".
+
+## Import Review Repair (new)
+
+| Term                       | Definition                                                                                                                                                                                               | Aliases to avoid                  |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Review Step**            | The **Import Wizard**'s third step — the only surface where a previewed row can be inspected, repaired, or excluded before **Import Commit**                                                             | Review screen, confirm step       |
+| **Row Flag**               | A **soft** reason a **Review Row** is pre-excluded — one of `duplicate`, `recurring`, `pending`; the user may opt back in                                                                                | Flag, marker, warning             |
+| **Row Blocker**            | A **hard** reason a **Review Row** cannot be committed — today only `description` (the row's description is empty); must be repaired or the row excluded                                                 | Error, invalid flag, blocker flag |
+| **Soft Exclusion**         | A **Review Row** pre-unchecked because it carries one or more **Row Flags** — rendered dimmed (`opacity: 0.55`), meaning "we set this aside for you"                                                     | Skipped row, ignored row          |
+| **Hard Blocker**           | A **Review Row** that is **included** but carries a **Row Blocker** — rendered at full opacity with an error-state description cell, meaning "this one is coming in, but it needs you"                   | Bad row, invalid row, error row   |
+| **Commit Gate**            | The rule that the Import button is disabled while any **included** row carries a **Row Blocker** — excluded rows never gate, which is what makes unchecking a real exit                                  | Validation, submit check          |
+| **In-place Repair**        | The principle that a **Row Blocker** is explained and fixed at the same affordance — the description cell is an editable input whose error state _is_ the instruction                                    | Inline edit, quick fix            |
+| **Blocker Pill**           | The **Review Step** summary control reading "N rows need a description" — counts **Hard Blockers** and jumps to the next one; the actionable partner to the disabled Import button                       | Error banner, warning badge       |
+| **Needs Attention Filter** | The view-only **Review Step** toggle that narrows the table to rows carrying **Row Blockers** — never alters `rows` state or the **Commit Gate**, so filtering cannot change what commits                | Error filter, problem view        |
+| **Rejected Row** (updated) | A record with a non-empty date whose date/amount fails to convert — dropped at parse, **never enters the Review Step**; now surfaced as a **count plus capped Rejected Samples**, not a bare number      | Bad row, dropped row, error row   |
+| **Rejected Sample**        | The raw, unparsed date/amount cell text retained from a **Rejected Row** (first `MAX_REJECTED_SAMPLES` = 5) — evidence that the mapping is wrong, never fabricated or repaired                           | Error detail, failed row          |
+| **Mapping Diagnostic**     | The reframing of **Rejected Rows** as a signal about **Column Mapping** rather than about data — 1-of-200 is junk, 200-of-200 is a wrong date column or `dateFmt`; a signpost back to Map columns        | Parse error, reject warning       |
+| **Mapping Override**       | The optional `mapping` on an **Import Preview Request** that wins over remembered-then-detected — makes the wizard's Map-columns step actually re-map the previewed rows (designed in log 19, unbuilt)   | Manual mapping, mapping edit      |
+| **Issue Attribution**      | The client step mapping a Zod `issue.path` of `["rows", n, field]` back to a **Review Row** id **through the filtered commit payload** — so a schema rejection lands as a **Row Blocker** in the same UI | Error mapping, validation parsing |
+| **Validation Floor**       | The `error` string on a `{ error, issues }` response — the readable fallback for issues with no row to attach to (bad `accountId`, malformed `mapping`); never the ceiling                               | Error message, generic error      |
+
+## Relationships (Import Review Repair additions)
+
+- A **Review Row** carries two independent arrays: **Row Flags** (soft, pre-exclude) and **Row Blockers** (hard, gate the commit) — a row may have both, either, or neither
+- `included = flagsFor(row).length === 0` — the **Row Flags** array drives **both** the pre-uncheck **and** the badges, from one source, so a flag that excludes a row is the same object that draws its badge
+- The **Commit Gate** is `rows.every(r => !r.included || r.blockers.length === 0)` — **included** rows only
+- **Opacity** encodes inclusion; the **description cell's error state** encodes blocked-and-included — two orthogonal channels that compose without special-casing: uncheck a **Hard Blocker** and it dims _and_ its error state drops, because an excluded row cannot block
+- **Row Blockers** are **client-derived** and recomputed live on edit; `ImportRowSchema` remains the sole authority on what commits, and its rejections re-enter the UI as **Row Blockers** via **Issue Attribution**
+- A **Rejected Row** never becomes a **Review Row** — it has no parsed date or amount, and inventing one would be the placeholder the feature explicitly rules out
+- The **Blocker Pill** ("2 rows need a description", fixable in the **Review Step**, gates) and the **Mapping Diagnostic** ("3 rows couldn't be read", fixable at Map columns, does not gate) are distinct messages and must not be merged
+- The **Mapping Diagnostic**'s advice is only true once **Mapping Override** exists — without it, Map columns is remembered but never applied, and the signpost points at a wall
+
+## Example dialogue (Import Review Repair)
+
+> **Dev:** "A row has a blank description and one has a duplicate flag. Both are greyed out — same thing?"
+>
+> **Domain expert:** "No, and that conflation is the bug. The duplicate is a **Soft Exclusion** — we unchecked it for you, so it's dimmed. The blank description is a **Hard Blocker**: it's still checked, it's a real transaction with real money, and it's stopping your import. Dimming it would say 'this doesn't matter', which is the opposite of true."
+>
+> **Dev:** "So how does the user know what's wrong with it?"
+>
+> **Domain expert:** "**In-place Repair** — the description cell is an input, and it renders empty with an error border and 'Add a description'. It says what's wrong, which field, and it _is_ the fix. No tooltip, no legend, no colour to decode."
+>
+> **Dev:** "And if they can't describe it? Some balance-footer row with no meaningful text?"
+>
+> **Domain expert:** "They uncheck it. The **Commit Gate** only looks at **included** rows, so unchecking is a real exit — and the moment they do, the row dims and the error state drops. Both exits resolve visibly. What we never do is invent a placeholder or relax the schema."
+>
+> **Dev:** "They imported a full year. Three bad rows somewhere in twelve hundred."
+>
+> **Domain expert:** "That's what the **Needs Attention Filter** is for — the table collapses to those three, every one an input, and Tab walks through them. The **Blocker Pill** jumps you there instead if you'd rather keep context. The filter is view-only; it can't change what commits."
+>
+> **Dev:** "Separately, the summary says '47 rows couldn't be read'. Is the file corrupt?"
+>
+> **Domain expert:** "Almost certainly not — that's a **Mapping Diagnostic**. One rejected row is junk; forty-seven means your date column is mapped wrong or `dateFmt` doesn't match. The **Rejected Samples** show the raw cells: if they read `2024-01-05` against `DD.MM.YYYY`, the fix is one step back at Map columns. And thanks to **Mapping Override**, going back now actually re-maps the rows."
+
+## Flagged ambiguities (Import Review Repair)
+
+- **"flag"** (new) — overloaded three ways. A **Row Flag** is **soft only** (`duplicate` / `recurring` / `pending`); a **Row Blocker** is **never** a flag. The wizard's "Flag" table column renders **Row Flags** exclusively — blockers surface on the description cell, not there. And "**Duplicate Detection** flags a row" is the _verb_, meaning "adds a Row Flag".
+- **"rejected" / "excluded" / "blocked"** (new) — three distinct states, routinely confused, and the distinction is the whole feature:
+  - **Rejected Row** — dropped at **parse**; never reaches the **Review Step**; fixed at Map columns.
+  - **Soft Exclusion** — in the table, unchecked, dimmed; the user may opt back in; nothing is wrong with it.
+  - **Hard Blocker** — in the table, **checked**, full opacity, gating the commit; fixed in place or unchecked.
+    Never say "rejected row" for a blocked one: a Rejected Row cannot be repaired in the Review Step, and a Hard Blocker cannot be repaired anywhere else.
+- **"error"** (new) — the **Validation Floor** (`error` string on a 400 response) is not the description cell's **error state** (a visual condition of a **Row Blocker**). The former is a server contract; the latter is UI.
+- **"skipped"** (new) — reserved for the empty-date records dropped as blank lines or balance footers, which are **not counted** anywhere. A **Rejected Row** is counted and surfaced. Do not use "skipped" for either a **Soft Exclusion** or a **Rejected Row**.
