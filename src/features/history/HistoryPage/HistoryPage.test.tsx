@@ -120,4 +120,11 @@ describe("HistoryPage — loaded state", () => {
     renderPage();
     expect(await screen.findByTestId("history-chart")).toBeInTheDocument();
   });
+
+  it("renders the Year Archive with a row for each imported year", async () => {
+    renderPage();
+    expect(await screen.findByText("Year Archive")).toBeInTheDocument();
+    // IMPORTS carries a 2023 statement, so the archive lists that year.
+    expect(screen.getByText("2023")).toBeInTheDocument();
+  });
 });

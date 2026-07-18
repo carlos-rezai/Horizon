@@ -4,10 +4,11 @@ import EmptyState from "../../../components/EmptyState/EmptyState";
 import { useAccounts } from "../../accounts/useAccounts";
 import { useHistory } from "../useHistory";
 import HistoryChart from "../HistoryChart/HistoryChart";
+import YearArchive from "../YearArchive/YearArchive";
 import { StyledPage, StyledCta } from "./HistoryPage.styles";
 
 export default function HistoryPage() {
-  const { points, years, isLoading } = useHistory();
+  const { points, years, statementCounts, isLoading } = useHistory();
   const { accounts } = useAccounts();
 
   // Empty only once the fetches settle — otherwise the initial (still-loading)
@@ -31,7 +32,14 @@ export default function HistoryPage() {
         />
       )}
       {hasHistory && (
-        <HistoryChart points={points} accounts={accounts} isLoading={false} />
+        <>
+          <HistoryChart points={points} accounts={accounts} isLoading={false} />
+          <YearArchive
+            points={points}
+            years={years}
+            statementCounts={statementCounts}
+          />
+        </>
       )}
     </StyledPage>
   );
