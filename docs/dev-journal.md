@@ -708,3 +708,60 @@ clean.
 - The knowingly-duplicated validity rule (`blockersFor` vs `ImportRowSchema`)
   and the server tier's own `describeImportIssues` pluralization are untouched,
   per the plan — the tier boundary can't share the frontend `pluralize`.
+
+## 2026-07-18 — #196 History Page composition: compose the orphaned chart + archive
+
+Completed the History page composition the history-navigation design log (23,
+issues #168–#172) already specified but never wired, following refactor plan
+`docs/refactor-plans/27-history-page-composition-refactor.md`. Phases 3 and 4
+shipped `HistoryChart` and `YearArchive` fully built and fully tested, but
+`HistoryPage` never advanced past its phase-2 skeleton: it rendered only the
+header and, when there were no imports, an `EmptyState` — and rendered nothing
+in the empty state's place once imports existed. Both components were imported
+by nobody. No change to `HistoryChart`, `YearArchive`, or `useHistory`'s public
+shapes; only `HistoryPage` (and its test) change. Three RED→GREEN test/feat
+pairs, each collapsed into one green commit (the plan permits pairwise collapse;
+a knowingly-failing RED commit would break the every-commit-green rule — RED was
+demonstrated by running each new test before implementing).
+
+**The page now composes two hooks, the `DashboardPage` pattern.** `HistoryChart`
+needs the account list for its per-account series, so the page calls
+`useAccounts()` alongside `useHistory()` and passes `accounts` down — exactly how
+`DashboardPage` feeds `TrajectoryHorizon`. `useHistory` was deliberately not
+extended to fetch accounts; that would duplicate `useAccounts` and give the hook
+a second responsibility. The chart receives `isLoading={false}` because the page
+gates on a top-level spinner before it mounts.
+
+**Four explicit page states, gated in order.** loading (shared `Spinner`, early
+return like `DashboardPage`) · error (a distinct `EmptyState`) · empty (the
+existing "No history yet" `EmptyState`, no-imports only) · content (chart +
+Year Archive). The gate order is what closes the bug the plan targets: on a
+failed fetch `useHistory` degrades `years` to `[]`, so the old `isEmpty` check
+rendered "No history yet" — a fetch error masquerading as an empty state. The
+error branch is now checked before empty, so a failed load reads as
+"Couldn't load your history," never as "no imports."
+
+**Layout is pure composition.** Header → chart → Year Archive, matching the
+canonical prototype (`docs/handoff/history-navigation/prototype/src/screens/History.jsx`).
+Both children self-chrome (the chart via `ChartFrame`'s card, the archive via its
+own `StyledArchive` section), so the page adds no `Card` wrapper — the same way
+`DashboardPage` renders `TrajectoryHorizon` directly. Range chips, legend, and
+series visibility stay internal to `HistoryChart` (per refactor 24's
+`ChartFrame` adoption); the page holds no chart state.
+
+**Verification.** `HistoryPage.test.tsx` was extended, not replaced — the header
+/ empty-state / CTA tests stay green and unmodified. Its `mockFetch` now stubs
+`/accounts` (the page's new call) and the suite asserts what the user sees across
+all four states: the chart (`history-chart` testid) and the Year Archive with a
+year row render on load, a pending fetch shows the spinner (`role="status"`), a
+failed fetch shows the error state and specifically **not** "No history yet," and
+a no-imports response keeps the empty state. `HistoryChart.test.tsx` and
+`YearArchive.test.tsx` remain the regression nets for the composed pieces (the
+latter covers each month row's `/months/:month` deep-link). Full suite (1987
+tests) green, `tsc -b` and `eslint` clean.
+
+**Further note.** This was the third "built-but-not-composed" gap in the history
+feature's wake; the end-to-end verification step is the guard that would have
+caught it originally — a passing unit suite did not, because the old "loaded
+state" test asserted only the _absence_ of the empty state, never the _presence_
+of content. The extended suite now asserts presence.
