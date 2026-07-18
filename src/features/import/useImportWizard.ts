@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AccountWithBalance } from "../../types/account";
 import type { Category } from "../../types/category";
 import type {
@@ -16,12 +16,19 @@ import {
 } from "./reviewRows";
 import { attributeIssues, ImportCommitError } from "./importErrors";
 
+/** Settle window for rapid Map-columns changes so the preview re-fetches once. */
+const REMAP_DEBOUNCE_MS = 300;
+
 interface UseImportWizardParams {
   importAccounts: AccountWithBalance[];
   categories: Category[];
   file: File;
   presetAccountId: string | null;
-  preview: (accountId: string, file: File) => Promise<ImportPreview>;
+  preview: (
+    accountId: string,
+    file: File,
+    mapping?: ColumnMapping
+  ) => Promise<ImportPreview>;
   commit: (input: CommitImportInput) => Promise<void>;
   onClose: () => void;
   /** Fired after a successful commit with the included/skipped split. */
@@ -89,6 +96,15 @@ export function useImportWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // The latest mapping, held in a ref so a burst of dropdown changes composes
+  // correctly within one tick before the debounced re-preview fires.
+  const mapRef = useRef(map);
+  mapRef.current = map;
+  // Pending re-preview timer, and a monotonic token so an out-of-order or
+  // account-superseded remap response is dropped instead of clobbering fresh data.
+  const remapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remapSeq = useRef(0);
+
   // Upload for a fresh parse + detect whenever the target account changes:
   // duplicate/recurring flags are relative to that account. The loading flag
   // is flipped on in selectAccount (and at mount) rather than here, keeping
@@ -114,6 +130,12 @@ export function useImportWizard({
 
     return () => {
       cancelled = true;
+      // A new account load supersedes any in-flight mapping re-preview.
+      if (remapTimer.current) {
+        clearTimeout(remapTimer.current);
+        remapTimer.current = null;
+      }
+      remapSeq.current += 1;
     };
   }, [accountId, file, preview]);
 
@@ -164,9 +186,37 @@ export function useImportWizard({
     []
   );
 
+  // A mapping change reflects in the dropdown at once, then — after the settle
+  // window — re-fetches the preview with the override so the very rows under
+  // review are re-columned from the corrected mapping. Inclusion and
+  // description edits are re-derived from the fresh rows, never carried over
+  // stale. Several rapid changes collapse to a single fetch.
   const updateMap = useCallback(
-    (patch: Partial<ColumnMapping>) => setMap((m) => ({ ...m, ...patch })),
-    []
+    (patch: Partial<ColumnMapping>) => {
+      const next = { ...mapRef.current, ...patch };
+      mapRef.current = next;
+      setMap(next);
+
+      if (remapTimer.current) clearTimeout(remapTimer.current);
+      const seq = (remapSeq.current += 1);
+      remapTimer.current = setTimeout(() => {
+        preview(accountId, file, next)
+          .then((result) => {
+            // Drop a response the user has already superseded (newer change or
+            // an account switch bumped the token).
+            if (seq !== remapSeq.current) return;
+            setData(result);
+            setRows(buildReviewRows(result.rows));
+            setMap(result.mapping);
+            setLoadError(null);
+          })
+          .catch((err: unknown) => {
+            if (seq !== remapSeq.current) return;
+            setLoadError(err instanceof Error ? err.message : "Unknown error");
+          });
+      }, REMAP_DEBOUNCE_MS);
+    },
+    [accountId, file, preview]
   );
 
   const confirm = useCallback(async () => {

@@ -6,6 +6,33 @@ import {
   StatementParseError,
 } from "../../lib/csvImport/index.js";
 import type { Storage } from "../../storage/Storage.js";
+import type { ColumnMapping } from "../../storage/types.js";
+
+/**
+ * Parse an optional `mapping` multipart field into a {@link ColumnMapping}
+ * override. Multipart fields arrive as strings, so the wizard sends the map as
+ * JSON. A missing, unparseable, or ill-shaped value yields `undefined` — the
+ * preview then falls back to remembered/detected exactly as before.
+ */
+function parseMappingField(raw: unknown): ColumnMapping | undefined {
+  if (typeof raw !== "string" || raw.length === 0) return undefined;
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+  if (typeof value !== "object" || value === null) return undefined;
+  const { date, description, amount } = value as Record<string, unknown>;
+  if (
+    typeof date !== "string" ||
+    typeof description !== "string" ||
+    typeof amount !== "string"
+  ) {
+    return undefined;
+  }
+  return { date, description, amount };
+}
 
 const router = Router();
 
@@ -73,6 +100,7 @@ router.post("/preview", (req, res) => {
 
     const accountId =
       typeof req.body.accountId === "string" ? req.body.accountId : "";
+    const mappingOverride = parseMappingField(req.body.mapping);
     const storage = getStorage(req);
 
     try {
@@ -84,6 +112,7 @@ router.post("/preview", (req, res) => {
         existingTxns: await storage.transactions.findByAccount(accountId),
         recurring,
         getRememberedPreset: (bank) => storage.importPresets.get(bank),
+        mappingOverride,
       });
       res.json(preview);
     } catch (parseErr) {

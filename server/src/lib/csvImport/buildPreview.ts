@@ -62,6 +62,12 @@ export interface BuildPreviewInput {
    * storage — the route backs it with the import-presets repo.
    */
   getRememberedPreset: (bank: string) => Promise<StoredImportPreset | null>;
+  /**
+   * A column mapping the user corrected in the Map-columns step. Wins over both
+   * the remembered preset and the detected default so the correction re-maps the
+   * very rows being reviewed. Precedence: override ?? remembered ?? detected.
+   */
+  mappingOverride?: ColumnMapping;
   /** Row-id generator; injectable so tests can assert deterministic ids. */
   generateId?: () => string;
 }
@@ -83,7 +89,8 @@ export async function buildPreview(
   // re-applied. The delimiter governs splitting, which detection already owns,
   // so it is remembered for round-trip completeness but not re-applied here.
   const remembered = await input.getRememberedPreset(detected.bank);
-  const mapping = remembered?.mapping ?? detected.mapping;
+  const mapping =
+    input.mappingOverride ?? remembered?.mapping ?? detected.mapping;
   const delimiter = remembered?.delimiter ?? detected.delimiter;
   const decimal = remembered?.decimal ?? detected.decimal;
   const dateFmt = remembered?.dateFmt ?? detected.dateFmt;

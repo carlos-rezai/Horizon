@@ -4,6 +4,7 @@ import { API_BASE } from "../../utils/api/api";
 import { formatFileSizeKB } from "../../utils/format/format";
 import { ImportCommitError, type AttributableIssue } from "./importErrors";
 import type {
+  ColumnMapping,
   CommitImportInput,
   ImportPreview,
   ImportRecord,
@@ -41,8 +42,13 @@ interface UseImportResult {
   history: ImportedStatement[];
   isLoading: boolean;
   error: string | null;
-  /** Upload a CSV for a stateless parse + detect preview (no writes). */
-  preview: (accountId: string, file: File) => Promise<ImportPreview>;
+  /** Upload a CSV for a stateless parse + detect preview (no writes). An
+   * optional mapping override re-columns the rows against a user correction. */
+  preview: (
+    accountId: string,
+    file: File,
+    mapping?: ColumnMapping
+  ) => Promise<ImportPreview>;
   /** Commit the chosen rows; refreshes history on success. */
   commit: (input: CommitImportInput) => Promise<void>;
   /** Load a past import's persisted transactions for the preview modal. */
@@ -93,10 +99,17 @@ export function useImport(accounts: AccountWithBalance[]): UseImportResult {
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const preview = useCallback(
-    async (accountId: string, file: File): Promise<ImportPreview> => {
+    async (
+      accountId: string,
+      file: File,
+      mapping?: ColumnMapping
+    ): Promise<ImportPreview> => {
       const body = new FormData();
       body.append("accountId", accountId);
       body.append("file", file);
+      // A mapping correction from the Map-columns step re-columns this import;
+      // sent as JSON since multipart fields are strings.
+      if (mapping) body.append("mapping", JSON.stringify(mapping));
 
       const res = await fetch(`${API_BASE}/imports/preview`, {
         method: "POST",
