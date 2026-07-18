@@ -69,16 +69,43 @@ import {
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
 
-// One badge spec per soft flag. The row reads its badges straight off
-// `row.flags`, so the count and the exclusion can never drift apart.
-const FLAG_BADGES: Record<
+// One spec per soft flag, the single source for both the per-row badge and the
+// review-summary badge — so tone and icon are declared once and the two views
+// can never drift. `label` is the terse per-row badge; `summaryLabel` is the
+// counted summary phrasing. The per-row badges read straight off `row.flags`,
+// so the count and the exclusion can never drift apart either.
+const FLAG_SPECS: Record<
   RowFlag,
-  { label: string; tone: "warn" | "neutral"; Icon: typeof Info }
+  {
+    label: string;
+    tone: "warn" | "neutral";
+    Icon: typeof Info;
+    summaryLabel: (count: number) => string;
+  }
 > = {
-  duplicate: { label: "Dupe", tone: "warn", Icon: Info },
-  recurring: { label: "Recur", tone: "neutral", Icon: RefreshCw },
-  pending: { label: "Pending", tone: "neutral", Icon: Clock },
+  duplicate: {
+    label: "Dupe",
+    tone: "warn",
+    Icon: Info,
+    summaryLabel: (n) => pluralize(n, "likely duplicate"),
+  },
+  recurring: {
+    label: "Recur",
+    tone: "neutral",
+    Icon: RefreshCw,
+    summaryLabel: (n) => `${n} recurring`,
+  },
+  pending: {
+    label: "Pending",
+    tone: "neutral",
+    Icon: Clock,
+    summaryLabel: (n) => `${n} pending`,
+  },
 };
+
+// Summary badges render in this order when their count is non-zero, matching
+// the per-row badge order in `flagsFor`.
+const FLAG_ORDER: RowFlag[] = ["duplicate", "recurring", "pending"];
 
 interface Props {
   importAccounts: AccountWithBalance[];
@@ -181,6 +208,14 @@ export default function ImportWizard({
     const el = descRefs.current.get(target.id);
     el?.scrollIntoView({ block: "center" });
     el?.focus();
+  };
+
+  // The summary count keyed by `RowFlag`, so the summary badges iterate the same
+  // flag set the per-row badges do.
+  const flagCounts: Record<RowFlag, number> = {
+    duplicate: summary.duplicates,
+    recurring: summary.recurring,
+    pending: summary.pending,
   };
 
   const next = () => setStep((s) => Math.min(3, s + 1));
@@ -359,24 +394,17 @@ export default function ImportWizard({
               <StyledSummaryText>
                 <strong>{summary.included}</strong> selected to import
               </StyledSummaryText>
-              {summary.duplicates > 0 && (
-                <StyledFlagBadge $tone="warn">
-                  <Info size={11} />
-                  {pluralize(summary.duplicates, "likely duplicate")}
-                </StyledFlagBadge>
-              )}
-              {summary.recurring > 0 && (
-                <StyledFlagBadge $tone="neutral">
-                  <RefreshCw size={11} />
-                  {`${summary.recurring} recurring`}
-                </StyledFlagBadge>
-              )}
-              {summary.pending > 0 && (
-                <StyledFlagBadge $tone="neutral">
-                  <Clock size={11} />
-                  {`${summary.pending} pending`}
-                </StyledFlagBadge>
-              )}
+              {FLAG_ORDER.map((flag) => {
+                const count = flagCounts[flag];
+                if (count === 0) return null;
+                const { tone, Icon, summaryLabel } = FLAG_SPECS[flag];
+                return (
+                  <StyledFlagBadge key={flag} $tone={tone}>
+                    <Icon size={11} />
+                    {summaryLabel(count)}
+                  </StyledFlagBadge>
+                );
+              })}
               {everBlocked && (
                 <StyledAttentionToggle
                   type="button"
@@ -455,7 +483,7 @@ export default function ImportWizard({
                     />
                     <StyledFlagCell>
                       {r.flags.map((flag) => {
-                        const { label, tone, Icon } = FLAG_BADGES[flag];
+                        const { label, tone, Icon } = FLAG_SPECS[flag];
                         return (
                           <StyledFlagBadge key={flag} $tone={tone}>
                             <Icon size={10} />
