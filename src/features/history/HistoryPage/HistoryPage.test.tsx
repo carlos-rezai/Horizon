@@ -128,3 +128,28 @@ describe("HistoryPage — loaded state", () => {
     expect(screen.getByText("2023")).toBeInTheDocument();
   });
 });
+
+describe("HistoryPage — loading and error states", () => {
+  it("shows a loading spinner while the fetches are still pending", () => {
+    // A fetch that never settles keeps both hooks in their loading state.
+    vi.spyOn(globalThis, "fetch").mockReturnValue(
+      new Promise<Response>(() => {})
+    );
+    renderPage();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("shows a distinct error state, not the empty state, when a fetch fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/projection/history")) {
+        return { ok: false, json: async () => [] } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+    renderPage();
+    expect(await screen.findByText(/couldn't load/i)).toBeInTheDocument();
+    // The masquerade this closes: a failed fetch must not read as "no imports".
+    expect(screen.queryByText(/no history yet/i)).not.toBeInTheDocument();
+  });
+});
