@@ -16,7 +16,7 @@ import Button from "../../../primitives/Button/Button";
 import Select from "../../../primitives/Select/Select";
 import Spinner from "../../../primitives/Spinner/Spinner";
 import Money from "../../../primitives/Money/Money";
-import { formatFileSizeKB } from "../../../utils/format/format";
+import { formatFileSizeKB, pluralize } from "../../../utils/format/format";
 import type {
   CommitImportInput,
   ImportPreview as ImportPreviewData,
@@ -223,7 +223,7 @@ export default function ImportWizard({
         {blockedCount > 0 && (
           <StyledBlockedPill type="button" onClick={jumpToNextBlocked}>
             <AlertCircle size={13} />
-            {`${blockedCount} row${blockedCount !== 1 ? "s" : ""} need${blockedCount === 1 ? "s" : ""} a description`}
+            {`${pluralize(blockedCount, "row")} ${blockedCount === 1 ? "needs" : "need"} a description`}
           </StyledBlockedPill>
         )}
         <Button
@@ -234,7 +234,7 @@ export default function ImportWizard({
             summary.included === 0 || submitting || blocked || !canCommit
           }
         >
-          {`Import ${summary.included} transaction${summary.included !== 1 ? "s" : ""}`}
+          {`Import ${pluralize(summary.included, "transaction")}`}
         </Button>
       </>
     );
@@ -362,7 +362,7 @@ export default function ImportWizard({
               {summary.duplicates > 0 && (
                 <StyledFlagBadge $tone="warn">
                   <Info size={11} />
-                  {`${summary.duplicates} likely duplicate${summary.duplicates !== 1 ? "s" : ""}`}
+                  {pluralize(summary.duplicates, "likely duplicate")}
                 </StyledFlagBadge>
               )}
               {summary.recurring > 0 && (
@@ -394,7 +394,7 @@ export default function ImportWizard({
               <StyledRejectedNote>
                 <StyledRejectedText>
                   <Info size={13} />
-                  {`${rejected.count} row${rejected.count !== 1 ? "s" : ""} couldn't be read — check your column mapping`}
+                  {`${pluralize(rejected.count, "row")} couldn't be read — check your column mapping`}
                 </StyledRejectedText>
                 <StyledRejectedSamples>
                   {rejected.samples.map((s, i) => (
