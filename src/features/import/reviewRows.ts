@@ -95,10 +95,15 @@ export function canCommit(rows: ReviewRow[]): boolean {
 }
 
 export function summarizeReview(rows: ReviewRow[]): ReviewSummary {
+  // Counted off `flags`, the same source the badges render — so a change to
+  // `flagsFor` moves the summary with it and the two can never drift, the drift
+  // the `pending` bug was.
+  const countFlag = (flag: RowFlag) =>
+    rows.filter((r) => r.flags.includes(flag)).length;
   return {
     included: rows.filter((r) => r.included).length,
-    duplicates: rows.filter((r) => r.duplicate).length,
-    recurring: rows.filter((r) => r.recurring).length,
-    pending: rows.filter((r) => r.pending).length,
+    duplicates: countFlag("duplicate"),
+    recurring: countFlag("recurring"),
+    pending: countFlag("pending"),
   };
 }

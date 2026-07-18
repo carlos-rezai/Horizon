@@ -282,4 +282,20 @@ describe("summarizeReview", () => {
       pending: 1,
     });
   });
+
+  it("counts each flag off `flags`, not the raw booleans — the summary tracks the same source the badges render", () => {
+    // A row whose raw booleans and `flags` disagree: `flags` is the authority.
+    // Only rows carrying the flag in their list are counted.
+    const rows: ReviewRow[] = [
+      { ...buildReviewRows([clean])[0], flags: ["duplicate", "recurring"] },
+      { ...buildReviewRows([clean])[0], id: "x2", flags: ["pending"] },
+      { ...buildReviewRows([duplicate])[0], flags: [] },
+    ];
+
+    expect(summarizeReview(rows)).toMatchObject({
+      duplicates: 1,
+      recurring: 1,
+      pending: 1,
+    });
+  });
 });
