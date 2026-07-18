@@ -639,3 +639,72 @@ months, so the tile labels render the same strings.
   in one interface. Left untouched; a possible future tidy, not this refactor.
 - The unrelated local `MONTHS` arrays in `Clock` and `ImportHistory` are the
   same smell in different features — left for their own refactors.
+
+## 2026-07-18 — #197 Import Review Repair refactor: consolidate the review surface
+
+Post-build tidy-up of the Import Review Repair feature (issues #190–#195),
+following refactor plan `docs/refactor-plans/28-import-review-repair-refactor.md`.
+Behaviour-preserving throughout: no rendered text, commit payload, error
+contract, API, or schema change. Six commits, each leaving the full suite green
+(`npm run test`) and `tsc -b` clean; the existing suites (`reviewRows.test.ts`,
+`importErrors.test.ts`, `useImportWizard.test.ts`, `ImportWizard.test.tsx`) are
+the regression net and pass untouched, extended only with a `pluralize` case set
+and one `summarizeReview`-from-`flags` case.
+
+**`flags` is now the sole source for the summary counts.** `summarizeReview`
+counted the raw `r.duplicate` / `r.recurring` / `r.pending` booleans, bypassing
+the `flags` array the whole feature is built on — the exact drift the array was
+introduced to kill (the original `pending` bug). It now counts
+`r.flags.includes(...)`, so a future change to `flagsFor` moves the summary with
+it. A pinning test asserts the summary tracks `flags`, not the booleans.
+
+**One tested `pluralize` helper replaced five copy-pasted ternaries.**
+`${n} noun${n !== 1 ? "s" : ""}` appeared four times in `ImportWizard.tsx` and
+once each in `ImportView.tsx` and `ImportHistory.tsx`. `pluralize(count,
+singular, plural?)` now lives in `src/utils/format` beside `formatBytes` and the
+month formatters, returning the joined `"<count> <word>"` pair, with its own
+singular / plural / explicit-plural tests. The blocked-rows pill keeps its
+inverse verb agreement (`need` / `needs`) as an explicit local expression — only
+the noun goes through the helper, since verb agreement is a special case that
+belongs at its one call site, not in a general noun helper.
+
+**Tone and icon per flag are declared once.** The three review-summary badges
+re-declared the icon and tone that `FLAG_BADGES` already held for the per-row
+badges. They are now one `RowFlag`-keyed `FLAG_SPECS` table carrying
+`{ label, tone, Icon, summaryLabel(count) }`, iterated in `FLAG_ORDER` over the
+non-zero counts. The per-row and summary badges read the same source; the two
+can no longer drift.
+
+**The review table is a co-located presentational component.** The head + body
+(~70 lines of the ~540-line wizard) lifted into
+`ImportWizard/ReviewTable/ReviewTable.tsx` with its own `ReviewTable.styles.ts`
+(the review-table styled components moved out of `ImportWizard.styles.ts`).
+`ReviewTable` takes `rows`, the `toggle` / `setCategory` / `setDescription`
+handlers, a `registerDescRef` registrar, and the `flagSpecs` table as props; it
+owns the `FlagSpec` contract it renders. All orchestration state — inclusion,
+`everBlocked`, `attentionOnly`, `blockedRows`, the jump cursor — stays in
+`ImportWizard`, because the footer pill and Import button depend on it. The
+extraction is presentational only, not a state split. The shared `StyledFlagBadge`
+stays in `ImportWizard.styles.ts` (the summary uses it too) and `ReviewTable`
+imports it from the parent.
+
+**Verification.** `ImportWizard.test.tsx` drives the whole wizard through the
+real `ImportWizard → ReviewTable` composition with a fetch mock, and its #190 /
+#193 blocks already exercise the plan's end-to-end scenario: a blank-description
+row renders an editable input, is marked invalid with a fix-me placeholder, is
+counted by the blocked-rows pill, clears its error the moment a description is
+typed, and commits the typed value. Full suite (1983 tests) green, `tsc -b`
+clean.
+
+**Out-of-scope observations:**
+
+- ESLint flags three pre-existing `react-hooks` errors in the import feature
+  (two `set-state-in-effect` in `ImportWizard.tsx`'s `everBlocked` /
+  `attentionOnly` effects, one `refs` in `useImportWizard.ts`'s
+  `mapRef.current = map` during render). They predate this session and are
+  unrelated to the consolidation; husky runs prettier only, so they never gated
+  a commit. Left for their own pass — behaviour-affecting fixes that need their
+  own tests, not this behaviour-preserving refactor.
+- The knowingly-duplicated validity rule (`blockersFor` vs `ImportRowSchema`)
+  and the server tier's own `describeImportIssues` pluralization are untouched,
+  per the plan — the tier boundary can't share the frontend `pluralize`.
