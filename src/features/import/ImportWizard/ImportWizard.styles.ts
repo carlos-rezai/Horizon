@@ -275,6 +275,49 @@ export const StyledSummaryText = styled.span`
   }
 `;
 
+/* A call to action, not a badge: it counts the included blocked rows and jumps
+   to the next one on click. Error-toned so it reads as the thing standing
+   between the user and a commit. Sits beside the disabled Import button. */
+export const StyledBlockedPill = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  padding: 7px 13px;
+  border-radius: ${({ theme }) => theme.radius.pill}px;
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.error};
+  background: ${({ theme }) => theme.colors.errorContainer};
+  border: 1px solid ${({ theme }) => theme.colors.error};
+  transition: all ${({ theme }) => theme.transitions.fast};
+`;
+
+/* View-only table filter. Off is the resting state and looks it; on is clearly
+   engaged. aria-pressed carries the state for assistive tech and tests. */
+export const StyledAttentionToggle = styled.button<{ $on: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 5px 11px;
+  border-radius: ${({ theme }) => theme.radius.pill}px;
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: ${({ theme, $on }) =>
+    $on ? theme.colors.onSurface : theme.colors.onSurfaceVariant};
+  background: ${({ theme, $on }) =>
+    $on ? theme.colors.errorContainer : theme.colors.surfaceContainerLowest};
+  border: 1px solid
+    ${({ theme, $on }) =>
+      $on ? theme.colors.error : theme.colors.outlineVariant};
+  transition: all ${({ theme }) => theme.transitions.fast};
+`;
+
 export const StyledFlagBadge = styled.span<{ $tone: "warn" | "neutral" }>`
   display: inline-flex;
   align-items: center;

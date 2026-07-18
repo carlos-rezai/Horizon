@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Check, RefreshCw, Info, Banknote } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, RefreshCw, Info, Banknote, AlertCircle } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
 import { resolveAccountColor } from "../../../utils/color/color";
@@ -45,6 +45,8 @@ import {
   StyledRejectedSamples,
   StyledRejectedSample,
   StyledSummaryText,
+  StyledBlockedPill,
+  StyledAttentionToggle,
   StyledFlagBadge,
   StyledReviewHead,
   StyledReviewBody,
@@ -122,6 +124,45 @@ export default function ImportWizard({
   const rejected = data?.summary.rejected;
   const rawRows = useMemo(() => rows.slice(0, 3), [rows]);
 
+  // "Needs attention" == the commit gate's own definition: included AND blocked.
+  // Unchecking a row resolves it, so it leaves this set on its own.
+  const blockedRows = useMemo(
+    () => rows.filter((r) => r.included && r.blockers.length > 0),
+    [rows]
+  );
+  const blockedCount = blockedRows.length;
+
+  // The pill counts live blocked rows and hides at zero, but the filter control
+  // outlives the last repair: once a statement has asked for attention the
+  // toggle stays available for the session so a mid-repair fix doesn't yank it
+  // out from under the user. Both reset when a fresh statement loads.
+  const [everBlocked, setEverBlocked] = useState(false);
+  const [attentionOnly, setAttentionOnly] = useState(false);
+  useEffect(() => {
+    setEverBlocked(false);
+    setAttentionOnly(false);
+  }, [data]);
+  useEffect(() => {
+    if (blockedCount > 0) setEverBlocked(true);
+  }, [blockedCount]);
+
+  // A view-only collapse to the blocked rows. When the last blocker clears the
+  // filtered view is empty, so fall back to the full table rather than a void.
+  const visibleRows = attentionOnly && blockedCount > 0 ? blockedRows : rows;
+
+  // Focus the next blocked description input on each pill click, cycling in row
+  // order. Refs are keyed by row id so the jump survives filtering and edits.
+  const descRefs = useRef(new Map<string, HTMLInputElement>());
+  const jumpCursor = useRef(0);
+  const jumpToNextBlocked = () => {
+    if (blockedCount === 0) return;
+    const target = blockedRows[jumpCursor.current % blockedCount];
+    jumpCursor.current += 1;
+    const el = descRefs.current.get(target.id);
+    el?.scrollIntoView({ block: "center" });
+    el?.focus();
+  };
+
   const next = () => setStep((s) => Math.min(3, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
 
@@ -159,6 +200,12 @@ export default function ImportWizard({
         <Button variant="secondary" icon="ArrowLeft" onClick={back}>
           Back
         </Button>
+        {blockedCount > 0 && (
+          <StyledBlockedPill type="button" onClick={jumpToNextBlocked}>
+            <AlertCircle size={13} />
+            {`${blockedCount} row${blockedCount !== 1 ? "s" : ""} need${blockedCount === 1 ? "s" : ""} a description`}
+          </StyledBlockedPill>
+        )}
         <Button
           variant="primary"
           icon="Check"
@@ -304,6 +351,17 @@ export default function ImportWizard({
                   {`${summary.recurring} recurring`}
                 </StyledFlagBadge>
               )}
+              {everBlocked && (
+                <StyledAttentionToggle
+                  type="button"
+                  $on={attentionOnly}
+                  aria-pressed={attentionOnly}
+                  onClick={() => setAttentionOnly((v) => !v)}
+                >
+                  <AlertCircle size={11} />
+                  Needs attention
+                </StyledAttentionToggle>
+              )}
             </StyledReviewSummary>
 
             {rejected && rejected.count > 0 && (
@@ -332,7 +390,7 @@ export default function ImportWizard({
               <span>Amount</span>
             </StyledReviewHead>
             <StyledReviewBody>
-              {rows.map((r, i) => {
+              {visibleRows.map((r, i) => {
                 // A blocker only surfaces on a row that will actually commit;
                 // unchecking is the other way to resolve it.
                 const showsError = r.included && r.blockers.length > 0;
@@ -354,6 +412,10 @@ export default function ImportWizard({
                     </StyledCheck>
                     <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
                     <StyledReviewDesc
+                      ref={(el) => {
+                        if (el) descRefs.current.set(r.id, el);
+                        else descRefs.current.delete(r.id);
+                      }}
                       value={r.description}
                       aria-label="Description"
                       aria-invalid={showsError}
