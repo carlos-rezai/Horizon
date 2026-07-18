@@ -5,6 +5,7 @@ import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import PageHeader from "../../../components/PageHeader/PageHeader";
 import Button from "../../../primitives/Button/Button";
 import Spinner from "../../../primitives/Spinner/Spinner";
+import { pluralize } from "../../../utils/format/format";
 import { useImport } from "../useImport";
 import type { ImportedStatement } from "../importTypes";
 import Dropzone from "../Dropzone/Dropzone";
@@ -125,7 +126,7 @@ export default function ImportView() {
           onClose={() => setWizard(null)}
           onDone={({ account, included, skipped }) =>
             notify(
-              `${included} transaction${included !== 1 ? "s" : ""} imported to ${account.name}${
+              `${pluralize(included, "transaction")} imported to ${account.name}${
                 skipped > 0 ? ` · ${skipped} skipped` : ""
               }`,
               { variant: "success" }

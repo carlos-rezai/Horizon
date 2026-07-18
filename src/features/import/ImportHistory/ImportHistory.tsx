@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Banknote, ChevronRight, Search, Trash2, Upload } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import { resolveAccountColor } from "../../../utils/color/color";
+import { pluralize } from "../../../utils/format/format";
 import Tabs, { type TabItem } from "../../../primitives/Tabs/Tabs";
 import Button from "../../../primitives/Button/Button";
 import Badge from "../../../primitives/Badge/Badge";
@@ -142,7 +143,7 @@ export default function ImportHistory({
                 <StyledYear>{year}</StyledYear>
                 <StyledSpacer />
                 <StyledYearCount>
-                  {files.length} statement{files.length !== 1 ? "s" : ""}
+                  {pluralize(files.length, "statement")}
                 </StyledYearCount>
                 <StyledYearTotal>
                   {yearTotal.toLocaleString("de-DE")} tx
