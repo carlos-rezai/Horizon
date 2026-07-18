@@ -86,6 +86,21 @@ export function formatMonthLong(yyyyMM: string): string {
   return `${MONTHS_LONG[parseInt(month, 10) - 1]} ${year}`;
 }
 
+/**
+ * A count paired with its noun, pluralized: `pluralize(1, "row")` → `"1 row"`,
+ * `pluralize(2, "row")` → `"2 rows"`. `plural` defaults to `singular + "s"`;
+ * pass it for irregular nouns. Used across the Import surfaces where a count is
+ * always shown with its noun. Verb agreement is deliberately not handled here —
+ * it stays at the one call site that needs it.
+ */
+export function pluralize(
+  count: number,
+  singular: string,
+  plural: string = `${singular}s`
+): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function toOrdinal(n: number): string {
   const mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return `${n}th`;

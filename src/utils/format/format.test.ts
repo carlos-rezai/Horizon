@@ -6,6 +6,7 @@ import {
   formatFileSizeKB,
   formatMonth,
   formatMonthLong,
+  pluralize,
   toOrdinal,
 } from "./format";
 
@@ -107,6 +108,22 @@ describe("formatMonthLong", () => {
     expect(formatMonthLong("2031-10")).toBe("October 2031"));
   it("maps December to the full month name", () =>
     expect(formatMonthLong("2026-12")).toBe("December 2026"));
+});
+
+describe("pluralize", () => {
+  it("keeps the singular noun for a count of 1", () => {
+    expect(pluralize(1, "row")).toBe("1 row");
+  });
+
+  it("adds a default 's' for a count other than 1", () => {
+    expect(pluralize(2, "row")).toBe("2 rows");
+    expect(pluralize(0, "row")).toBe("0 rows");
+  });
+
+  it("uses an explicit plural for irregular nouns", () => {
+    expect(pluralize(1, "entry", "entries")).toBe("1 entry");
+    expect(pluralize(3, "entry", "entries")).toBe("3 entries");
+  });
 });
 
 describe("toOrdinal", () => {
