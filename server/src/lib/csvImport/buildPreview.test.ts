@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
 import { buildPreview } from "./buildPreview.js";
-import type { StoredImportPreset } from "../../storage/types.js";
+import type { ColumnMapping, StoredImportPreset } from "../../storage/types.js";
 import type { Transaction, RecurringTransaction } from "../../storage/types.js";
 
 // buildPreview is the pure orchestration core behind POST /imports/preview:
@@ -207,6 +207,105 @@ describe("buildPreview", () => {
     );
     expect(supermarkt?.amount).toBe(-204100);
     expect(preview.decimal).toBe(".");
+  });
+
+  // Phase 5b: the Map-columns step's mapping override reaches the preview.
+  // Precedence is override ?? remembered ?? detected — the override wins so a
+  // correction the user makes in step 2 re-maps the very rows they're reviewing.
+  describe("mapping override", () => {
+    const rememberedSparkasse: StoredImportPreset = {
+      mapping: {
+        date: "Buchungstag",
+        description: "Verwendungszweck",
+        amount: "Betrag",
+      },
+      delimiter: ";",
+      decimal: ",",
+      dateFmt: "DD.MM.YY",
+    };
+
+    it("lets an override win over a remembered preset", async () => {
+      // Remembered reads Verwendungszweck; the override reads Buchungstext.
+      // The override must win — mapping echoed and rows re-columned from it.
+      const override: ColumnMapping = {
+        date: "Buchungstag",
+        description: "Buchungstext",
+        amount: "Betrag",
+      };
+
+      const preview = await buildPreview({
+        bytes: fixtureBytes("sparkasse-giro.csv"),
+        existingTxns: [],
+        recurring: [],
+        getRememberedPreset: async () => rememberedSparkasse,
+        mappingOverride: override,
+      });
+
+      expect(preview.mapping).toEqual(override);
+      // Buchungstext of the first booking is "FOLGELASTSCHRIFT" — neither the
+      // remembered Verwendungszweck nor the detected counterparty column.
+      expect(preview.rows[0].description).toBe("FOLGELASTSCHRIFT");
+    });
+
+    it("re-maps the emitted rows from the override's columns", async () => {
+      // Detected Sparkasse description is Beguenstigter/Zahlungspflichtiger
+      // ("MUSTER SUPERMARKT GMBH"). Override it to Verwendungszweck and the
+      // same row's description must switch to the override's column.
+      const override: ColumnMapping = {
+        date: "Buchungstag",
+        description: "Verwendungszweck",
+        amount: "Betrag",
+      };
+
+      const preview = await buildPreview({
+        bytes: fixtureBytes("sparkasse-giro.csv"),
+        existingTxns: [],
+        recurring: [],
+        getRememberedPreset: noPreset,
+        mappingOverride: override,
+      });
+
+      expect(preview.mapping).toEqual(override);
+      expect(preview.rows[0].description).toBe(
+        "Einkauf Lebensmittel Filiale 12"
+      );
+      // The detected counterparty column no longer drives any row.
+      expect(
+        preview.rows.some((r) => r.description === "MUSTER SUPERMARKT GMBH")
+      ).toBe(false);
+    });
+
+    it("falls back to the remembered preset when no override is given", async () => {
+      // No override: today's behaviour is unchanged — remembered still wins.
+      const preview = await buildPreview({
+        bytes: fixtureBytes("sparkasse-giro.csv"),
+        existingTxns: [],
+        recurring: [],
+        getRememberedPreset: async () => rememberedSparkasse,
+      });
+
+      expect(preview.mapping).toEqual(rememberedSparkasse.mapping);
+      expect(preview.rows[0].description).toBe(
+        "Einkauf Lebensmittel Filiale 12"
+      );
+    });
+
+    it("falls back to the detected mapping when neither override nor preset is given", async () => {
+      // No override, no remembered: detected mapping drives, exactly as now.
+      const preview = await buildPreview({
+        bytes: fixtureBytes("sparkasse-giro.csv"),
+        existingTxns: [],
+        recurring: [],
+        getRememberedPreset: noPreset,
+      });
+
+      expect(preview.mapping).toEqual({
+        date: "Buchungstag",
+        description: "Beguenstigter/Zahlungspflichtiger",
+        amount: "Betrag",
+      });
+      expect(preview.rows[0].description).toBe("MUSTER SUPERMARKT GMBH");
+    });
   });
 
   it("falls back to an adjustable mapping when the bank is unmatched", async () => {
