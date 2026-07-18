@@ -25,7 +25,23 @@ const POINTS = [
 
 const IMPORTS = [{ id: "imp-1", startDate: "2023-03-15" }];
 
-function mockFetch(points: unknown, imports: unknown) {
+// The page composes `useAccounts` for the chart's per-account series, so the
+// loaded-state fetch mock must stub `/accounts` with a representative account
+// whose id matches the points' `accounts` keys.
+const ACCOUNTS = [
+  {
+    id: "acc-1",
+    kind: "Girokonto",
+    name: "Main",
+    openingBalance: 0,
+    openingDate: "2020-01-01",
+    balance: 520000,
+    color: null,
+    showInTrajectory: true,
+  },
+];
+
+function mockFetch(points: unknown, imports: unknown, accounts: unknown = []) {
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = typeof input === "string" ? input : input.toString();
     if (url.includes("/projection/history")) {
@@ -33,6 +49,9 @@ function mockFetch(points: unknown, imports: unknown) {
     }
     if (url.includes("/imports")) {
       return { ok: true, json: async () => imports } as Response;
+    }
+    if (url.includes("/accounts")) {
+      return { ok: true, json: async () => accounts } as Response;
     }
     return { ok: true, json: async () => [] } as Response;
   });
@@ -84,7 +103,7 @@ describe("HistoryPage — empty state", () => {
 });
 
 describe("HistoryPage — loaded state", () => {
-  beforeEach(() => mockFetch(POINTS, IMPORTS));
+  beforeEach(() => mockFetch(POINTS, IMPORTS, ACCOUNTS));
 
   it("does not render the empty state once history is reconstructed", async () => {
     renderPage();
@@ -95,5 +114,10 @@ describe("HistoryPage — loaded state", () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(/no history yet/i)).not.toBeInTheDocument();
+  });
+
+  it("renders the reconstructed history chart", async () => {
+    renderPage();
+    expect(await screen.findByTestId("history-chart")).toBeInTheDocument();
   });
 });
