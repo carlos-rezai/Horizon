@@ -11,7 +11,6 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
 import { resolveAccountColor } from "../../../utils/color/color";
 import Modal from "../../../components/Modal/Modal";
-import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import Button from "../../../primitives/Button/Button";
 import Select from "../../../primitives/Select/Select";
 import Spinner from "../../../primitives/Spinner/Spinner";
@@ -23,6 +22,7 @@ import type {
 } from "../importTypes";
 import { useImportWizard } from "../useImportWizard";
 import type { RowFlag } from "../reviewRows";
+import ReviewTable, { type FlagSpec } from "./ReviewTable/ReviewTable";
 import {
   StyledWizard,
   StyledSteps,
@@ -56,14 +56,6 @@ import {
   StyledBlockedPill,
   StyledAttentionToggle,
   StyledFlagBadge,
-  StyledFlagCell,
-  StyledReviewHead,
-  StyledReviewBody,
-  StyledReviewRow,
-  StyledCheck,
-  StyledReviewDate,
-  StyledReviewDesc,
-  StyledReviewAmount,
   StyledFootnote,
 } from "./ImportWizard.styles";
 
@@ -74,15 +66,7 @@ const STEP_LABELS = ["Account", "Map columns", "Review"];
 // can never drift. `label` is the terse per-row badge; `summaryLabel` is the
 // counted summary phrasing. The per-row badges read straight off `row.flags`,
 // so the count and the exclusion can never drift apart either.
-const FLAG_SPECS: Record<
-  RowFlag,
-  {
-    label: string;
-    tone: "warn" | "neutral";
-    Icon: typeof Info;
-    summaryLabel: (count: number) => string;
-  }
-> = {
+const FLAG_SPECS: Record<RowFlag, FlagSpec> = {
   duplicate: {
     label: "Dupe",
     tone: "warn",
@@ -200,6 +184,10 @@ export default function ImportWizard({
   // Focus the next blocked description input on each pill click, cycling in row
   // order. Refs are keyed by row id so the jump survives filtering and edits.
   const descRefs = useRef(new Map<string, HTMLInputElement>());
+  const registerDescRef = (id: string, el: HTMLInputElement | null) => {
+    if (el) descRefs.current.set(id, el);
+    else descRefs.current.delete(id);
+  };
   const jumpCursor = useRef(0);
   const jumpToNextBlocked = () => {
     if (blockedCount === 0) return;
@@ -435,70 +423,14 @@ export default function ImportWizard({
               </StyledRejectedNote>
             )}
 
-            <StyledReviewHead>
-              <span />
-              <span>Date</span>
-              <span>Description</span>
-              <span>Category</span>
-              <span>Flag</span>
-              <span>Amount</span>
-            </StyledReviewHead>
-            <StyledReviewBody>
-              {visibleRows.map((r, i) => {
-                // A blocker only surfaces on a row that will actually commit;
-                // unchecking is the other way to resolve it.
-                const showsError = r.included && r.blockers.length > 0;
-                return (
-                  <StyledReviewRow
-                    key={r.id}
-                    $included={r.included}
-                    $alt={i % 2 === 1}
-                    $blocked={showsError}
-                  >
-                    <StyledCheck
-                      type="button"
-                      $on={r.included}
-                      aria-label="toggle"
-                      aria-pressed={r.included}
-                      onClick={() => toggle(r.id)}
-                    >
-                      {r.included && <Check size={12} />}
-                    </StyledCheck>
-                    <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
-                    <StyledReviewDesc
-                      ref={(el) => {
-                        if (el) descRefs.current.set(r.id, el);
-                        else descRefs.current.delete(r.id);
-                      }}
-                      value={r.description}
-                      aria-label="Description"
-                      aria-invalid={showsError}
-                      placeholder={showsError ? "Add a description" : undefined}
-                      $error={showsError}
-                      onChange={(e) => setDescription(r.id, e.target.value)}
-                    />
-                    <CategorySelect
-                      initialCategory={r.category}
-                      onChange={(name) => setCategory(r.id, name)}
-                    />
-                    <StyledFlagCell>
-                      {r.flags.map((flag) => {
-                        const { label, tone, Icon } = FLAG_SPECS[flag];
-                        return (
-                          <StyledFlagBadge key={flag} $tone={tone}>
-                            <Icon size={10} />
-                            {label}
-                          </StyledFlagBadge>
-                        );
-                      })}
-                    </StyledFlagCell>
-                    <StyledReviewAmount>
-                      <Money cents={r.amount} sign />
-                    </StyledReviewAmount>
-                  </StyledReviewRow>
-                );
-              })}
-            </StyledReviewBody>
+            <ReviewTable
+              rows={visibleRows}
+              flagSpecs={FLAG_SPECS}
+              toggle={toggle}
+              setCategory={setCategory}
+              setDescription={setDescription}
+              registerDescRef={registerDescRef}
+            />
             {submitError && <StyledNote>{submitError}</StyledNote>}
             <StyledFootnote>
               <Info size={13} />
