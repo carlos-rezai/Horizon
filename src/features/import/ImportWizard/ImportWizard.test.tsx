@@ -6,7 +6,15 @@ import {
   fireEvent,
   waitFor,
 } from "@testing-library/react";
-import { describe, it, expect, afterEach, vi, type Mock } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  afterEach,
+  beforeAll,
+  vi,
+  type Mock,
+} from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import ImportWizard from "./ImportWizard";
@@ -615,5 +623,332 @@ describe("ImportWizard — rejected-rows note (#191)", () => {
     expect(
       screen.getByRole("button", { name: /import 2 transactions/i })
     ).toBeDisabled();
+  });
+});
+
+/**
+ * Issue #193 — navigation at year scale. Three blocked rows in twelve hundred
+ * are unfindable by eye, so the review step grows two view-only affordances:
+ *
+ * - A **pill** reading "N rows need a description" beside the Import button.
+ *   Clicking it jumps focus to the next blocked description input, keeping the
+ *   surrounding rows in context.
+ * - A **"Needs attention"** toggle that collapses the table to just the blocked
+ *   rows — each an input, Tab walking straight through them.
+ *
+ * "Needs attention" means the same thing the commit gate means: a row that is
+ * *included* **and** *blocked*. Unchecking a blocked row resolves it, so it
+ * leaves both the pill count and the filtered view. Neither affordance can
+ * change inclusion, descriptions, or what commits — they only change what the
+ * user is looking at. On a clean statement, neither appears.
+ *
+ * The pill is a <button> named "N rows need a description"; the filter is a
+ * toggle <button> named "Needs attention" whose aria-pressed reflects its
+ * state. Jump is asserted through document.activeElement — scrollIntoView is
+ * stubbed so a scroll call can't fail the test for the wrong reason.
+ */
+
+/** Four parsed rows, two of them blank-description and both included. */
+function makeMultiBlockedPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "REWE",
+        amount: -1299,
+        category: "Food",
+      },
+      {
+        id: "r1",
+        date: "2026-03-06",
+        description: "",
+        amount: -4500,
+        category: "Food",
+      },
+      {
+        id: "r2",
+        date: "2026-03-07",
+        description: "EDEKA",
+        amount: -2200,
+        category: "Food",
+      },
+      {
+        id: "r3",
+        date: "2026-03-08",
+        description: "",
+        amount: -1850,
+        category: "Food",
+      },
+    ],
+    summary: {
+      total: 4,
+      duplicates: 0,
+      recurring: 0,
+      pending: 0,
+      rejected: { count: 0, samples: [] },
+    },
+  };
+}
+
+/**
+ * Three rows: one clean, one blank-and-included, one blank-and-duplicate. The
+ * duplicate is pre-unchecked, so its blank description is *not* a problem — an
+ * excluded row can't block. The pill and filter must count only the included
+ * blocked row.
+ */
+function makeMixedBlockedPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "REWE",
+        amount: -1299,
+        category: "Food",
+      },
+      {
+        id: "r1",
+        date: "2026-03-06",
+        description: "",
+        amount: -4500,
+        category: "Food",
+      },
+      {
+        id: "r2",
+        date: "2026-03-07",
+        description: "",
+        amount: -2200,
+        category: "Food",
+        duplicate: true,
+      },
+    ],
+    summary: {
+      total: 3,
+      duplicates: 1,
+      recurring: 0,
+      pending: 0,
+      rejected: { count: 0, samples: [] },
+    },
+  };
+}
+
+describe("ImportWizard — blocked-rows pill and Needs attention filter (#193)", () => {
+  // jsdom has no layout engine, so scrollIntoView is undefined. A jump that
+  // scrolls the row into view must not throw; focus is the assertable part.
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it("shows a pill counting the included blocked rows beside the Import button", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMultiBlockedPreview()
+    );
+
+    await gotoReview();
+
+    // Two blank rows, both included → the scale of the problem, stated up front.
+    expect(
+      await screen.findByRole("button", {
+        name: /2 rows need a description/i,
+      })
+    ).toBeInTheDocument();
+    // The button doesn't shout; the pill is the thing to act on.
+    expect(
+      screen.getByRole("button", { name: /import 4 transactions/i })
+    ).toBeDisabled();
+  });
+
+  it("shows no pill and no filter when nothing is blocked", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(twoCategories, vi.fn<CommitFn>().mockResolvedValue(undefined));
+
+    await gotoReview();
+    await screen.findAllByRole("option", { name: "Food" });
+
+    // Happy path stays quiet: no navigation for a table that needs none.
+    expect(
+      screen.queryByRole("button", { name: /need.* a description/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /needs attention/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("jumps focus to the next blocked description input each time the pill is clicked", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMultiBlockedPreview()
+    );
+
+    await gotoReview();
+
+    // inputs = [REWE, "", EDEKA, ""] → the blocked ones are indices 1 and 3.
+    const pill = await screen.findByRole("button", {
+      name: /2 rows need a description/i,
+    });
+
+    fireEvent.click(pill);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(descriptionInputs()[1])
+    );
+
+    fireEvent.click(pill);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(descriptionInputs()[3])
+    );
+  });
+
+  it("collapses the table to just the blocked rows when Needs attention is on", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMultiBlockedPreview()
+    );
+
+    await gotoReview();
+    expect(descriptionInputs()).toHaveLength(4);
+
+    fireEvent.click(screen.getByRole("button", { name: /needs attention/i }));
+
+    // Only the two blank rows remain — each an input ready to be repaired.
+    const remaining = descriptionInputs();
+    expect(remaining).toHaveLength(2);
+    expect(remaining[0]).toHaveValue("");
+    expect(remaining[1]).toHaveValue("");
+  });
+
+  it("has the filter obviously off by default, with the whole statement visible", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMultiBlockedPreview()
+    );
+
+    await gotoReview();
+
+    const filter = screen.getByRole("button", { name: /needs attention/i });
+    expect(filter).toHaveAttribute("aria-pressed", "false");
+    // The user always starts by seeing everything.
+    expect(descriptionInputs()).toHaveLength(4);
+  });
+
+  it("is view-only: toggling the filter on then off changes no description and no inclusion count", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMultiBlockedPreview()
+    );
+
+    await gotoReview();
+    const filter = screen.getByRole("button", { name: /needs attention/i });
+
+    fireEvent.click(filter); // on → collapsed to the 2 blocked rows
+    expect(descriptionInputs()).toHaveLength(2);
+    fireEvent.click(filter); // off → the whole statement is back
+
+    const inputs = descriptionInputs();
+    expect(inputs).toHaveLength(4);
+    expect(inputs[0]).toHaveValue("REWE");
+    expect(inputs[1]).toHaveValue("");
+    expect(inputs[2]).toHaveValue("EDEKA");
+    expect(inputs[3]).toHaveValue("");
+    // All four rows were and remain included — turning a view on didn't drop one.
+    expect(
+      screen.getByRole("button", { name: /import 4 transactions/i })
+    ).toBeInTheDocument();
+  });
+
+  it("never changes what commits: repaired rows commit in full regardless of the filter", async () => {
+    mockCategoryFetch(twoCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(twoCategories, commit, makeMultiBlockedPreview());
+
+    await gotoReview();
+
+    // Repair both blanks, then toggle the filter on and off before committing.
+    fireEvent.change(descriptionInputs()[1], {
+      target: { value: "Bäckerei Müller" },
+    });
+    fireEvent.change(descriptionInputs()[3], { target: { value: "Kiosk" } });
+
+    const filter = screen.getByRole("button", { name: /needs attention/i });
+    fireEvent.click(filter);
+    fireEvent.click(filter);
+
+    const importBtn = screen.getByRole("button", {
+      name: /import 4 transactions/i,
+    });
+    await waitFor(() => expect(importBtn).not.toBeDisabled());
+    fireEvent.click(importBtn);
+
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    const { rows } = commit.mock.calls[0][0];
+    // All four included rows commit — the filter touched none of them.
+    expect(rows).toHaveLength(4);
+    expect(rows[1]).toMatchObject({ description: "Bäckerei Müller" });
+    expect(rows[3]).toMatchObject({ description: "Kiosk" });
+  });
+
+  it("keeps the filtered blocked inputs focusable and in document order, so Tab walks through them", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMultiBlockedPreview()
+    );
+
+    await gotoReview();
+    fireEvent.click(screen.getByRole("button", { name: /needs attention/i }));
+
+    // The precondition for a keyboard flow: both are reachable by Tab (enabled,
+    // no negative tabindex) and the first precedes the second in the DOM, so
+    // forward tabbing lands on them in order.
+    const [first, second] = descriptionInputs();
+    expect(first).not.toBeDisabled();
+    expect(second).not.toBeDisabled();
+    expect(first.tabIndex).toBeGreaterThanOrEqual(0);
+    expect(second.tabIndex).toBeGreaterThanOrEqual(0);
+    expect(
+      first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("counts and filters only included blocked rows — an excluded blank row is left out", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeMixedBlockedPreview()
+    );
+
+    await gotoReview();
+
+    // r1 is blank+included; r2 is blank+duplicate (pre-unchecked). Only r1 needs
+    // attention — the count agrees with the commit gate, never with raw blanks.
+    expect(
+      await screen.findByRole("button", {
+        name: /1 row needs a description/i,
+      })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /needs attention/i }));
+
+    // The filtered view holds the one included blocked row, not the duplicate.
+    const remaining = descriptionInputs();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]).toHaveValue("");
   });
 });
