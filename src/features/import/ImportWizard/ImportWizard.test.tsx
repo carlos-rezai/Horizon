@@ -5,6 +5,7 @@ import {
   cleanup,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react";
 import {
   describe,
@@ -950,5 +951,176 @@ describe("ImportWizard — blocked-rows pill and Needs attention filter (#193)",
     const remaining = descriptionInputs();
     expect(remaining).toHaveLength(1);
     expect(remaining[0]).toHaveValue("");
+  });
+});
+
+/**
+ * Issue #194 — the `flags` array drives both the pre-uncheck and the badges from
+ * one source, so a counted-but-never-rendered flag becomes structurally
+ * impossible. Two live bugs die here: `pending` was counted by `summarizeReview`
+ * and badged by nothing, and a row that was both duplicate and recurring showed
+ * only the first badge (a hand-maintained ternary). Now every applicable flag
+ * renders its badge — in the row and in the summary bar.
+ *
+ * Badges are asserted by their visible text within a scope (the row, or the
+ * summary count) rather than by class, so they survive a restyle. The row is
+ * reached through its description input — the input and the Flag cell are
+ * siblings in the same review row.
+ */
+
+/** One clean row and one pending ("vorgemerkt") row. */
+function makePendingPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "REWE",
+        amount: -1299,
+        category: "Food",
+      },
+      {
+        id: "r1",
+        date: "2026-03-06",
+        description: "Amazon Umsatz vorgemerkt",
+        amount: -2999,
+        category: "Shopping",
+        pending: true,
+      },
+    ],
+    summary: {
+      total: 2,
+      duplicates: 0,
+      recurring: 0,
+      pending: 1,
+      rejected: { count: 0, samples: [] },
+    },
+  };
+}
+
+/** A single row that detection flagged as both a duplicate and recurring. */
+function makeBothFlagsPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "BVG Monatskarte",
+        amount: -4900,
+        category: "Transport",
+        duplicate: true,
+        recurring: true,
+      },
+    ],
+    summary: {
+      total: 1,
+      duplicates: 1,
+      recurring: 1,
+      pending: 0,
+      rejected: { count: 0, samples: [] },
+    },
+  };
+}
+
+/** One of each: clean, duplicate, recurring, pending. */
+function makeAllFlagsPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "REWE",
+        amount: -1299,
+        category: "Food",
+      },
+      {
+        id: "r1",
+        date: "2026-03-06",
+        description: "Restaurant Mitte",
+        amount: -6400,
+        category: "Dining",
+        duplicate: true,
+      },
+      {
+        id: "r2",
+        date: "2026-03-07",
+        description: "Gehalt",
+        amount: 250000,
+        category: "Income",
+        recurring: true,
+      },
+      {
+        id: "r3",
+        date: "2026-03-08",
+        description: "Amazon Umsatz vorgemerkt",
+        amount: -2999,
+        category: "Shopping",
+        pending: true,
+      },
+    ],
+    summary: {
+      total: 4,
+      duplicates: 1,
+      recurring: 1,
+      pending: 1,
+      rejected: { count: 0, samples: [] },
+    },
+  };
+}
+
+describe("ImportWizard — flags array drives exclusion and badges (#194)", () => {
+  it("badges a pending row — the flag summarizeReview counts but the table used to render nowhere", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makePendingPreview()
+    );
+
+    await gotoReview();
+
+    // The pending row's Flag cell now explains why Horizon set it aside.
+    const pendingRow = descriptionInputs()[1].parentElement as HTMLElement;
+    expect(within(pendingRow).getByText(/pend/i)).toBeInTheDocument();
+  });
+
+  it("renders both badges on a row that is duplicate and recurring, not just the first", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeBothFlagsPreview()
+    );
+
+    await gotoReview();
+
+    // The old ternary showed only "Dupe"; a user opting back in deserves both
+    // pieces of evidence.
+    const row = descriptionInputs()[0].parentElement as HTMLElement;
+    expect(within(row).getByText(/dupe/i)).toBeInTheDocument();
+    expect(within(row).getByText(/recur/i)).toBeInTheDocument();
+  });
+
+  it("counts pending in the summary bar alongside duplicates and recurring", async () => {
+    mockCategoryFetch(twoCategories);
+    renderWizard(
+      twoCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeAllFlagsPreview()
+    );
+
+    await gotoReview();
+
+    // The summary bar shows all three tallies; pending is no longer counted in
+    // silence.
+    expect(await screen.findByText(/1 likely duplicate/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 recurring/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 pending/i)).toBeInTheDocument();
   });
 });

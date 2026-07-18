@@ -3,6 +3,7 @@ import {
   blockersFor,
   buildReviewRows,
   canCommit,
+  flagsFor,
   summarizeReview,
 } from "./reviewRows";
 import type { ParsedImportRow, ReviewRow } from "./reviewRows";
@@ -99,12 +100,22 @@ describe("buildReviewRows", () => {
 
   it("keeps a pre-unchecked pending row re-checkable — its value is preserved, not dropped", () => {
     const [row] = buildReviewRows([pending]);
-    expect(row).toEqual({ ...pending, included: false, blockers: [] });
+    expect(row).toEqual({
+      ...pending,
+      included: false,
+      flags: ["pending"],
+      blockers: [],
+    });
   });
 
   it("preserves all non-flag fields unchanged", () => {
     const [row] = buildReviewRows([clean]);
-    expect(row).toEqual({ ...clean, included: true, blockers: [] });
+    expect(row).toEqual({
+      ...clean,
+      included: true,
+      flags: [],
+      blockers: [],
+    });
   });
 
   it("attaches a description blocker to a blank-description row", () => {
@@ -126,6 +137,64 @@ describe("buildReviewRows", () => {
     const [row] = buildReviewRows([duplicateAndBlank]);
     expect(row.included).toBe(false);
     expect(row.blockers).toEqual(["description"]);
+  });
+
+  it("stamps the flag list on each row so the badges read from the same source as the pre-uncheck", () => {
+    const [row] = buildReviewRows([both]);
+    expect(row.flags).toEqual(["duplicate", "recurring"]);
+  });
+
+  it("stamps a pending flag so the row Horizon set aside can finally show why", () => {
+    const [row] = buildReviewRows([pending]);
+    expect(row.flags).toEqual(["pending"]);
+  });
+
+  it("leaves a clean row with an empty flag list", () => {
+    const [row] = buildReviewRows([clean]);
+    expect(row.flags).toEqual([]);
+  });
+
+  it("derives inclusion from the flag list — the badge count and the exclusion decision always agree", () => {
+    const rows = buildReviewRows([clean, duplicate, recurring, both, pending]);
+    for (const row of rows) {
+      expect(row.included).toBe(row.flags.length === 0);
+    }
+  });
+
+  it("keeps a soft flag off the row for a duplicate-and-blank row while still recording it as flagged and excluded", () => {
+    const [row] = buildReviewRows([duplicateAndBlank]);
+    expect(row.flags).toEqual(["duplicate"]);
+    expect(row.included).toBe(false);
+  });
+});
+
+describe("flagsFor", () => {
+  it("reports no flags for a clean row", () => {
+    expect(flagsFor(clean)).toEqual([]);
+  });
+
+  it("reports a duplicate flag", () => {
+    expect(flagsFor(duplicate)).toEqual(["duplicate"]);
+  });
+
+  it("reports a recurring flag", () => {
+    expect(flagsFor(recurring)).toEqual(["recurring"]);
+  });
+
+  it("reports a pending flag — the reason summarizeReview counts a row but the table used to render nothing", () => {
+    expect(flagsFor(pending)).toEqual(["pending"]);
+  });
+
+  it("reports both flags for a row that is duplicate and recurring", () => {
+    expect(flagsFor(both)).toEqual(["duplicate", "recurring"]);
+  });
+
+  it("does not treat a blank description as a flag — a blocker is never a flag", () => {
+    expect(flagsFor(blank)).toEqual([]);
+  });
+
+  it("reports only the soft flag, not the blocker, for a duplicate-and-blank row", () => {
+    expect(flagsFor(duplicateAndBlank)).toEqual(["duplicate"]);
   });
 });
 
