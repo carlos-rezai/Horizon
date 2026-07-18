@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, RefreshCw, Info, Banknote, AlertCircle } from "lucide-react";
+import {
+  Check,
+  RefreshCw,
+  Info,
+  Banknote,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
 import { resolveAccountColor } from "../../../utils/color/color";
@@ -15,6 +22,7 @@ import type {
   ImportPreview as ImportPreviewData,
 } from "../importTypes";
 import { useImportWizard } from "../useImportWizard";
+import type { RowFlag } from "../reviewRows";
 import {
   StyledWizard,
   StyledSteps,
@@ -48,6 +56,7 @@ import {
   StyledBlockedPill,
   StyledAttentionToggle,
   StyledFlagBadge,
+  StyledFlagCell,
   StyledReviewHead,
   StyledReviewBody,
   StyledReviewRow,
@@ -59,6 +68,17 @@ import {
 } from "./ImportWizard.styles";
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
+
+// One badge spec per soft flag. The row reads its badges straight off
+// `row.flags`, so the count and the exclusion can never drift apart.
+const FLAG_BADGES: Record<
+  RowFlag,
+  { label: string; tone: "warn" | "neutral"; Icon: typeof Info }
+> = {
+  duplicate: { label: "Dupe", tone: "warn", Icon: Info },
+  recurring: { label: "Recur", tone: "neutral", Icon: RefreshCw },
+  pending: { label: "Pending", tone: "neutral", Icon: Clock },
+};
 
 interface Props {
   importAccounts: AccountWithBalance[];
@@ -351,6 +371,12 @@ export default function ImportWizard({
                   {`${summary.recurring} recurring`}
                 </StyledFlagBadge>
               )}
+              {summary.pending > 0 && (
+                <StyledFlagBadge $tone="neutral">
+                  <Clock size={11} />
+                  {`${summary.pending} pending`}
+                </StyledFlagBadge>
+              )}
               {everBlocked && (
                 <StyledAttentionToggle
                   type="button"
@@ -427,19 +453,17 @@ export default function ImportWizard({
                       initialCategory={r.category}
                       onChange={(name) => setCategory(r.id, name)}
                     />
-                    <span>
-                      {r.duplicate ? (
-                        <StyledFlagBadge $tone="warn">
-                          <Info size={10} />
-                          Dupe
-                        </StyledFlagBadge>
-                      ) : r.recurring ? (
-                        <StyledFlagBadge $tone="neutral">
-                          <RefreshCw size={10} />
-                          Recur
-                        </StyledFlagBadge>
-                      ) : null}
-                    </span>
+                    <StyledFlagCell>
+                      {r.flags.map((flag) => {
+                        const { label, tone, Icon } = FLAG_BADGES[flag];
+                        return (
+                          <StyledFlagBadge key={flag} $tone={tone}>
+                            <Icon size={10} />
+                            {label}
+                          </StyledFlagBadge>
+                        );
+                      })}
+                    </StyledFlagCell>
                     <StyledReviewAmount>
                       <Money cents={r.amount} sign />
                     </StyledReviewAmount>
@@ -450,8 +474,9 @@ export default function ImportWizard({
             {submitError && <StyledNote>{submitError}</StyledNote>}
             <StyledFootnote>
               <Info size={13} />
-              Duplicates and recurring rows are unchecked by default to avoid
-              double-counting what Horizon already tracks.
+              Duplicate, recurring, and pending rows are unchecked by default to
+              avoid double-counting what Horizon already tracks or importing a
+              booking that hasn't settled.
             </StyledFootnote>
           </div>
         )}

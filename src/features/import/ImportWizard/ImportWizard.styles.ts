@@ -374,7 +374,16 @@ export const StyledRejectedSample = styled.div`
   }
 `;
 
-const REVIEW_GRID = "34px 78px minmax(0, 1fr) 130px 72px 96px";
+/* Holds every applicable flag badge. Wraps rather than truncating so a row that
+   is both duplicate and recurring never hides one behind the other. */
+export const StyledFlagCell = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+`;
+
+const REVIEW_GRID = "34px 78px minmax(0, 1fr) 130px 110px 96px";
 
 export const StyledReviewHead = styled.div`
   display: grid;

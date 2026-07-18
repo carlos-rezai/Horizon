@@ -32,9 +32,17 @@ export interface ParsedImportRow {
  */
 export type RowBlocker = "description";
 
-/** A parsed row with its import-selection state and its hard blockers. */
+/**
+ * A soft reason Horizon pre-excluded the row. Drives both the pre-uncheck and
+ * the badges from one source, so a counted-but-never-rendered flag — as
+ * `pending` once was — becomes structurally impossible.
+ */
+export type RowFlag = "duplicate" | "recurring" | "pending";
+
+/** A parsed row with its import-selection state, its soft flags, and its hard blockers. */
 export interface ReviewRow extends ParsedImportRow {
   included: boolean;
+  flags: RowFlag[];
   blockers: RowBlocker[];
 }
 
@@ -55,12 +63,30 @@ export function blockersFor(row: ParsedImportRow): RowBlocker[] {
   return row.description.trim() === "" ? ["description"] : [];
 }
 
+/**
+ * The single source for a row's soft flags. Ordered duplicate → recurring →
+ * pending so a row with two flags reads its badges in a stable order. A blocker
+ * is never a flag — a blank description gates the commit, it is not a reason
+ * Horizon set the row aside.
+ */
+export function flagsFor(row: ParsedImportRow): RowFlag[] {
+  const flags: RowFlag[] = [];
+  if (row.duplicate) flags.push("duplicate");
+  if (row.recurring) flags.push("recurring");
+  if (row.pending) flags.push("pending");
+  return flags;
+}
+
 export function buildReviewRows(rows: ParsedImportRow[]): ReviewRow[] {
-  return rows.map((row) => ({
-    ...row,
-    included: !row.duplicate && !row.recurring && !row.pending,
-    blockers: blockersFor(row),
-  }));
+  return rows.map((row) => {
+    const flags = flagsFor(row);
+    return {
+      ...row,
+      included: flags.length === 0,
+      flags,
+      blockers: blockersFor(row),
+    };
+  });
 }
 
 /** Included rows only — unchecking a row is a real way out, not a trick. */
