@@ -14,6 +14,7 @@ import {
   type ReviewRow,
   type ReviewSummary,
 } from "./reviewRows";
+import { attributeIssues, ImportCommitError } from "./importErrors";
 
 interface UseImportWizardParams {
   importAccounts: AccountWithBalance[];
@@ -172,6 +173,9 @@ export function useImportWizard({
     if (!account || !data) return;
     setSubmitting(true);
     setSubmitError(null);
+    // The exact filtered payload the server will index its issues against:
+    // payload index n is includedRows[n], so its id is the row to blame.
+    const includedRows = rows.filter((r) => r.included);
     try {
       await commit({
         accountId: account.id,
@@ -182,14 +186,12 @@ export function useImportWizard({
         delimiter: data.delimiter,
         decimal: data.decimal,
         dateFmt: data.dateFmt,
-        rows: rows
-          .filter((r) => r.included)
-          .map((r) => ({
-            date: r.date,
-            amount: r.amount,
-            description: r.description,
-            category: r.category,
-          })),
+        rows: includedRows.map((r) => ({
+          date: r.date,
+          amount: r.amount,
+          description: r.description,
+          category: r.category,
+        })),
       });
       onDone({
         account,
@@ -198,6 +200,22 @@ export function useImportWizard({
       });
       onClose();
     } catch (err: unknown) {
+      // A structured rejection lands each issue on its row — the same error
+      // cell, accent, and commit gate a client-detected blocker uses — and
+      // keeps the readable message as the floor. Anything else is just the
+      // message.
+      if (err instanceof ImportCommitError && err.issues.length > 0) {
+        const { byRowId } = attributeIssues(
+          err.issues,
+          includedRows.map((r) => r.id)
+        );
+        setRows((rs) =>
+          rs.map((r) => {
+            const blockers = byRowId.get(r.id);
+            return blockers ? { ...r, blockers } : r;
+          })
+        );
+      }
       setSubmitError(err instanceof Error ? err.message : "Import failed");
       setSubmitting(false);
     }

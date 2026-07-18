@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import { API_BASE } from "../../utils/api/api";
 import { formatFileSizeKB } from "../../utils/format/format";
+import { ImportCommitError, type AttributableIssue } from "./importErrors";
 import type {
   CommitImportInput,
   ImportPreview,
@@ -129,8 +130,12 @@ export function useImport(accounts: AccountWithBalance[]): UseImportResult {
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
+          issues?: AttributableIssue[];
         };
-        throw new Error(data.error ?? "Failed to import statement");
+        throw new ImportCommitError(
+          data.error ?? "Failed to import statement",
+          data.issues ?? []
+        );
       }
 
       refresh();

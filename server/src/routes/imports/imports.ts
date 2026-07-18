@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import multer from "multer";
-import { ImportCreateSchema } from "./import.js";
+import { ImportCreateSchema, describeImportIssues } from "./import.js";
 import {
   buildPreview,
   StatementParseError,
@@ -24,7 +24,12 @@ function getStorage(req: Request): Storage {
 router.post("/", async (req, res) => {
   const parsed = ImportCreateSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ issues: parsed.error.issues });
+    // Both fields, always: `error` is the readable floor, `issues` is the
+    // structure the client attributes back onto the offending rows.
+    res.status(400).json({
+      error: describeImportIssues(parsed.error.issues),
+      issues: parsed.error.issues,
+    });
     return;
   }
 
