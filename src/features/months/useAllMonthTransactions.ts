@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { Transaction } from "../../types/transaction";
 import { API_BASE } from "../../utils/api/api";
+import { monthTransactionsKey } from "./monthTransactionsKey";
 
 interface UseAllMonthTransactionsResult {
   transactions: Transaction[];
@@ -8,48 +9,41 @@ interface UseAllMonthTransactionsResult {
   refetch: () => void;
 }
 
+/**
+ * Stable identity for the not-yet-loaded case, so consumers never see a fresh
+ * array on every render.
+ */
+const NO_TRANSACTIONS: Transaction[] = [];
+
+async function fetchAllMonthTransactions(
+  accountIds: readonly string[],
+  month: string
+): Promise<Transaction[]> {
+  if (accountIds.length === 0) return NO_TRANSACTIONS;
+
+  const perAccount = await Promise.all(
+    accountIds.map((id) =>
+      fetch(`${API_BASE}/accounts/${id}/transactions?month=${month}`).then(
+        (res) => res.json() as Promise<Transaction[]>
+      )
+    )
+  );
+
+  return perAccount.flat();
+}
+
 export function useAllMonthTransactions(
   accountIds: string[],
   month: string
 ): UseAllMonthTransactionsResult {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(accountIds.length > 0);
-  const [fetchKey, setFetchKey] = useState(0);
+  const { data, isLoading, refresh } = useCachedResource<Transaction[]>(
+    monthTransactionsKey(accountIds, month),
+    () => fetchAllMonthTransactions(accountIds, month)
+  );
 
-  const accountIdsKey = accountIds.join(",");
-
-  useEffect(() => {
-    if (accountIds.length === 0) {
-      setTransactions([]);
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-
-    Promise.all(
-      accountIds.map((id) =>
-        fetch(`${API_BASE}/accounts/${id}/transactions?month=${month}`).then(
-          (res) => res.json() as Promise<Transaction[]>
-        )
-      )
-    ).then((results) => {
-      if (!cancelled) {
-        setTransactions(results.flat());
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountIdsKey, month, fetchKey]);
-
-  function refetch() {
-    setFetchKey((k) => k + 1);
-  }
-
-  return { transactions, isLoading, refetch };
+  return {
+    transactions: data ?? NO_TRANSACTIONS,
+    isLoading,
+    refetch: refresh,
+  };
 }

@@ -1,28 +1,16 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useSyncExternalStore,
-} from "react";
-import type { ResourceCache } from "./resourceCache";
-
-export const CacheContext = createContext<ResourceCache | null>(null);
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { useCache } from "./cacheContext";
 
 export interface CachedResource<T> {
   data: T | undefined;
   isLoading: boolean;
   error: string | null;
   refresh: () => void;
-}
-
-function useCache(): ResourceCache {
-  const cache = useContext(CacheContext);
-  if (!cache) {
-    throw new Error("useCachedResource must be used within a CacheProvider");
-  }
-  return cache;
+  /**
+   * Publishes a value to every reader of the key without refetching it.
+   * Accepts an updater, which is applied to whatever is cached at write time.
+   */
+  setData: (value: T | ((previous: T | undefined) => T)) => void;
 }
 
 /**
@@ -37,7 +25,7 @@ export function useCachedResource<T>(
   key: string,
   fetcher: () => Promise<T>
 ): CachedResource<T> {
-  const cache = useCache();
+  const cache = useCache("useCachedResource");
   const fetcherRef = useRef(fetcher);
 
   useEffect(() => {
@@ -60,10 +48,18 @@ export function useCachedResource<T>(
     cache.read(key, () => fetcherRef.current(), true);
   }, [cache, key]);
 
+  const setData = useCallback(
+    (value: T | ((previous: T | undefined) => T)) => {
+      cache.setData(key, value);
+    },
+    [cache, key]
+  );
+
   return {
     data: entry.hasValue ? (entry.value as T) : undefined,
     isLoading: !entry.hasValue && entry.error === null,
     error: entry.error,
     refresh,
+    setData,
   };
 }

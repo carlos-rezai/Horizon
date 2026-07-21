@@ -34,6 +34,10 @@ export class ResourceCache {
   private readonly inFlight = new Set<string>();
   private readonly requestIds = new Map<string, number>();
   private readonly listeners = new Map<string, Set<Listener>>();
+  /** Last fetcher seen for a key, so an invalidation can re-run it itself. */
+  private readonly fetchers = new Map<string, () => Promise<unknown>>();
+  /** Keys invalidated while nobody was reading them — refetched on next read. */
+  private readonly stale = new Set<string>();
 
   getEntry(key: string): CacheEntry {
     return this.entries.get(key) ?? EMPTY_ENTRY;
@@ -62,13 +66,19 @@ export class ResourceCache {
    * lets a revisit paint immediately and reconcile afterwards.
    */
   read<T>(key: string, fetcher: () => Promise<T>, force = false): void {
-    if (this.inFlight.has(key) && !force) return;
+    this.fetchers.set(key, fetcher);
+
+    // An invalidation that landed while this key had no reader is honoured by
+    // the first read that follows it, and consumed either way.
+    const wasStale = this.stale.delete(key);
+    const forced = force || wasStale;
+    if (this.inFlight.has(key) && !forced) return;
 
     const requestId = (this.requestIds.get(key) ?? 0) + 1;
     this.requestIds.set(key, requestId);
     this.inFlight.add(key);
 
-    if (force) {
+    if (forced) {
       // A forced read starts clean, so an earlier failure cannot outlive the
       // request sent to replace it.
       this.write(key, { ...this.getEntry(key), error: null });
@@ -90,6 +100,48 @@ export class ResourceCache {
         if (this.isCurrent(key, requestId)) this.inFlight.delete(key);
       }
     })();
+  }
+
+  /**
+   * Marks keys as no longer trustworthy after a mutation elsewhere in the app.
+   *
+   * A key someone is currently reading is refetched at once, so the view
+   * updates without waiting to be revisited. A key nobody is reading is only
+   * flagged — refetching data no component is showing would be wasted work —
+   * and the flag forces the next read of it to go to the server.
+   */
+  invalidate(keys: readonly string[]): void {
+    for (const key of keys) {
+      const fetcher = this.fetchers.get(key);
+      const hasReaders = (this.listeners.get(key)?.size ?? 0) > 0;
+
+      if (fetcher && hasReaders) {
+        this.read(key, fetcher, true);
+      } else {
+        this.stale.add(key);
+      }
+    }
+  }
+
+  /**
+   * Publishes a value to every reader of `key` without a request, so a hook
+   * that already knows the new state — it just performed the mutation that
+   * produced it — can keep its list in place instead of refetching it.
+   *
+   * An updater is resolved against whatever is cached at the moment of the
+   * write, not at the moment the caller read it: a mutation resolves after an
+   * await, and a revalidation may have landed in between.
+   */
+  setData<T>(key: string, next: T | ((previous: T | undefined) => T)): void {
+    const entry = this.getEntry(key);
+    const value =
+      typeof next === "function"
+        ? (next as (previous: T | undefined) => T)(
+            entry.hasValue ? (entry.value as T) : undefined
+          )
+        : next;
+
+    this.write(key, { value, hasValue: true, error: null });
   }
 
   private isCurrent(key: string, requestId: number): boolean {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { MonthlySnapshot } from "../../types/projection";
 import { API_BASE } from "../../utils/api/api";
 
@@ -10,40 +10,28 @@ interface UseProjectionResult {
   refetch: () => void;
 }
 
+/**
+ * Stable identity for the not-yet-loaded case, so consumers never see a fresh
+ * array on every render.
+ */
+const NO_SNAPSHOTS: MonthlySnapshot[] = [];
+
+async function fetchProjection(): Promise<MonthlySnapshot[]> {
+  const res = await fetch(`${API_BASE}/projection?months=240`);
+  if (!res.ok) throw new Error(`Failed to fetch projection: ${res.status}`);
+  return (await res.json()) as MonthlySnapshot[];
+}
+
 export function useProjection(): UseProjectionResult {
-  const [snapshots, setSnapshots] = useState<MonthlySnapshot[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
+  const { data, isLoading, error, refresh } = useCachedResource(
+    "projection",
+    fetchProjection
+  );
 
-  const refetch = useCallback(() => setNonce((n) => n + 1), []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(`${API_BASE}/projection?months=240`)
-      .then((res) => {
-        if (!res.ok)
-          throw new Error(`Failed to fetch projection: ${res.status}`);
-        return res.json() as Promise<MonthlySnapshot[]>;
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setSnapshots(data);
-          setIsLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [nonce]);
-
-  return { snapshots, isLoading, error, refetch };
+  return {
+    snapshots: data ?? NO_SNAPSHOTS,
+    isLoading,
+    error,
+    refetch: refresh,
+  };
 }

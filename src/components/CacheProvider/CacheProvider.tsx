@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { ResourceCache } from "./resourceCache";
-import { CacheContext } from "./useCachedResource";
+import { CacheContext } from "./cacheContext";
 
 interface CacheProviderProps {
   children: ReactNode;

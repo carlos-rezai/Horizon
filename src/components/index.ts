@@ -4,6 +4,7 @@ export { useAlert } from "./AlertProvider/useAlert";
 export { default as BrandMark } from "./BrandMark/BrandMark";
 export { default as CacheProvider } from "./CacheProvider/CacheProvider";
 export { useCachedResource } from "./CacheProvider/useCachedResource";
+export { useCacheBump } from "./CacheProvider/useCacheBump";
 export { default as Card } from "./Card/Card";
 export { default as CardHeader } from "./CardHeader/CardHeader";
 export { default as ChartFrame } from "./ChartFrame/ChartFrame";

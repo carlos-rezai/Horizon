@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useCacheBump } from "../../components/CacheProvider/useCacheBump";
+import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { Transaction } from "../../types/transaction";
 import { API_BASE } from "../../utils/api/api";
+import { monthTransactionsKey } from "./monthTransactionsKey";
 
 interface CreatePayload {
   date: string;
@@ -27,43 +29,44 @@ interface UseMonthTransactionsResult {
   refetch: () => void;
 }
 
+/**
+ * Stable identity for the not-yet-loaded case, so consumers never see a fresh
+ * array on every render.
+ */
+const NO_TRANSACTIONS: Transaction[] = [];
+
+async function fetchMonthTransactions(
+  accountId: string,
+  month: string
+): Promise<Transaction[]> {
+  // No account selected yet — there is nothing to ask the server for.
+  if (!accountId) return NO_TRANSACTIONS;
+
+  const res = await fetch(
+    `${API_BASE}/accounts/${accountId}/transactions?month=${month}`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch transactions: ${res.status}`);
+  return (await res.json()) as Transaction[];
+}
+
 export function useMonthTransactions(
   accountId: string,
   month: string
 ): UseMonthTransactionsResult {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [fetchKey, setFetchKey] = useState(0);
+  const { data, isLoading, error, refresh, setData } = useCachedResource<
+    Transaction[]
+  >(monthTransactionsKey([accountId], month), () =>
+    fetchMonthTransactions(accountId, month)
+  );
+  const bump = useCacheBump();
 
-  useEffect(() => {
-    if (!accountId) return;
-
-    let cancelled = false;
-
-    fetch(`${API_BASE}/accounts/${accountId}/transactions?month=${month}`)
-      .then((res) => {
-        if (!res.ok)
-          throw new Error(`Failed to fetch transactions: ${res.status}`);
-        return res.json() as Promise<Transaction[]>;
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setTransactions(data);
-          setIsLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [accountId, month, fetchKey]);
+  /**
+   * Every mutation here moves money, so the account balances and the whole
+   * projection built on top of them are stale the moment it lands.
+   */
+  function bumpDependents(): void {
+    bump("accounts", "projection");
+  }
 
   async function create(payload: CreatePayload): Promise<void> {
     const res = await fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
@@ -78,7 +81,8 @@ export function useMonthTransactions(
     }
 
     const created = (await res.json()) as Transaction;
-    setTransactions((prev) => [...prev, created]);
+    setData((prev) => [...(prev ?? NO_TRANSACTIONS), created]);
+    bumpDependents();
   }
 
   async function update(id: string, payload: UpdatePayload): Promise<void> {
@@ -94,7 +98,10 @@ export function useMonthTransactions(
     }
 
     const updated = (await res.json()) as Transaction;
-    setTransactions((prev) => prev.map((tx) => (tx.id === id ? updated : tx)));
+    setData((prev) =>
+      (prev ?? NO_TRANSACTIONS).map((tx) => (tx.id === id ? updated : tx))
+    );
+    bumpDependents();
   }
 
   async function remove(id: string): Promise<void> {
@@ -107,7 +114,8 @@ export function useMonthTransactions(
       throw new Error(data.error ?? "Failed to delete transaction");
     }
 
-    setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+    setData((prev) => (prev ?? NO_TRANSACTIONS).filter((tx) => tx.id !== id));
+    bumpDependents();
   }
 
   async function removeTransfer(transferId: string): Promise<void> {
@@ -120,23 +128,20 @@ export function useMonthTransactions(
       throw new Error(data.error ?? "Failed to delete transfer");
     }
 
-    setTransactions((prev) =>
-      prev.filter((tx) => tx.transferId !== transferId)
+    setData((prev) =>
+      (prev ?? NO_TRANSACTIONS).filter((tx) => tx.transferId !== transferId)
     );
-  }
-
-  function refetch() {
-    setFetchKey((k) => k + 1);
+    bumpDependents();
   }
 
   return {
-    transactions,
+    transactions: data ?? NO_TRANSACTIONS,
     isLoading,
     error,
     create,
     update,
     remove,
     removeTransfer,
-    refetch,
+    refetch: refresh,
   };
 }
