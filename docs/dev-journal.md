@@ -765,3 +765,177 @@ feature's wake; the end-to-end verification step is the guard that would have
 caught it originally — a passing unit suite did not, because the old "loaded
 state" test asserted only the _absence_ of the empty state, never the _presence_
 of content. The extended suite now asserts presence.
+
+## 2026-07-21 — #199 Performance + UX Polish: baseline profiling & trace protocol
+
+Phase 1 of the Performance + UX Polish epic (#198). No production code changed
+— this entry is the evidence that de-risks the Phase 8 stutter fix (#206), plus
+the protocol for re-capturing the same measurements afterwards. Raw traces are
+committed under `docs/perf/baseline-2026-07-21/`, indexed by a README that
+records the capture environment and the headline numbers.
+
+### The trace protocol
+
+**The dataset is pinned, or nothing is comparable.** Every capture starts with
+`npm run db:reset`, which copies `fixtures/horizon-seed.db` over the dev
+database. The seed's shape matters to what the traces show: four accounts
+(three liquid, one Mortgage), seven Variable Spending rows in June 2026, and
+**none** in July 2026. That empty-to-populated boundary is what makes the
+July→June switch the sharpest available probe of a cold chart mount.
+
+**Capture against the production build, not the dev server.** Run
+`npx vite build` and serve it with `vite preview` on `:4173`. Dev-mode React
+and styled-components carry enough overhead to swamp the signal, and the
+question here is what ships. One wrinkle worth remembering: `index.html` sets
+`connect-src 'self' http://127.0.0.1:*`, so a build that bakes in the default
+`http://localhost:3001` API base is blocked by CSP and the app renders
+"Error: Failed to fetch". Build with `VITE_API_BASE_URL=http://127.0.0.1:3001`
+(a gitignored `.env.local` is the tidy way; delete it afterwards).
+
+**Drive a real Chromium over CDP.** The chrome-devtools MCP attaches to
+`http://127.0.0.1:9222`, so launch **Brave** with
+`--remote-debugging-port=9222 --user-data-dir=<throwaway>`. Anything else
+already holding 9222 will be attached to instead — a non-browser Electron app
+squatting on that port is a silent and very confusing failure mode. These five
+baseline traces predate that choice and were captured in Edge 150.0.4078.83;
+Brave is 150.1.92.141, the same Chromium 150 major. If Phase 8 wants a strictly
+apples-to-apples before/after it should either re-capture the baseline in Brave
+or stay on Edge for this epic — mixing the two across a comparison is the one
+thing to avoid.
+
+**The throwaway profile is a safety requirement, not a tidiness one.** CDP is
+unauthenticated: anything that can reach the debug port gets full control of the
+browser — read cookies and session tokens, dump `localStorage`, execute
+JavaScript in any open tab. There is no handshake to defeat. Loopback is not a
+boundary against _local_ code either, so any process running as the same user
+can connect. `--user-data-dir=<throwaway>` is what makes that harmless here: the
+profile is empty, so there are no sessions, saved passwords, or extensions to
+take. Two rules follow, and neither is optional. **Never point
+`--remote-debugging-port` at your normal browser profile** — that publishes
+every account you are logged into to any local process. **Never bind it off
+loopback** (`--remote-debugging-address=0.0.0.0`, or forwarding the port), which
+puts an unauthenticated remote-control API on the network; exposed 9222 is a
+routine internet-wide scan target. Close the browser when the capture is done.
+
+The port itself is not a secret — 9222 is the published Chromium default and
+`127.0.0.1` is unroutable from off-machine — so it is documented here freely.
+The profile it is pointed at is the part that matters.
+
+**Sanitize before committing, and never capture against a real database.**
+A trace is not just timings. It embeds a screenshot filmstrip — 166 frames in
+the Dashboard capture alone — so whatever was on screen gets committed as
+images, where no text search will ever find it again. Resetting to the seed
+first is therefore a privacy control, not just a reproducibility one: every
+figure in these five traces comes from the already-committed
+`fixtures/horizon-seed.db`, so the artifacts disclose nothing the repo did not
+already contain. The `metadata` block is the other half of the problem — it
+carries the browser command line (including the local user profile path),
+motherboard model, GPU driver version, CPU stepping, and antivirus state, which
+together fingerprint the capturing machine. `scripts/sanitize-trace.mjs` strips
+those and leaves a placeholder; `--check` re-verifies and exits non-zero, so
+Phase 8 can gate on it rather than remembering. Core count, RAM, GPU model, and
+OS version are deliberately kept — the numbers are not reviewable without them.
+
+**The five captures, in order.** Three cold loads — `#/`, `#/plan`,
+`#/months/2026-07` — each recorded with `performance_start_trace`
+(`reload: true`, `autoStop: true`) after navigating to the route first. Then
+the two cold-first-click interactions, which need manual start/stop because
+the interesting work happens after load: (04) load Dashboard, wait for it to
+settle, start the trace with `reload: false`, click **Month** in the sidebar,
+wait for "Variable Spending", stop; and (05) load `#/months/2026-07` fresh,
+wait for "Spending in July", start the trace, click **Previous month**, wait
+for "Spending in June", stop. Waiting on settled content before starting is
+what makes these _first_-click traces rather than load traces with a click
+tacked on.
+
+**Attribute the minified frames.** A production trace names
+`(anonymous) @ index-<hash>.js:2608:190`, which tells you nothing. Rebuild with
+`npx vite build --sourcemap` — the sourcemap is external, so the bundle hash
+and every trace position stay identical — then resolve positions with Node's
+built-in `SourceMap` (`require('node:module').SourceMap`, `findEntry(line, col)`,
+0-indexed, so try a −1 offset against the 1-indexed display in DevTools). The
+exact recipe is in the artifacts README.
+
+**Component-level attribution needs a companion pass.** React's profiling hooks
+are stripped from the production build, so render _counts_ per component are
+not in these traces. When Phase 8 needs them, repeat capture 05 against
+`npm run dev` with the React DevTools Profiler and read the attribution there,
+treating the timings as inflated and only the render counts as meaningful.
+
+### Baseline
+
+Cold loads are healthy and are not where the problem is: Dashboard LCP 232 ms,
+Plan 185 ms, Month 180 ms, and **CLS 0.00 on all three** — the layout does not
+shift, which is worth knowing before Phase 4 starts adding skeletons that could
+introduce shift where there is none today. The longest critical path is 563 ms
+on the Dashboard, and it is fonts: four `.woff2` files discovered late, after
+the 1.68 MB single-chunk bundle evaluates.
+
+The interactions tell a different story. Both cold-first-clicks have a trivial
+INP — 6 ms (Dashboard→Month) and 10 ms (Month switch) — so the click handler is
+not the stutter. What both traces carry is a **forced synchronous layout**:
+45 ms and 64 ms respectively, which at 60 fps is three to four dropped frames
+landing squarely in the React commit phase.
+
+### The three candidate mechanisms, and what the baseline already says
+
+The PRD registered three hypotheses to be tested in the stutter fix. Naming
+them here with the early verdict from the baseline, so Phase 8 starts from
+evidence rather than from the list:
+
+**1. Uncached fetch waterfall — confirmed, and worse-shaped than assumed.**
+Not a flat fan-out. The Month Overview runs a genuine two-level dependent
+chain: `/accounts` must resolve before the per-account
+`/accounts/:id/transactions?month=` calls can be issued at all, because they
+need the ids. That is N+1 in account count — three extra round trips today, one
+more per account added. Separately, the Dashboard cold load fetches `/accounts`
+**twice** in one paint (two distinct requests in the dependency tree of the
+trace), which is exactly the duplicate the Phase 2 cache-context dedup exists
+to collapse.
+
+**2. styled-components runtime style injection — no supporting evidence.**
+It does not appear in the forced-reflow attribution for either interaction
+trace, and no style-injection frame shows up near the top of the commit-phase
+work. Not ruled out as a contributor to bundle evaluation cost, but it is not
+the stutter. Deprioritise it.
+
+**3. Recharts cold first-mount — real but small.** Capture 05 deliberately
+mounts the breakdown donut from nothing, the worst case available. The
+`useReportScale` hook of Recharts accounts for **2 ms of the 64 ms**. The
+cold-mount cost is genuine and measurable, and it is roughly 3% of the hitch.
+`React.memo` chart wrappers would be tidy, but on this evidence they would not
+be felt.
+
+### A fourth mechanism, which dominates
+
+**62 of the 64 ms resolve to `src/primitives/Tabs/Tabs.tsx:35`** — our own
+code, not a library, and not on the candidate list.
+
+`Tabs` keeps chevron affordances in state and recomputes them in
+`updateAffordances`, which reads `scrollLeft`, `scrollWidth`, and `clientWidth`
+off the tab strip — three layout-forcing reads. That runs in a `useEffect`
+whose dependency array includes `tabs` (`Tabs.tsx:49`). Its caller,
+`SpendingList.tsx:72–80`, builds `tabs` as a fresh array literal on every
+render, unmemoized. So the identity changes every render, the effect re-runs
+every render, and each run forces a synchronous layout inside the commit.
+`updateAffordances` then calls `setCanScrollLeft` / `setCanScrollRight`, which
+can schedule another render — the classic layout-thrash shape.
+`ImportHistory.tsx:121` passes `tabs` the same way, so the Import surface
+almost certainly carries the same cost.
+
+This is deliberately **not** fixed here — #199 is evidence-gathering and changes
+no production code. It goes to Phase 8 (#206) as the leading hypothesis, with
+the honest caveat that the fix is now expected to be a memoized `tabs` identity
+plus a cheaper affordance measurement, rather than any of the three mechanisms
+the PRD anticipated. That inversion is the whole argument for profiling before
+fixing: the two candidates that felt most plausible on inspection account for
+roughly 3% and 0% of the measured hitch.
+
+### Caveats worth carrying forward
+
+These are Chromium-over-HTTP traces, not Electron-renderer-over-`file://`
+traces, and they were captured unthrottled on the dev machine. The React work
+is identical; the loader and font behaviour is not. Absolute milliseconds
+flatter a low-end machine — the durable finding is the _ratio_ between
+mechanisms, which is what Phase 8 should be judged against. Phase 8 re-captures
+all five under this same protocol for the before/after write-up.
