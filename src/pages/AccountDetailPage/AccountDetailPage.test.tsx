@@ -11,6 +11,7 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import AccountDetailPage from "./AccountDetailPage";
+import CacheProvider from "../../components/CacheProvider/CacheProvider";
 import type { AccountWithBalance } from "../../types/account";
 
 afterEach(() => {
@@ -21,11 +22,13 @@ afterEach(() => {
 function renderPage() {
   return render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={["/accounts/acc-1"]}>
-        <Routes>
-          <Route path="/accounts/:id" element={<AccountDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <CacheProvider>
+        <MemoryRouter initialEntries={["/accounts/acc-1"]}>
+          <Routes>
+            <Route path="/accounts/:id" element={<AccountDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </CacheProvider>
     </ThemeProvider>
   );
 }
@@ -34,11 +37,13 @@ function renderForCSS() {
   return render(
     <StyleSheetManager disableCSSOMInjection>
       <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={["/accounts/acc-1"]}>
-          <Routes>
-            <Route path="/accounts/:id" element={<AccountDetailPage />} />
-          </Routes>
-        </MemoryRouter>
+        <CacheProvider>
+          <MemoryRouter initialEntries={["/accounts/acc-1"]}>
+            <Routes>
+              <Route path="/accounts/:id" element={<AccountDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </CacheProvider>
       </ThemeProvider>
     </StyleSheetManager>
   );

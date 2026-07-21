@@ -6,6 +6,7 @@ import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import PlanPage from "./PlanPage";
 import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
+import CacheProvider from "../../components/CacheProvider/CacheProvider";
 import type { AccountWithBalance } from "../../types/account";
 
 afterEach(() => {
@@ -43,11 +44,13 @@ function mockAllSuccess() {
 function renderPage() {
   return render(
     <ThemeProvider theme={theme}>
-      <SnackbarProvider>
-        <MemoryRouter initialEntries={["/plan"]}>
-          <PlanPage />
-        </MemoryRouter>
-      </SnackbarProvider>
+      <CacheProvider>
+        <SnackbarProvider>
+          <MemoryRouter initialEntries={["/plan"]}>
+            <PlanPage />
+          </MemoryRouter>
+        </SnackbarProvider>
+      </CacheProvider>
     </ThemeProvider>
   );
 }
@@ -56,11 +59,13 @@ function renderForCSS() {
   return render(
     <StyleSheetManager disableCSSOMInjection>
       <ThemeProvider theme={theme}>
-        <SnackbarProvider>
-          <MemoryRouter initialEntries={["/plan"]}>
-            <PlanPage />
-          </MemoryRouter>
-        </SnackbarProvider>
+        <CacheProvider>
+          <SnackbarProvider>
+            <MemoryRouter initialEntries={["/plan"]}>
+              <PlanPage />
+            </MemoryRouter>
+          </SnackbarProvider>
+        </CacheProvider>
       </ThemeProvider>
     </StyleSheetManager>
   );

@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
+import CacheProvider from "../../components/CacheProvider/CacheProvider";
 import ImportPage from "./ImportPage";
 
 afterEach(() => {
@@ -22,9 +23,11 @@ function mockFetch() {
 function renderPage() {
   return render(
     <ThemeProvider theme={theme}>
-      <SnackbarProvider>
-        <ImportPage />
-      </SnackbarProvider>
+      <CacheProvider>
+        <SnackbarProvider>
+          <ImportPage />
+        </SnackbarProvider>
+      </CacheProvider>
     </ThemeProvider>
   );
 }

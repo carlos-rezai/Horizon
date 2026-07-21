@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+import type { ReactNode } from "react";
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
+import CacheProvider from "../../components/CacheProvider/CacheProvider";
 import { useSavingsGoal } from "./useSavingsGoal";
 import type { SavingsGoalConfig } from "./savingsTypes";
 
@@ -99,10 +101,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function wrapper({ children }: { children: ReactNode }) {
+  return <CacheProvider>{children}</CacheProvider>;
+}
+
 describe("useSavingsGoal — compute over config + history", () => {
   it("runs computeSavingsGoal and exposes the derived streak", async () => {
     mockFetch();
-    const { result } = renderHook(() => useSavingsGoal());
+    const { result } = renderHook(() => useSavingsGoal(), { wrapper });
 
     await act(async () => {});
 
@@ -113,7 +119,7 @@ describe("useSavingsGoal — compute over config + history", () => {
 
   it("tracks the eligible accounts and excludes Mortgage/CreditCard", async () => {
     mockFetch();
-    const { result } = renderHook(() => useSavingsGoal());
+    const { result } = renderHook(() => useSavingsGoal(), { wrapper });
 
     await act(async () => {});
 
@@ -153,7 +159,7 @@ function mockStatefulFetch(initial: unknown = CONFIG) {
 describe("useSavingsGoal — save (write path)", () => {
   it("PUTs the config to /savings-goal", async () => {
     const { calls } = mockStatefulFetch();
-    const { result } = renderHook(() => useSavingsGoal());
+    const { result } = renderHook(() => useSavingsGoal(), { wrapper });
     await act(async () => {});
 
     await act(async () => {
@@ -174,7 +180,7 @@ describe("useSavingsGoal — save (write path)", () => {
 
   it("re-derives the goal from the new targets without a reload", async () => {
     mockStatefulFetch();
-    const { result } = renderHook(() => useSavingsGoal());
+    const { result } = renderHook(() => useSavingsGoal(), { wrapper });
     await act(async () => {});
 
     // Initial targets (€100/mo) are met every month → current streak 2.
@@ -201,14 +207,14 @@ describe("useSavingsGoal — loading state", () => {
       () => new Promise(() => {})
     );
 
-    const { result } = renderHook(() => useSavingsGoal());
+    const { result } = renderHook(() => useSavingsGoal(), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
   });
 
   it("is no longer loading after the fetches resolve", async () => {
     mockFetch();
-    const { result } = renderHook(() => useSavingsGoal());
+    const { result } = renderHook(() => useSavingsGoal(), { wrapper });
 
     await act(async () => {});
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { AccountWithBalance } from "../../types/account";
 import { API_BASE } from "../../utils/api/api";
 
@@ -9,41 +9,23 @@ interface UseAccountsResult {
   refresh: () => void;
 }
 
+/**
+ * Stable identity for the not-yet-loaded case, so consumers never see a fresh
+ * array on every render.
+ */
+const NO_ACCOUNTS: AccountWithBalance[] = [];
+
+async function fetchAccounts(): Promise<AccountWithBalance[]> {
+  const res = await fetch(`${API_BASE}/accounts`);
+  if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`);
+  return (await res.json()) as AccountWithBalance[];
+}
+
 export function useAccounts(): UseAccountsResult {
-  const [accounts, setAccounts] = useState<AccountWithBalance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { data, isLoading, error, refresh } = useCachedResource(
+    "accounts",
+    fetchAccounts
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch(`${API_BASE}/accounts`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`);
-        return res.json() as Promise<AccountWithBalance[]>;
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setAccounts(data);
-          setIsLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  const refresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
-  }, []);
-
-  return { accounts, isLoading, error, refresh };
+  return { accounts: data ?? NO_ACCOUNTS, isLoading, error, refresh };
 }

@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import HistoryPage from "./HistoryPage";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 
 const POINTS = [
   {
@@ -60,9 +61,11 @@ function mockFetch(points: unknown, imports: unknown, accounts: unknown = []) {
 function renderPage() {
   return render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter>
-        <HistoryPage />
-      </MemoryRouter>
+      <CacheProvider>
+        <MemoryRouter>
+          <HistoryPage />
+        </MemoryRouter>
+      </CacheProvider>
     </ThemeProvider>
   );
 }
