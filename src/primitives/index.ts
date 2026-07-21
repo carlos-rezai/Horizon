@@ -10,6 +10,7 @@ export { default as Input } from "./Input/Input";
 export { default as Money } from "./Money/Money";
 export { default as ProgressBar } from "./ProgressBar/ProgressBar";
 export { default as Select } from "./Select/Select";
+export { default as Skeleton } from "./Skeleton/Skeleton";
 export { default as Sparkline } from "./Sparkline/Sparkline";
 export { default as Spinner } from "./Spinner/Spinner";
 export { default as Stepper } from "./Stepper/Stepper";

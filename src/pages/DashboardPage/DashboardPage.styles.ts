@@ -20,7 +20,3 @@ export const StyledColumn = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space6}px;
 `;
-
-export const StyledErrorText = styled.span`
-  color: ${({ theme }) => theme.colors.error};
-`;

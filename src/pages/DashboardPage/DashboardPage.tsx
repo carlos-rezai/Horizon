@@ -4,25 +4,29 @@ import { useAccounts } from "../../features/accounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection";
 import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
 import PlanSummary from "../../features/projection/PlanSummary/PlanSummary";
+import PlanSummarySkeleton from "../../features/projection/PlanSummary/PlanSummarySkeleton";
 import KpiStrip from "../../features/projection/KpiStrip/KpiStrip";
+import KpiStripSkeleton from "../../features/projection/KpiStrip/KpiStripSkeleton";
 import TrajectoryHorizon from "../../features/projection/TrajectoryHorizon/TrajectoryHorizon";
+import TrajectoryHorizonSkeleton from "../../features/projection/TrajectoryHorizon/TrajectoryHorizonSkeleton";
 import AccountOverview from "../../features/accounts/AccountOverview/AccountOverview";
+import AccountOverviewSkeleton from "../../features/accounts/AccountOverview/AccountOverviewSkeleton";
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
 import SavingsStreakCard from "../../features/savings/SavingsStreakCard/SavingsStreakCard";
+import SavingsStreakCardSkeleton from "../../features/savings/SavingsStreakCard/SavingsStreakCardSkeleton";
 import { useSavingsGoal } from "../../features/savings/useSavingsGoal";
 import Card from "../../components/Card/Card";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import SectionHead from "../../components/SectionHead/SectionHead";
+import SectionState from "../../components/SectionState/SectionState";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
-import Spinner from "../../primitives/Spinner/Spinner";
 import Button from "../../primitives/Button/Button";
 import { downloadBackup } from "../../features/settings/downloadBackup";
 import {
   StyledDashboard,
   StyledGrid,
   StyledColumn,
-  StyledErrorText,
 } from "./DashboardPage.styles";
 
 export default function DashboardPage() {
@@ -55,14 +59,16 @@ export default function DashboardPage() {
   const {
     goal: savingsGoal,
     points: savingsPoints,
+    isLoading: savingsLoading,
     save: saveSavingsGoal,
   } = useSavingsGoal();
 
-  if (accountsLoading || projectionLoading) return <Spinner />;
-  if (accountsError)
-    return <StyledErrorText>{`Error: ${accountsError}`}</StyledErrorText>;
-  if (projectionError)
-    return <StyledErrorText>{`Error: ${projectionError}`}</StyledErrorText>;
+  // Each section waits only on the resources it draws from, so the whole page
+  // never queues behind its slowest request. Recurring transactions only
+  // enrich the chart and the plan (Sondertilgung markers), so neither section
+  // holds its reveal for them.
+  const projectionBackedLoading = accountsLoading || projectionLoading;
+  const projectionBackedError = accountsError ?? projectionError;
 
   return (
     <StyledDashboard>
@@ -89,20 +95,41 @@ export default function DashboardPage() {
           </>
         }
       />
-      <KpiStrip snapshots={snapshots} accounts={accounts} />
-      <TrajectoryHorizon
-        snapshots={snapshots}
-        accounts={accounts}
-        recurringTransactions={recurringTransactions}
-        isLoading={false}
-        onViewHistory={() => navigate("/history")}
-      />
-      <SavingsStreakCard
-        goal={savingsGoal}
-        accounts={accounts}
-        points={savingsPoints}
-        onSave={saveSavingsGoal}
-      />
+      <SectionState
+        testId="dashboard-section-kpis"
+        isLoading={projectionBackedLoading}
+        error={projectionBackedError}
+        skeleton={<KpiStripSkeleton />}
+      >
+        <KpiStrip snapshots={snapshots} accounts={accounts} />
+      </SectionState>
+      <SectionState
+        testId="dashboard-section-trajectory"
+        isLoading={projectionBackedLoading}
+        error={projectionBackedError}
+        skeleton={<TrajectoryHorizonSkeleton />}
+      >
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={accounts}
+          recurringTransactions={recurringTransactions}
+          isLoading={false}
+          onViewHistory={() => navigate("/history")}
+        />
+      </SectionState>
+      <SectionState
+        testId="dashboard-section-savings"
+        isLoading={savingsLoading}
+        error={accountsError}
+        skeleton={<SavingsStreakCardSkeleton />}
+      >
+        <SavingsStreakCard
+          goal={savingsGoal}
+          accounts={accounts}
+          points={savingsPoints}
+          onSave={saveSavingsGoal}
+        />
+      </SectionState>
       <StyledGrid>
         <div>
           <Card>
@@ -120,7 +147,14 @@ export default function DashboardPage() {
                 </Button>
               }
             />
-            <AccountOverview accounts={accounts} />
+            <SectionState
+              testId="dashboard-section-accounts"
+              isLoading={accountsLoading}
+              error={accountsError}
+              skeleton={<AccountOverviewSkeleton />}
+            >
+              <AccountOverview accounts={accounts} />
+            </SectionState>
           </Card>
           {showCreateModal && (
             <AccountCreateModal
@@ -140,12 +174,19 @@ export default function DashboardPage() {
             }}
           />
           <Card>
-            <PlanSummary
-              snapshots={snapshots}
-              accounts={accounts}
-              recurringTransactions={recurringTransactions}
-              maxYears={10}
-            />
+            <SectionState
+              testId="dashboard-section-plan"
+              isLoading={projectionLoading}
+              error={projectionError}
+              skeleton={<PlanSummarySkeleton />}
+            >
+              <PlanSummary
+                snapshots={snapshots}
+                accounts={accounts}
+                recurringTransactions={recurringTransactions}
+                maxYears={10}
+              />
+            </SectionState>
           </Card>
         </StyledColumn>
       </StyledGrid>

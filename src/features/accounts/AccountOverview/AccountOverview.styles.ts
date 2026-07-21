@@ -1,5 +1,9 @@
 import styled from "styled-components";
 
+/** Avatar, name, balance — shared with `AccountOverviewSkeleton` so the
+ *  placeholder rows cannot drift from the real ones. */
+export const ROW_COLUMNS = ["38px", "1fr", "auto"];
+
 export const StyledList = styled.ul`
   list-style: none;
   margin: 0;

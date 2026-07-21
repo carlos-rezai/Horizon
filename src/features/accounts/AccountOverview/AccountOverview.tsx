@@ -7,6 +7,7 @@ import Money from "../../../primitives/Money/Money";
 import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
 import {
+  ROW_COLUMNS,
   StyledList,
   StyledMain,
   StyledNameLine,
@@ -21,8 +22,6 @@ interface Props {
 }
 
 const LIABILITY_KINDS = new Set<AccountKind>(["Mortgage", "CreditCard"]);
-
-const ROW_COLUMNS = ["38px", "1fr", "auto"];
 
 export default function AccountOverview({ accounts }: Props) {
   if (accounts.length === 0) {

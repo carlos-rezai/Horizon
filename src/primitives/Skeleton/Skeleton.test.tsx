@@ -17,13 +17,21 @@ function renderForCSS(ui: React.ReactElement) {
   );
 }
 
-/** Injected CSS with all whitespace removed, so declaration formatting cannot
- *  make an assertion brittle. */
-function getInjectedCSS(): string {
-  return Array.from(document.querySelectorAll("style"))
+/** Injected CSS for the rendered skeleton's *own* classes, with all whitespace
+ *  removed. Scoped to those classes because styled-components keeps every rule
+ *  it has injected in the document, so an earlier render's variant would
+ *  otherwise leak into a later assertion. */
+function getSkeletonCSS(): string {
+  const allCSS = Array.from(document.querySelectorAll("style"))
     .map((el) => el.textContent ?? "")
     .join("\n")
     .replace(/\s/g, "");
+
+  return Array.from(screen.getByTestId("skeleton").classList)
+    .flatMap(
+      (cls) => allCSS.match(new RegExp(`\\.${cls}\\{[^}]*\\}`, "g")) ?? []
+    )
+    .join("");
 }
 
 afterEach(() => {
@@ -68,16 +76,16 @@ describe("Skeleton — unit", () => {
 describe("Skeleton — styles", () => {
   it("tints itself from a Meridian surface token", () => {
     renderForCSS(<Skeleton />);
-    expect(getInjectedCSS()).toContain(theme.colors.surfaceContainerHigh);
+    expect(getSkeletonCSS()).toContain(theme.colors.surfaceContainerHigh);
   });
 
   it("renders a circle shape as a full-radius pill", () => {
     renderForCSS(<Skeleton shape="circle" width={38} height={38} />);
-    expect(getInjectedCSS()).toContain("border-radius:50%");
+    expect(getSkeletonCSS()).toContain("border-radius:50%");
   });
 
   it("renders a rect shape with a corner radius rather than a circle", () => {
     renderForCSS(<Skeleton shape="rect" width={200} height={80} />);
-    expect(getInjectedCSS()).not.toContain("border-radius:50%");
+    expect(getSkeletonCSS()).not.toContain("border-radius:50%");
   });
 });
