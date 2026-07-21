@@ -1,9 +1,20 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { type ReactNode } from "react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { theme } from "../../../tokens";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
+import { useAccounts } from "../../accounts/useAccounts";
+import { useProjection } from "../../projection/useProjection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Transaction } from "../../../types/transaction";
 
@@ -31,18 +42,26 @@ vi.mock("../useImportStartDates", () => ({
 
 let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
   null;
+let capturedOnSuccess: (() => void) | null = null;
 
 vi.mock(
   "../../transactions/TransactionCreateModal/TransactionCreateModal",
   () => ({
-    default: (props: { accountId: string; onClose: () => void }) => (
-      <div
-        data-testid="transaction-create-modal"
-        data-account-id={props.accountId}
-      >
-        <button onClick={props.onClose}>Cancel</button>
-      </div>
-    ),
+    default: (props: {
+      accountId: string;
+      onClose: () => void;
+      onSuccess: () => void;
+    }) => {
+      capturedOnSuccess = props.onSuccess;
+      return (
+        <div
+          data-testid="transaction-create-modal"
+          data-account-id={props.accountId}
+        >
+          <button onClick={props.onClose}>Cancel</button>
+        </div>
+      );
+    },
   })
 );
 
@@ -141,21 +160,26 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
   capturedOnDeleted = null;
+  capturedOnSuccess = null;
 });
 
-function renderOverview(month = "2026-06") {
+function renderOverview(month = "2026-06", extra?: ReactNode) {
   return render(
-    <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={[`/months/${month}`]}>
-        <Routes>
-          <Route
-            path="/months/:month"
-            element={<MonthOverview accounts={accounts} />}
-          />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <MemoryRouter initialEntries={[`/months/${month}`]}>
+          <Routes>
+            <Route
+              path="/months/:month"
+              element={<MonthOverview accounts={accounts} />}
+            />
+          </Routes>
+          {extra}
+        </MemoryRouter>
+      </ThemeProvider>
+    </CacheProvider>
   );
 }
 
@@ -275,5 +299,76 @@ describe("MonthOverview — edit and delete", () => {
     fireEvent.click(screen.getByText("Cat food"));
     capturedOnDeleted?.("t1");
     expect(refetch).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Reads the two resources a transaction mutation is supposed to bump, so a
+ * test can watch them refetch without knowing how the bump is delivered.
+ */
+function BumpProbes() {
+  useAccounts();
+  useProjection();
+  return null;
+}
+
+function countRequests(predicate: (url: string) => boolean): number {
+  return vi
+    .mocked(fetch)
+    .mock.calls.map(([url]) => String(url))
+    .filter(predicate).length;
+}
+
+const isAccountsList = (url: string) => url.endsWith("/accounts");
+const isProjection = (url: string) => url.includes("/projection");
+
+describe("MonthOverview — explicit bump", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    } as Response);
+  });
+
+  it("refetches accounts and the projection after an expense is recorded", async () => {
+    renderOverview("2026-06", <BumpProbes />);
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(0);
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
+
+    const accountsBefore = countRequests(isAccountsList);
+    const projectionBefore = countRequests(isProjection);
+
+    act(() => {
+      capturedOnSuccess?.();
+    });
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(accountsBefore);
+    });
+    expect(countRequests(isProjection)).toBeGreaterThan(projectionBefore);
+  });
+
+  it("refetches accounts and the projection after a delete", async () => {
+    renderOverview("2026-06", <BumpProbes />);
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(0);
+    });
+    fireEvent.click(screen.getByText("Cat food"));
+
+    const accountsBefore = countRequests(isAccountsList);
+    const projectionBefore = countRequests(isProjection);
+
+    act(() => {
+      capturedOnDeleted?.("t1");
+    });
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(accountsBefore);
+    });
+    expect(countRequests(isProjection)).toBeGreaterThan(projectionBefore);
   });
 });

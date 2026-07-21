@@ -11,6 +11,7 @@ import {
 import { describe, it, expect, afterEach, vi } from "vitest";
 import CacheProvider from "./CacheProvider";
 import { useCachedResource } from "./useCachedResource";
+import { useCacheBump } from "./useCacheBump";
 
 /**
  * Reads a key through the cache and renders the result as text, so a test can
@@ -30,6 +31,35 @@ function Consumer({
   return (
     <div data-testid={testId}>
       {isLoading ? "loading" : error ? `error:${error}` : (data ?? "empty")}
+    </div>
+  );
+}
+
+/**
+ * A consumer that can also write straight into the cache entry, so a test can
+ * observe a write-through the same way a mutating hook performs one.
+ */
+function WritingConsumer({
+  cacheKey,
+  fetcher,
+  next,
+  testId = "consumer",
+}: {
+  cacheKey: string;
+  fetcher: () => Promise<string>;
+  next: string;
+  testId?: string;
+}) {
+  const { data, isLoading, setData } = useCachedResource<string>(
+    cacheKey,
+    fetcher
+  );
+  return (
+    <div>
+      <div data-testid={testId}>
+        {isLoading ? "loading" : (data ?? "empty")}
+      </div>
+      <button onClick={() => setData(next)}>write</button>
     </div>
   );
 }
@@ -230,6 +260,12 @@ describe("useCachedResource — provider contract", () => {
     spy.mockRestore();
   });
 
+  it("throws when useCacheBump is used outside a CacheProvider", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => renderHook(() => useCacheBump())).toThrow();
+    spy.mockRestore();
+  });
+
   it("keeps cached values across consumers mounted at different times", async () => {
     const fetcher = vi.fn(() => Promise.resolve("v1"));
 
@@ -257,5 +293,197 @@ describe("useCachedResource — provider contract", () => {
 
     // The late-arriving consumer paints from cache immediately.
     expect(screen.getByTestId("b")).toHaveTextContent("v1");
+  });
+});
+
+describe("useCacheBump — explicit bump", () => {
+  it("forces the bumped key to refetch and repaints the fresh value", async () => {
+    let call = 0;
+    const fetcher = vi.fn(() => Promise.resolve(call++ === 0 ? "v1" : "v2"));
+
+    const { result } = renderHook(
+      () => ({
+        accounts: useCachedResource("accounts", fetcher),
+        bump: useCacheBump(),
+      }),
+      { wrapper: CacheProvider }
+    );
+
+    await waitFor(() => {
+      expect(result.current.accounts.data).toBe("v1");
+    });
+
+    act(() => {
+      result.current.bump("accounts");
+    });
+
+    await waitFor(() => {
+      expect(result.current.accounts.data).toBe("v2");
+    });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts a new request rather than joining the one already in flight", () => {
+    const resolvers: ((value: string) => void)[] = [];
+    const fetcher = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolvers.push(resolve);
+        })
+    );
+
+    const { result } = renderHook(
+      () => ({
+        accounts: useCachedResource("accounts", fetcher),
+        bump: useCacheBump(),
+      }),
+      { wrapper: CacheProvider }
+    );
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.bump("accounts");
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not let the superseded response clobber the bumped one", async () => {
+    const resolvers: ((value: string) => void)[] = [];
+    const fetcher = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolvers.push(resolve);
+        })
+    );
+
+    const { result } = renderHook(
+      () => ({
+        accounts: useCachedResource("accounts", fetcher),
+        bump: useCacheBump(),
+      }),
+      { wrapper: CacheProvider }
+    );
+
+    act(() => {
+      result.current.bump("accounts");
+    });
+
+    // The post-bump request lands first…
+    await act(async () => {
+      resolvers[1]("fresh");
+    });
+    expect(result.current.accounts.data).toBe("fresh");
+
+    // …and the pre-bump one, arriving late, is ignored.
+    await act(async () => {
+      resolvers[0]("stale");
+    });
+    expect(result.current.accounts.data).toBe("fresh");
+  });
+
+  it("leaves keys it was not given untouched", async () => {
+    const accountsFetcher = vi.fn(() => Promise.resolve("accounts-v1"));
+    const categoriesFetcher = vi.fn(() => Promise.resolve("categories-v1"));
+
+    const { result } = renderHook(
+      () => ({
+        accounts: useCachedResource("accounts", accountsFetcher),
+        categories: useCachedResource("categories", categoriesFetcher),
+        bump: useCacheBump(),
+      }),
+      { wrapper: CacheProvider }
+    );
+
+    await waitFor(() => {
+      expect(result.current.accounts.data).toBe("accounts-v1");
+    });
+    expect(categoriesFetcher).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.bump("accounts");
+    });
+
+    await waitFor(() => {
+      expect(accountsFetcher).toHaveBeenCalledTimes(2);
+    });
+    expect(categoriesFetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("bumps several keys in one call", async () => {
+    const accountsFetcher = vi.fn(() => Promise.resolve("accounts-v1"));
+    const projectionFetcher = vi.fn(() => Promise.resolve("projection-v1"));
+
+    const { result } = renderHook(
+      () => ({
+        accounts: useCachedResource("accounts", accountsFetcher),
+        projection: useCachedResource("projection", projectionFetcher),
+        bump: useCacheBump(),
+      }),
+      { wrapper: CacheProvider }
+    );
+
+    await waitFor(() => {
+      expect(result.current.projection.data).toBe("projection-v1");
+    });
+
+    act(() => {
+      result.current.bump("accounts", "projection");
+    });
+
+    await waitFor(() => {
+      expect(accountsFetcher).toHaveBeenCalledTimes(2);
+    });
+    expect(projectionFetcher).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("useCachedResource — write-through", () => {
+  it("publishes a written value to every consumer of the key without refetching", async () => {
+    const fetcher = vi.fn(() => Promise.resolve("v1"));
+
+    const { result } = renderHook(
+      () => ({
+        a: useCachedResource<string>("accounts", fetcher),
+        b: useCachedResource<string>("accounts", fetcher),
+      }),
+      { wrapper: CacheProvider }
+    );
+
+    await waitFor(() => {
+      expect(result.current.a.data).toBe("v1");
+    });
+
+    act(() => {
+      result.current.a.setData("written");
+    });
+
+    expect(result.current.a.data).toBe("written");
+    expect(result.current.b.data).toBe("written");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a written value in the cache across a remount", async () => {
+    const fetcher = vi.fn(() => Promise.resolve("v1"));
+    const consumer = (
+      <WritingConsumer cacheKey="accounts" fetcher={fetcher} next="written" />
+    );
+
+    const { rerender } = render(<Harness visible>{consumer}</Harness>);
+    await waitFor(() => {
+      expect(screen.getByTestId("consumer")).toHaveTextContent("v1");
+    });
+
+    act(() => {
+      screen.getByRole("button", { name: "write" }).click();
+    });
+    expect(screen.getByTestId("consumer")).toHaveTextContent("written");
+
+    rerender(<Harness visible={false}>{consumer}</Harness>);
+    rerender(<Harness visible>{consumer}</Harness>);
+
+    // The written value came from the cache, not from local component state.
+    expect(screen.getByTestId("consumer")).toHaveTextContent("written");
   });
 });
