@@ -67,7 +67,7 @@ export const StyledYearRow = styled.div<{ $open: boolean }>`
   padding-right: 18px;
   background: ${({ theme, $open }) =>
     $open ? theme.colors.surfaceContainerLow : "transparent"};
-  transition: background 0.12s ease;
+  transition: background 0.12s ${({ theme }) => theme.transitions.easing};
 
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceContainerHigh};
@@ -109,7 +109,7 @@ export const StyledChevron = styled.span<{ $open: boolean }>`
   color: ${({ theme, $open }) =>
     $open ? theme.colors.primary : theme.colors.onSurfaceDim};
   transform: ${({ $open }) => ($open ? "rotate(90deg)" : "none")};
-  transition: transform 0.18s ease;
+  transition: transform ${({ theme }) => theme.transitions.swap};
 `;
 
 export const StyledYearLabel = styled.span`
@@ -149,7 +149,7 @@ export const StyledMonthRow = styled(Link)`
   padding: 9px 18px;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s ${({ theme }) => theme.transitions.easing};
 
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceContainerHigh};

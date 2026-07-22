@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import FadeSwap from "../FadeSwap/FadeSwap";
 import { StyledSection, StyledErrorText } from "./SectionState.styles";
 
 interface Props {
@@ -17,7 +18,9 @@ interface Props {
  * when its data lands. Each section is driven only by the resources it needs,
  * which is what lets a fast section reveal while a slow one is still pending.
  * Error wins over loading, so a failed section reads differently from a
- * pending one rather than sitting on a skeleton forever.
+ * pending one rather than sitting on a skeleton forever. The switch is the only
+ * skeleton→content handover in the app, so the fade lives here: whichever of
+ * the three states is on show fades in when it takes over.
  */
 export default function SectionState({
   testId,
@@ -26,15 +29,19 @@ export default function SectionState({
   skeleton,
   children,
 }: Props) {
+  const state = error ? "error" : isLoading ? "loading" : "content";
+
   return (
     <StyledSection data-testid={testId}>
-      {error ? (
-        <StyledErrorText>{`Error: ${error}`}</StyledErrorText>
-      ) : isLoading ? (
-        skeleton
-      ) : (
-        children
-      )}
+      <FadeSwap testId={`${testId}-fade`} swapKey={state}>
+        {state === "error" ? (
+          <StyledErrorText>{`Error: ${error}`}</StyledErrorText>
+        ) : state === "loading" ? (
+          skeleton
+        ) : (
+          children
+        )}
+      </FadeSwap>
     </StyledSection>
   );
 }

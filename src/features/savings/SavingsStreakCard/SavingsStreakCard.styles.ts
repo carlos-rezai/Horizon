@@ -59,7 +59,7 @@ export const StyledToggle = styled.button<{ $open: boolean }>`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
   flex-shrink: 0;
   transform: ${({ $open }) => ($open ? "rotate(180deg)" : "none")};
-  transition: transform 0.18s ease;
+  transition: transform ${({ theme }) => theme.transitions.swap};
 `;
 
 export const StyledFlameBadge = styled.div`

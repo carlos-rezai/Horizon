@@ -20,6 +20,7 @@ import YearComparison from "../YearComparison/YearComparison";
 import YearComparisonSkeleton from "../YearComparison/YearComparisonSkeleton";
 import MonthYearPicker from "../MonthYearPicker/MonthYearPicker";
 import SectionState from "../../../components/SectionState/SectionState";
+import FadeSwap from "../../../components/FadeSwap/FadeSwap";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison";
 import { useImportStartDates } from "../useImportStartDates";
@@ -28,6 +29,7 @@ import TransactionCreateModal from "../../transactions/TransactionCreateModal/Tr
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
 import {
   StyledMonthOverview,
+  StyledMonthContent,
   StyledColumns,
   StyledRightColumn,
   StyledStepper,
@@ -155,59 +157,67 @@ export default function MonthOverview({
         }
       />
 
-      <SectionState
-        testId="month-section-stats"
-        isLoading={monthLoading}
-        error={monthError}
-        skeleton={<MonthStatStripSkeleton />}
-      >
-        <MonthStatStrip stats={stats} />
-      </SectionState>
-
-      <StyledColumns>
-        <SectionState
-          testId="month-section-spending"
-          isLoading={monthLoading}
-          error={monthError}
-          skeleton={<SpendingListSkeleton monthLabel={monthLabel} />}
-        >
-          <SpendingList
-            accounts={spendingAccounts}
-            transactions={variableSpending}
-            categories={categories}
-            monthLabel={monthLabel}
-            onAddExpense={(accountId) => setCreateAccountId(accountId)}
-            onEditTransaction={(tx) => setSelectedTransaction(tx)}
-          />
-        </SectionState>
-        <StyledRightColumn>
+      {/* Keyed by the month, so stepping to another month cross-fades its
+          figures in. The header stays outside: its stepper and picker are
+          under the pointer, and fading the controls the user just clicked
+          would read as a page transition rather than a data swap. */}
+      <FadeSwap testId="month-content-fade" swapKey={monthStr}>
+        <StyledMonthContent>
           <SectionState
-            testId="month-section-breakdown"
+            testId="month-section-stats"
             isLoading={monthLoading}
             error={monthError}
-            skeleton={<MonthBreakdownSkeleton />}
+            skeleton={<MonthStatStripSkeleton />}
           >
-            <MonthBreakdown
-              transactions={variableSpending}
-              categories={categories}
-            />
+            <MonthStatStrip stats={stats} />
           </SectionState>
-          {/* No `error` here: the card words its own failure, so handing it to
+
+          <StyledColumns>
+            <SectionState
+              testId="month-section-spending"
+              isLoading={monthLoading}
+              error={monthError}
+              skeleton={<SpendingListSkeleton monthLabel={monthLabel} />}
+            >
+              <SpendingList
+                accounts={spendingAccounts}
+                transactions={variableSpending}
+                categories={categories}
+                monthLabel={monthLabel}
+                onAddExpense={(accountId) => setCreateAccountId(accountId)}
+                onEditTransaction={(tx) => setSelectedTransaction(tx)}
+              />
+            </SectionState>
+            <StyledRightColumn>
+              <SectionState
+                testId="month-section-breakdown"
+                isLoading={monthLoading}
+                error={monthError}
+                skeleton={<MonthBreakdownSkeleton />}
+              >
+                <MonthBreakdown
+                  transactions={variableSpending}
+                  categories={categories}
+                />
+              </SectionState>
+              {/* No `error` here: the card words its own failure, so handing it to
               the wrapper would say the same thing twice. */}
-          <SectionState
-            testId="month-section-comparison"
-            isLoading={yearComparisonLoading}
-            skeleton={<YearComparisonSkeleton monthLabel={monthLabel} />}
-          >
-            <YearComparison
-              monthLabel={monthLabel}
-              rows={yearComparisonRows}
-              categories={categories}
-              error={yearComparisonError}
-            />
-          </SectionState>
-        </StyledRightColumn>
-      </StyledColumns>
+              <SectionState
+                testId="month-section-comparison"
+                isLoading={yearComparisonLoading}
+                skeleton={<YearComparisonSkeleton monthLabel={monthLabel} />}
+              >
+                <YearComparison
+                  monthLabel={monthLabel}
+                  rows={yearComparisonRows}
+                  categories={categories}
+                  error={yearComparisonError}
+                />
+              </SectionState>
+            </StyledRightColumn>
+          </StyledColumns>
+        </StyledMonthContent>
+      </FadeSwap>
 
       {createAccountId !== null && (
         <TransactionCreateModal

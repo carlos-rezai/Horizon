@@ -10,6 +10,7 @@ import Tabs, { type TabItem } from "../../../primitives/Tabs/Tabs";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
+import FadeSwap from "../../../components/FadeSwap/FadeSwap";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { resolveCategoryColor } from "../../../utils/categoryColor/categoryColor";
 import {
@@ -109,45 +110,49 @@ export default function SpendingList({
         <Tabs tabs={tabs} activeId={tab} onChange={setTab} />
       </StyledTabsWrap>
 
-      {rows.length === 0 ? (
-        <StyledEmpty>No variable spending this month.</StyledEmpty>
-      ) : (
-        <div>
-          {rows.map((t, i) => {
-            const account = accounts.find((a) => a.id === t.accountId);
-            const day = parseInt(t.date.slice(8, 10), 10);
-            const monthIdx = parseInt(t.date.slice(5, 7), 10) - 1;
-            return (
-              <DataRow
-                key={t.id}
-                columns={ROW_COLUMNS}
-                last={i === rows.length - 1}
-                onClick={() => onEditTransaction(t)}
-              >
-                <StyledDay>
-                  <StyledDayNum>{day}</StyledDayNum>
-                  <StyledDayMonth>{MONTHS_SHORT[monthIdx]}</StyledDayMonth>
-                </StyledDay>
-                <div>
-                  <StyledDesc>{t.description}</StyledDesc>
-                  <StyledAccountLine>
-                    {account && (
-                      <Chip color={resolveAccountColor(account)} size="sm" />
-                    )}
-                    <StyledAccountName>
-                      {account?.name ?? "—"}
-                    </StyledAccountName>
-                  </StyledAccountLine>
-                </div>
-                <Badge color={resolveCategoryColor(t.category, categories)}>
-                  {t.category}
-                </Badge>
-                <Money cents={t.amount} sign />
-              </DataRow>
-            );
-          })}
-        </div>
-      )}
+      {/* Keyed by the tab, so changing account cross-fades the rows rather
+          than hard-cutting one account's spending into another's. */}
+      <FadeSwap testId="spending-rows-fade" swapKey={tab}>
+        {rows.length === 0 ? (
+          <StyledEmpty>No variable spending this month.</StyledEmpty>
+        ) : (
+          <div>
+            {rows.map((t, i) => {
+              const account = accounts.find((a) => a.id === t.accountId);
+              const day = parseInt(t.date.slice(8, 10), 10);
+              const monthIdx = parseInt(t.date.slice(5, 7), 10) - 1;
+              return (
+                <DataRow
+                  key={t.id}
+                  columns={ROW_COLUMNS}
+                  last={i === rows.length - 1}
+                  onClick={() => onEditTransaction(t)}
+                >
+                  <StyledDay>
+                    <StyledDayNum>{day}</StyledDayNum>
+                    <StyledDayMonth>{MONTHS_SHORT[monthIdx]}</StyledDayMonth>
+                  </StyledDay>
+                  <div>
+                    <StyledDesc>{t.description}</StyledDesc>
+                    <StyledAccountLine>
+                      {account && (
+                        <Chip color={resolveAccountColor(account)} size="sm" />
+                      )}
+                      <StyledAccountName>
+                        {account?.name ?? "—"}
+                      </StyledAccountName>
+                    </StyledAccountLine>
+                  </div>
+                  <Badge color={resolveCategoryColor(t.category, categories)}>
+                    {t.category}
+                  </Badge>
+                  <Money cents={t.amount} sign />
+                </DataRow>
+              );
+            })}
+          </div>
+        )}
+      </FadeSwap>
     </Card>
   );
 }

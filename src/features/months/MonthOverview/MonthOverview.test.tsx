@@ -413,10 +413,12 @@ const SECTION_SKELETONS = [
   "year-comparison-skeleton",
 ];
 
-/** The ordered section wrappers the Month Overview renders in every state. */
+/** The ordered section wrappers the Month Overview renders in every state.
+ *  The trailing `$` keeps each section's own fade wrapper (`…-fade`, issue
+ *  #205) out of the count — the layout being asserted is the sections'. */
 function sectionOrder(): string[] {
   return screen
-    .getAllByTestId(/^month-section-/)
+    .getAllByTestId(/^month-section-[a-z]+$/)
     .map((el) => el.getAttribute("data-testid") ?? "");
 }
 

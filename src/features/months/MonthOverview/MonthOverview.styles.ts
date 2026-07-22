@@ -6,6 +6,15 @@ export const StyledMonthOverview = styled.div`
   gap: ${({ theme }) => theme.spacing.space6}px;
 `;
 
+// Everything below the header that belongs to one month. It carries the page's
+// own column rhythm because the cross-fade wrapper sits between it and
+// `StyledMonthOverview`, which would otherwise swallow the gap.
+export const StyledMonthContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.space6}px;
+`;
+
 export const StyledColumns = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
