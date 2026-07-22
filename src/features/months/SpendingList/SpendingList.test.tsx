@@ -214,3 +214,68 @@ describe("SpendingList", () => {
     expect(screen.getByText(/no variable spending/i)).toBeInTheDocument();
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// Issue #205 — Transitions
+// Switching account tabs cross-fades the rows rather than hard-cutting.
+// ─────────────────────────────────────────────────────────────
+
+describe("SpendingList — account cross-fade", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("holds the rows in a single fade wrapper", () => {
+    renderList();
+
+    expect(screen.getByTestId("spending-rows-fade")).toBeInTheDocument();
+  });
+
+  it("cross-fades the rows when the account tab changes", () => {
+    renderList();
+    const onAllAccounts = screen.getByTestId("spending-rows-fade");
+
+    fireEvent.click(screen.getByRole("tab", { name: /Visa/ }));
+
+    expect(screen.getByText("Zalando")).toBeInTheDocument();
+    expect(screen.queryByText("Cat food")).not.toBeInTheDocument();
+
+    // A fresh wrapper is what replays the fade — the Visa rows do not hard-cut
+    // into the element the all-accounts rows were occupying.
+    expect(screen.getByTestId("spending-rows-fade")).not.toBe(onAllAccounts);
+  });
+
+  it("keeps the empty state inside the fade wrapper", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <SpendingList
+          accounts={accounts}
+          transactions={[]}
+          categories={[]}
+          monthLabel="June"
+          onAddExpense={vi.fn()}
+          onEditTransaction={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+
+    const fade = screen.getByTestId("spending-rows-fade");
+    expect(within(fade).getByText(/no variable spending/i)).toBeInTheDocument();
+  });
+
+  it("suppresses the cross-fade when reduced motion is preferred", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+    renderList();
+
+    expect(screen.getByTestId("spending-rows-fade")).toHaveAttribute(
+      "data-motion",
+      "none"
+    );
+  });
+});

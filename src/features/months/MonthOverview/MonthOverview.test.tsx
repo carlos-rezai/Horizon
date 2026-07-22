@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route, Link } from "react-router-dom";
 import { theme } from "../../../tokens";
 import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
@@ -187,6 +187,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 interface OverviewOptions {
@@ -669,5 +670,55 @@ describe("MonthOverview — optimistic add", () => {
     expect(
       screen.queryByTestId("transaction-create-modal")
     ).not.toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Issue #205 — Transitions
+// Switching months cross-fades rather than hard-cutting. `Link` is used to
+// drive the route because it navigates through the router's own navigator,
+// so it is unaffected by this file's `useNavigate` mock.
+// ─────────────────────────────────────────────────────────────
+
+describe("MonthOverview — month cross-fade", () => {
+  it("holds the month's content in a single fade wrapper", () => {
+    renderOverview();
+
+    expect(screen.getByTestId("month-content-fade")).toBeInTheDocument();
+  });
+
+  it("cross-fades the content when the month changes", async () => {
+    renderOverview("2026-06", {
+      extra: <Link to="/months/2026-07">Go to July</Link>,
+    });
+    const inJune = screen.getByTestId("month-content-fade");
+
+    fireEvent.click(screen.getByRole("link", { name: "Go to July" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("July 2026", { selector: "div" })
+      ).toBeInTheDocument();
+    });
+
+    // A fresh wrapper is what replays the fade — July's numbers do not hard-cut
+    // into the element June's were occupying.
+    expect(screen.getByTestId("month-content-fade")).not.toBe(inJune);
+  });
+
+  it("suppresses the cross-fade when reduced motion is preferred", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+    renderOverview();
+
+    expect(screen.getByTestId("month-content-fade")).toHaveAttribute(
+      "data-motion",
+      "none"
+    );
   });
 });

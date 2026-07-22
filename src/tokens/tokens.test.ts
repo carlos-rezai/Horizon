@@ -357,6 +357,35 @@ describe("theme.typography — tabular figures", () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────
+// Issue #205 — Motion tokens
+// Transitions are restrained and targeted: one duration in the agreed
+// 150–200ms band and one easing curve, so the data-swap cross-fade, the
+// skeleton→content fade and the accordion expand all move the same way
+// instead of each style file inventing its own timing.
+// ─────────────────────────────────────────────────────────────
+
+describe("theme.transitions — motion tokens", () => {
+  it("exposes a swap duration inside the agreed 150–200ms band", () => {
+    expect(theme.transitions.swapDuration).toMatch(/^\d+ms$/);
+
+    const ms = parseFloat(theme.transitions.swapDuration);
+    expect(ms).toBeGreaterThanOrEqual(150);
+    expect(ms).toBeLessThanOrEqual(200);
+  });
+
+  it("exposes an eased curve rather than a linear or instant one", () => {
+    expect(theme.transitions.easing).toMatch(/^cubic-bezier\(/);
+    expect(theme.transitions.easing).not.toBe("linear");
+  });
+
+  it("composes the duration and the easing into one swap shorthand", () => {
+    expect(theme.transitions.swap).toBe(
+      `${theme.transitions.swapDuration} ${theme.transitions.easing}`
+    );
+  });
+});
+
 describe("theme.typography.scale — prototype role scale", () => {
   const roleKeys = [
     "displayLg",
