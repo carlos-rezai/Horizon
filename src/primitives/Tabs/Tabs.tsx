@@ -38,6 +38,15 @@ export default function Tabs({ tabs, activeId, onChange }: TabsProps) {
     setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
   }, []);
 
+  // Everything about a tab that can change the strip's width. Call sites build
+  // the tabs array fresh on every render, so keying the effect on the array
+  // itself re-measures inside every commit — a forced synchronous layout per
+  // render. A signature re-measures only when the strip can actually have
+  // resized.
+  const tabsSignature = tabs
+    .map((tab) => [tab.id, tab.label, tab.count, tab.color].join(":"))
+    .join("|");
+
   useEffect(() => {
     updateAffordances();
     const el = listRef.current;
@@ -46,7 +55,7 @@ export default function Tabs({ tabs, activeId, onChange }: TabsProps) {
     observer.observe(el);
     return () => observer.disconnect();
     // Re-measure when the tab set changes (e.g. accounts added/removed).
-  }, [updateAffordances, tabs]);
+  }, [updateAffordances, tabsSignature]);
 
   const page = (direction: -1 | 1) => {
     const el = listRef.current;
