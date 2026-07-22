@@ -110,6 +110,43 @@ describe("FadeSwap — unit", () => {
   });
 });
 
+describe("FadeSwap — first paint", () => {
+  it("does not fade its first mount", () => {
+    stubReducedMotion(false);
+    renderForCSS(
+      <FadeSwap testId="swap" swapKey="loading">
+        <p>Loading</p>
+      </FadeSwap>
+    );
+
+    // There is nothing to cross-fade from on a first paint, and fading in from
+    // opacity 0 defers the largest contentful paint until the reveal has
+    // finished — measured at 615ms against 176ms without it (issue #206).
+    expect(getSwapCSS("swap")).not.toContain("animation:");
+  });
+
+  it("fades a later swap, which is what it exists for", () => {
+    stubReducedMotion(false);
+    const { rerender } = renderForCSS(
+      <FadeSwap testId="swap" swapKey="loading">
+        <p>Loading</p>
+      </FadeSwap>
+    );
+
+    rerender(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <FadeSwap testId="swap" swapKey="content">
+            <p>June spending</p>
+          </FadeSwap>
+        </ThemeProvider>
+      </StyleSheetManager>
+    );
+
+    expect(getSwapCSS("swap")).toContain("animation:");
+  });
+});
+
 describe("FadeSwap — reduced motion", () => {
   it("marks its motion as active when no preference is set", () => {
     stubReducedMotion(false);
@@ -158,10 +195,22 @@ describe("FadeSwap — reduced motion", () => {
 describe("FadeSwap — styles", () => {
   it("times its fade from the Meridian motion token", () => {
     stubReducedMotion(false);
-    renderForCSS(
+    const { rerender } = renderForCSS(
       <FadeSwap testId="swap" swapKey="june">
         <p>June spending</p>
       </FadeSwap>
+    );
+
+    // Asserted on a swap rather than the first mount, because that is where
+    // the fade lives — the first paint is deliberately shown outright.
+    rerender(
+      <StyleSheetManager disableCSSOMInjection>
+        <ThemeProvider theme={theme}>
+          <FadeSwap testId="swap" swapKey="july">
+            <p>July spending</p>
+          </FadeSwap>
+        </ThemeProvider>
+      </StyleSheetManager>
     );
 
     expect(getSwapCSS("swap")).toContain(theme.transitions.swapDuration);

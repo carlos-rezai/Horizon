@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 import { StyledFade } from "./FadeSwap.styles";
 
@@ -20,10 +20,24 @@ interface Props {
 export default function FadeSwap({ testId, swapKey, children }: Props) {
   const reduced = useReducedMotion();
 
+  // The first paint has nothing to cross-fade from, so it is shown outright.
+  // Fading it in from zero opacity would hold the largest contentful paint
+  // back until the whole progressive reveal had finished — 615ms against
+  // 176ms without it, measured on the Dashboard cold load (issue #206).
+  // Latched rather than compared against the current key, so a swap back to an
+  // earlier key still fades.
+  const [shownKey, setShownKey] = useState(swapKey);
+  const [swapped, setSwapped] = useState(false);
+  if (shownKey !== swapKey) {
+    setShownKey(swapKey);
+    setSwapped(true);
+  }
+  const animate = !reduced && swapped;
+
   return (
     <StyledFade
       key={swapKey}
-      $reduced={reduced}
+      $animate={animate}
       data-testid={testId}
       data-motion={reduced ? "none" : "fade"}
     >

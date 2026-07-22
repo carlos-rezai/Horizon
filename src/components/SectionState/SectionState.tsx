@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import FadeSwap from "../FadeSwap/FadeSwap";
 import { StyledSection, StyledErrorText } from "./SectionState.styles";
 
 interface Props {
@@ -18,9 +17,14 @@ interface Props {
  * when its data lands. Each section is driven only by the resources it needs,
  * which is what lets a fast section reveal while a slow one is still pending.
  * Error wins over loading, so a failed section reads differently from a
- * pending one rather than sitting on a skeleton forever. The switch is the only
- * skeleton→content handover in the app, so the fade lives here: whichever of
- * the three states is on show fades in when it takes over.
+ * pending one rather than sitting on a skeleton forever.
+ *
+ * The handover is deliberately not faded. Fading content in from zero opacity
+ * held the largest contentful paint back until the whole progressive reveal
+ * had finished — 772ms against 169ms on the Dashboard cold load, and CLS 0.05
+ * against 0.01 (issue #206). The cross-fades that the motion work was actually
+ * for are the data swaps, and those are untouched: see the Month and account
+ * swaps, which still go through `FadeSwap`.
  */
 export default function SectionState({
   testId,
@@ -33,15 +37,13 @@ export default function SectionState({
 
   return (
     <StyledSection data-testid={testId}>
-      <FadeSwap testId={`${testId}-fade`} swapKey={state}>
-        {state === "error" ? (
-          <StyledErrorText>{`Error: ${error}`}</StyledErrorText>
-        ) : state === "loading" ? (
-          skeleton
-        ) : (
-          children
-        )}
-      </FadeSwap>
+      {state === "error" ? (
+        <StyledErrorText>{`Error: ${error}`}</StyledErrorText>
+      ) : state === "loading" ? (
+        skeleton
+      ) : (
+        children
+      )}
     </StyledSection>
   );
 }

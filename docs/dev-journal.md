@@ -939,3 +939,131 @@ is identical; the loader and font behaviour is not. Absolute milliseconds
 flatter a low-end machine — the durable finding is the _ratio_ between
 mechanisms, which is what Phase 8 should be judged against. Phase 8 re-captures
 all five under this same protocol for the before/after write-up.
+
+## 2026-07-22 — #206 Performance + UX Polish: stutter root-cause, fix & before/after
+
+Phase 8, the close of the epic (#198). The short version: the stutter #199
+diagnosed was real but much smaller than it looked, the fix for it is worth
+having and does not move the headline number, and the pass had quietly
+introduced a far bigger regression that the after-traces caught. Raw traces are
+in `docs/perf/after-2026-07-22/`, beside the baseline.
+
+### First, a measurement bug that invalidated a round of conclusions
+
+Page-load numbers are **not comparable across Edge process restarts**. The same
+build measured 325 ms LCP in a long-running browser and 615 ms in a freshly
+launched one — the difference is V8's code cache for the 1.7 MB bundle, not the
+code. I reported a set of before/after numbers from separate instances before
+noticing, and they were meaningless. Everything below was re-measured inside a
+single browser instance, each origin warmed with three reloads first, and the
+protocol note is now in the artifacts README so the next capture starts there.
+
+The cost of finding this late was a wasted round of analysis. The cost of not
+finding it would have been a journal entry full of confident, wrong numbers.
+
+### The stutter: right location, wrong mechanism
+
+#199 put 62 of the 64 ms Month-switch forced reflow in `Tabs.tsx`, and inferred
+layout thrash: the affordance effect keyed on the `tabs` array, `SpendingList`
+built that array fresh every render, so the effect "re-runs every render".
+
+The location was right. The mechanism was not, and counting settled it. Rather
+than infer from the trace, I wrapped the `scrollWidth` getter in the live page
+and counted the reads across one July→June switch:
+
+| build                          | measurements |
+| ------------------------------ | ------------ |
+| pre-pass (`dd05bdb`)           | 5            |
+| post-pass, before the Tabs fix | 3            |
+| post-pass, after the Tabs fix  | 2            |
+
+Five, not fifty. There was no thrash loop — the effect ran a handful of times,
+and each run forced one layout of a large, freshly-committed DOM. The expense
+was the layout, not the number of reads. Phases 2–7 had already cut it from
+five to three by cutting renders; the fix takes one more.
+
+So the fix is correct and worth keeping — it is now impossible for a re-render
+with an equivalent tab set to measure anything, which is what the primitive's
+test pins — but on this dataset (four accounts, seven rows) it moved the
+Month-switch reflow from 80 ms to 55 ms, not to zero. `Tabs` still owns the
+frame in the after-trace, and that is the honest answer: it is the first code
+to read layout after React commits the new month, so it pays for a layout the
+browser must do regardless. Fixing it further means shrinking the DOM, not
+moving the read.
+
+The other two candidates the PRD registered stayed where #199 left them:
+styled-components injection never appeared, and Recharts' `useReportScale` is
+3 ms of the 55.
+
+### The regression the after-traces caught
+
+Against the pre-pass build, in one browser instance:
+
+| build                                          | Dashboard LCP | CLS  |
+| ---------------------------------------------- | ------------- | ---- |
+| pre-pass (`dd05bdb`)                           | 220 ms        | 0.00 |
+| post-pass, runtime fonts, fade on              | 719 ms        | 0.05 |
+| post-pass, static fonts, fade on               | 615 ms        | 0.05 |
+| post-pass, static fonts, **skeleton fade off** | 169 ms        | 0.01 |
+
+The pass had made the Dashboard start roughly three times slower, and every bit
+of it was the skeleton→content fade in `SectionState`. Not the 180 ms duration:
+with sections revealing independently, the largest contentful element is
+whichever section lands last, so fading each one in from zero opacity makes LCP
+measure the entire reveal sequence instead of first paint. DevTools blamed the
+web-font swap for the CLS, which was a symptom of the same thing — the fade held
+content back past the font load, so the swap landed on visible text.
+
+Finding this took three build-level A/Bs, because the first fix missed. I
+suppressed the fade on `FadeSwap`'s _first mount_, reasoning that a first paint
+has nothing to cross-fade from. True, and inert: the costly transition is
+`loading → content`, which is a genuine key change, not a first mount. The
+measurement said 772 ms, unchanged, and the hypothesis had to be thrown out
+rather than argued with.
+
+**The skeleton→content fade is gone**; `SectionState` hands over in the element
+it already occupies. This contradicts an acceptance criterion of #205
+("Skeletons fade smoothly into real content"), knowingly and with the price on
+the table: that criterion cost ~450 ms of LCP and 0.04 of CLS. What #205 was
+actually for — cross-fading month and account **data swaps** — is untouched and
+still goes through `FadeSwap`. The first-mount suppression stayed too: it is
+free, and it is right for the Month and Plan swaps' own initial paint.
+
+Also moved the eight `@font-face` rules out of a `createGlobalStyle` into a
+static stylesheet the entry imports, worth ~100 ms of LCP. My stated reason for
+doing it was wrong — I expected it to fix the CLS, and it does not, because
+`@font-face` starts no download until text using the family is laid out, which
+still waits for React. Both the stylesheet and its test now say so.
+
+### Where it landed
+
+| capture           | before                   | after                             |
+| ----------------- | ------------------------ | --------------------------------- |
+| Dashboard load    | LCP 232 ms · CLS 0       | LCP 167–181 ms · CLS 0.05         |
+| Plan load         | LCP 185 ms · CLS 0       | LCP 164 ms · CLS 0                |
+| Month load        | LCP 180 ms · CLS 0       | LCP 176 ms · CLS 0.01 · no reflow |
+| Dashboard → Month | INP 6 ms · 45 ms reflow  | INP 7 ms · **no reflow**          |
+| Month switch      | INP 10 ms · 64 ms reflow | INP 5 ms · 55 ms reflow           |
+
+The bundle grew 1,684.57 kB → 1,694.39 kB (+0.6%) across the whole epic, and
+the Dashboard→Month click no longer forces a synchronous layout at all.
+
+### Unfinished: the Dashboard's 0.05 CLS
+
+One number got worse and stayed worse. With the fade removed, the Dashboard's
+remaining shift is a single 0.0472 jolt at 272 ms with no font involvement —
+the skeletons do not match the height of the content that replaces them, so the
+reveal now hard-cuts to a different layout. Still inside the "good" band
+(< 0.1), and Plan sits at 0.00 and Month at 0.01, so it is specific to the
+Dashboard's sections rather than systemic.
+
+This is exactly the risk #199 flagged before Phase 4 started — "skeletons could
+introduce shift where there is none today" — and it wants per-section
+layout-matching, which is Phase 4's work and a real piece rather than a
+one-liner. Filed rather than rushed at the end of a long session.
+
+The durable lesson is the same one #199 drew, one level deeper. #199 profiled
+before fixing and inverted the PRD's guesses. Phase 8 then had to profile
+before trusting #199's own follow-on reasoning, and again before trusting its
+first fix. Attribution tells you where the cost is charged; only counting and
+A/B builds tell you what would remove it.

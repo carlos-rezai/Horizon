@@ -1,21 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup } from "@testing-library/react";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import SectionState from "./SectionState";
-
-const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";
-
-/** jsdom ships no matchMedia; the preference is stubbed at the window. */
-function stubReducedMotion(matches: boolean) {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: query === REDUCE_QUERY ? matches : false,
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }));
-}
 
 interface StateOptions {
   isLoading?: boolean;
@@ -39,62 +27,53 @@ function sectionTree({ isLoading = true, error = null }: StateOptions = {}) {
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
-describe("SectionState — skeleton→content fade", () => {
-  it("renders each of its three states inside the section's fade wrapper", () => {
-    stubReducedMotion(false);
+/**
+ * The skeleton→content handover is deliberately not faded. Fading it in from
+ * zero opacity held the largest contentful paint back until the whole
+ * progressive reveal had finished — 772ms against 169ms on the Dashboard cold
+ * load, with CLS 0.05 against 0.01 (issue #206). Data-swap cross-fades, which
+ * is what the motion work was for, are unaffected and still live in the Month
+ * and account swaps.
+ */
+describe("SectionState — state handover", () => {
+  it("shows the skeleton while its data is pending", () => {
+    render(sectionTree({ isLoading: true }));
 
-    const { rerender } = render(sectionTree({ isLoading: true }));
-    expect(screen.getByTestId("month-section-stats-fade")).toBeInTheDocument();
-
-    rerender(sectionTree({ isLoading: false }));
-    expect(screen.getByTestId("month-section-stats-fade")).toBeInTheDocument();
-
-    rerender(sectionTree({ isLoading: false, error: "Network down" }));
-    expect(screen.getByTestId("month-section-stats-fade")).toBeInTheDocument();
-  });
-
-  it("fades the skeleton into the content when the section's data lands", () => {
-    stubReducedMotion(false);
-
-    const { rerender } = render(sectionTree({ isLoading: true }));
     expect(screen.getByText("Loading placeholder")).toBeInTheDocument();
-    const whileLoading = screen.getByTestId("month-section-stats-fade");
+    expect(screen.queryByText("Total spent")).not.toBeInTheDocument();
+  });
+
+  it("shows the content once the data lands", () => {
+    const { rerender } = render(sectionTree({ isLoading: true }));
 
     rerender(sectionTree({ isLoading: false }));
 
-    // A fresh wrapper is what replays the fade — the skeleton does not simply
-    // hard-cut to the content in the element it was already occupying.
     expect(screen.getByText("Total spent")).toBeInTheDocument();
-    expect(screen.getByTestId("month-section-stats-fade")).not.toBe(
-      whileLoading
-    );
+    expect(screen.queryByText("Loading placeholder")).not.toBeInTheDocument();
   });
 
-  it("fades the skeleton into the error state when the section fails", () => {
-    stubReducedMotion(false);
-
+  it("shows the error rather than sitting on the skeleton when it fails", () => {
     const { rerender } = render(sectionTree({ isLoading: true }));
-    const whileLoading = screen.getByTestId("month-section-stats-fade");
 
     rerender(sectionTree({ isLoading: true, error: "Network down" }));
 
     expect(screen.getByText(/Network down/)).toBeInTheDocument();
-    expect(screen.getByTestId("month-section-stats-fade")).not.toBe(
-      whileLoading
-    );
+    expect(screen.queryByText("Loading placeholder")).not.toBeInTheDocument();
   });
 
-  it("suppresses the fade when reduced motion is preferred", () => {
-    stubReducedMotion(true);
+  it("hands over in the element it already occupies, rather than remounting to fade", () => {
+    const { rerender } = render(sectionTree({ isLoading: true }));
+    const whileLoading = screen.getByTestId("month-section-stats");
 
-    render(sectionTree({ isLoading: true }));
+    rerender(sectionTree({ isLoading: false }));
 
-    expect(screen.getByTestId("month-section-stats-fade")).toHaveAttribute(
-      "data-motion",
-      "none"
-    );
+    // The section holds its place across the handover: same element, new
+    // contents, no fade wrapper remounting underneath it.
+    expect(screen.getByTestId("month-section-stats")).toBe(whileLoading);
+    expect(
+      screen.queryByTestId("month-section-stats-fade")
+    ).not.toBeInTheDocument();
   });
 });
