@@ -6,15 +6,13 @@ import {
   cleanup,
   fireEvent,
   waitFor,
-  act,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { theme } from "../../../tokens";
 import CacheProvider from "../../../components/CacheProvider/CacheProvider";
-import { useAccounts } from "../../accounts/useAccounts";
-import { useProjection } from "../../projection/useProjection";
+import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Transaction } from "../../../types/transaction";
 
@@ -40,9 +38,31 @@ vi.mock("../useImportStartDates", () => ({
   useImportStartDates: (...args: unknown[]) => mockUseImportStartDates(...args),
 }));
 
-let capturedOnDeleted: ((id: string, transferId?: string) => void) | null =
-  null;
-let capturedOnSuccess: (() => void) | null = null;
+/**
+ * The draft a create modal hands back — the modal collects it, the page owns
+ * the network, so the optimistic path lives in one place.
+ */
+interface TransactionDraft {
+  date: string;
+  amount: number;
+  description: string;
+  category: string;
+  toAccountId?: string;
+}
+
+const COFFEE: TransactionDraft = {
+  date: "2026-06-15",
+  amount: -450,
+  description: "Coffee",
+  category: "Food",
+};
+
+const CORRECTED = {
+  date: "2026-06-09",
+  amount: -3420,
+  description: "Cat food (corrected)",
+  category: "Cat",
+};
 
 vi.mock(
   "../../transactions/TransactionCreateModal/TransactionCreateModal",
@@ -50,34 +70,33 @@ vi.mock(
     default: (props: {
       accountId: string;
       onClose: () => void;
-      onSuccess: () => void;
-    }) => {
-      capturedOnSuccess = props.onSuccess;
-      return (
-        <div
-          data-testid="transaction-create-modal"
-          data-account-id={props.accountId}
-        >
-          <button onClick={props.onClose}>Cancel</button>
-        </div>
-      );
-    },
+      onSubmit: (draft: TransactionDraft) => void;
+    }) => (
+      <div
+        data-testid="transaction-create-modal"
+        data-account-id={props.accountId}
+      >
+        <button onClick={() => props.onSubmit(COFFEE)}>Add transaction</button>
+        <button onClick={props.onClose}>Cancel</button>
+      </div>
+    ),
   })
 );
 
 vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
   default: (props: {
     transaction: Transaction;
-    onDeleted: (id: string, transferId?: string) => void;
-  }) => {
-    capturedOnDeleted = props.onDeleted;
-    return (
-      <div
-        data-testid="transaction-edit-modal"
-        data-transaction-id={props.transaction.id}
-      />
-    );
-  },
+    onSave: (changes: typeof CORRECTED) => void;
+    onDelete: () => void;
+  }) => (
+    <div
+      data-testid="transaction-edit-modal"
+      data-transaction-id={props.transaction.id}
+    >
+      <button onClick={() => props.onSave(CORRECTED)}>Save</button>
+      <button onClick={props.onDelete}>Delete</button>
+    </div>
+  ),
 }));
 
 import MonthOverview from "./MonthOverview";
@@ -140,12 +159,18 @@ const transactions: Transaction[] = [
 ];
 
 const refetch = vi.fn();
+const create = vi.fn();
+const update = vi.fn();
+const remove = vi.fn();
 
 beforeEach(() => {
   mockUseAllMonthTransactions.mockReturnValue({
     transactions,
     isLoading: false,
     refetch,
+    create,
+    update,
+    remove,
   });
   mockUseYearComparison.mockReturnValue({
     rows: [{ category: "Groceries", thisYear: 12000, lastYear: 9000 }],
@@ -161,23 +186,23 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.restoreAllMocks();
-  capturedOnDeleted = null;
-  capturedOnSuccess = null;
 });
 
 function renderOverview(month = "2026-06", extra?: ReactNode) {
   return render(
     <CacheProvider>
       <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={[`/months/${month}`]}>
-          <Routes>
-            <Route
-              path="/months/:month"
-              element={<MonthOverview accounts={accounts} />}
-            />
-          </Routes>
-          {extra}
-        </MemoryRouter>
+        <SnackbarProvider>
+          <MemoryRouter initialEntries={[`/months/${month}`]}>
+            <Routes>
+              <Route
+                path="/months/:month"
+                element={<MonthOverview accounts={accounts} />}
+              />
+            </Routes>
+            {extra}
+          </MemoryRouter>
+        </SnackbarProvider>
       </ThemeProvider>
     </CacheProvider>
   );
@@ -294,81 +319,75 @@ describe("MonthOverview — edit and delete", () => {
     );
   });
 
-  it("refetches after a delete", () => {
+  it("records an edit through the month hook", () => {
     renderOverview();
     fireEvent.click(screen.getByText("Cat food"));
-    capturedOnDeleted?.("t1");
-    expect(refetch).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    expect(update).toHaveBeenCalledWith("t1", CORRECTED);
+  });
+
+  it("records a delete through the month hook", () => {
+    renderOverview();
+    fireEvent.click(screen.getByText("Cat food"));
+    fireEvent.click(screen.getByRole("button", { name: /delete/i }));
+    expect(remove).toHaveBeenCalledWith("t1");
+  });
+
+  it("records a new expense through the month hook, on the active account", () => {
+    renderOverview();
+    fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+    expect(create).toHaveBeenCalledWith("main", COFFEE);
   });
 });
 
-/**
- * Reads the two resources a transaction mutation is supposed to bump, so a
- * test can watch them refetch without knowing how the bump is delivered.
- */
-function BumpProbes() {
-  useAccounts();
-  useProjection();
-  return null;
-}
+describe("MonthOverview — optimistic add", () => {
+  beforeEach(async () => {
+    const actual = await vi.importActual<
+      typeof import("../useAllMonthTransactions")
+    >("../useAllMonthTransactions");
+    mockUseAllMonthTransactions.mockImplementation(
+      actual.useAllMonthTransactions
+    );
 
-function countRequests(predicate: (url: string) => boolean): number {
-  return vi
-    .mocked(fetch)
-    .mock.calls.map(([url]) => String(url))
-    .filter(predicate).length;
-}
-
-const isAccountsList = (url: string) => url.endsWith("/accounts");
-const isProjection = (url: string) => url.includes("/projection");
-
-describe("MonthOverview — explicit bump", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    } as Response);
+    // Every read answers empty; the create never lands, so the only thing that
+    // can put a row on screen is the optimistic apply.
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      const method = (init as RequestInit | undefined)?.method ?? "GET";
+      if (method !== "GET") return new Promise<Response>(() => {});
+      return { ok: true, json: async () => [] } as Response;
+    });
   });
 
-  it("refetches accounts and the projection after an expense is recorded", async () => {
-    renderOverview("2026-06", <BumpProbes />);
+  it("paints the new expense in the spending list before the server responds", async () => {
+    renderOverview();
 
     await waitFor(() => {
-      expect(countRequests(isAccountsList)).toBeGreaterThan(0);
+      expect(
+        screen.getByText("No variable spending this month.")
+      ).toBeInTheDocument();
     });
+
     fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
 
-    const accountsBefore = countRequests(isAccountsList);
-    const projectionBefore = countRequests(isProjection);
-
-    act(() => {
-      capturedOnSuccess?.();
-    });
-
-    await waitFor(() => {
-      expect(countRequests(isAccountsList)).toBeGreaterThan(accountsBefore);
-    });
-    expect(countRequests(isProjection)).toBeGreaterThan(projectionBefore);
+    expect(screen.getByText("Coffee")).toBeInTheDocument();
   });
 
-  it("refetches accounts and the projection after a delete", async () => {
-    renderOverview("2026-06", <BumpProbes />);
+  it("closes the create modal as soon as the expense is recorded", async () => {
+    renderOverview();
 
     await waitFor(() => {
-      expect(countRequests(isAccountsList)).toBeGreaterThan(0);
-    });
-    fireEvent.click(screen.getByText("Cat food"));
-
-    const accountsBefore = countRequests(isAccountsList);
-    const projectionBefore = countRequests(isProjection);
-
-    act(() => {
-      capturedOnDeleted?.("t1");
+      expect(
+        screen.getByText("No variable spending this month.")
+      ).toBeInTheDocument();
     });
 
-    await waitFor(() => {
-      expect(countRequests(isAccountsList)).toBeGreaterThan(accountsBefore);
-    });
-    expect(countRequests(isProjection)).toBeGreaterThan(projectionBefore);
+    fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+
+    expect(
+      screen.queryByTestId("transaction-create-modal")
+    ).not.toBeInTheDocument();
   });
 });

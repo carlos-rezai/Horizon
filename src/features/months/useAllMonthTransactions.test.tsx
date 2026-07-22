@@ -9,7 +9,12 @@ import {
   act,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../tokens";
 import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
+import { useAccounts } from "../accounts/useAccounts";
+import { useProjection } from "../projection/useProjection";
 import { useAllMonthTransactions } from "./useAllMonthTransactions";
 import type { Transaction } from "../../types/transaction";
 
@@ -239,5 +244,371 @@ describe("useAllMonthTransactions — cached per accounts and month", () => {
     expect(screen.getByTestId("consumer")).toHaveTextContent(
       "Supermarket,Dental"
     );
+  });
+});
+
+/**
+ * A promise plus the handle to settle it, so a test can hold the server
+ * mid-flight and inspect the frame the user actually sees while waiting.
+ */
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+function ok(body: unknown): Response {
+  return { ok: true, json: async () => body } as Response;
+}
+
+function rejected(message: string): Response {
+  return { ok: false, json: async () => ({ error: message }) } as Response;
+}
+
+/** The chrome a mutation needs: a cache to write to, snackbars to fail into. */
+function Providers({ children }: { children: ReactNode }) {
+  return (
+    <ThemeProvider theme={theme}>
+      <CacheProvider>
+        <SnackbarProvider>{children}</SnackbarProvider>
+      </CacheProvider>
+    </ThemeProvider>
+  );
+}
+
+const describes = (list: Transaction[]) => list.map((tx) => tx.description);
+const idsOf = (list: Transaction[]) => list.map((tx) => tx.id);
+
+/** The row the server stores for the optimistic "Coffee" create below. */
+const savedCoffee: Transaction = {
+  id: "txn-9",
+  accountId: "acc-1",
+  date: "2026-05-20",
+  amount: -350,
+  description: "Coffee",
+  category: "Food",
+};
+
+const COFFEE = {
+  date: "2026-05-20",
+  amount: -350,
+  description: "Coffee",
+  category: "Food",
+};
+
+const RENAMED = {
+  date: "2026-05-10",
+  amount: -5000,
+  description: "Supermarket (corrected)",
+  category: "Food",
+};
+
+/** Serves each account's list on GET and every mutation the given response. */
+function mockFetchWithMutation(response: Promise<Response> | Response): void {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const url = String(input);
+    const method = (init as RequestInit | undefined)?.method ?? "GET";
+    if (method !== "GET") return response;
+    return ok(url.includes("acc-1") ? [acc1Transaction] : [acc2Transaction]);
+  });
+}
+
+describe("useAllMonthTransactions — optimistic create", () => {
+  it("shows the new transaction before the server responds", async () => {
+    const post = deferred<Response>();
+    mockFetchWithMutation(post.promise);
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.create("acc-1", COFFEE);
+    });
+
+    expect(describes(result.current.transactions)).toContain("Coffee");
+
+    await act(async () => {
+      post.resolve(ok(savedCoffee));
+      await pending;
+    });
+  });
+
+  it("posts the new transaction to the account it was recorded on", async () => {
+    mockFetchWithMutation(ok(savedCoffee));
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.create("acc-1", COFFEE);
+    });
+
+    const postCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          String(url).includes("/accounts/acc-1/transactions") &&
+          (init as RequestInit | undefined)?.method === "POST"
+      );
+    expect(postCall).toBeDefined();
+  });
+
+  it("swaps the provisional id for the server id once the create lands", async () => {
+    const post = deferred<Response>();
+    mockFetchWithMutation(post.promise);
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.create("acc-1", COFFEE);
+    });
+
+    // Painted, but not yet carrying the id the server will assign.
+    const provisionalIds = idsOf(result.current.transactions);
+    expect(provisionalIds).toHaveLength(3);
+    expect(provisionalIds).not.toContain("txn-9");
+
+    await act(async () => {
+      post.resolve(ok(savedCoffee));
+      await pending;
+    });
+
+    expect(idsOf(result.current.transactions)).toEqual([
+      "txn-1",
+      "txn-2",
+      "txn-9",
+    ]);
+  });
+});
+
+describe("useAllMonthTransactions — optimistic update and remove", () => {
+  it("applies an edit in place before the server responds", async () => {
+    const patch = deferred<Response>();
+    mockFetchWithMutation(patch.promise);
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.update("txn-1", RENAMED);
+    });
+
+    expect(describes(result.current.transactions)).toEqual([
+      "Supermarket (corrected)",
+      "Dental",
+    ]);
+
+    await act(async () => {
+      patch.resolve(ok({ ...acc1Transaction, ...RENAMED }));
+      await pending;
+    });
+  });
+
+  it("removes a transaction before the server responds", async () => {
+    const del = deferred<Response>();
+    mockFetchWithMutation(del.promise);
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.remove("txn-1");
+    });
+
+    expect(describes(result.current.transactions)).toEqual(["Dental"]);
+
+    await act(async () => {
+      del.resolve(ok({}));
+      await pending;
+    });
+  });
+});
+
+describe("useAllMonthTransactions — rollback on a rejected mutation", () => {
+  it("restores the exact previous list and notifies when a create is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.create("acc-1", COFFEE);
+    });
+
+    expect(result.current.transactions).toEqual([
+      acc1Transaction,
+      acc2Transaction,
+    ]);
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", "error");
+  });
+
+  it("restores the exact previous list and notifies when an edit is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.update("txn-1", RENAMED);
+    });
+
+    expect(result.current.transactions).toEqual([
+      acc1Transaction,
+      acc2Transaction,
+    ]);
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", "error");
+  });
+
+  it("restores the exact previous list and notifies when a delete is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.remove("txn-1");
+    });
+
+    expect(result.current.transactions).toEqual([
+      acc1Transaction,
+      acc2Transaction,
+    ]);
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", "error");
+  });
+});
+
+describe("useAllMonthTransactions — transfers", () => {
+  it("routes a create with a destination account to the transfer endpoint", async () => {
+    mockFetchWithMutation(ok({ id: "tr-1" }));
+
+    const { result } = renderHook(
+      () => useAllMonthTransactions(ACCOUNT_IDS, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.create("acc-1", { ...COFFEE, toAccountId: "acc-2" });
+    });
+
+    const transferCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([url, init]) =>
+          String(url).includes("/transfers") &&
+          (init as RequestInit | undefined)?.method === "POST"
+      );
+    expect(transferCall).toBeDefined();
+  });
+});
+
+/**
+ * Reads the two resources a transaction mutation is supposed to bump, so a
+ * test can watch them refetch without knowing how the bump is delivered.
+ */
+function useBumpProbes(): void {
+  useAccounts();
+  useProjection();
+}
+
+function countRequests(predicate: (url: string) => boolean): number {
+  return vi
+    .mocked(fetch)
+    .mock.calls.map(([url]) => String(url))
+    .filter(predicate).length;
+}
+
+const isAccountsList = (url: string) => url.endsWith("/accounts");
+const isProjection = (url: string) => url.includes("/projection");
+
+describe("useAllMonthTransactions — explicit bump", () => {
+  it("refetches accounts and the projection after a create", async () => {
+    mockFetchWithMutation(ok(savedCoffee));
+
+    const { result } = renderHook(
+      () => {
+        useBumpProbes();
+        return useAllMonthTransactions(ACCOUNT_IDS, MONTH);
+      },
+      { wrapper: Providers }
+    );
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(0);
+    });
+
+    const accountsBefore = countRequests(isAccountsList);
+    const projectionBefore = countRequests(isProjection);
+
+    await act(async () => {
+      await result.current.create("acc-1", COFFEE);
+    });
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(accountsBefore);
+    });
+    expect(countRequests(isProjection)).toBeGreaterThan(projectionBefore);
+  });
+
+  it("refetches accounts and the projection after a delete", async () => {
+    mockFetchWithMutation(ok({}));
+
+    const { result } = renderHook(
+      () => {
+        useBumpProbes();
+        return useAllMonthTransactions(ACCOUNT_IDS, MONTH);
+      },
+      { wrapper: Providers }
+    );
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(0);
+    });
+
+    const accountsBefore = countRequests(isAccountsList);
+    const projectionBefore = countRequests(isProjection);
+
+    await act(async () => {
+      await result.current.remove("txn-1");
+    });
+
+    await waitFor(() => {
+      expect(countRequests(isAccountsList)).toBeGreaterThan(accountsBefore);
+    });
+    expect(countRequests(isProjection)).toBeGreaterThan(projectionBefore);
   });
 });

@@ -9,7 +9,10 @@ import {
   act,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { theme } from "../../tokens";
 import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
 import { useAccounts } from "../accounts/useAccounts";
 import { useProjection } from "../projection/useProjection";
 import { useMonthTransactions } from "./useMonthTransactions";
@@ -292,6 +295,260 @@ describe("useMonthTransactions — per account and month caching", () => {
     rerender(<Harness visible>{consumer}</Harness>);
 
     expect(screen.getByTestId("consumer")).toHaveTextContent("Groceries");
+  });
+});
+
+/**
+ * A promise plus the handles to settle it, so a test can hold the server
+ * mid-flight and inspect the frame the user actually sees while waiting.
+ */
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+function ok(body: unknown): Response {
+  return { ok: true, json: async () => body } as Response;
+}
+
+function rejected(message: string): Response {
+  return { ok: false, json: async () => ({ error: message }) } as Response;
+}
+
+/** The full chrome a mutation needs: the cache to write to, snackbars to fail into. */
+function Providers({ children }: { children: ReactNode }) {
+  return (
+    <ThemeProvider theme={theme}>
+      <CacheProvider>
+        <SnackbarProvider>{children}</SnackbarProvider>
+      </CacheProvider>
+    </ThemeProvider>
+  );
+}
+
+const describes = (list: Transaction[]) => list.map((tx) => tx.description);
+const idsOf = (list: Transaction[]) => list.map((tx) => tx.id);
+
+/** Serves the month list on GET and hands every mutation the given response. */
+function mockFetchWithMutation(response: Promise<Response> | Response): void {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+    const method = (init as RequestInit | undefined)?.method ?? "GET";
+    if (method === "GET") return ok([mayTransaction]);
+    return response;
+  });
+}
+
+const CREATE_PAYLOAD = {
+  date: "2026-05-15",
+  amount: -8000,
+  description: "Restaurant",
+  category: "Food",
+};
+
+const UPDATE_PAYLOAD = {
+  date: "2026-05-10",
+  amount: -6000,
+  description: "Groceries (updated)",
+  category: "Food",
+};
+
+describe("useMonthTransactions — optimistic create", () => {
+  it("shows the new transaction before the server responds", async () => {
+    const post = deferred<Response>();
+    mockFetchWithMutation(post.promise);
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.create(CREATE_PAYLOAD);
+    });
+
+    expect(describes(result.current.transactions)).toEqual([
+      "Groceries",
+      "Restaurant",
+    ]);
+
+    await act(async () => {
+      post.resolve(ok(newTransaction));
+      await pending;
+    });
+  });
+
+  it("swaps the provisional id for the server id in the row's own position", async () => {
+    const post = deferred<Response>();
+    mockFetchWithMutation(post.promise);
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.create(CREATE_PAYLOAD);
+    });
+
+    // Painted, but not yet carrying the id the server will assign.
+    const provisionalIds = idsOf(result.current.transactions);
+    expect(provisionalIds).toHaveLength(2);
+    expect(provisionalIds[1]).not.toBe("txn-2");
+
+    await act(async () => {
+      post.resolve(ok(newTransaction));
+      await pending;
+    });
+
+    expect(idsOf(result.current.transactions)).toEqual(["txn-1", "txn-2"]);
+    expect(describes(result.current.transactions)).toEqual([
+      "Groceries",
+      "Restaurant",
+    ]);
+  });
+});
+
+describe("useMonthTransactions — optimistic update and remove", () => {
+  it("applies an edit in place before the server responds", async () => {
+    const patch = deferred<Response>();
+    mockFetchWithMutation(patch.promise);
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.update("txn-1", UPDATE_PAYLOAD);
+    });
+
+    expect(describes(result.current.transactions)).toEqual([
+      "Groceries (updated)",
+    ]);
+
+    await act(async () => {
+      patch.resolve(ok(updatedTransaction));
+      await pending;
+    });
+  });
+
+  it("removes a transaction before the server responds", async () => {
+    const del = deferred<Response>();
+    mockFetchWithMutation(del.promise);
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.remove("txn-1");
+    });
+
+    expect(result.current.transactions).toEqual([]);
+
+    await act(async () => {
+      del.resolve(ok({}));
+      await pending;
+    });
+  });
+});
+
+describe("useMonthTransactions — rollback on a rejected mutation", () => {
+  it("restores the exact previous list when a create is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.create(CREATE_PAYLOAD);
+    });
+
+    expect(result.current.transactions).toEqual([mayTransaction]);
+  });
+
+  it("notifies the user when a create is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.create(CREATE_PAYLOAD);
+    });
+
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", "error");
+  });
+
+  it("restores the exact previous list and notifies when an edit is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.update("txn-1", UPDATE_PAYLOAD);
+    });
+
+    expect(result.current.transactions).toEqual([mayTransaction]);
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", "error");
+  });
+
+  it("restores the exact previous list and notifies when a delete is rejected", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.remove("txn-1");
+    });
+
+    expect(result.current.transactions).toEqual([mayTransaction]);
+    expect(screen.getByRole("status")).toHaveAttribute("data-variant", "error");
+  });
+
+  it("reports the failure through the notification rather than by rejecting", async () => {
+    mockFetchWithMutation(rejected("Nope"));
+
+    const { result } = renderHook(
+      () => useMonthTransactions(ACCOUNT_ID, MONTH),
+      { wrapper: Providers }
+    );
+    await act(async () => {});
+
+    await act(async () => {
+      await expect(
+        result.current.create(CREATE_PAYLOAD)
+      ).resolves.toBeUndefined();
+    });
   });
 });
 
