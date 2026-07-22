@@ -9,7 +9,7 @@ import {
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
-import Tabs from "./Tabs";
+import Tabs, { type TabItem } from "./Tabs";
 
 const TABS = [
   { id: "a", label: "Giro", color: "#7FA7D9", count: 3 },
@@ -18,6 +18,35 @@ const TABS = [
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+}
+
+/**
+ * Fix the strip's layout metrics so the affordance logic is decidable in
+ * jsdom, where every box measures zero. The returned spy doubles as the
+ * measurement counter: reading `scrollWidth` is what forces the layout.
+ */
+function stubStripMetrics(scrollWidth: number, clientWidth: number) {
+  vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(
+    clientWidth
+  );
+  return vi
+    .spyOn(Element.prototype, "scrollWidth", "get")
+    .mockReturnValue(scrollWidth);
+}
+
+/** Render Tabs so it can be re-rendered with fresh props under the theme. */
+function renderTabs(tabs: TabItem[]) {
+  const { rerender } = renderWithTheme(
+    <Tabs tabs={tabs} activeId="a" onChange={() => {}} />
+  );
+  return {
+    rerenderTabs: (next: TabItem[]) =>
+      rerender(
+        <ThemeProvider theme={theme}>
+          <Tabs tabs={next} activeId="a" onChange={() => {}} />
+        </ThemeProvider>
+      ),
+  };
 }
 
 function renderForCSS(ui: React.ReactElement) {
@@ -36,6 +65,7 @@ function getInjectedCSS(): string {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe("Tabs", () => {
@@ -68,6 +98,84 @@ describe("Tabs", () => {
   it("renders a colour dot for tabs that supply a colour", () => {
     renderForCSS(<Tabs tabs={TABS} activeId="a" onChange={() => {}} />);
     expect(getInjectedCSS()).toContain("#7FA7D9");
+  });
+});
+
+describe("Tabs — scroll affordances", () => {
+  it("offers a right-scroll affordance when the strip overflows", () => {
+    stubStripMetrics(500, 200);
+    renderTabs(TABS);
+    expect(
+      screen.getByRole("button", { name: "Scroll tabs right" })
+    ).toBeInTheDocument();
+  });
+
+  it("offers no affordances when the strip fits", () => {
+    stubStripMetrics(200, 200);
+    renderTabs(TABS);
+    expect(
+      screen.queryByRole("button", { name: "Scroll tabs right" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Scroll tabs left" })
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Tabs — measurement cost", () => {
+  it("does not re-measure the strip when re-rendered with an equivalent tab set", () => {
+    const measure = stubStripMetrics(500, 200);
+    const { rerenderTabs } = renderTabs([
+      { id: "a", label: "Giro", count: 3 },
+      { id: "b", label: "Tagesgeld" },
+    ]);
+    measure.mockClear();
+
+    // A fresh array literal holding identical tabs — what SpendingList and
+    // ImportHistory hand down on every single render. Measuring here forces a
+    // synchronous layout inside the commit, which is the Month-switch hitch.
+    rerenderTabs([
+      { id: "a", label: "Giro", count: 3 },
+      { id: "b", label: "Tagesgeld" },
+    ]);
+
+    expect(measure).not.toHaveBeenCalled();
+  });
+
+  it("re-measures when a tab is added", () => {
+    const measure = stubStripMetrics(200, 200);
+    const { rerenderTabs } = renderTabs([{ id: "a", label: "Giro" }]);
+    expect(
+      screen.queryByRole("button", { name: "Scroll tabs right" })
+    ).not.toBeInTheDocument();
+
+    // An account is added, so the strip now outgrows the card.
+    measure.mockReturnValue(500);
+    rerenderTabs([
+      { id: "a", label: "Giro" },
+      { id: "b", label: "Tagesgeld" },
+      { id: "c", label: "Depot" },
+    ]);
+
+    expect(
+      screen.getByRole("button", { name: "Scroll tabs right" })
+    ).toBeInTheDocument();
+  });
+
+  it("re-measures when a tab's count changes", () => {
+    const measure = stubStripMetrics(200, 200);
+    const { rerenderTabs } = renderTabs([{ id: "a", label: "Giro", count: 3 }]);
+    expect(
+      screen.queryByRole("button", { name: "Scroll tabs right" })
+    ).not.toBeInTheDocument();
+
+    // Spending is recorded, so the count badge widens the strip.
+    measure.mockReturnValue(500);
+    rerenderTabs([{ id: "a", label: "Giro", count: 1240 }]);
+
+    expect(
+      screen.getByRole("button", { name: "Scroll tabs right" })
+    ).toBeInTheDocument();
   });
 });
 
