@@ -13,9 +13,3 @@ export const StyledActions = styled.div`
   justify-content: flex-end;
   padding-top: ${({ theme }) => theme.spacing.space2}px;
 `;
-
-export const StyledErrorText = styled.p`
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.error};
-  margin: 0;
-`;

@@ -69,9 +69,3 @@ export const StyledTransferNote = styled.div`
 export const StyledTransferDestination = styled.span`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
-
-export const StyledErrorText = styled.p`
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.error};
-  margin: 0;
-`;

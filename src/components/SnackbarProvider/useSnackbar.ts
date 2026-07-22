@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext } from "react";
 
 export type SnackbarVariant = "info" | "success" | "warning" | "error";
 
@@ -28,6 +28,26 @@ export function useSnackbar(): SnackbarContextValue {
     throw new Error("useSnackbar must be used within a SnackbarProvider");
   }
   return ctx;
+}
+
+/**
+ * Non-throwing `notify`: sends the message when a provider is in the tree and
+ * does nothing when it is not. For code that lives below the provider in the
+ * running app but is also exercised on its own, where a snackbar is chrome the
+ * caller does not care about rather than a dependency worth failing over.
+ */
+export function useOptionalNotify(): (
+  message: string,
+  opts?: NotifyArg
+) => void {
+  const ctx = useContext(SnackbarContext);
+
+  return useCallback(
+    (message: string, opts?: NotifyArg) => {
+      ctx?.notify(message, opts);
+    },
+    [ctx]
+  );
 }
 
 /**

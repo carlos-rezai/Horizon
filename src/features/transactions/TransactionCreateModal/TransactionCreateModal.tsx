@@ -1,26 +1,26 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency/currency";
-import { API_BASE } from "../../../utils/api/api";
 import type { AccountWithBalance } from "../../../types/account";
+import type { TransactionDraft } from "../../../types/transaction";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Input from "../../../primitives/Input/Input";
 import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
-import {
-  StyledForm,
-  StyledActions,
-  StyledErrorText,
-} from "./TransactionCreateModal.styles";
+import { StyledForm, StyledActions } from "./TransactionCreateModal.styles";
 
 interface Props {
   accountId: string;
   accounts?: AccountWithBalance[];
   month?: string;
   onClose: () => void;
-  onSuccess: () => void;
+  /**
+   * Hands the typed draft to the surface that owns the month's list — it
+   * records the expense optimistically, so the modal never waits on a request.
+   */
+  onSubmit: (draft: TransactionDraft) => void;
 }
 
 function getMonthBounds(month: string): { first: string; last: string } {
@@ -36,14 +36,13 @@ export default function TransactionCreateModal({
   accounts,
   month,
   onClose,
-  onSuccess,
+  onSubmit,
 }: Props) {
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [toAccountId, setToAccountId] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   const { first: minDate, last: maxDate } = month
     ? getMonthBounds(month)
@@ -53,47 +52,17 @@ export default function TransactionCreateModal({
     ? accounts.filter((a) => a.id !== accountId)
     : [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !amount || !description) return;
 
-    let res: Response;
-
-    if (toAccountId) {
-      res = await fetch(`${API_BASE}/transfers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromAccountId: accountId,
-          toAccountId,
-          amount: eurosToCents(amount),
-          date,
-          description,
-          category,
-        }),
-      });
-    } else {
-      res = await fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          amount: eurosToCents(amount),
-          description,
-          category,
-        }),
-      });
-    }
-
-    const data = (await res.json()) as { error?: string };
-
-    if (!res.ok) {
-      setError(data.error ?? "Failed to create transaction");
-      return;
-    }
-
-    onSuccess();
-    onClose();
+    onSubmit({
+      date,
+      amount: eurosToCents(amount),
+      description,
+      category,
+      ...(toAccountId ? { toAccountId } : {}),
+    });
   };
 
   return (
@@ -148,8 +117,6 @@ export default function TransactionCreateModal({
             </Select>
           </FormField>
         )}
-
-        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
 
         <StyledActions>
           <Button type="submit">Add transaction</Button>

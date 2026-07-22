@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { AccountKind, AccountWithBalance } from "../../../types/account";
-import type { Transaction } from "../../../types/transaction";
+import type { Transaction, TransactionDraft } from "../../../types/transaction";
 import PageHeader from "../../../components/PageHeader/PageHeader";
-import { useCacheBump } from "../../../components/CacheProvider/useCacheBump";
 import { formatMonthLong } from "../../../utils/format/format";
+import type { TransactionChanges } from "../../../utils/optimisticTransactions/optimisticTransactions";
 import {
   deriveMonthStats,
   selectVariableSpending,
@@ -63,7 +63,7 @@ export default function MonthOverview({ accounts }: Props) {
     (a) => !NON_SPENDING_KINDS.has(a.kind)
   );
 
-  const { transactions, refetch } = useAllMonthTransactions(
+  const { transactions, create, update, remove } = useAllMonthTransactions(
     spendingAccounts.map((a) => a.id),
     monthStr
   );
@@ -71,25 +71,30 @@ export default function MonthOverview({ accounts }: Props) {
     useYearComparison(monthStr);
   const { startDates: importStartDates } = useImportStartDates();
   const { categories } = useCategories();
-  const bump = useCacheBump();
 
   const variableSpending = selectVariableSpending(transactions);
   const stats = deriveMonthStats(transactions, monthStr);
   const monthLabel = formatMonthLong(monthStr).split(" ")[0];
 
-  // Recording or deleting an expense moves the account balance it came out of
-  // and every projected month after it, so those two resources are refetched
-  // alongside the month's own list.
-  function handleCreated() {
+  // The modals collect; the page records. Each one closes on the spot and the
+  // change is painted straight away — the hook reconciles with the server
+  // behind it, and rolls back with a notification if it is refused.
+  function handleCreate(draft: TransactionDraft) {
+    const accountId = createAccountId;
     setCreateAccountId(null);
-    refetch();
-    bump("accounts", "projection");
+    if (accountId) void create(accountId, draft);
   }
 
-  function handleDeleted() {
+  function handleSave(changes: TransactionChanges) {
+    const target = selectedTransaction;
     setSelectedTransaction(null);
-    refetch();
-    bump("accounts", "projection");
+    if (target) void update(target.id, changes);
+  }
+
+  function handleDelete() {
+    const target = selectedTransaction;
+    setSelectedTransaction(null);
+    if (target) void remove(target.id);
   }
 
   return (
@@ -152,7 +157,7 @@ export default function MonthOverview({ accounts }: Props) {
           accounts={accounts}
           month={monthStr}
           onClose={() => setCreateAccountId(null)}
-          onSuccess={handleCreated}
+          onSubmit={handleCreate}
         />
       )}
 
@@ -161,8 +166,8 @@ export default function MonthOverview({ accounts }: Props) {
           transaction={selectedTransaction}
           accounts={accounts}
           onClose={() => setSelectedTransaction(null)}
-          onSaved={() => setSelectedTransaction(null)}
-          onDeleted={handleDeleted}
+          onSave={handleSave}
+          onDelete={handleDelete}
         />
       )}
     </StyledMonthOverview>

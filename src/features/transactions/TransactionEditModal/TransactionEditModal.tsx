@@ -6,6 +6,7 @@ import { eurosToCents } from "../../../utils/currency/currency";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { colorForCategoryName } from "../../../utils/categoryColor/categoryColor";
 import { API_BASE } from "../../../utils/api/api";
+import type { TransactionChanges } from "../../../utils/optimisticTransactions/optimisticTransactions";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
@@ -23,7 +24,6 @@ import {
   StyledChipRow,
   StyledTransferNote,
   StyledTransferDestination,
-  StyledErrorText,
 } from "./TransactionEditModal.styles";
 
 type Flow = "in" | "out";
@@ -33,8 +33,12 @@ interface Props {
   accounts?: AccountWithBalance[];
   toAccountName?: string;
   onClose: () => void;
-  onSaved: (tx: Transaction) => void;
-  onDeleted: (id: string, transferId?: string) => void;
+  /**
+   * Hands the edited fields to the surface that owns the month's list — it
+   * applies them optimistically, so the modal never waits on a request.
+   */
+  onSave: (changes: TransactionChanges) => void;
+  onDelete: () => void;
 }
 
 export default function TransactionEditModal({
@@ -42,8 +46,8 @@ export default function TransactionEditModal({
   accounts,
   toAccountName,
   onClose,
-  onSaved,
-  onDeleted,
+  onSave,
+  onDelete,
 }: Props) {
   const isTransfer = Boolean(transaction.transferId);
   const account = accounts?.find((a) => a.id === transaction.accountId);
@@ -58,7 +62,6 @@ export default function TransactionEditModal({
   );
   const [category, setCategory] = useState(transaction.category);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,47 +82,20 @@ export default function TransactionEditModal({
 
   const canSave = !isTransfer && description.trim() !== "" && amount !== "";
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!canSave) return;
     const magnitude = Math.abs(eurosToCents(amount));
     const signed = flow === "out" ? -magnitude : magnitude;
 
-    const res = await fetch(`${API_BASE}/transactions/${transaction.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, description, amount: signed, category }),
-    });
-
-    const data = (await res.json()) as Transaction & { error?: string };
-
-    if (!res.ok) {
-      setError(data.error ?? "Failed to update transaction");
-      return;
-    }
-
-    onSaved(data);
-    onClose();
+    onSave({ date, description, amount: signed, category });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!window.confirm("Are you sure you want to delete this transaction?")) {
       return;
     }
 
-    const url = isTransfer
-      ? `${API_BASE}/transfers/${transaction.transferId}`
-      : `${API_BASE}/transactions/${transaction.id}`;
-
-    const res = await fetch(url, { method: "DELETE" });
-
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      setError(data.error ?? "Failed to delete transaction");
-      return;
-    }
-
-    onDeleted(transaction.id, transaction.transferId);
-    onClose();
+    onDelete();
   };
 
   return (
@@ -250,8 +226,6 @@ export default function TransactionEditModal({
             </StyledChipRow>
           </FormField>
         )}
-
-        {error && <StyledErrorText role="alert">{error}</StyledErrorText>}
       </StyledFields>
     </Modal>
   );

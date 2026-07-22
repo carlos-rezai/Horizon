@@ -1,17 +1,12 @@
 // @vitest-environment jsdom
-import {
-  render,
-  screen,
-  cleanup,
-  fireEvent,
-  waitFor,
-} from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import TransactionCreateModal from "./TransactionCreateModal";
 import type { Category } from "../../../types/category";
 import type { AccountWithBalance } from "../../../types/account";
+import type { TransactionDraft } from "../../../types/transaction";
 
 vi.mock("../../../primitives/DatePicker/DatePicker", () => ({
   default: ({
@@ -61,16 +56,24 @@ const categories: Category[] = [
   },
 ];
 
+/** The modal only reads categories; nothing it does writes to the server. */
+beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => categories,
+  } as Response);
+});
+
 const renderModal = (
   overrides: Partial<{
     onClose: () => void;
-    onSuccess: () => void;
+    onSubmit: (draft: TransactionDraft) => void;
   }> = {}
 ) => {
   const props = {
     accountId: "acc-1",
     onClose: vi.fn(),
-    onSuccess: vi.fn(),
+    onSubmit: vi.fn(),
     ...overrides,
   };
   render(
@@ -81,201 +84,117 @@ const renderModal = (
   return props;
 };
 
+const submit = () =>
+  fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
+
+function fillIn({
+  date,
+  amount,
+  description,
+}: {
+  date?: string;
+  amount?: string;
+  description?: string;
+}) {
+  if (date !== undefined) {
+    fireEvent.change(screen.getByLabelText(/date/i), {
+      target: { value: date },
+    });
+  }
+  if (amount !== undefined) {
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: amount },
+    });
+  }
+  if (description !== undefined) {
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: description },
+    });
+  }
+}
+
 describe("TransactionCreateModal — validation", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: async () => categories,
-    } as Response);
+  it("does not submit a draft when date is missing", () => {
+    const { onSubmit } = renderModal();
+
+    fillIn({ amount: "50.00", description: "Groceries" });
+    submit();
+
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("does not call POST /transactions when date is missing", () => {
+  it("does not submit a draft when amount is missing", () => {
+    const { onSubmit } = renderModal();
+
+    fillIn({ date: "2026-03-01", description: "Groceries" });
+    submit();
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("does not submit a draft when description is missing", () => {
+    const { onSubmit } = renderModal();
+
+    fillIn({ date: "2026-03-01", amount: "50.00" });
+    submit();
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("never writes to the server itself", () => {
     renderModal();
 
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "50.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
+    fillIn({ date: "2026-03-01", amount: "-50.00", description: "Groceries" });
+    submit();
 
-    const postCalls = vi
+    const writes = vi
       .mocked(fetch)
       .mock.calls.filter(
         ([, init]) => (init as RequestInit)?.method === "POST"
       );
-    expect(postCalls).toHaveLength(0);
-  });
-
-  it("does not call POST /transactions when amount is missing", () => {
-    renderModal();
-
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-03-01" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
-
-    const postCalls = vi
-      .mocked(fetch)
-      .mock.calls.filter(
-        ([, init]) => (init as RequestInit)?.method === "POST"
-      );
-    expect(postCalls).toHaveLength(0);
-  });
-
-  it("does not call POST /transactions when description is missing", () => {
-    renderModal();
-
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-03-01" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "50.00" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
-
-    const postCalls = vi
-      .mocked(fetch)
-      .mock.calls.filter(
-        ([, init]) => (init as RequestInit)?.method === "POST"
-      );
-    expect(postCalls).toHaveLength(0);
+    expect(writes).toHaveLength(0);
   });
 });
 
-describe("TransactionCreateModal — successful submit", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          id: "txn-new",
-          accountId: "acc-1",
-          date: "2026-03-01",
-          amount: -5000,
-          description: "Groceries",
-          category: "cat-1",
-        }),
-      } as Response);
+describe("TransactionCreateModal — submit", () => {
+  it("hands the typed draft to onSubmit", () => {
+    const { onSubmit } = renderModal();
+
+    fillIn({ date: "2026-03-01", amount: "-50.00", description: "Groceries" });
+    submit();
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        date: "2026-03-01",
+        description: "Groceries",
+      })
+    );
   });
 
-  it("calls onSuccess after a successful submission", async () => {
-    const { onSuccess } = renderModal();
+  it("hands over the amount as integer cents, not the raw euro string", () => {
+    const { onSubmit } = renderModal();
 
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-03-01" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-50.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
+    fillIn({ date: "2026-03-01", amount: "-50.00", description: "Groceries" });
+    submit();
 
-    await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalled();
-    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: -5000 })
+    );
   });
 
-  it("calls onClose after a successful submission", async () => {
-    const { onClose } = renderModal();
-
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-03-01" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-50.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
-
-    await waitFor(() => {
-      expect(onClose).toHaveBeenCalled();
-    });
-  });
-
-  it("sends the amount as integer cents, not the raw euro string", async () => {
-    renderModal();
-
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-03-01" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-50.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
-
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-
-    // mock.calls[0] = GET /categories, mock.calls[1] = POST /transactions
-    const [, init] = vi.mocked(fetch).mock.calls[1];
-    const body = JSON.parse((init as RequestInit).body as string);
-    expect(body.amount).toBe(-5000);
-  });
-});
-
-describe("TransactionCreateModal — server error", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: false,
-        json: async () => ({ error: "Transaction creation failed" }),
-      } as Response);
-  });
-
-  it("shows a server error inline and does not call onClose when the API returns an error", async () => {
-    const onClose = vi.fn();
-    renderModal({ onClose });
-
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-03-01" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-50.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
-
-    expect(
-      await screen.findByText(/transaction creation failed/i)
-    ).toBeInTheDocument();
-    expect(onClose).not.toHaveBeenCalled();
-  });
-
-  it("calls onClose when the cancel button is clicked without submitting", async () => {
-    const onClose = vi.fn();
-    renderModal({ onClose });
+  it("calls onClose when the cancel button is clicked without submitting", () => {
+    const { onClose, onSubmit } = renderModal();
 
     fireEvent.click(screen.getByRole("button", { name: /cancel|close/i }));
 
     expect(onClose).toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });
 
 describe("TransactionCreateModal — overlay", () => {
   it("calls onClose when the overlay backdrop is clicked", () => {
-    const onClose = vi.fn();
-    renderModal({ onClose });
+    const { onClose } = renderModal();
 
     fireEvent.click(screen.getByTestId("modal-overlay"));
 
@@ -312,14 +231,14 @@ const renderModalWithAccounts = (
     accounts: AccountWithBalance[];
     month: string;
     onClose: () => void;
-    onSuccess: () => void;
+    onSubmit: (draft: TransactionDraft) => void;
   }> = {}
 ) => {
   const props = {
     accountId: "acc-1",
     accounts: pickerAccounts,
     onClose: vi.fn(),
-    onSuccess: vi.fn(),
+    onSubmit: vi.fn(),
     ...overrides,
   };
   render(
@@ -331,35 +250,6 @@ const renderModalWithAccounts = (
 };
 
 describe("TransactionCreateModal — destination account picker", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => categories,
-      } as Response)
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          fromTransaction: {
-            id: "txn-1",
-            accountId: "acc-1",
-            date: "2026-05-10",
-            amount: -10000,
-            description: "Savings",
-            transferId: "tf-1",
-          },
-          toTransaction: {
-            id: "txn-2",
-            accountId: "acc-2",
-            date: "2026-05-10",
-            amount: 10000,
-            description: "Savings",
-            transferId: "tf-1",
-          },
-        }),
-      } as Response);
-  });
-
   it("shows a destination account selector when accounts prop is provided", () => {
     renderModalWithAccounts();
 
@@ -379,72 +269,32 @@ describe("TransactionCreateModal — destination account picker", () => {
     expect(options.some((o) => /dkb reserve/i.test(o))).toBe(true);
   });
 
-  it("calls POST /accounts/:id/transactions when no destination is selected", async () => {
-    renderModalWithAccounts();
+  it("leaves toAccountId out of the draft when no destination is selected", () => {
+    const { onSubmit } = renderModalWithAccounts();
 
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-05-10" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-50.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Groceries" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
+    fillIn({ date: "2026-05-10", amount: "-50.00", description: "Groceries" });
+    submit();
 
-    await waitFor(() => {
-      const postCall = vi
-        .mocked(fetch)
-        .mock.calls.find(
-          ([url, init]) =>
-            typeof url === "string" &&
-            url.includes("/accounts/acc-1/transactions") &&
-            (init as RequestInit)?.method === "POST"
-        );
-      expect(postCall).toBeDefined();
-    });
+    const [draft] = vi.mocked(onSubmit).mock.calls[0];
+    expect(draft.toAccountId).toBeUndefined();
   });
 
-  it("calls POST /transfers when a destination account is selected", async () => {
-    renderModalWithAccounts();
+  it("carries the destination account in the draft when one is selected", () => {
+    const { onSubmit } = renderModalWithAccounts();
 
-    fireEvent.change(screen.getByLabelText(/date/i), {
-      target: { value: "2026-05-10" },
-    });
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "100.00" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Savings" },
-    });
+    fillIn({ date: "2026-05-10", amount: "100.00", description: "Savings" });
     fireEvent.change(screen.getByLabelText(/to account|destination/i), {
       target: { value: "acc-2" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /add|save|submit/i }));
+    submit();
 
-    await waitFor(() => {
-      const postCall = vi
-        .mocked(fetch)
-        .mock.calls.find(
-          ([url, init]) =>
-            typeof url === "string" &&
-            url.includes("/transfers") &&
-            (init as RequestInit)?.method === "POST"
-        );
-      expect(postCall).toBeDefined();
-    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ toAccountId: "acc-2" })
+    );
   });
 });
 
 describe("TransactionCreateModal — month prop", () => {
-  beforeEach(() => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: async () => categories,
-    } as Response);
-  });
-
   it("constrains the DatePicker to the first and last day of the given month", () => {
     render(
       <ThemeProvider theme={theme}>
@@ -452,7 +302,7 @@ describe("TransactionCreateModal — month prop", () => {
           accountId="acc-1"
           month="2026-05"
           onClose={vi.fn()}
-          onSuccess={vi.fn()}
+          onSubmit={vi.fn()}
         />
       </ThemeProvider>
     );

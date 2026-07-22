@@ -1,8 +1,18 @@
-import { useCacheBump } from "../../components/CacheProvider/useCacheBump";
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { Transaction } from "../../types/transaction";
 import { API_BASE } from "../../utils/api/api";
+import {
+  optimisticCreate,
+  optimisticRemove,
+  optimisticUpdate,
+} from "../../utils/optimisticTransactions/optimisticTransactions";
 import { monthTransactionsKey } from "./monthTransactionsKey";
+import {
+  noRow,
+  provisionalId,
+  storedRow,
+  useOptimisticCommit,
+} from "./useOptimisticCommit";
 
 interface CreatePayload {
   date: string;
@@ -35,6 +45,8 @@ interface UseMonthTransactionsResult {
  */
 const NO_TRANSACTIONS: Transaction[] = [];
 
+const JSON_HEADERS = { "Content-Type": "application/json" };
+
 async function fetchMonthTransactions(
   accountId: string,
   month: string
@@ -58,84 +70,68 @@ export function useMonthTransactions(
   >(monthTransactionsKey([accountId], month), () =>
     fetchMonthTransactions(accountId, month)
   );
-  const bump = useCacheBump();
+  const commit = useOptimisticCommit(setData);
 
-  /**
-   * Every mutation here moves money, so the account balances and the whole
-   * projection built on top of them are stale the moment it lands.
-   */
-  function bumpDependents(): void {
-    bump("accounts", "projection");
-  }
+  const transactions = data ?? NO_TRANSACTIONS;
 
   async function create(payload: CreatePayload): Promise<void> {
-    const res = await fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const provisional: Transaction = {
+      id: provisionalId(),
+      accountId,
+      ...payload,
+    };
 
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to create transaction");
-    }
-
-    const created = (await res.json()) as Transaction;
-    setData((prev) => [...(prev ?? NO_TRANSACTIONS), created]);
-    bumpDependents();
+    await commit(
+      optimisticCreate(transactions, provisional),
+      () =>
+        fetch(`${API_BASE}/accounts/${accountId}/transactions`, {
+          method: "POST",
+          headers: JSON_HEADERS,
+          body: JSON.stringify(payload),
+        }),
+      storedRow,
+      "Failed to create transaction"
+    );
   }
 
   async function update(id: string, payload: UpdatePayload): Promise<void> {
-    const res = await fetch(`${API_BASE}/transactions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to update transaction");
-    }
-
-    const updated = (await res.json()) as Transaction;
-    setData((prev) =>
-      (prev ?? NO_TRANSACTIONS).map((tx) => (tx.id === id ? updated : tx))
+    await commit(
+      optimisticUpdate(transactions, id, payload),
+      () =>
+        fetch(`${API_BASE}/transactions/${id}`, {
+          method: "PATCH",
+          headers: JSON_HEADERS,
+          body: JSON.stringify(payload),
+        }),
+      storedRow,
+      "Failed to update transaction"
     );
-    bumpDependents();
   }
 
   async function remove(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/transactions/${id}`, {
-      method: "DELETE",
-    });
-
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to delete transaction");
-    }
-
-    setData((prev) => (prev ?? NO_TRANSACTIONS).filter((tx) => tx.id !== id));
-    bumpDependents();
+    await commit(
+      optimisticRemove(transactions, id),
+      () => fetch(`${API_BASE}/transactions/${id}`, { method: "DELETE" }),
+      noRow,
+      "Failed to delete transaction"
+    );
   }
 
   async function removeTransfer(transferId: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/transfers/${transferId}`, {
-      method: "DELETE",
-    });
+    // Both legs go at once, so the list is rebuilt rather than edited.
+    const rollback = transactions;
+    const next = transactions.filter((tx) => tx.transferId !== transferId);
 
-    if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to delete transfer");
-    }
-
-    setData((prev) =>
-      (prev ?? NO_TRANSACTIONS).filter((tx) => tx.transferId !== transferId)
+    await commit(
+      { next, rollback, settle: () => next },
+      () => fetch(`${API_BASE}/transfers/${transferId}`, { method: "DELETE" }),
+      noRow,
+      "Failed to delete transfer"
     );
-    bumpDependents();
   }
 
   return {
-    transactions: data ?? NO_TRANSACTIONS,
+    transactions,
     isLoading,
     error,
     create,
