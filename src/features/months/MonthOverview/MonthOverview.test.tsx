@@ -6,6 +6,7 @@ import {
   cleanup,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
@@ -188,8 +189,24 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function renderOverview(month = "2026-06", extra?: ReactNode) {
-  return render(
+interface OverviewOptions {
+  /** Accounts are fetched a level up, so their pending state arrives as a prop. */
+  accountsLoading?: boolean;
+  accountsError?: string | null;
+  /** Swapped off and back on to stand in for navigating away and returning. */
+  mounted?: boolean;
+  extra?: ReactNode;
+}
+
+function overviewTree(month: string, options: OverviewOptions = {}) {
+  const {
+    accountsLoading = false,
+    accountsError = null,
+    mounted = true,
+    extra,
+  } = options;
+
+  return (
     <CacheProvider>
       <ThemeProvider theme={theme}>
         <SnackbarProvider>
@@ -197,7 +214,17 @@ function renderOverview(month = "2026-06", extra?: ReactNode) {
             <Routes>
               <Route
                 path="/months/:month"
-                element={<MonthOverview accounts={accounts} />}
+                element={
+                  mounted ? (
+                    <MonthOverview
+                      accounts={accountsLoading ? [] : accounts}
+                      accountsLoading={accountsLoading}
+                      accountsError={accountsError}
+                    />
+                  ) : (
+                    <div data-testid="elsewhere" />
+                  )
+                }
               />
             </Routes>
             {extra}
@@ -206,6 +233,10 @@ function renderOverview(month = "2026-06", extra?: ReactNode) {
       </ThemeProvider>
     </CacheProvider>
   );
+}
+
+function renderOverview(month = "2026-06", options: OverviewOptions = {}) {
+  return render(overviewTree(month, options));
 }
 
 describe("MonthOverview — header", () => {
@@ -338,6 +369,255 @@ describe("MonthOverview — edit and delete", () => {
     fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
     fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
     expect(create).toHaveBeenCalledWith("main", COFFEE);
+  });
+});
+
+// --- Progressive reveal ------------------------------------------------------
+//
+// A cold month used to resolve straight to "No variable spending this month.":
+// with no accounts yet there are no ids to fetch, so the empty state stood in
+// for the loading one. Each section now owns its own loading, error and empty
+// state, driven only by the resources it draws from.
+
+const PENDING_TRANSACTIONS = {
+  transactions: [],
+  isLoading: true,
+  error: null,
+  refetch,
+  create,
+  update,
+  remove,
+};
+
+const LOADED_TRANSACTIONS = {
+  transactions,
+  isLoading: false,
+  error: null,
+  refetch,
+  create,
+  update,
+  remove,
+};
+
+const LOADED_COMPARISON = {
+  rows: [{ category: "Groceries", thisYear: 12000, lastYear: 9000 }],
+  isLoading: false,
+  error: null,
+};
+
+const SECTION_SKELETONS = [
+  "month-stat-strip-skeleton",
+  "spending-list-skeleton",
+  "month-breakdown-skeleton",
+  "year-comparison-skeleton",
+];
+
+/** The ordered section wrappers the Month Overview renders in every state. */
+function sectionOrder(): string[] {
+  return screen
+    .getAllByTestId(/^month-section-/)
+    .map((el) => el.getAttribute("data-testid") ?? "");
+}
+
+describe("MonthOverview — progressive reveal", () => {
+  beforeEach(() => {
+    mockUseAllMonthTransactions.mockReturnValue(PENDING_TRANSACTIONS);
+    mockUseYearComparison.mockReturnValue({
+      rows: [],
+      isLoading: true,
+      error: null,
+    });
+  });
+
+  it("renders the page frame and every section skeleton on the first load of a month", () => {
+    renderOverview("2026-06", { accountsLoading: true });
+
+    expect(
+      screen.getByRole("heading", { name: "Month Overview" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /previous month/i })
+    ).toBeInTheDocument();
+    for (const skeleton of SECTION_SKELETONS) {
+      expect(screen.getByTestId(skeleton)).toBeInTheDocument();
+    }
+    expect(screen.queryByLabelText("Loading")).not.toBeInTheDocument();
+  });
+
+  it("builds every section skeleton from the shared Skeleton primitive", () => {
+    renderOverview("2026-06", { accountsLoading: true });
+
+    for (const skeleton of SECTION_SKELETONS) {
+      expect(
+        within(screen.getByTestId(skeleton)).getAllByTestId("skeleton").length
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it("does not mistake a still-loading month for an empty one", () => {
+    renderOverview("2026-06", { accountsLoading: true });
+
+    expect(
+      screen.queryByText("No variable spending this month.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("No spending to break down this month.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("reveals the year comparison as soon as it resolves, while the spending list is still a skeleton", () => {
+    mockUseYearComparison.mockReturnValue(LOADED_COMPARISON);
+    renderOverview("2026-06", { accountsLoading: true });
+
+    expect(
+      within(screen.getByTestId("month-section-comparison")).getByTestId(
+        "yc-row"
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("spending-list-skeleton")).toBeInTheDocument();
+  });
+
+  it("swaps every section to its content once the month's data lands", () => {
+    mockUseAllMonthTransactions.mockReturnValue(LOADED_TRANSACTIONS);
+    mockUseYearComparison.mockReturnValue(LOADED_COMPARISON);
+    renderOverview();
+
+    const section = (name: string) =>
+      within(screen.getByTestId(`month-section-${name}`));
+
+    expect(
+      section("stats").getByTestId("month-stat-strip")
+    ).toBeInTheDocument();
+    expect(section("spending").getByText("Cat food")).toBeInTheDocument();
+    expect(section("breakdown").getByText("By category")).toBeInTheDocument();
+    expect(section("comparison").getByTestId("yc-row")).toBeInTheDocument();
+    expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
+  });
+
+  it("keeps the section layout identical before and after the data lands", () => {
+    const { rerender } = renderOverview("2026-06", { accountsLoading: true });
+
+    const whileLoading = sectionOrder();
+    expect(whileLoading).toHaveLength(4);
+
+    mockUseAllMonthTransactions.mockReturnValue(LOADED_TRANSACTIONS);
+    mockUseYearComparison.mockReturnValue(LOADED_COMPARISON);
+    rerender(overviewTree("2026-06"));
+
+    expect(sectionOrder()).toEqual(whileLoading);
+  });
+});
+
+describe("MonthOverview — section states", () => {
+  it("shows a section error that reads differently from both loading and empty", () => {
+    mockUseAllMonthTransactions.mockReturnValue({
+      ...PENDING_TRANSACTIONS,
+      isLoading: false,
+      error: "Network error",
+    });
+    renderOverview();
+
+    expect(
+      within(screen.getByTestId("month-section-spending")).getByText(
+        /Network error/
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
+    expect(
+      screen.queryByText("No variable spending this month.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("errors the month's sections when accounts fail to load", () => {
+    mockUseAllMonthTransactions.mockReturnValue(PENDING_TRANSACTIONS);
+    renderOverview("2026-06", {
+      accountsLoading: false,
+      accountsError: "Accounts unavailable",
+    });
+
+    expect(
+      within(screen.getByTestId("month-section-spending")).getByText(
+        /Accounts unavailable/
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows the existing empty states rather than skeletons for a genuinely empty month", () => {
+    mockUseAllMonthTransactions.mockReturnValue({
+      ...PENDING_TRANSACTIONS,
+      isLoading: false,
+    });
+    mockUseYearComparison.mockReturnValue({
+      rows: [],
+      isLoading: false,
+      error: null,
+    });
+    renderOverview();
+
+    const section = (name: string) =>
+      within(screen.getByTestId(`month-section-${name}`));
+
+    expect(
+      section("spending").getByText("No variable spending this month.")
+    ).toBeInTheDocument();
+    expect(
+      section("breakdown").getByText("No spending to break down this month.")
+    ).toBeInTheDocument();
+    expect(
+      section("comparison").getByText("No spending yet this year.")
+    ).toBeInTheDocument();
+    expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
+  });
+});
+
+describe("MonthOverview — first load of a month", () => {
+  beforeEach(async () => {
+    const actual = await vi.importActual<
+      typeof import("../useAllMonthTransactions")
+    >("../useAllMonthTransactions");
+    mockUseAllMonthTransactions.mockImplementation(
+      actual.useAllMonthTransactions
+    );
+  });
+
+  it("surfaces a failed month read as a section error", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
+    renderOverview();
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId("month-section-spending")).getByText(
+          /Network error/
+        )
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("paints a month already in the cache without a skeleton frame", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () => ({ ok: true, json: async () => [] }) as Response
+    );
+
+    const { rerender } = render(overviewTree("2026-06"));
+
+    // Nothing cached for this month yet, so the first visit is a real cold load.
+    expect(screen.getByTestId("spending-list-skeleton")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("No variable spending this month.")
+      ).toBeInTheDocument();
+    });
+
+    // Leave the month and come back. The cache still holds it, so the return
+    // visit is not a first load and must skip the skeletons entirely.
+    rerender(overviewTree("2026-06", { mounted: false }));
+    rerender(overviewTree("2026-06"));
+
+    expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
+    expect(
+      screen.getByText("No variable spending this month.")
+    ).toBeInTheDocument();
   });
 });
 
