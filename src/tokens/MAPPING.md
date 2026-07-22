@@ -57,6 +57,7 @@ lacks a needed gradation, a new named key is added (right-most column).
 | `surfaceContainerLow`     | `ink1`         | `#111419`                |
 | `surfaceContainer`        | `ink2`         | `#161A21`                |
 | `surfaceContainerHigh`    | `ink3`         | `#1C212A`                |
+| `surfaceContainerHigher`  | `ink4`         | `#232A34`                |
 | `surfaceContainerHighest` | `ink5`         | `#2B333F`                |
 | `surfaceVariant`          | `ink3`         | `#1C212A`                |
 | `outline`                 | `lineStrong`   | `rgba(255,255,255,0.12)` |

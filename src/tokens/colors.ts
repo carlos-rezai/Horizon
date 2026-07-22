@@ -62,6 +62,7 @@ export const colors = {
   surfaceContainerLow: "#111419", // ink1
   surfaceContainer: "#161A21", // ink2
   surfaceContainerHigh: "#1C212A", // ink3
+  surfaceContainerHigher: "#232A34", // ink4
   surfaceContainerHighest: "#2B333F", // ink5
   surfaceTint: "#E6B559",
   surfaceBright: "#2B333F", // ink5

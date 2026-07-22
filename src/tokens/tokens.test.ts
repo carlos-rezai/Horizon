@@ -227,6 +227,26 @@ describe("theme.colors — remapped to the gold/ink prototype palette", () => {
     expect(theme.colors.surfaceContainerHighest).toBe("#2B333F");
   });
 
+  it("carries every rung of the ink ladder, with no gap between ink3 and ink5", () => {
+    // The prototype's ladder has six steps; ink4 was the one the theme never
+    // encoded, which left the scrollbar thumb with no token to use (#207).
+    expect([
+      theme.colors.surfaceContainerLowest,
+      theme.colors.surfaceContainerLow,
+      theme.colors.surfaceContainer,
+      theme.colors.surfaceContainerHigh,
+      theme.colors.surfaceContainerHigher,
+      theme.colors.surfaceContainerHighest,
+    ]).toEqual([
+      "#0C0E12",
+      "#111419",
+      "#161A21",
+      "#1C212A",
+      "#232A34",
+      "#2B333F",
+    ]);
+  });
+
   it("onSurface text tones map to the ink text scale", () => {
     expect(theme.colors.onSurface).toBe("#ECEEF2");
     expect(theme.colors.onSurfaceVariant).toBe("#9BA3B0");
