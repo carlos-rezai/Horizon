@@ -18,6 +18,8 @@ import {
 interface UseAllMonthTransactionsResult {
   transactions: Transaction[];
   isLoading: boolean;
+  /** Read failure message, so a failed month reads differently from an empty one. */
+  error: string | null;
   refetch: () => void;
   create: (accountId: string, draft: TransactionDraft) => Promise<void>;
   update: (id: string, changes: TransactionChanges) => Promise<void>;
@@ -53,7 +55,7 @@ export function useAllMonthTransactions(
   accountIds: string[],
   month: string
 ): UseAllMonthTransactionsResult {
-  const { data, isLoading, refresh, setData } = useCachedResource<
+  const { data, isLoading, error, refresh, setData } = useCachedResource<
     Transaction[]
   >(monthTransactionsKey(accountIds, month), () =>
     fetchAllMonthTransactions(accountIds, month)
@@ -151,6 +153,7 @@ export function useAllMonthTransactions(
   return {
     transactions,
     isLoading,
+    error,
     refetch: refresh,
     create,
     update,

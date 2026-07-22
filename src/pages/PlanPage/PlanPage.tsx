@@ -2,13 +2,15 @@ import { useLocation } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection";
 import { ProjectionAccordion } from "../../features/projection";
+import ProjectionAccordionSkeleton from "../../features/projection/ProjectionAccordion/ProjectionAccordionSkeleton";
 import OutlookSummary from "../../features/projection/OutlookSummary/OutlookSummary";
+import OutlookSummarySkeleton from "../../features/projection/OutlookSummary/OutlookSummarySkeleton";
 import Card from "../../components/Card/Card";
 import PageHeader from "../../components/PageHeader/PageHeader";
+import SectionState from "../../components/SectionState/SectionState";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
 import Button from "../../primitives/Button/Button";
-import Spinner from "../../primitives/Spinner/Spinner";
-import { StyledPlanPage, StyledErrorText } from "./PlanPage.styles";
+import { StyledPlanPage } from "./PlanPage.styles";
 
 export default function PlanPage() {
   const location = useLocation();
@@ -27,11 +29,12 @@ export default function PlanPage() {
 
   const initialYear = location.state?.year as number | undefined;
 
-  if (accountsLoading || projectionLoading) return <Spinner />;
-  if (accountsError)
-    return <StyledErrorText>{`Error: ${accountsError}`}</StyledErrorText>;
-  if (projectionError)
-    return <StyledErrorText>{`Error: ${projectionError}`}</StyledErrorText>;
+  // Both sections read the projection through the accounts that own it, so
+  // they share one gate. The page frame is never behind it: the header and the
+  // card surfaces are up from the first frame, and each section fills in
+  // behind its own skeleton rather than the whole view queuing on a spinner.
+  const isLoading = accountsLoading || projectionLoading;
+  const error = accountsError ?? projectionError;
 
   return (
     <StyledPlanPage>
@@ -52,13 +55,27 @@ export default function PlanPage() {
           </Button>
         }
       />
-      <OutlookSummary snapshots={snapshots} accounts={accounts} />
+      <SectionState
+        testId="plan-section-outlook"
+        isLoading={isLoading}
+        error={error}
+        skeleton={<OutlookSummarySkeleton />}
+      >
+        <OutlookSummary snapshots={snapshots} accounts={accounts} />
+      </SectionState>
       <Card>
-        <ProjectionAccordion
-          snapshots={snapshots}
-          accounts={accounts}
-          initialYear={initialYear}
-        />
+        <SectionState
+          testId="plan-section-accordion"
+          isLoading={isLoading}
+          error={error}
+          skeleton={<ProjectionAccordionSkeleton />}
+        >
+          <ProjectionAccordion
+            snapshots={snapshots}
+            accounts={accounts}
+            initialYear={initialYear}
+          />
+        </SectionState>
       </Card>
     </StyledPlanPage>
   );

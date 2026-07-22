@@ -13,6 +13,7 @@ import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { resolveCategoryColor } from "../../../utils/categoryColor/categoryColor";
 import {
+  ROW_COLUMNS,
   StyledTabsWrap,
   StyledDay,
   StyledDayNum,
@@ -39,8 +40,6 @@ const MONTHS_SHORT = [
   "Nov",
   "Dec",
 ];
-
-const ROW_COLUMNS = ["44px", "1fr", "auto", "auto"];
 
 interface Props {
   /** Accounts shown as tabs (spendable accounts only). */

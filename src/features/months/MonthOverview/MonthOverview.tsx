@@ -11,10 +11,15 @@ import {
   selectVariableSpending,
 } from "../../../utils/monthStats/monthStats";
 import MonthStatStrip from "../MonthStatStrip/MonthStatStrip";
+import MonthStatStripSkeleton from "../MonthStatStrip/MonthStatStripSkeleton";
 import SpendingList from "../SpendingList/SpendingList";
+import SpendingListSkeleton from "../SpendingList/SpendingListSkeleton";
 import MonthBreakdown from "../MonthBreakdown/MonthBreakdown";
+import MonthBreakdownSkeleton from "../MonthBreakdown/MonthBreakdownSkeleton";
 import YearComparison from "../YearComparison/YearComparison";
+import YearComparisonSkeleton from "../YearComparison/YearComparisonSkeleton";
 import MonthYearPicker from "../MonthYearPicker/MonthYearPicker";
+import SectionState from "../../../components/SectionState/SectionState";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison";
 import { useImportStartDates } from "../useImportStartDates";
@@ -48,9 +53,16 @@ function shiftMonth(month: string, delta: number): string {
 
 interface Props {
   accounts: AccountWithBalance[];
+  /** Accounts are fetched a level up, so their pending state arrives as a prop. */
+  accountsLoading?: boolean;
+  accountsError?: string | null;
 }
 
-export default function MonthOverview({ accounts }: Props) {
+export default function MonthOverview({
+  accounts,
+  accountsLoading = false,
+  accountsError = null,
+}: Props) {
   const navigate = useNavigate();
   const { month } = useParams<{ month: string }>();
   const monthStr = month ?? "";
@@ -63,18 +75,35 @@ export default function MonthOverview({ accounts }: Props) {
     (a) => !NON_SPENDING_KINDS.has(a.kind)
   );
 
-  const { transactions, create, update, remove } = useAllMonthTransactions(
+  const {
+    transactions,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+    create,
+    update,
+    remove,
+  } = useAllMonthTransactions(
     spendingAccounts.map((a) => a.id),
     monthStr
   );
-  const { rows: yearComparisonRows, error: yearComparisonError } =
-    useYearComparison(monthStr);
+  const {
+    rows: yearComparisonRows,
+    isLoading: yearComparisonLoading,
+    error: yearComparisonError,
+  } = useYearComparison(monthStr);
   const { startDates: importStartDates } = useImportStartDates();
   const { categories } = useCategories();
 
   const variableSpending = selectVariableSpending(transactions);
   const stats = deriveMonthStats(transactions, monthStr);
   const monthLabel = formatMonthLong(monthStr).split(" ")[0];
+
+  // The month's own sections cannot read anything until the accounts that own
+  // the transactions are known, so they share one gate. The year comparison is
+  // a server-side report keyed only by the month, so it reveals on its own —
+  // usually well before the per-account reads land.
+  const monthLoading = accountsLoading || transactionsLoading;
+  const monthError = accountsError ?? transactionsError;
 
   // The modals collect; the page records. Each one closes on the spot and the
   // change is painted straight away — the hook reconciles with the server
@@ -126,28 +155,57 @@ export default function MonthOverview({ accounts }: Props) {
         }
       />
 
-      <MonthStatStrip stats={stats} />
+      <SectionState
+        testId="month-section-stats"
+        isLoading={monthLoading}
+        error={monthError}
+        skeleton={<MonthStatStripSkeleton />}
+      >
+        <MonthStatStrip stats={stats} />
+      </SectionState>
 
       <StyledColumns>
-        <SpendingList
-          accounts={spendingAccounts}
-          transactions={variableSpending}
-          categories={categories}
-          monthLabel={monthLabel}
-          onAddExpense={(accountId) => setCreateAccountId(accountId)}
-          onEditTransaction={(tx) => setSelectedTransaction(tx)}
-        />
-        <StyledRightColumn>
-          <MonthBreakdown
+        <SectionState
+          testId="month-section-spending"
+          isLoading={monthLoading}
+          error={monthError}
+          skeleton={<SpendingListSkeleton monthLabel={monthLabel} />}
+        >
+          <SpendingList
+            accounts={spendingAccounts}
             transactions={variableSpending}
             categories={categories}
-          />
-          <YearComparison
             monthLabel={monthLabel}
-            rows={yearComparisonRows}
-            categories={categories}
-            error={yearComparisonError}
+            onAddExpense={(accountId) => setCreateAccountId(accountId)}
+            onEditTransaction={(tx) => setSelectedTransaction(tx)}
           />
+        </SectionState>
+        <StyledRightColumn>
+          <SectionState
+            testId="month-section-breakdown"
+            isLoading={monthLoading}
+            error={monthError}
+            skeleton={<MonthBreakdownSkeleton />}
+          >
+            <MonthBreakdown
+              transactions={variableSpending}
+              categories={categories}
+            />
+          </SectionState>
+          {/* No `error` here: the card words its own failure, so handing it to
+              the wrapper would say the same thing twice. */}
+          <SectionState
+            testId="month-section-comparison"
+            isLoading={yearComparisonLoading}
+            skeleton={<YearComparisonSkeleton monthLabel={monthLabel} />}
+          >
+            <YearComparison
+              monthLabel={monthLabel}
+              rows={yearComparisonRows}
+              categories={categories}
+              error={yearComparisonError}
+            />
+          </SectionState>
         </StyledRightColumn>
       </StyledColumns>
 

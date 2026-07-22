@@ -1,5 +1,9 @@
 import styled from "styled-components";
 
+// day · description · category · amount. Lives here so the list and its
+// skeleton share one definition.
+export const ROW_COLUMNS = ["44px", "1fr", "auto", "auto"];
+
 export const StyledTabsWrap = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.space3}px;
 `;
