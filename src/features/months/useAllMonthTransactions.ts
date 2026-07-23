@@ -8,7 +8,7 @@ import {
   optimisticUpdate,
   type TransactionChanges,
 } from "../../utils/optimisticTransactions/optimisticTransactions";
-import { monthTransactionsKey } from "./monthTransactionsKey";
+import { monthTransactionsKey } from "../../components/CacheProvider/cacheKeys";
 import {
   noRow,
   provisionalId,
