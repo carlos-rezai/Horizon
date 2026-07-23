@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import KpiStrip from "./KpiStrip";
+import KpiStripSkeleton from "./KpiStripSkeleton";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 
@@ -115,6 +116,64 @@ describe("KpiStrip — values", () => {
     expect(
       within(tile("Net Cashflow")).getByTestId("money")
     ).toBeInTheDocument();
+  });
+});
+
+// --- Skeleton / content height parity (issue #208, Dashboard CLS) -----------
+//
+// The Dashboard's cold-load layout shift (CLS 0.05) was a single ~11px jolt: the
+// KPI strip's value slot renders its numerals at a 30px / 1.5 line-box (45px),
+// but the skeleton reserved only 34px, so the strip grew when the numbers
+// landed and pushed every section below it down. The contract that removes the
+// shift: the value slot reserves its real line-box height, identically in the
+// skeleton and in the loaded content, so the strip is the same height from the
+// first frame. jsdom does no layout, so this is verified through the declared
+// height each state reserves on its value slot rather than a measured CLS.
+
+function renderSkeleton() {
+  return render(
+    <ThemeProvider theme={theme}>
+      <KpiStripSkeleton />
+    </ThemeProvider>
+  );
+}
+
+// The value line-box: 30px numerals at the global "normal" line-height. The
+// font size is the one StyledValue sets; the line-height is the token the reset
+// applies to the whole app.
+const VALUE_FONT_SIZE = 30;
+const expectedValueHeight = `${
+  VALUE_FONT_SIZE * theme.typography.lineHeights.normal
+}px`;
+
+function valueSlotHeights(root: HTMLElement): string[] {
+  return within(root)
+    .getAllByTestId("kpi-value")
+    .map((slot) => getComputedStyle(slot).height);
+}
+
+describe("KpiStrip — value-slot height parity", () => {
+  it("reserves the same value-slot height in the skeleton as in the loaded content", () => {
+    const content = renderStrip().container;
+    const contentHeights = valueSlotHeights(content);
+    cleanup();
+
+    const skeleton = renderSkeleton().container;
+    const skeletonHeights = valueSlotHeights(skeleton);
+
+    expect(contentHeights.length).toBeGreaterThan(0);
+    expect(skeletonHeights.length).toBeGreaterThan(0);
+    // Every reserved value slot, in either state, is the same single height —
+    // so nothing about the strip's height depends on whether data has landed.
+    const allHeights = new Set([...contentHeights, ...skeletonHeights]);
+    expect(allHeights.size).toBe(1);
+  });
+
+  it("reserves the value line-box height (30px numerals at 1.5), not a shorter placeholder", () => {
+    const skeleton = renderSkeleton().container;
+    for (const height of valueSlotHeights(skeleton)) {
+      expect(height).toBe(expectedValueHeight);
+    }
   });
 });
 
