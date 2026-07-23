@@ -99,6 +99,9 @@ export function useImportWizard({
   // The latest mapping, held in a ref so a burst of dropdown changes composes
   // correctly within one tick before the debounced re-preview fires.
   const mapRef = useRef(map);
+  // latest-ref idiom: the render-phase write is intentional so a burst of
+  // dropdown changes composes within one tick before the debounced re-preview.
+  // eslint-disable-next-line react-hooks/refs
   mapRef.current = map;
   // Pending re-preview timer, and a monotonic token so an out-of-order or
   // account-superseded remap response is dropped instead of clobbering fresh data.

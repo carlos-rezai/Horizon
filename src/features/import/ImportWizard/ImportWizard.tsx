@@ -170,10 +170,15 @@ export default function ImportWizard({
   const [everBlocked, setEverBlocked] = useState(false);
   const [attentionOnly, setAttentionOnly] = useState(false);
   useEffect(() => {
+    // Intentional resync: both toggles clear when a fresh statement arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEverBlocked(false);
     setAttentionOnly(false);
   }, [data]);
   useEffect(() => {
+    // Intentional latch: the filter control outlives the last repair for the
+    // session, so it stays available once a statement has asked for attention.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (blockedCount > 0) setEverBlocked(true);
   }, [blockedCount]);
 
