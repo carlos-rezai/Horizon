@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import CacheProvider from "./CacheProvider";
-import type { CacheKey } from "./cacheKeys";
+import { ACCOUNTS, CATEGORIES, PROJECTION, type CacheKey } from "./cacheKeys";
 import { useCachedResource } from "./useCachedResource";
 import { useCacheBump } from "./useCacheBump";
 
@@ -87,7 +87,7 @@ describe("useCachedResource — cold read", () => {
 
     render(
       <CacheProvider>
-        <Consumer cacheKey="accounts" fetcher={fetcher} />
+        <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} />
       </CacheProvider>
     );
 
@@ -103,7 +103,7 @@ describe("useCachedResource — cold read", () => {
 describe("useCachedResource — instant revisit", () => {
   it("paints the cached value on the first frame after a remount, with no loading flash", async () => {
     const fetcher = vi.fn(() => Promise.resolve("v1"));
-    const consumer = <Consumer cacheKey="accounts" fetcher={fetcher} />;
+    const consumer = <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} />;
 
     const { rerender } = render(<Harness visible>{consumer}</Harness>);
     await waitFor(() => {
@@ -123,7 +123,7 @@ describe("useCachedResource — instant revisit", () => {
   it("reconciles a stale cached value to the revalidated one", async () => {
     let call = 0;
     const fetcher = vi.fn(() => Promise.resolve(call++ === 0 ? "v1" : "v2"));
-    const consumer = <Consumer cacheKey="accounts" fetcher={fetcher} />;
+    const consumer = <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} />;
 
     const { rerender } = render(<Harness visible>{consumer}</Harness>);
     await waitFor(() => {
@@ -155,8 +155,8 @@ describe("useCachedResource — in-flight dedup", () => {
 
     render(
       <CacheProvider>
-        <Consumer cacheKey="accounts" fetcher={fetcher} testId="a" />
-        <Consumer cacheKey="accounts" fetcher={fetcher} testId="b" />
+        <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} testId="a" />
+        <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} testId="b" />
       </CacheProvider>
     );
 
@@ -177,12 +177,12 @@ describe("useCachedResource — in-flight dedup", () => {
     render(
       <CacheProvider>
         <Consumer
-          cacheKey="accounts"
+          cacheKey={ACCOUNTS}
           fetcher={fetcher("accounts-v1")}
           testId="a"
         />
         <Consumer
-          cacheKey="categories"
+          cacheKey={CATEGORIES}
           fetcher={fetcher("categories-v1")}
           testId="b"
         />
@@ -203,10 +203,9 @@ describe("useCachedResource — errors", () => {
       call++ === 0 ? Promise.reject(new Error("boom")) : Promise.resolve("v1")
     );
 
-    const { result } = renderHook(
-      () => useCachedResource("accounts", fetcher),
-      { wrapper: CacheProvider }
-    );
+    const { result } = renderHook(() => useCachedResource(ACCOUNTS, fetcher), {
+      wrapper: CacheProvider,
+    });
 
     await waitFor(() => {
       expect(result.current.error).toBe("boom");
@@ -230,10 +229,9 @@ describe("useCachedResource — refresh", () => {
     let call = 0;
     const fetcher = vi.fn(() => Promise.resolve(call++ === 0 ? "v1" : "v2"));
 
-    const { result } = renderHook(
-      () => useCachedResource("accounts", fetcher),
-      { wrapper: CacheProvider }
-    );
+    const { result } = renderHook(() => useCachedResource(ACCOUNTS, fetcher), {
+      wrapper: CacheProvider,
+    });
 
     await waitFor(() => {
       expect(result.current.data).toBe("v1");
@@ -254,9 +252,7 @@ describe("useCachedResource — provider contract", () => {
   it("throws when used outside a CacheProvider", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() =>
-      renderHook(() =>
-        useCachedResource("accounts", () => Promise.resolve("v1"))
-      )
+      renderHook(() => useCachedResource(ACCOUNTS, () => Promise.resolve("v1")))
     ).toThrow();
     spy.mockRestore();
   });
@@ -274,9 +270,9 @@ describe("useCachedResource — provider contract", () => {
       const [showSecond, setShowSecond] = useState(false);
       return (
         <CacheProvider>
-          <Consumer cacheKey="accounts" fetcher={fetcher} testId="a" />
+          <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} testId="a" />
           {showSecond && (
-            <Consumer cacheKey="accounts" fetcher={fetcher} testId="b" />
+            <Consumer cacheKey={ACCOUNTS} fetcher={fetcher} testId="b" />
           )}
           <button onClick={() => setShowSecond(true)}>show</button>
         </CacheProvider>
@@ -304,7 +300,7 @@ describe("useCacheBump — explicit bump", () => {
 
     const { result } = renderHook(
       () => ({
-        accounts: useCachedResource("accounts", fetcher),
+        accounts: useCachedResource(ACCOUNTS, fetcher),
         bump: useCacheBump(),
       }),
       { wrapper: CacheProvider }
@@ -315,7 +311,7 @@ describe("useCacheBump — explicit bump", () => {
     });
 
     act(() => {
-      result.current.bump("accounts");
+      result.current.bump(ACCOUNTS);
     });
 
     await waitFor(() => {
@@ -335,7 +331,7 @@ describe("useCacheBump — explicit bump", () => {
 
     const { result } = renderHook(
       () => ({
-        accounts: useCachedResource("accounts", fetcher),
+        accounts: useCachedResource(ACCOUNTS, fetcher),
         bump: useCacheBump(),
       }),
       { wrapper: CacheProvider }
@@ -344,7 +340,7 @@ describe("useCacheBump — explicit bump", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
 
     act(() => {
-      result.current.bump("accounts");
+      result.current.bump(ACCOUNTS);
     });
 
     expect(fetcher).toHaveBeenCalledTimes(2);
@@ -361,14 +357,14 @@ describe("useCacheBump — explicit bump", () => {
 
     const { result } = renderHook(
       () => ({
-        accounts: useCachedResource("accounts", fetcher),
+        accounts: useCachedResource(ACCOUNTS, fetcher),
         bump: useCacheBump(),
       }),
       { wrapper: CacheProvider }
     );
 
     act(() => {
-      result.current.bump("accounts");
+      result.current.bump(ACCOUNTS);
     });
 
     // The post-bump request lands first…
@@ -390,8 +386,8 @@ describe("useCacheBump — explicit bump", () => {
 
     const { result } = renderHook(
       () => ({
-        accounts: useCachedResource("accounts", accountsFetcher),
-        categories: useCachedResource("categories", categoriesFetcher),
+        accounts: useCachedResource(ACCOUNTS, accountsFetcher),
+        categories: useCachedResource(CATEGORIES, categoriesFetcher),
         bump: useCacheBump(),
       }),
       { wrapper: CacheProvider }
@@ -403,7 +399,7 @@ describe("useCacheBump — explicit bump", () => {
     expect(categoriesFetcher).toHaveBeenCalledTimes(1);
 
     act(() => {
-      result.current.bump("accounts");
+      result.current.bump(ACCOUNTS);
     });
 
     await waitFor(() => {
@@ -418,8 +414,8 @@ describe("useCacheBump — explicit bump", () => {
 
     const { result } = renderHook(
       () => ({
-        accounts: useCachedResource("accounts", accountsFetcher),
-        projection: useCachedResource("projection", projectionFetcher),
+        accounts: useCachedResource(ACCOUNTS, accountsFetcher),
+        projection: useCachedResource(PROJECTION, projectionFetcher),
         bump: useCacheBump(),
       }),
       { wrapper: CacheProvider }
@@ -430,7 +426,7 @@ describe("useCacheBump — explicit bump", () => {
     });
 
     act(() => {
-      result.current.bump("accounts", "projection");
+      result.current.bump(ACCOUNTS, PROJECTION);
     });
 
     await waitFor(() => {
@@ -446,8 +442,8 @@ describe("useCachedResource — write-through", () => {
 
     const { result } = renderHook(
       () => ({
-        a: useCachedResource<string>("accounts", fetcher),
-        b: useCachedResource<string>("accounts", fetcher),
+        a: useCachedResource<string>(ACCOUNTS, fetcher),
+        b: useCachedResource<string>(ACCOUNTS, fetcher),
       }),
       { wrapper: CacheProvider }
     );
@@ -468,7 +464,7 @@ describe("useCachedResource — write-through", () => {
   it("keeps a written value in the cache across a remount", async () => {
     const fetcher = vi.fn(() => Promise.resolve("v1"));
     const consumer = (
-      <WritingConsumer cacheKey="accounts" fetcher={fetcher} next="written" />
+      <WritingConsumer cacheKey={ACCOUNTS} fetcher={fetcher} next="written" />
     );
 
     const { rerender } = render(<Harness visible>{consumer}</Harness>);
