@@ -1,6 +1,6 @@
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { MonthlySnapshot } from "../../types/projection";
-import { API_BASE } from "../../utils/api/api";
+import { fetchJson } from "../../utils/api/fetchJson";
 
 interface UseProjectionResult {
   snapshots: MonthlySnapshot[];
@@ -16,10 +16,8 @@ interface UseProjectionResult {
  */
 const NO_SNAPSHOTS: MonthlySnapshot[] = [];
 
-async function fetchProjection(): Promise<MonthlySnapshot[]> {
-  const res = await fetch(`${API_BASE}/projection?months=240`);
-  if (!res.ok) throw new Error(`Failed to fetch projection: ${res.status}`);
-  return (await res.json()) as MonthlySnapshot[];
+function fetchProjection(): Promise<MonthlySnapshot[]> {
+  return fetchJson<MonthlySnapshot[]>("/projection?months=240");
 }
 
 export function useProjection(): UseProjectionResult {

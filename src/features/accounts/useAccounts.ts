@@ -1,6 +1,6 @@
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { AccountWithBalance } from "../../types/account";
-import { API_BASE } from "../../utils/api/api";
+import { fetchJson } from "../../utils/api/fetchJson";
 
 interface UseAccountsResult {
   accounts: AccountWithBalance[];
@@ -15,10 +15,8 @@ interface UseAccountsResult {
  */
 const NO_ACCOUNTS: AccountWithBalance[] = [];
 
-async function fetchAccounts(): Promise<AccountWithBalance[]> {
-  const res = await fetch(`${API_BASE}/accounts`);
-  if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`);
-  return (await res.json()) as AccountWithBalance[];
+function fetchAccounts(): Promise<AccountWithBalance[]> {
+  return fetchJson<AccountWithBalance[]>("/accounts");
 }
 
 export function useAccounts(): UseAccountsResult {
