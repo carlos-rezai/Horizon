@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useCacheBump } from "../../components/CacheProvider/useCacheBump";
 import { useOptionalNotify } from "../../components/SnackbarProvider/useSnackbar";
 import type { Transaction } from "../../types/transaction";
+import { readErrorMessage } from "../../utils/api/readErrorMessage";
 import type { OptimisticEdit } from "../../utils/optimisticTransactions/optimisticTransactions";
 
 let provisionalCount = 0;
@@ -59,9 +60,9 @@ export function useOptimisticCommit(
       }
 
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        const message = await readErrorMessage(res, failureMessage);
         setList(edit.rollback);
-        notify(body.error ?? failureMessage, "error");
+        notify(message, "error");
         return false;
       }
 
