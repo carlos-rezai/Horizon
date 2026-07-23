@@ -2,12 +2,14 @@ import type { Category } from "../../types/category";
 import { API_BASE } from "../../utils/api/api";
 import { fetchJson } from "../../utils/api/fetchJson";
 
+export { readErrorMessage } from "../../utils/api/readErrorMessage";
+
 /**
  * Feature-local request layer for the categories API. Holds the raw fetch
- * calls and a shared failed-response parser so the categories hooks share one
- * copy of the request/parse plumbing. Each hook keeps its own
- * `useState`/`useEffect`/`cancelled`-flag wrapper — only the request body lives
- * here.
+ * calls, and re-exports the shared `readErrorMessage` parser from `utils/api`
+ * so the categories hooks keep one import site for the request/parse plumbing.
+ * Each hook keeps its own `useState`/`useEffect`/`cancelled`-flag wrapper —
+ * only the request body lives here.
  */
 
 interface CategoryCreateBody {
@@ -50,20 +52,4 @@ export function deleteCategory(
 ): Promise<Response> {
   const query = reassignTo ? `?reassignTo=${reassignTo}` : "";
   return fetch(`${API_BASE}/categories/${id}${query}`, { method: "DELETE" });
-}
-
-/**
- * Reads an `{ error }` message off a failed response body, falling back to
- * `fallback` when the body is missing or not JSON.
- */
-export async function readErrorMessage(
-  res: Response,
-  fallback: string
-): Promise<string> {
-  try {
-    const body = (await res.json()) as { error?: string };
-    return body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
 }
