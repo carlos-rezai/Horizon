@@ -1,6 +1,6 @@
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { RecurringTransaction } from "../../types/recurring";
-import { API_BASE } from "../../utils/api/api";
+import { fetchJson } from "../../utils/api/fetchJson";
 
 interface UseAllRecurringTransactionsResult {
   recurringTransactions: RecurringTransaction[];
@@ -14,14 +14,8 @@ interface UseAllRecurringTransactionsResult {
  */
 const NO_RECURRING: RecurringTransaction[] = [];
 
-async function fetchAllRecurringTransactions(): Promise<
-  RecurringTransaction[]
-> {
-  const res = await fetch(`${API_BASE}/recurring-transactions`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch recurring transactions: ${res.status}`);
-  }
-  return (await res.json()) as RecurringTransaction[];
+function fetchAllRecurringTransactions(): Promise<RecurringTransaction[]> {
+  return fetchJson<RecurringTransaction[]>("/recurring-transactions");
 }
 
 export function useAllRecurringTransactions(): UseAllRecurringTransactionsResult {

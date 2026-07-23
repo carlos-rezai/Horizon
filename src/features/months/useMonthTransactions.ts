@@ -1,6 +1,7 @@
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { Transaction } from "../../types/transaction";
 import { API_BASE } from "../../utils/api/api";
+import { fetchJson } from "../../utils/api/fetchJson";
 import {
   optimisticCreate,
   optimisticRemove,
@@ -47,18 +48,16 @@ const NO_TRANSACTIONS: Transaction[] = [];
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
-async function fetchMonthTransactions(
+function fetchMonthTransactions(
   accountId: string,
   month: string
 ): Promise<Transaction[]> {
   // No account selected yet — there is nothing to ask the server for.
-  if (!accountId) return NO_TRANSACTIONS;
+  if (!accountId) return Promise.resolve(NO_TRANSACTIONS);
 
-  const res = await fetch(
-    `${API_BASE}/accounts/${accountId}/transactions?month=${month}`
+  return fetchJson<Transaction[]>(
+    `/accounts/${accountId}/transactions?month=${month}`
   );
-  if (!res.ok) throw new Error(`Failed to fetch transactions: ${res.status}`);
-  return (await res.json()) as Transaction[];
 }
 
 export function useMonthTransactions(

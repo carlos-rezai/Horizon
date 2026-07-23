@@ -1,5 +1,6 @@
 import type { Category } from "../../types/category";
 import { API_BASE } from "../../utils/api/api";
+import { fetchJson } from "../../utils/api/fetchJson";
 
 /**
  * Feature-local request layer for the categories API. Holds the raw fetch
@@ -20,12 +21,8 @@ interface CategoryPatchBody {
   hidden?: boolean;
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  const res = await fetch(`${API_BASE}/categories`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch categories: ${res.status}`);
-  }
-  return (await res.json()) as Category[];
+export function fetchCategories(): Promise<Category[]> {
+  return fetchJson<Category[]>("/categories");
 }
 
 export function createCategory(body: CategoryCreateBody): Promise<Response> {

@@ -1,6 +1,7 @@
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { Transaction, TransactionDraft } from "../../types/transaction";
 import { API_BASE } from "../../utils/api/api";
+import { fetchJson } from "../../utils/api/fetchJson";
 import {
   optimisticCreate,
   optimisticRemove,
@@ -42,9 +43,7 @@ async function fetchAllMonthTransactions(
 
   const perAccount = await Promise.all(
     accountIds.map((id) =>
-      fetch(`${API_BASE}/accounts/${id}/transactions?month=${month}`).then(
-        (res) => res.json() as Promise<Transaction[]>
-      )
+      fetchJson<Transaction[]>(`/accounts/${id}/transactions?month=${month}`)
     )
   );
 
