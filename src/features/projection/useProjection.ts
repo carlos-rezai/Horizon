@@ -1,3 +1,4 @@
+import { PROJECTION } from "../../components/CacheProvider/cacheKeys";
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { MonthlySnapshot } from "../../types/projection";
 import { fetchJson } from "../../utils/api/fetchJson";
@@ -22,7 +23,7 @@ function fetchProjection(): Promise<MonthlySnapshot[]> {
 
 export function useProjection(): UseProjectionResult {
   const { data, isLoading, error, refresh } = useCachedResource(
-    "projection",
+    PROJECTION,
     fetchProjection
   );
 

@@ -1,3 +1,4 @@
+import { CATEGORIES } from "../../components/CacheProvider/cacheKeys";
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { Category } from "../../types/category";
 import { fetchCategories } from "./categoriesApi";
@@ -17,7 +18,7 @@ const NO_CATEGORIES: Category[] = [];
  * matches the pre-#157 rendering exactly.
  */
 export function useCategories(): { categories: Category[] } {
-  const { data } = useCachedResource("categories", fetchCategories);
+  const { data } = useCachedResource(CATEGORIES, fetchCategories);
 
   return { categories: data ?? NO_CATEGORIES };
 }

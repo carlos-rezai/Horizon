@@ -1,3 +1,4 @@
+import { ACCOUNTS } from "../../components/CacheProvider/cacheKeys";
 import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
 import type { AccountWithBalance } from "../../types/account";
 import { fetchJson } from "../../utils/api/fetchJson";
@@ -21,7 +22,7 @@ function fetchAccounts(): Promise<AccountWithBalance[]> {
 
 export function useAccounts(): UseAccountsResult {
   const { data, isLoading, error, refresh } = useCachedResource(
-    "accounts",
+    ACCOUNTS,
     fetchAccounts
   );
 
