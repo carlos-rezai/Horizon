@@ -59,7 +59,7 @@ function Tile({
         <StyledLabel>{label}</StyledLabel>
         {kpi.delta !== null && <Delta value={kpi.delta} />}
       </StyledTileHead>
-      <StyledValue>
+      <StyledValue data-testid="kpi-value">
         <Money cents={kpi.value} sign={sign} />
       </StyledValue>
       {kpi.spark.length >= 2 && (

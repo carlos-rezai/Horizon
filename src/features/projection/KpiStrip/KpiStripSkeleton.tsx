@@ -23,7 +23,7 @@ export default function KpiStripSkeleton() {
           <StyledTileHead>
             <Skeleton width={78} height={11} />
           </StyledTileHead>
-          <StyledValue>
+          <StyledValue data-testid="kpi-value">
             <Skeleton width={132} height={34} />
           </StyledValue>
           <StyledSpark>

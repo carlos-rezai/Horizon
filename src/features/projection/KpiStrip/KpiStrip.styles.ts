@@ -41,10 +41,20 @@ export const StyledLabel = styled.span<{ $accent?: boolean }>`
     $accent ? theme.colors.primary : theme.colors.onSurfaceDim};
 `;
 
+// The numerals render at this size and the app's normal line-height, so the
+// value slot's real line-box is VALUE_FONT_SIZE * lineHeights.normal. Reserving
+// that height explicitly — here, so the skeleton reuses the exact same rule —
+// keeps the slot the same height before and after the numbers land, which is
+// what removes the Dashboard's cold-load layout shift (issue #208).
+export const VALUE_FONT_SIZE = 30;
+
 export const StyledValue = styled.div`
   margin-top: 12px;
+  height: ${({ theme }) =>
+    VALUE_FONT_SIZE * theme.typography.lineHeights.normal}px;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
-  font-size: 30px;
+  font-size: ${VALUE_FONT_SIZE}px;
+  line-height: ${({ theme }) => theme.typography.lineHeights.normal};
   font-weight: 600;
   letter-spacing: -0.02em;
   color: ${({ theme }) => theme.colors.onSurface};
