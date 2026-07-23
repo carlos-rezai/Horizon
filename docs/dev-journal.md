@@ -1067,3 +1067,57 @@ before fixing and inverted the PRD's guesses. Phase 8 then had to profile
 before trusting #199's own follow-on reasoning, and again before trusting its
 first fix. Attribution tells you where the cost is charged; only counting and
 A/B builds tell you what would remove it.
+
+## 2026-07-23 — #208 Performance + UX Polish: the Dashboard's 0.05 CLS, closed
+
+The last open item on the epic's "no heavier, no slower" gate. #206 filed it
+rather than rushing it: the Dashboard's remaining 0.05 CLS was a single ~0.047
+jolt, and its own traces pointed the finger at "skeletons do not match the
+height of the content that replaces them." This closes it. Raw after-fix traces
+are in `docs/perf/after-2026-07-23/`.
+
+### The culprit was one slot, not a per-section pass
+
+#206 guessed this wanted per-section layout-matching across the whole Dashboard.
+It did not. The entire jolt was the KPI strip's value slot: `StyledValue` renders
+30px numerals in a 45px line-box (30px at the app's 1.5 line-height), but
+`KpiStripSkeleton` reserved a 34px placeholder for the same slot. When the
+numbers landed the strip grew ~11px and shoved every section below it down — one
+shift, 0.047, no other section involved. The fix is to reserve the real line-box
+height on `StyledValue` and let the skeleton reuse the same rule, so the slot is
+45px in both states from the first frame.
+
+### The shift was intermittent, which is the whole measurement story
+
+The jolt only fires when a slightly slower frame lets the skeleton paint before
+the projection fetch resolves. On a fast warmed reload the numbers land on the
+first frame and CLS is ~0.009 with no jolt at all — so a single load "proving"
+0.00 would have been luck, not a fix. The defect is a spike in the distribution,
+and the only honest measurement is repeated same-instance A/B reloads:
+
+| Build            | Dashboard CLS across warmed reloads | Value-slot jolt                    |
+| ---------------- | ----------------------------------- | ---------------------------------- |
+| Before (pre-fix) | 0.0088, 0.05, 0.0491, 0.0496        | 0.0466–0.0471 when it paints       |
+| After (this fix) | 0.0076 × every sample               | never — impossible by construction |
+
+The pre-fix spike reproduces #206's 0.0472 almost exactly. After the fix the
+residual is a flat 0.0076 in every sample — a 0.0051 font swap plus a 0.0025
+unattributed shift — and it is near-zero in the shipping Electron `file://`
+target where fonts load off disk. Plan stayed 0.00, Month stayed 0.01, and LCP
+did not regress (pre- and post-fix Dashboard LCP both scatter across ~120–320 ms
+in this instance; a `height: 45px` declaration cannot move paint time).
+
+### jsdom can't see this, so the test locks the contract instead
+
+jsdom does no layout, so a unit test cannot measure CLS. The test asserts the
+thing that removes the shift instead: the skeleton and the loaded content
+reserve the _same_ value-slot height, and that height is the real 45px line-box
+rather than a shorter placeholder — read off `getComputedStyle` on the declared
+rule. The trace A/B above is the confirmation that the contract does what it
+claims.
+
+The lesson rhymes with #206's. #206 said "attribution tells you where the cost
+is; only A/B builds tell you what removes it." #208 adds: when the defect is
+intermittent, one A/B pair tells you nothing either — you need the distribution.
+The fix looked confirmed at 0.01 on the very first after-trace; it was the pre-fix
+build _also_ reading 0.01 on a fast reload that showed why a single number lies.
