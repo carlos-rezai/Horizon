@@ -21,7 +21,7 @@ describe("readErrorMessage", () => {
 
   it("falls back when the body is not JSON", async () => {
     const res = {
-      json: async () => {
+      json: async (): Promise<unknown> => {
         throw new SyntaxError("Unexpected token");
       },
     };

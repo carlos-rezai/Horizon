@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import type { CacheKey } from "./cacheKeys";
 import { useCache } from "./cacheContext";
 
 export interface CachedResource<T> {
@@ -22,7 +23,7 @@ export interface CachedResource<T> {
  * call, so an inline closure is fine — its identity never restarts a fetch.
  */
 export function useCachedResource<T>(
-  key: string,
+  key: CacheKey,
   fetcher: () => Promise<T>
 ): CachedResource<T> {
   const cache = useCache("useCachedResource");

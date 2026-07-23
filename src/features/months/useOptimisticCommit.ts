@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { ACCOUNTS, PROJECTION } from "../../components/CacheProvider/cacheKeys";
 import { useCacheBump } from "../../components/CacheProvider/useCacheBump";
 import { useOptionalNotify } from "../../components/SnackbarProvider/useSnackbar";
 import type { Transaction } from "../../types/transaction";
@@ -71,7 +72,7 @@ export function useOptimisticCommit(
 
       // Every mutation here moves money, so the account balances and the whole
       // projection built on top of them are stale the moment it lands.
-      bump("accounts", "projection");
+      bump(ACCOUNTS, PROJECTION);
       return true;
     },
     [setList, bump, notify]

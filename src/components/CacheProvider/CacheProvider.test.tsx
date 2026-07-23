@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import CacheProvider from "./CacheProvider";
+import type { CacheKey } from "./cacheKeys";
 import { useCachedResource } from "./useCachedResource";
 import { useCacheBump } from "./useCacheBump";
 
@@ -23,7 +24,7 @@ function Consumer({
   fetcher,
   testId = "consumer",
 }: {
-  cacheKey: string;
+  cacheKey: CacheKey;
   fetcher: () => Promise<string>;
   testId?: string;
 }) {
@@ -45,7 +46,7 @@ function WritingConsumer({
   next,
   testId = "consumer",
 }: {
-  cacheKey: string;
+  cacheKey: CacheKey;
   fetcher: () => Promise<string>;
   next: string;
   testId?: string;

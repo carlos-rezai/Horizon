@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import type { CacheKey } from "./cacheKeys";
 import { useCache } from "./cacheContext";
 
 /**
@@ -10,11 +11,11 @@ import { useCache } from "./cacheContext";
  * including ones mounted elsewhere on the page — reconciles to fresh values
  * instead of showing stale numbers until the next navigation.
  */
-export function useCacheBump(): (...keys: string[]) => void {
+export function useCacheBump(): (...keys: CacheKey[]) => void {
   const cache = useCache("useCacheBump");
 
   return useCallback(
-    (...keys: string[]) => {
+    (...keys: CacheKey[]) => {
       cache.invalidate(keys);
     },
     [cache]
