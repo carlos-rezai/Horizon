@@ -260,6 +260,7 @@ The generated installer will be signed with your local certificate and will inst
 | Savings Streak                            | ✅ Complete |
 | Import Review Repair                      | ✅ Complete |
 | Performance + UX Polish                   | ✅ Complete |
+| Live-Use Repair                           | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
@@ -274,6 +275,7 @@ The generated installer will be signed with your local certificate and will inst
 - [Refactor Plans](./docs/refactor-plans/)
 - [Design Handoff](./docs/handoff/HANDOFF.md)
 - [Dev Journal](./docs/dev-journal.md)
+- [Live-Use Defects](./docs/live-use-defects.md) — running intake for the Live-Use Repair epic
 
 ---
 
