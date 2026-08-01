@@ -7,6 +7,7 @@ import {
   Clock as ClockIcon,
   Upload,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import UpdateBanner from "../../features/updates/UpdateBanner/UpdateBanner";
 import {
@@ -14,6 +15,7 @@ import {
   InsufficientFundsWarnings,
 } from "../../features/settlements";
 import { useMenuDialogs } from "../../features/menu/useMenuDialogs";
+import { useManualDrawer, ManualDrawer } from "../../features/manual";
 import Clock from "../../components/Clock/Clock";
 import BrandMark from "../../components/BrandMark/BrandMark";
 import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
@@ -28,6 +30,8 @@ import {
   StyledNav,
   StyledNavLink,
   StyledSpacer,
+  StyledDivider,
+  StyledManualTrigger,
   StyledMain,
   StyledContent,
 } from "./AppLayout.styles";
@@ -60,6 +64,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 function AppLayoutContent({ children }: AppLayoutProps) {
   const warnings = useSettlementWarnings();
   const { pathname } = useLocation();
+  const manual = useManualDrawer();
   useMenuDialogs();
 
   return (
@@ -122,12 +127,20 @@ function AppLayoutContent({ children }: AppLayoutProps) {
           <Settings size={16} />
           Settings
         </StyledNavLink>
+        <StyledDivider data-testid="sidebar-divider" />
+        <StyledManualTrigger type="button" onClick={manual.open}>
+          <BookOpen size={16} />
+          Help &amp; manual
+        </StyledManualTrigger>
       </StyledSidebar>
       <StyledMain>
         <StyledContent>{children}</StyledContent>
       </StyledMain>
       <UpdateBanner />
       <InsufficientFundsWarnings warnings={warnings} />
+      {manual.isMounted && (
+        <ManualDrawer open={manual.isOpen} onClose={manual.close} />
+      )}
     </StyledWrapper>
   );
 }

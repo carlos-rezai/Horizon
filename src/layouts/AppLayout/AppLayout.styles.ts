@@ -78,6 +78,40 @@ export const StyledSpacer = styled.div`
   flex: 1;
 `;
 
+// Bleeds through the sidebar's horizontal padding so the rule runs the full
+// width, separating the nav from what is not navigation.
+export const StyledDivider = styled.hr`
+  margin-block: ${({ theme }) => theme.spacing.space3}px;
+  margin-inline: -${({ theme }) => theme.spacing.space4}px;
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+`;
+
+// Deliberately not StyledNavLink: this opens an overlay rather than going
+// somewhere, and it carries no active state on any route — so it is quieter
+// than the nav items and offers hover only.
+export const StyledManualTrigger = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.space2}px
+    ${({ theme }) => theme.spacing.space3}px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.button}px;
+  background: transparent;
+  font-family: ${({ theme }) => theme.typography.fontFamily.ui};
+  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
+  font-weight: ${({ theme }) => theme.typography.weights.regular};
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  }
+`;
+
 export const StyledMain = styled.main`
   margin-left: ${({ theme }) => theme.layout.sidebarWidth}px;
   flex: 1;
