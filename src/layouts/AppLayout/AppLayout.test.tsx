@@ -1,10 +1,24 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  act,
+  fireEvent,
+} from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
+import { MANUAL_TRANSITION_MS } from "../../features/manual/useManualDrawer";
 import AppLayout from "./AppLayout";
+
+// Lets the manual tests prove the drawer is an overlay and not a navigation.
+function LocationProbe() {
+  const { pathname } = useLocation();
+  return <span data-testid="pathname">{pathname}</span>;
+}
 
 function renderAtRoute(path: string) {
   return render(
@@ -16,6 +30,7 @@ function renderAtRoute(path: string) {
             element={
               <AppLayout>
                 <p>Dashboard content</p>
+                <LocationProbe />
               </AppLayout>
             }
           />
@@ -314,6 +329,153 @@ describe("AppLayout — sidebar clock", () => {
       clock.compareDocumentPosition(settingsLink) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
+    vi.useRealTimers();
+  });
+});
+
+describe("AppLayout — Help & manual trigger", () => {
+  it("renders a Help & manual trigger in the sidebar", () => {
+    renderAtRoute("/");
+    expect(
+      screen.getByRole("button", { name: /help & manual/i })
+    ).toBeInTheDocument();
+  });
+
+  it("is a button, not a navigation link — it opens an overlay rather than going somewhere", () => {
+    renderAtRoute("/");
+    expect(
+      screen.queryByRole("link", { name: /help & manual/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("sits below the nav, beneath Settings", () => {
+    renderAtRoute("/");
+    const settingsLink = screen.getByRole("link", { name: /settings/i });
+    const trigger = screen.getByRole("button", { name: /help & manual/i });
+    expect(
+      settingsLink.compareDocumentPosition(trigger) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("is separated from the nav by a full-width divider", () => {
+    renderAtRoute("/");
+    const settingsLink = screen.getByRole("link", { name: /settings/i });
+    const divider = screen.getByTestId("sidebar-divider");
+    const trigger = screen.getByRole("button", { name: /help & manual/i });
+    expect(
+      settingsLink.compareDocumentPosition(divider) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      divider.compareDocumentPosition(trigger) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("does not reuse the nav link's styling — two interaction models, two visual weights", () => {
+    renderAtRoute("/");
+    const navClasses = new Set(
+      screen.getByRole("link", { name: /settings/i }).classList
+    );
+    const triggerClasses = Array.from(
+      screen.getByRole("button", { name: /help & manual/i }).classList
+    );
+    expect(triggerClasses.some((cls) => navClasses.has(cls))).toBe(false);
+  });
+
+  it("never takes an active/current treatment, on any route", () => {
+    renderAtRoute("/settings/storage");
+    expect(
+      screen.getByRole("button", { name: /help & manual/i })
+    ).not.toHaveAttribute("aria-current");
+  });
+});
+
+describe("AppLayout — manual drawer", () => {
+  it("is closed on launch — nothing opens it automatically", () => {
+    renderAtRoute("/");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens from the Help & manual trigger", () => {
+    renderAtRoute("/");
+    fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
+    expect(
+      screen.getByRole("dialog", { name: /user manual/i })
+    ).toBeInTheDocument();
+  });
+
+  it("leaves the screen behind mounted and the route unchanged", () => {
+    renderAtRoute("/");
+    fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
+
+    expect(screen.getByText("Dashboard content")).toBeInTheDocument();
+    expect(screen.getByTestId("pathname").textContent).toBe("/");
+  });
+
+  it("closes on ESC", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+    fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("closes from the header close button", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+    fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("closes from a backdrop click", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+    fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
+
+    fireEvent.click(screen.getByTestId("manual-backdrop"));
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("reopens on a fresh drawer, so a reader who scrolled and closed starts at the top again", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+    const trigger = screen.getByRole("button", { name: /help & manual/i });
+
+    fireEvent.click(trigger);
+    const firstPane = screen.getByTestId("manual-pane");
+    firstPane.scrollTop = 240;
+
+    fireEvent.click(screen.getByTestId("manual-backdrop"));
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+    fireEvent.click(trigger);
+
+    // The drawer left the tree on close, so there is no scroll position left
+    // to restore — the reopened pane is a different element at the top.
+    const secondPane = screen.getByTestId("manual-pane");
+    expect(secondPane).not.toBe(firstPane);
+    expect(secondPane.scrollTop).toBe(0);
     vi.useRealTimers();
   });
 });
