@@ -260,6 +260,7 @@ The generated installer will be signed with your local certificate and will inst
 | Savings Streak                            | ✅ Complete |
 | Import Review Repair                      | ✅ Complete |
 | Performance + UX Polish                   | ✅ Complete |
+| Quick Start Guide                         | 📋 Planned  |
 | Live-Use Repair                           | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
