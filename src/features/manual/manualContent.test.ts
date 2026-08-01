@@ -22,6 +22,16 @@ const EXPECTED_TOPIC_IDS: ManualTopicId[] = [
   "settings",
 ];
 
+/** The AccountKind union, in the order Getting Started walks a reader through
+ *  it — the closed set from the ubiquitous language, not a copy decision. */
+const ACCOUNT_KINDS = [
+  "Girokonto",
+  "Tagesgeld",
+  "Mortgage",
+  "CreditCard",
+  "Investment",
+];
+
 describe("manual groups", () => {
   it("clusters the topics under the five fixed labels, in order", () => {
     expect(MANUAL_GROUPS.map((group) => group.label)).toEqual([
@@ -76,11 +86,31 @@ describe("the Getting Started topic", () => {
     expect(MANUAL_TOPICS.start.details).toHaveLength(6);
   });
 
-  // Only the headings are promised in this slice; the step bodies are written
-  // and verified against shipped code in the copy phase.
   it("gives every step a heading", () => {
     MANUAL_TOPICS.start.details.forEach((detail) => {
       expect(detail.heading.trim()).not.toBe("");
+    });
+  });
+
+  // Structure, not wording: a step that expands into nothing is not a step.
+  it("gives every step a body a reader can act on", () => {
+    MANUAL_TOPICS.start.details.forEach((detail) => {
+      expect(detail.body.trim()).not.toBe("");
+    });
+  });
+
+  it("expands step 1 into all five account kinds", () => {
+    const terms = MANUAL_TOPICS.start.details[0].terms ?? [];
+
+    expect(terms.map((entry) => entry.term)).toEqual(ACCOUNT_KINDS);
+  });
+
+  it("defines every account kind it names", () => {
+    const terms = MANUAL_TOPICS.start.details[0].terms ?? [];
+
+    expect(terms).toHaveLength(ACCOUNT_KINDS.length);
+    terms.forEach((entry) => {
+      expect(entry.definition.trim()).not.toBe("");
     });
   });
 });
