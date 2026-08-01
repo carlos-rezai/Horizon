@@ -1,0 +1,160 @@
+/* ============================================================
+   HORIZON — base styles, fonts, resets, keyframes
+   CSS vars mirror src/tokens.js for className-based styling.
+   ============================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --ink0: #0c0e12;
+  --ink1: #111419;
+  --ink2: #161a21;
+  --ink3: #1c212a;
+  --ink4: #232a34;
+  --ink5: #2b333f;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --line-faint: rgba(255, 255, 255, 0.04);
+  --text: #eceef2;
+  --text-muted: #9ba3b0;
+  --text-dim: #646c7a;
+  --text-faint: #454c58;
+  --accent: #e6b559;
+  --accent-bright: #f4cc74;
+  --accent-dim: rgba(230, 181, 89, 0.16);
+  --accent-line: rgba(230, 181, 89, 0.3);
+  --on-accent: #1a1306;
+  --pos: #74c29b;
+  --neg: #ce8278;
+  --ui: "Space Grotesk", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--ink0);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+input {
+  font-family: inherit;
+}
+::selection {
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+/* Tabular figures everywhere mono is used */
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbars — thin, quiet */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--ink4);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink5);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Focus ring */
+.focusable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@keyframes hz-fade {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes hz-rise {
+  from {
+    transform: translateY(7px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes hz-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes hz-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes hz-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.hz-fade {
+  animation: hz-fade 0.35s ease forwards;
+}
+.hz-rise {
+  animation: hz-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+/* Page-enter stagger helper (transform-only: content never depends on animation for visibility) */
+.stagger > * {
+  animation: hz-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 0.22s;
+}

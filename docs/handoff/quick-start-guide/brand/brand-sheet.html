@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horizon — Brand, Type & Icons</title>
+    <link rel="stylesheet" href="../prototype/styles.css" />
+    <style>
+      body {
+        padding: 56px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-family: var(--ui);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        font-size: 34px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        color: var(--text-muted);
+        font-size: 15px;
+        margin-bottom: 44px;
+      }
+      section {
+        margin-bottom: 52px;
+      }
+      .lbl {
+        font-family: var(--ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 10px;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        gap: 18px;
+        margin-bottom: 14px;
+      }
+      .meta {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+        min-width: 150px;
+      }
+      .mono {
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+      }
+      .iconwrap {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 12px;
+      }
+      .icell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 8px;
+        background: var(--ink2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+      .icell span {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-dim);
+      }
+      .sw {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .chip .box {
+        width: 92px;
+        height: 56px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+      }
+      .chip .t {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-dim);
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Horizon — Brand, Type &amp; Icons</h1>
+    <div class="sub">
+      Reference specimen. Fonts and tokens are the same files the prototype
+      uses.
+    </div>
+
+    <section>
+      <div class="lbl">Logo / App Icon</div>
+      <div class="logo">
+        <img
+          src="horizon-icon-256.png"
+          width="88"
+          height="88"
+          style="border-radius: 20px"
+          alt="Horizon icon"
+        />
+        <div>
+          <div style="display: flex; align-items: center; gap: 11px">
+            <svg width="30" height="30" viewBox="0 0 30 30">
+              <circle
+                cx="15"
+                cy="15"
+                r="13.5"
+                fill="none"
+                stroke="var(--line)"
+                stroke-width="1.5"
+              />
+              <path
+                d="M3 18 Q15 9 27 18"
+                fill="none"
+                stroke="var(--accent)"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle cx="22.5" cy="11" r="2.6" fill="var(--accent)" />
+            </svg>
+            <span
+              style="
+                font-family: var(--ui);
+                font-weight: 600;
+                font-size: 22px;
+                letter-spacing: 0.16em;
+              "
+              >HORIZON</span
+            >
+          </div>
+          <div class="meta" style="margin-top: 10px">
+            Installer master: horizon-icon-1024.png · also 512, 256 · vector:
+            horizon-icon.svg
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="lbl">Typeface — Space Grotesk (UI / headings)</div>
+      <div class="row">
+        <span class="meta">Display 600 / 32px</span
+        ><span
+          style="
+            font-family: var(--ui);
+            font-weight: 600;
+            font-size: 32px;
+            letter-spacing: -0.018em;
+          "
+          >Personal finance for long-term thinkers</span
+        >
+      </div>
+      <div class="row">
+        <span class="meta">H1 600 / 24px</span
+        ><span style="font-family: var(--ui); font-weight: 600; font-size: 24px"
+          >Trajectory Horizon</span
+        >
+      </div>
+      <div class="row">
+        <span class="meta">H2 600 / 18px</span
+        ><span style="font-family: var(--ui); font-weight: 600; font-size: 18px"
+          >Projection Accordion</span
+        >
+      </div>
+      <div class="row">
+        <span class="meta">Body 400 / 14px</span
+        ><span style="font-family: var(--ui); font-size: 14px"
+          >The engine replays recurring history from each account's opening
+          date.</span
+        >
+      </div>
+      <div class="row">
+        <span class="meta">Label 600 / 11px</span
+        ><span
+          style="
+            font-family: var(--ui);
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+          "
+          >Total Liquid</span
+        >
+      </div>
+    </section>
+
+    <section>
+      <div class="lbl">Typeface — IBM Plex Mono (all figures, tabular)</div>
+      <div class="row">
+        <span class="meta">Mono Lg 500 / 30px</span
+        ><span
+          class="mono"
+          style="font-size: 30px; font-weight: 500; letter-spacing: -0.02em"
+          >21.320,75 €</span
+        >
+      </div>
+      <div class="row">
+        <span class="meta">Mono Md 500 / 14px</span
+        ><span class="mono" style="font-size: 14px; font-weight: 500"
+          >−18.000,00 €</span
+        >
+      </div>
+      <div class="row">
+        <span class="meta">Mono Sm 500 / 12px</span
+        ><span class="mono" style="font-size: 12px; font-weight: 500"
+          >Oct 2031 · 09:41</span
+        >
+      </div>
+    </section>
+
+    <section>
+      <div class="lbl">Color tokens</div>
+      <div class="sw">
+        <div class="chip">
+          <div class="box" style="background: var(--accent)"></div>
+          <span class="t">accent #E6B559</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--pos)"></div>
+          <span class="t">pos #74C29B</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--neg)"></div>
+          <span class="t">neg #CE8278</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--ink0)"></div>
+          <span class="t">ink0 #0C0E12</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--ink2)"></div>
+          <span class="t">ink2 #161A21</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--ink4)"></div>
+          <span class="t">ink4 #232A34</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--text)"></div>
+          <span class="t">text #ECEEF2</span>
+        </div>
+        <div class="chip">
+          <div class="box" style="background: var(--text-muted)"></div>
+          <span class="t">muted #9BA3B0</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="lbl">
+        Icon set — src/icons.jsx (lucide-equivalent, 24-grid stroke)
+      </div>
+      <div class="iconwrap" id="icons"></div>
+    </section>
+
+    <script src="../prototype/src/tokens.js"></script>
+    <script>
+      const names = [
+        "dashboard",
+        "outlook",
+        "calendar",
+        "settings",
+        "landmark",
+        "piggy",
+        "building",
+        "home",
+        "trend",
+        "card",
+        "wallet",
+        "banknote",
+        "plus",
+        "arrowLeft",
+        "arrowRight",
+        "arrowUpRight",
+        "arrowDown",
+        "chevronDown",
+        "chevronRight",
+        "x",
+        "check",
+        "search",
+        "clock",
+        "flag",
+        "download",
+        "upload",
+        "database",
+        "pencil",
+        "trash",
+        "refresh",
+        "shield",
+        "sun",
+        "dot",
+        "grip",
+        "filter",
+        "info",
+      ];
+      const P = window.T ? null : null; // tokens loaded for colors
+    </script>
+    <script src="icons-render.js"></script>
+  </body>
+</html>
