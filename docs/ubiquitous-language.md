@@ -1125,3 +1125,50 @@
 - A **First-Interaction Stutter** has three candidate mechanisms — uncached fetch waterfall (fixed by **Cache-Context**), styled-components runtime style injection, or Recharts cold first-mount — and its real cause is _diagnosed_ via a **Cold-First-Click Trace** before a fix is chosen, never assumed
 - **Progressive Reveal** and the **Skeleton** primitive compose: the primary view paints a layout-matched **Skeleton** from frame one, then reveals each section independently as its data lands
 - The polish pass adds no new feature and no visual redesign — **Skeleton** and transitions match the existing **Meridian** design, and the **Projection Engine** math is never touched, only cached and memoized around
+
+## Quick Start Guide (new)
+
+| Term                        | Definition                                                                                                                                                                         | Aliases to avoid                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **User Manual**             | The in-app documentation surface as a whole — what the reader sees titled "User Manual · How to use Horizon"                                                                       | Manual, help, docs, guide          |
+| **Manual Drawer**           | The right-side slide-over overlay that renders the **User Manual** — closes on ESC or backdrop, owns no route, and preserves the screen beneath it                                 | Help modal, guide page, docs panel |
+| **Manual Topic**            | One documented surface of Horizon, with a title, a blurb, and its **Detail Rows** — ten exist, one per real screen or concern                                                      | Section, article, chapter          |
+| **Manual Group**            | A labelled cluster of **Manual Topics** in the drawer's TOC rail — Getting Started, Overview, Planning, Data, System                                                               | Category, nav group                |
+| **Detail Row**              | A collapsible heading-plus-body unit inside a **Manual Topic**, optionally carrying a term list — the atom of manual copy                                                          | Entry, item, accordion row         |
+| **Getting Started**         | The single **Manual Topic** giving the six ordered steps from an empty database to a working projection — the chosen alternative to seeding demo data                              | Onboarding, quick start, tutorial  |
+| **App-Wins Rule**           | The editorial rule that where the manual's copy and the shipped app disagree, the app is correct and the copy is rewritten — behaviour the copy describes but the app lacks is cut | Doc accuracy, sync, parity         |
+| **Empty-Hidden Surface**    | A surface that renders nothing at all when its underlying data is absent — Mortgage Countdown, the mortgage KPI tiles, Year Archive years, Month picker bounds                     | Hidden card, conditional card      |
+| **Transfer Direction Rule** | The convention that a **Recurring Transfer** is entered as a positive amount on the account the money _leaves_, with the linked account deriving the direction                     | Transfer sign, signed pair         |
+
+## Relationships (Quick Start Guide additions)
+
+- A **Manual Group** contains one or more **Manual Topics**; a **Manual Topic** contains one or more **Detail Rows** — three levels, no deeper
+- The **Manual Drawer** renders every **Manual Topic** at once; the TOC rail scroll-jumps between them and is navigation, never routing
+- The **User Manual** has exactly two entry points — the sidebar `Help & manual` button and the Electron Help menu item — and never opens itself
+- The **App-Wins Rule** governs all manual copy; it is why the **User Manual** documents an **Empty-Hidden Surface** rather than proposing an empty state for it
+- The **Transfer Direction Rule** describes _input_ only. The manual is deliberately silent on Account Detail's recurring-net figure, because `recurringNetPerMonth` and the **Projection Engine** disagree on that number's sign
+- The **User Manual** describes shipped behaviour exclusively — it changes none, and every defect it documents remains owned by **Live-Use Repair**
+
+## Example dialogue (Quick Start Guide)
+
+> **Dev:** "A fresh install shows no Mortgage Countdown. Should the manual tell people to add a mortgage, or should the card show an empty state?"
+>
+> **Domain expert:** "Tell them. Mortgage Countdown is an **Empty-Hidden Surface** — that's current behaviour, and the **App-Wins Rule** says we document it, not redesign around it. The empty state is Live-Use Repair's call."
+>
+> **Dev:** "The handoff copy says Year Comparison is marked 'Planned'. It shipped months ago."
+>
+> **Domain expert:** "Then the copy is wrong and the app is right. Rewrite that **Detail Row**. Same for anything the copy promises that we never built — cut it, don't build it."
+>
+> **Dev:** "And transfers? A €500 transfer out shows as +500 on the source row."
+>
+> **Domain expert:** "State the **Transfer Direction Rule** — positive on the account it leaves, the link does the rest. Say nothing about the recurring-net figure. Two surfaces sign it differently, so there's no sentence that's true on both."
+
+## Flagged ambiguities (Quick Start Guide)
+
+- **"Manual"** (new) — bare "Manual" is already taken: **Manual Mode** is a **Savings Goal** mode. Never write "Manual" alone for the documentation surface. Use **User Manual**, **Manual Drawer**, or **Manual Topic** — the qualifier is not optional.
+- **"Quick Start Guide" / "User Manual" / "Getting Started"** (new) — three names at three scopes, routinely swapped:
+  - **Quick Start Guide** — the roadmap and epic name only. Never appears in the UI.
+  - **User Manual** — the shipped surface, and the only one the reader ever sees.
+  - **Getting Started** — one **Manual Topic** inside it, and one **Manual Group** label.
+    A sentence like "open the Quick Start Guide" is wrong on two counts: nothing in the app carries that name, and it usually means **Getting Started** specifically.
+- **"guide"** (new) — avoid entirely as a noun for the surface; it collides with the epic name and reads as a separate document from the **User Manual**. There is one surface.
