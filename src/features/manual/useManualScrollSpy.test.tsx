@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
+import type { Mock } from "vitest";
 import type { ManualTopicId } from "./manualTypes";
 import { useManualScrollSpy } from "./useManualScrollSpy";
 
@@ -83,8 +84,10 @@ function jump(id: ManualTopicId) {
 }
 
 const originalScrollIntoView = Element.prototype.scrollIntoView;
-let scrollIntoView: ReturnType<typeof vi.fn>;
-let paneScrollTo: ReturnType<typeof vi.fn>;
+// Typed to the DOM members they stand in for, so the stubs are assignable to
+// the real thing rather than to a bare `vi.fn()`'s open signature.
+let scrollIntoView: Mock<Element["scrollIntoView"]>;
+let paneScrollTo: Mock<(options: ScrollToOptions) => void>;
 
 beforeEach(() => {
   scrollIntoView = vi.fn();
@@ -96,10 +99,16 @@ afterEach(() => {
   Element.prototype.scrollIntoView = originalScrollIntoView;
 });
 
-/** jsdom implements neither, so the pane's scroller is supplied by the test. */
+/** jsdom implements neither, so the pane's scroller is supplied by the test.
+ *  Installed by definition rather than assignment: `scrollTo`'s two-overload
+ *  DOM type admits no single-signature stub, and the options form is the only
+ *  one the drawer uses. */
 function stubPaneScrolling() {
   paneScrollTo = vi.fn();
-  screen.getByTestId("pane").scrollTo = paneScrollTo;
+  Object.defineProperty(screen.getByTestId("pane"), "scrollTo", {
+    value: paneScrollTo,
+    configurable: true,
+  });
 }
 
 describe("useManualScrollSpy — the active topic", () => {

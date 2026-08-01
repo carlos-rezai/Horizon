@@ -1,6 +1,10 @@
 import { BookOpen, X } from "lucide-react";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
-import { MANUAL_TOPICS } from "../manualContent";
+import ManualSection from "../ManualSection/ManualSection";
+import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent";
+import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex";
+import type { ManualTopicId } from "../manualTypes";
+import { useManualScrollSpy } from "../useManualScrollSpy";
 import {
   StyledOverlay,
   StyledBackdrop,
@@ -11,13 +15,19 @@ import {
   StyledTitle,
   StyledSubtitle,
   StyledClose,
+  StyledColumns,
+  StyledRail,
+  StyledGroup,
+  StyledGroupLabel,
+  StyledRailEntry,
   StyledPane,
-  StyledSection,
-  StyledSectionHead,
-  StyledTopicIcon,
-  StyledTopicTitle,
-  StyledBlurb,
 } from "./ManualDrawer.styles";
+
+/** Document order, fixed once at module load — the spy compares scroll offsets
+ *  against it, so it must not be rebuilt on every render. */
+const MANUAL_TOPIC_ORDER: ManualTopicId[] = MANUAL_TOPICS_IN_ORDER.map(
+  (topic) => topic.id
+);
 
 interface ManualDrawerProps {
   /** Drives the enter and exit transitions. Mounting belongs to the caller,
@@ -27,16 +37,19 @@ interface ManualDrawerProps {
 }
 
 /**
- * The manual's slide-over shell. It renders whatever the content module says
- * and reports its own motion state on the panel — `data-state` for the
- * transition and `data-motion` for whether there is one at all — since the
- * animation itself is unobservable in tests.
+ * The manual's slide-over shell: a grouped table of contents on the left and
+ * every topic, all at once, on the right. The rail navigates — it never routes,
+ * so nothing is unmounted by clicking it and a reader can always scroll on past
+ * the topic they arrived at.
+ *
+ * The panel reports its own motion state — `data-state` for the transition and
+ * `data-motion` for whether there is one at all — since the animation itself is
+ * unobservable in tests.
  */
 export default function ManualDrawer({ open, onClose }: ManualDrawerProps) {
   const reduced = useReducedMotion();
-  // One topic for now; the rail and the full pane arrive with the next slice.
-  const topic = MANUAL_TOPICS.start;
-  const TopicIcon = topic.icon;
+  const { activeTopicId, paneRef, registerSection, jumpTo } =
+    useManualScrollSpy(MANUAL_TOPIC_ORDER);
 
   return (
     <StyledOverlay>
@@ -69,17 +82,46 @@ export default function ManualDrawer({ open, onClose }: ManualDrawerProps) {
             <X size={19} />
           </StyledClose>
         </StyledHeader>
-        <StyledPane data-testid="manual-pane">
-          <StyledSection>
-            <StyledSectionHead>
-              <StyledTopicIcon data-testid="manual-topic-icon">
-                <TopicIcon size={18} />
-              </StyledTopicIcon>
-              <StyledTopicTitle>{topic.title}</StyledTopicTitle>
-            </StyledSectionHead>
-            <StyledBlurb>{topic.blurb}</StyledBlurb>
-          </StyledSection>
-        </StyledPane>
+
+        <StyledColumns>
+          <StyledRail aria-label="Manual topics">
+            {MANUAL_GROUPS.map((group) => (
+              <StyledGroup key={group.label}>
+                <StyledGroupLabel data-testid="manual-group-label">
+                  {group.label}
+                </StyledGroupLabel>
+                {group.topicIds.map((id) => {
+                  const topic = MANUAL_TOPICS[id];
+                  const EntryIcon = topic.icon;
+                  const isActive = activeTopicId === id;
+
+                  return (
+                    <StyledRailEntry
+                      key={id}
+                      type="button"
+                      $active={isActive}
+                      aria-current={isActive ? "true" : undefined}
+                      onClick={() => jumpTo(id)}
+                    >
+                      <EntryIcon size={15} />
+                      {topic.title}
+                    </StyledRailEntry>
+                  );
+                })}
+              </StyledGroup>
+            ))}
+          </StyledRail>
+
+          <StyledPane data-testid="manual-pane" ref={paneRef}>
+            {MANUAL_TOPICS_IN_ORDER.map((topic) => (
+              <ManualSection
+                key={topic.id}
+                topic={topic}
+                ref={(element) => registerSection(topic.id, element)}
+              />
+            ))}
+          </StyledPane>
+        </StyledColumns>
       </StyledPanel>
     </StyledOverlay>
   );
