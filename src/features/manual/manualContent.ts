@@ -18,9 +18,9 @@ import type { ManualGroup, ManualTopicRecord } from "./manualTypes";
  *
  * The detail-row bodies are written and verified line by line against shipped
  * code in the copy slices — where this module and the app disagree, the app is
- * correct and the copy is rewritten. Getting Started, Dashboard and Savings
- * Streak are written; the remaining seven topics fill in with the later copy
- * passes.
+ * correct and the copy is rewritten. Getting Started, Dashboard, Savings
+ * Streak, Outlook, Month Overview and History are written; the remaining four
+ * topics fill in with the later copy passes.
  */
 
 /** Fixed order. The rail renders these groups top to bottom. */
@@ -191,7 +191,45 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "Outlook",
     blurb:
       "The full 240-month projection, driven only by your recurring transactions — no variable spending is guessed at.",
-    details: [],
+    details: [
+      {
+        heading: "The summary strip",
+        body: "The sidebar calls this screen Outlook; the page header calls it Financial Plan, with “Outlook” as the small overline above the title — one screen, two names. Three figures sit under the header, each summarising the whole 240-month projection rather than the year you happen to be reading.",
+        terms: [
+          {
+            term: "Total Liquid",
+            definition:
+              "Your Girokonto and Tagesgeld balances at the very last month of the projection, with that month's year printed beside the label so you know how far out the figure is.",
+          },
+          {
+            term: "Debt-free",
+            definition:
+              "The first month the Restschuld reaches zero. It reads “—” when there is no mortgage debt at the start of the projection, and also when the debt is still outstanding twenty years out — in that case the plan simply never pays it off.",
+          },
+          {
+            term: "Total Sondertilgung",
+            definition:
+              "Every extra mortgage repayment the plan expects of you across all twenty years, added up and shown as money leaving you, with the number of months one falls in noted underneath. Horizon reads these off the projection itself: each month the Restschuld steps down is one Sondertilgung.",
+          },
+        ],
+      },
+      {
+        heading: "The Projection Accordion",
+        body: "One row per year for twenty years, under the columns Period, Total Liquid, Restschuld, Net Cashflow and Sondertilgung. A year's Total Liquid and Restschuld are its closing figures — the last month of that year — while Net Cashflow and Sondertilgung are summed across its months. The current year is open when you arrive, and it covers only the months from now to December, so its cashflow is a part-year total. The payoff year is highlighted and its Restschuld turns into a flag; expand any year for its twelve months, where the payoff month is flagged again and every month a Sondertilgung falls in is tinted. Without a Mortgage account the Restschuld and Sondertilgung columns read “—” throughout.",
+      },
+      {
+        heading: "Jumping to a month",
+        body: "Click any month row to open Month Overview for that month — the variable spending behind the figure you were just reading. Going back returns you to Outlook with the year you left from still expanded. The Dashboard's Plan Summary does the same thing in reverse: clicking one of its years opens Outlook scrolled to that year, already expanded.",
+      },
+      {
+        heading: "Recalculate",
+        body: "Re-runs the projection on the server from your current accounts, balances and recurring transactions, replaces both sections with the result, and confirms with “Recalculated”. Outlook already refetches every time you open it, so this is not something you have to remember — it is here for when you want to force a fresh run without leaving the screen.",
+      },
+      {
+        heading: "Why the projection can look flat",
+        body: "Nothing but recurring transactions drives Outlook — no variable spending is extrapolated and no growth is assumed. With accounts but no recurring transactions the accordion still fills with twenty years of rows; they are simply flat, the same Total Liquid repeated with a Net Cashflow of zero. That is the engine reporting that it has no input, not a failure. Add salary, rent, transfers and Sondertilgung from each account's detail page and the rows start to move. There is only one case where the accordion is genuinely empty — no accounts at all — and it says so.",
+      },
+    ],
   },
   month: {
     id: "month",
@@ -199,7 +237,28 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "Month Overview",
     blurb:
       "Variable (non-recurring) spending for a single month, with a category breakdown and account filters.",
-    details: [],
+    details: [
+      {
+        heading: "Month navigation",
+        body: "The arrows either side of the month label step one month back or forward and are not bounded — you can walk into next year if you want to. The label itself opens a month-and-year picker, and that grid is bounded: it runs from the earliest month you have imported a statement for up to the month currently on screen. A greyed-out cell means nothing was imported that far back, not a dead control, and with no imports at all the picker collapses to the single month you are on. Note that it never reaches past the month you are viewing — stepping forward is the arrows' job. The sidebar's Month entry always returns you to the current calendar month.",
+      },
+      {
+        heading: "The spending list",
+        body: "The card labelled “Variable Spending” lists every one-off transaction in the month, oldest first, each with its day, description, account and category badge. The tabs above it filter by account: “All accounts” first with the month's total count, then one tab per account in your own account order, each with its colour and its own count. Only accounts that can hold day-to-day spending are tabbed — Girokonto, Tagesgeld and CreditCard — since a mortgage or an investment account never carries a one-off purchase. Transfers between your own accounts and credit-card settlements are left out of the list entirely: they move money rather than spend it. Click any row to change its description, amount, date, direction or category, or to delete it; the change is on screen immediately and is put back with a message if the server refuses it.",
+      },
+      {
+        heading: "Add expense",
+        body: "Logs a one-off purchase without importing anything: date, amount, description and category. The date is confined to the month you are viewing. The expense lands on the account whose tab is open, so pick that account's tab before adding — with “All accounts” selected it goes to the first account in your list. Setting a “To account” records a transfer between two of your own accounts instead of an expense, and a transfer is not spending: it will not appear in this list or in the breakdown.",
+      },
+      {
+        heading: "The breakdown donut",
+        body: "The “Breakdown / By category” ring groups the month's variable spending by category, largest slice first, each drawn in the colour that category carries in Categories. The centre shows the month's total rounded to whole euros; the legend beneath it keeps the cents. It always covers every account — the tabs filter the list, not the donut — and it leaves out the same transfers and settlements the list does. A month with nothing to show says so rather than drawing an empty ring.",
+      },
+      {
+        heading: "Year comparison",
+        body: "The “This year so far” card adds up your variable spending per category from Jan 1 through the month you are viewing, and sets it against the identical span of the year before — Jan 1 to the same month last year, so you are never reading twelve months against three. The five categories you have spent most on this year get a row each: two bars on one shared scale, this year in the category's colour and last year muted beneath it. Like the donut it reads every spending account whichever tab is open, and it counts the same transactions the list shows. It is built from what you have actually recorded, so a year you have imported and entered nothing for reads “No spending yet this year.”",
+      },
+    ],
   },
   history: {
     id: "history",
@@ -207,7 +266,20 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "History",
     blurb:
       "Reconstructed actuals — the real trajectory of your accounts over time, built from imported bank statements only.",
-    details: [],
+    details: [
+      {
+        heading: "The range chips",
+        body: "Above the chart titled “Historical Trajectory” sit three chips — 1 Year, 3 Years and All history — setting how far back it draws. They trim from the old end only: the most recent reconstructed month always stays at the right edge, under the dotted TODAY marker. They change the chart alone, and the Year Archive underneath keeps listing every year regardless.",
+      },
+      {
+        heading: "The chart series",
+        body: "The chips under the chart behave exactly like the Dashboard's: click one to show or hide that series, double-click it to isolate it, and “Show all” appears as soon as anything is hidden. Total Liquid starts hidden, and a Mortgage account has no line of its own — it is the dashed Restschuld series. What you show and hide here is remembered separately from the Dashboard, so the two charts can be set up differently. Hovering a month gives every visible series' balance plus what that month's Net Cashflow actually was. Every figure is reconstructed from your imported statements rather than projected, which is why History and Outlook can disagree about the same month and both be right.",
+      },
+      {
+        heading: "The Year Archive",
+        body: "Only years holding at least one imported statement are listed — a year missing here means nothing has been imported for it, not that Horizon lost it. Each year gives its closing Total Liquid and Restschuld, taken from the last month available so a part-year is safe to read, the year's summed Net Cashflow, and a badge counting its statements that takes you to Import. The newest year sits on top and opens by default; expand it for its months, and click a month to open Month Overview for it. Until the first statement is imported there is no archive and no chart — the screen is a single invitation to go to Import.",
+      },
+    ],
   },
   import: {
     id: "import",
