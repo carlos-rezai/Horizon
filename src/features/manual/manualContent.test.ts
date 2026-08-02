@@ -37,24 +37,37 @@ const ACCOUNT_KINDS = [
  * this list; a topic outside it is still a stub and is exempt from the
  * populated-row invariant below.
  */
-const WRITTEN_TOPIC_IDS: ManualTopicId[] = ["start", "dashboard", "streak"];
+const WRITTEN_TOPIC_IDS: ManualTopicId[] = [
+  "start",
+  "dashboard",
+  "streak",
+  "outlook",
+  "month",
+  "history",
+];
 
-/** Every word a topic says, as one searchable string. */
-const topicText = (id: ManualTopicId): string => {
-  const topic = MANUAL_TOPICS[id];
-  return [
-    topic.title,
-    topic.blurb,
-    ...topic.details.flatMap((detail) => [
+/** Every word a topic's detail rows say, as one searchable string. */
+const detailText = (id: ManualTopicId): string =>
+  MANUAL_TOPICS[id].details
+    .flatMap((detail) => [
       detail.heading,
       detail.body,
       ...(detail.terms ?? []).flatMap((entry) => [
         entry.term,
         entry.definition,
       ]),
-    ]),
-  ].join("\n");
-};
+    ])
+    .join("\n");
+
+/** Every word a topic says, as one searchable string. */
+const topicText = (id: ManualTopicId): string =>
+  [MANUAL_TOPICS[id].title, MANUAL_TOPICS[id].blurb, detailText(id)].join("\n");
+
+/** The row of a topic whose heading matches — the rows are the manual's
+ *  answers, so a claim that has to reach a reader is asserted on the row that
+ *  carries it, not on the topic as a whole. */
+const rowOf = (id: ManualTopicId, heading: RegExp) =>
+  MANUAL_TOPICS[id].details.find((detail) => heading.test(detail.heading));
 
 describe("manual groups", () => {
   it("clusters the topics under the five fixed labels, in order", () => {
@@ -211,6 +224,151 @@ describe("the Savings Streak topic", () => {
 
     STREAK_SUBJECTS.forEach((subject) => {
       expect(text).toContain(subject);
+    });
+  });
+});
+
+const OUTLOOK_SUBJECTS = [
+  // The summary strip's three StatBlock labels.
+  "Total Liquid",
+  "Debt-free",
+  "Total Sondertilgung",
+  // The year accordion, by the section title it renders.
+  "Projection Accordion",
+  // Where a month row lands, and the page header's action.
+  "Month Overview",
+  "Recalculate",
+];
+
+describe("the Outlook topic", () => {
+  it("covers the summary strip, the year accordion, the month jump and Recalculate", () => {
+    const text = topicText("outlook");
+
+    OUTLOOK_SUBJECTS.forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // The App-Wins Rule applied to a name: the sidebar entry and the page's
+  // overline read "Outlook", but the header the reader is looking at says
+  // "Financial Plan". A manual that only ever says "Outlook" sends them
+  // looking for a title that is not on the screen.
+  it("names the screen by the page title the reader actually sees", () => {
+    expect(topicText("outlook")).toContain("Financial Plan");
+  });
+
+  // The engine projects recurring transactions and nothing else, so an Outlook
+  // with no rows is an empty input, not a broken projection. The blurb's
+  // one-line teaser was written in an earlier slice; the row a reader expands
+  // for an answer has to carry it too.
+  it("states in its rows that the projection is driven only by recurring transactions", () => {
+    expect(detailText("outlook")).toMatch(/recurring/i);
+  });
+});
+
+const MONTH_SUBJECTS = [
+  // The stat strip's headline label and the spending card's section label.
+  "Variable Spending",
+  // The spending card's default tab and its action.
+  "All accounts",
+  "Add expense",
+  // The donut card and the comparison card, as SectionHead labels them.
+  "Breakdown",
+  "Year comparison",
+];
+
+describe("the Month Overview topic", () => {
+  it("covers navigation, the spending list, the one-off expense, the donut and the comparison", () => {
+    const text = topicText("month");
+
+    MONTH_SUBJECTS.forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // The arrows step anywhere; the picker does not. Its grid is bounded by
+  // deriveMonthPickerBounds to [earliest imported month, displayed month], so a
+  // greyed-out cell means "nothing imported that far back" rather than a dead
+  // control.
+  it("names the import bound the month picker is confined to", () => {
+    const row = rowOf("month", /navigation/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/import/i);
+  });
+
+  // The handoff calls this row "Planned". It shipped: YearComparison renders
+  // real per-category bars off useYearComparison. The corrected row describes
+  // what it does — cumulative spend from Jan 1 through the viewed month against
+  // the same span last year — and no placeholder language survives.
+  it("describes the year comparison as shipped behaviour", () => {
+    const row = rowOf("month", /year comparison/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/jan/i);
+    expect(row?.body).toMatch(/last year/i);
+  });
+
+  it("leaves no planned-or-coming-soon language in the year-comparison row", () => {
+    const row = rowOf("month", /year comparison/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).not.toMatch(/planned|coming soon|not yet|placeholder/i);
+  });
+});
+
+const HISTORY_SUBJECTS = [
+  // The three range chips, as HistoryChart labels them.
+  "1 Year",
+  "3 Years",
+  "All history",
+  // The archive and the chart above it.
+  "Year Archive",
+  "Historical Trajectory",
+];
+
+describe("the History topic", () => {
+  it("covers the range chips, the Year Archive and the chart", () => {
+    const text = topicText("history");
+
+    HISTORY_SUBJECTS.forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // History and Outlook draw the same accounts on the same axes. What separates
+  // them is that one is reconstructed from statements and the other is
+  // projected, and the rows have to say so — not just the blurb.
+  it("states in its rows that History is reconstructed actuals, not a projection", () => {
+    expect(detailText("history")).toMatch(/reconstruct|actual/i);
+  });
+
+  // YearArchive is import-gated: it renders only years present in `years`, even
+  // when `points` carry others. A missing year is missing data.
+  it("states that the Year Archive lists only years with an imported statement", () => {
+    const row = rowOf("history", /year archive/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/import/i);
+    expect(row?.body).toMatch(/statement/i);
+  });
+});
+
+/**
+ * A prohibition rather than a requirement, so it is green from the start — it
+ * exists to stay green as the remaining copy slices are written.
+ *
+ * Account Detail's "recurring net per month" is not documented anywhere,
+ * deliberately: the helper behind it sums raw amounts with no link handling
+ * while the projection engine subtracts them, so one transfer reads +500 on one
+ * surface and -500 on the other. No honest sentence covers both, and a caveat
+ * would document the inconsistency into permanence. It is a Live-Use Repair
+ * defect, not a manual entry.
+ */
+describe("the manual's deliberate silences", () => {
+  it("says nothing about Account Detail's recurring net per month", () => {
+    EXPECTED_TOPIC_IDS.forEach((id) => {
+      expect(topicText(id)).not.toMatch(/recurring net/i);
     });
   });
 });
