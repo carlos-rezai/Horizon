@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
+import { useRef } from "react";
 import {
   render,
   screen,
   within,
   cleanup,
   fireEvent,
+  createEvent,
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
@@ -61,6 +63,69 @@ function rail(): HTMLElement {
 
 function pane(): HTMLElement {
   return screen.getByTestId("manual-pane");
+}
+
+function panel(): HTMLElement {
+  return screen.getByTestId("manual-panel");
+}
+
+/** Everything inside the panel a keyboard can reach, in document order — the
+ *  drawer's controls are all buttons, so the tab ring is exactly this list. */
+function panelControls(): HTMLElement[] {
+  return within(panel()).getAllByRole("button");
+}
+
+/**
+ * Mirrors what AppLayout gives the drawer: a control that opens it, a fallback
+ * control for when nothing in the page did (the Electron menu), and — since
+ * both sit behind the backdrop — the screen a trapped Tab must never reach.
+ */
+function FocusHarness({ mounted, open }: { mounted: boolean; open: boolean }) {
+  const fallbackRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <button type="button">Open the manual</button>
+      <button type="button" ref={fallbackRef}>
+        Fallback control
+      </button>
+      {mounted && (
+        <ManualDrawer
+          open={open}
+          onClose={vi.fn()}
+          returnFocusRef={fallbackRef}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * Starts with the drawer already open unless a test needs to watch it arrive.
+ * Closing rerenders rather than unmounting, because the caller owns mounting
+ * and keeps the drawer in the tree while it animates out — which is exactly
+ * when focus has to be handed back.
+ */
+function renderHarness({ startOpen = true } = {}) {
+  const harness = (mounted: boolean, open: boolean) => (
+    <ThemeProvider theme={theme}>
+      <FocusHarness mounted={mounted} open={open} />
+    </ThemeProvider>
+  );
+  const { rerender } = render(harness(startOpen, startOpen));
+
+  return {
+    openDrawer: () => rerender(harness(true, true)),
+    close: () => rerender(harness(true, false)),
+  };
+}
+
+function opener(): HTMLElement {
+  return screen.getByRole("button", { name: "Open the manual" });
+}
+
+function fallback(): HTMLElement {
+  return screen.getByRole("button", { name: "Fallback control" });
 }
 
 const originalScrollIntoView = Element.prototype.scrollIntoView;
@@ -322,6 +387,89 @@ describe("ManualDrawer — motion", () => {
     expect(
       within(pane()).getByRole("heading", { name: MANUAL_TOPICS.start.title })
     ).toBeInTheDocument();
+  });
+});
+
+describe("ManualDrawer — focus", () => {
+  it("moves focus into the drawer when it opens, so a keyboard reader arrives at the manual", () => {
+    stubReducedMotion(false);
+    renderHarness();
+
+    expect(panel().contains(document.activeElement)).toBe(true);
+  });
+
+  it("wraps Tab from the last control back to the first, never reaching the screen behind the backdrop", () => {
+    stubReducedMotion(false);
+    renderHarness();
+    const controls = panelControls();
+    const last = controls[controls.length - 1];
+    last.focus();
+
+    fireEvent.keyDown(last, { key: "Tab" });
+
+    expect(document.activeElement).toBe(controls[0]);
+    expect(document.activeElement).not.toBe(opener());
+    expect(document.activeElement).not.toBe(fallback());
+  });
+
+  it("wraps Shift+Tab from the first control back to the last, staying inside the drawer", () => {
+    stubReducedMotion(false);
+    renderHarness();
+    const controls = panelControls();
+    const first = controls[0];
+    first.focus();
+
+    fireEvent.keyDown(first, { key: "Tab", shiftKey: true });
+
+    expect(document.activeElement).toBe(controls[controls.length - 1]);
+    expect(panel().contains(document.activeElement)).toBe(true);
+  });
+
+  it("takes over Tab only at the drawer's edges, leaving ordinary traversal to the browser", () => {
+    stubReducedMotion(false);
+    renderHarness();
+    const controls = panelControls();
+    const middle = controls[1];
+    const last = controls[controls.length - 1];
+
+    middle.focus();
+    const ordinary = createEvent.keyDown(middle, { key: "Tab" });
+    fireEvent(middle, ordinary);
+
+    last.focus();
+    const atEdge = createEvent.keyDown(last, { key: "Tab" });
+    fireEvent(last, atEdge);
+
+    expect(ordinary.defaultPrevented).toBe(false);
+    expect(atEdge.defaultPrevented).toBe(true);
+  });
+
+  it("returns focus to the control that opened it when it closes", () => {
+    stubReducedMotion(false);
+    const { openDrawer, close } = renderHarness({ startOpen: false });
+    opener().focus();
+
+    openDrawer();
+    // Focus really left the trigger, so the restore below is a hand-back rather
+    // than focus that simply never moved.
+    expect(document.activeElement).not.toBe(opener());
+
+    close();
+
+    // Handed back as the drawer starts closing, not when it finally unmounts —
+    // a keyboard position must not wait out the exit transition.
+    expect(document.activeElement).toBe(opener());
+  });
+
+  it("returns focus to the fallback control when nothing in the page opened it, rather than stranding it on body", () => {
+    stubReducedMotion(false);
+    // Nothing focused: what the Electron Help menu leaves behind.
+    const { close } = renderHarness();
+
+    close();
+
+    expect(document.activeElement).toBe(fallback());
+    expect(document.activeElement).not.toBe(document.body);
   });
 });
 

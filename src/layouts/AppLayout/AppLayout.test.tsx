@@ -456,6 +456,26 @@ describe("AppLayout — manual drawer", () => {
     vi.useRealTimers();
   });
 
+  it("returns focus to the Help & manual trigger once the drawer closes", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+    const trigger = screen.getByRole("button", { name: /help & manual/i });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+    // The drawer took the keyboard first — otherwise "returned" would just mean
+    // focus never went anywhere.
+    expect(document.activeElement).not.toBe(trigger);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+
+    expect(document.activeElement).toBe(trigger);
+    vi.useRealTimers();
+  });
+
   it("reopens on a fresh drawer, so a reader who scrolled and closed starts at the top again", () => {
     vi.useFakeTimers();
     renderAtRoute("/");
@@ -548,6 +568,27 @@ describe("AppLayout — manual drawer from the Electron Help menu", () => {
     fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
 
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it("lands focus on the Help & manual trigger when a menu-opened drawer closes, rather than stranding it on body", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+
+    // The native menu takes the keyboard out of the page entirely, so there is
+    // no in-page control to hand focus back to — the sidebar trigger is it.
+    act(() => {
+      openManualCb?.();
+    });
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /help & manual/i })
+    );
+    expect(document.activeElement).not.toBe(document.body);
+    vi.useRealTimers();
   });
 
   it("closes a menu-opened drawer on ESC, like a sidebar-opened one", () => {
