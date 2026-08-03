@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -66,6 +66,9 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   const warnings = useSettlementWarnings();
   const { pathname } = useLocation();
   const manual = useManualDrawer();
+  // Where the keyboard lands when the manual closes and nothing in the page
+  // opened it — the Help menu route leaves no in-page trigger to return to.
+  const manualTriggerRef = useRef<HTMLButtonElement>(null);
   useMenuDialogs();
   useMenuOpenManual(manual.open);
 
@@ -130,7 +133,11 @@ function AppLayoutContent({ children }: AppLayoutProps) {
           Settings
         </StyledNavLink>
         <StyledDivider data-testid="sidebar-divider" />
-        <StyledManualTrigger type="button" onClick={manual.open}>
+        <StyledManualTrigger
+          ref={manualTriggerRef}
+          type="button"
+          onClick={manual.open}
+        >
           <BookOpen size={16} />
           Help &amp; manual
         </StyledManualTrigger>
@@ -141,7 +148,11 @@ function AppLayoutContent({ children }: AppLayoutProps) {
       <UpdateBanner />
       <InsufficientFundsWarnings warnings={warnings} />
       {manual.isMounted && (
-        <ManualDrawer open={manual.isOpen} onClose={manual.close} />
+        <ManualDrawer
+          open={manual.isOpen}
+          onClose={manual.close}
+          returnFocusRef={manualTriggerRef}
+        />
       )}
     </StyledWrapper>
   );
