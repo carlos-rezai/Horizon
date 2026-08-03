@@ -18,9 +18,8 @@ import type { ManualGroup, ManualTopicRecord } from "./manualTypes";
  *
  * The detail-row bodies are written and verified line by line against shipped
  * code in the copy slices — where this module and the app disagree, the app is
- * correct and the copy is rewritten. Getting Started, Dashboard, Savings
- * Streak, Outlook, Month Overview and History are written; the remaining four
- * topics fill in with the later copy passes.
+ * correct and the copy is rewritten. Every topic but Settings is written; that
+ * one fills in with the last copy pass.
  */
 
 /** Fixed order. The rail renders these groups top to bottom. */
@@ -287,7 +286,32 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "Import",
     blurb:
       "Bring bank statement CSVs into Horizon. Everything is parsed and stored locally — nothing leaves this device.",
-    details: [],
+    details: [
+      {
+        heading: "Drop or browse",
+        body: "Two ways in, both landing in the same three-step wizard: drop a CSV onto the dropzone, or use “New import” in the page header. Horizon identifies the export by its header row — a bank it recognises brings its own delimiter, decimal separator and date format with it, and an export it does not recognise is imported as a “Generic” statement with the date, description and amount columns guessed from their names for you to correct in step 2. Parsing happens inside Horizon's own bundled server on this device and the rows are written to your local database file; the statement is never uploaded anywhere. Files above 5 MB, or statements past 10,000 rows or 50 columns, are refused outright rather than quietly trimmed — so what you commit is always exactly what you reviewed.",
+      },
+      {
+        heading: "Step 1 — Account",
+        body: "Confirm which account the statement belongs to. Only accounts that can hold day-to-day spending are offered — Girokonto, Tagesgeld and CreditCard — so a mortgage or an investment account never appears as a target. The card above names the file, counts the rows found in it and shows the detected format as a badge. Switching account re-reads the file from scratch, because the duplicate and recurring flags in step 3 are measured against that one account's history; picking an account tab in the history card below before you start preselects it here.",
+      },
+      {
+        heading: "Step 2 — Map columns",
+        body: "Three dropdowns — Date, Description and Amount — each listing every column in the file, with the first rows printed underneath so you can see at a glance whether the mapping is right. Horizon remembers the mapping per bank and pre-fills it, so a second statement from the same bank needs no work at all: the step opens on “Mapping remembered from your last … import”. Adjust it only when the export itself changed. A change re-parses the whole file against the new mapping, which resets the review step's checkboxes and any description you edited there — that is why mapping comes before review.",
+      },
+      {
+        heading: "Step 3 — Review and categorize",
+        body: "One row per transaction: a checkbox, the date, an editable description, a category dropdown, any flags and the amount. Only checked rows are imported. Three kinds of row arrive unchecked, each badged with the reason — a likely duplicate of something the account already holds, a match against one of that account's recurring transactions, and a booking the bank still marks as pending. They are pre-unchecked rather than hidden because re-checking one is exactly the double-count Horizon is saving you from: the duplicate is already in your history and the recurring payment is already in your projection, so opt one back in only when you know it is a genuinely separate payment. Categories are guessed from the description by keyword, falling back to Miscellaneous; correct any of them here rather than afterwards.",
+      },
+      {
+        heading: "Rows that need fixing first",
+        body: "Two different things can be wrong, and they look different on purpose. A row whose description came through empty is a hard blocker: it stays checked at full brightness with its description box outlined, the pill beside the Import button counts them — “2 rows need a description” — and clicking it jumps to the next one. Typing a description or unchecking the row both resolve it, and the button unlocks the moment none are left; “Needs attention” filters the table down to just those rows. Separately, a note above the table counts rows that could not be read at all, because their date or amount failed to parse, and prints their raw cells — which almost always means a wrong column mapping rather than a bad statement. Those rows are never imported, so go back to step 2 rather than trying to fix them here.",
+      },
+      {
+        heading: "Import history",
+        body: "Every committed import, grouped by year with the newest open and filtered by the account tabs above. Each file lists its name, the account it went into, the detected format, its size, the range of dates it covers and how many transactions it carries. Two actions sit on the right: “Preview” opens those transactions exactly as they were saved, and “Delete import” removes the statement together with every transaction it created — in one step, with no confirmation. That deletion is the only way to undo an import, and the clean way to fix one that went to the wrong account. Imported rows become ordinary one-off transactions, so they surface as Variable Spending in the Month Overview for the month they fall in, and the year they belong to appears in History's Year Archive.",
+      },
+    ],
   },
   accounts: {
     id: "accounts",
@@ -295,7 +319,59 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "Accounts",
     blurb:
       "Each account — Girokonto, Tagesgeld, Mortgage, CreditCard or Investment — has its own detail page with balance history and recurring transactions.",
-    details: [],
+    details: [
+      {
+        heading: "Account kinds",
+        body: "Pick the kind that matches how the account behaves rather than what your bank calls it: the kind decides which fields the form shows you and how the account feeds the projection. Two kinds add up into Total Liquid, one becomes Restschuld, and two count towards neither — those two are still drawn in the charts, they just are not money available to you.",
+        terms: [
+          {
+            term: "Girokonto",
+            definition:
+              "Everyday checking. Counted in Total Liquid, and drawn in the Trajectory and History charts by default.",
+          },
+          {
+            term: "Tagesgeld",
+            definition:
+              "Instant-access savings. Also counted in Total Liquid, but a separate kind so that saving and spending do not blur together in the charts.",
+          },
+          {
+            term: "Mortgage",
+            definition:
+              "The only debt kind. Its balance is the Restschuld the whole app reads — the Dashboard KPI tile, the dashed line in both charts, the Outlook column — and it is what Mortgage Countdown measures against your origination figures. It gets no line of its own, because it is the Restschuld line. Recurring transactions added on the mortgage account itself do nothing: Restschuld only moves when a transfer from another account is linked to it.",
+          },
+          {
+            term: "CreditCard",
+            definition:
+              "Counted in neither Total Liquid nor Restschuld. It needs a funding account — one of your Girokonto accounts — and a settlement day between 1 and 28: whenever the card ends a month with a negative balance, that amount is pulled from the funding account, the way a real card settles.",
+          },
+          {
+            term: "Investment",
+            definition:
+              "ETF or brokerage holdings. Counted in neither Total Liquid nor Restschuld, since it is not money you can spend today, but it is drawn in the charts like any other account and it can carry a Savings Streak target.",
+          },
+        ],
+      },
+      {
+        heading: "Creating and editing an account",
+        body: "Kind, name, opening balance and opening date — the date that balance was actually true — plus an icon and a colour, and that colour is the one the account carries everywhere else: chart lines, month tabs, badges and chips. “Display in Trajectory Horizon” decides whether it starts visible on the Dashboard chart, and is absent for a Mortgage, which is always the Restschuld line. A Mortgage instead gets a Sondertilgung Allowance field, which records what your bank permits per year; nothing in the projection enforces it, so treat it as a note to yourself. A CreditCard gets its funding account and settlement day. One caution about editing: name, opening balance, icon, colour, the trajectory toggle and the credit-card fields are saved, but kind and opening date are fixed at creation — both fields are still shown, and a change to either is silently not kept. If you chose the wrong kind, delete the account and create it again.",
+      },
+      {
+        heading: "The account page",
+        body: "There is no separate accounts screen: the Dashboard's Accounts card is the list, and clicking a row opens that account. The page leads with its balance — labelled Restschuld for a mortgage or any account in the red — beside a sparkline of where the projection takes it, then the opening balance and date everything is anchored to, and then the rules that drive it. One-off transactions are not listed here; they belong to a month, so Month Overview is where you read and edit those.",
+      },
+      {
+        heading: "Recurring transactions",
+        body: "The card at the foot of the account page holds the only thing the projection runs on, so this is where salary, rent, savings transfers, ETF contributions and Sondertilgung are modelled. “Add recurring” asks for an amount — negative for money going out, positive for money coming in — a description, a frequency of Monthly, Quarterly or Annual, a day of the month between 1 and 31, a category, and optionally a linked account under “Transfer to account (optional)”. An annual rule also picks the month it falls in; a quarterly rule simply fires every third month rather than on a calendar quarter you choose. The day is recorded and shown on the row, but the projection settles month by month, so it describes the real payment rather than moving a balance. Click any row to change or delete it, and the list shows each rule's amount, day and frequency with the linked account named beneath it.",
+      },
+      {
+        heading: "Transfers and Sondertilgung",
+        body: "Linking a recurring transaction makes it a transfer between two of your own accounts, and the direction comes from the link rather than from the sign — so enter a positive amount on the account the money leaves, and Horizon subtracts it there and adds it to the linked account. There is no in/out control anywhere on the form, and a linked amount of zero or less is rejected with “Transfer amount must be greater than zero”. Linking to a Mortgage account is how a Sondertilgung is modelled: the money leaves the funding account and comes off Restschuld instead of landing as a balance, capped at whatever is still owed so an overpayment can never drive the loan below zero. Only Sondertilgung should point at a mortgage, and the form says so when you pick one. Transfers are left out of Net Cashflow and out of Variable Spending on purpose — they move money rather than earn or spend it.",
+      },
+      {
+        heading: "Deleting an account",
+        body: "Deletion is refused while anything still points at the account, and nothing cascades. The Delete button is disabled outright while the account holds even one transaction, and the server refuses while any recurring transaction references it — either as its own account or as the far end of a transfer from somewhere else. So the order is fixed: clear the account's transactions first, which for imported ones means deleting the import that created them, then the recurring rules on the account, then any rule on another account transferring into it, and only then the account itself. There is no archive and no undo — the account and its history are gone — so take a backup from the File menu's “Create Backup…” before you start.",
+      },
+    ],
   },
   categories: {
     id: "categories",
@@ -303,7 +379,24 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "Categories",
     blurb:
       "Manage the categories used to tag spending, from Settings → Preferences → Categories.",
-    details: [],
+    details: [
+      {
+        heading: "Where the manager lives",
+        body: "Settings → Preferences → Categories → “Manage” opens the only surface that edits categories. It splits them into two sections that behave differently — “Default”, the eight Horizon seeds a fresh database with, and “Custom”, the ones you add — and the difference between the two is deliberate rather than cosmetic. Every category carries a colour, and that colour is what the Month Overview donut and the year-comparison bars are drawn in, so recolouring one changes those charts everywhere.",
+      },
+      {
+        heading: "Default categories",
+        body: "Income, Housing, Food, Subscriptions, Entertainment, Investment, Transfer and Miscellaneous. They can be recoloured, and they can be hidden — the eye toggle — but they can never be renamed or deleted, because imports and older transactions are matched against these names. Hiding one leaves every existing transaction exactly as it is and only drops the category out of the pickers, except on a transaction already using it, so a category you have finished with stops cluttering the list without rewriting your history.",
+      },
+      {
+        heading: "Custom categories",
+        body: "“Add category” at the foot of the section takes a name and a colour from the palette. Names are trimmed to 40 characters and have to be unique whatever the casing, so “food” is refused while Food exists. A custom category is the mirror image of a default one: the pencil renames it, the dot recolours it, the bin deletes it — and it cannot be hidden, because deleting is the way out for one you no longer want. Renaming is safe: every transaction and every recurring rule carrying the old name is rewritten to the new one in the same step, so nothing is orphaned and no reassignment is needed.",
+      },
+      {
+        heading: "Deleting a category still in use",
+        body: "Deleting one nothing references removes it immediately. If any transaction still carries it, the delete stops and a “Delete …” prompt opens instead, asking which category to reassign those transactions to — defaulting to Miscellaneous. That prompt is the second half of the action rather than an error: confirming it moves every transaction and every recurring rule onto the category you chose and then deletes the old one, all at once. Cancelling leaves everything untouched. There is no way to delete a category and leave its transactions uncategorized, which is why the prompt cannot be skipped.",
+      },
+    ],
   },
   settings: {
     id: "settings",
