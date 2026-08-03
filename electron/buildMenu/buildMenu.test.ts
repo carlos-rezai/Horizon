@@ -13,6 +13,7 @@ function createHandlers(overrides: Partial<MenuHandlers> = {}): MenuHandlers {
     checkUpdates: vi.fn(),
     about: vi.fn(),
     showDataFolder: vi.fn(),
+    manual: vi.fn(),
     ...overrides,
   };
 }
@@ -209,17 +210,27 @@ describe("buildMenu", () => {
   });
 
   describe("Help menu", () => {
-    it("contains Check for Updates…, Show Data Folder, About Horizon in order", () => {
+    it("contains User Manual, Check for Updates…, Show Data Folder, About Horizon in order", () => {
       const help = submenuOf(buildMenu(createHandlers()), "Help");
       const labels = help
         .filter((item) => item.type !== "separator")
         .map((item) => item.label);
 
       expect(labels).toEqual([
+        "User Manual",
         "Check for Updates…",
         "Show Data Folder",
         "About Horizon",
       ]);
+    });
+
+    it("dispatches the manual handler on click", () => {
+      const handlers = createHandlers();
+      const help = submenuOf(buildMenu(handlers), "Help");
+
+      clickItem(itemBy(help, "User Manual"));
+
+      expect(handlers.manual).toHaveBeenCalledTimes(1);
     });
 
     it("dispatches the checkUpdates handler on click", () => {

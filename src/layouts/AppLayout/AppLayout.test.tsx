@@ -480,6 +480,95 @@ describe("AppLayout — manual drawer", () => {
   });
 });
 
+describe("AppLayout — manual drawer from the Electron Help menu", () => {
+  // Captures the callback AppLayout registers for `menu:open-manual`, so a test
+  // can drive the message the native Help menu item sends.
+  let openManualCb: (() => void) | undefined;
+
+  function installHorizon(): void {
+    openManualCb = undefined;
+    window.horizon = {
+      apiBaseUrl: "",
+      platform: "win32",
+      electronVersion: "0.0.0",
+      updates: {
+        onUpdateDownloaded: () => () => {},
+        onUpdateAvailable: () => () => {},
+        onManualResult: () => () => {},
+        quitAndInstall: vi.fn(),
+        downloadUpdate: vi.fn(),
+        getAppVersion: vi.fn().mockResolvedValue("0.1.0"),
+        getAutoDownload: vi.fn().mockResolvedValue(true),
+        setAutoDownload: vi.fn().mockResolvedValue(undefined),
+      },
+      menu: {
+        onNavigate: () => () => {},
+        onNotify: () => () => {},
+        onConfirm: () => () => {},
+        respondConfirm: vi.fn(),
+        onOpenManual: (cb: () => void) => {
+          openManualCb = cb;
+          return () => {};
+        },
+      },
+    };
+  }
+
+  beforeEach(() => {
+    installHorizon();
+  });
+
+  afterEach(() => {
+    delete window.horizon;
+    vi.restoreAllMocks();
+  });
+
+  it("opens the drawer on the current screen, leaving the route and the screen beneath unchanged", () => {
+    renderAtRoute("/");
+
+    act(() => {
+      openManualCb?.();
+    });
+
+    expect(
+      screen.getByRole("dialog", { name: /user manual/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Dashboard content")).toBeInTheDocument();
+    expect(screen.getByTestId("pathname").textContent).toBe("/");
+  });
+
+  it("opens the same drawer the sidebar trigger does — never a second one", () => {
+    renderAtRoute("/");
+
+    act(() => {
+      openManualCb?.();
+    });
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /help & manual/i }));
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it("closes a menu-opened drawer on ESC, like a sidebar-opened one", () => {
+    vi.useFakeTimers();
+    renderAtRoute("/");
+
+    act(() => {
+      openManualCb?.();
+    });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => {
+      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+});
+
 describe("AppLayout — InsufficientFundsWarnings", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
