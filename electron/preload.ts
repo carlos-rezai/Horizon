@@ -87,6 +87,11 @@ contextBridge.exposeInMainWorld("horizon", {
       ipcRenderer.on("menu:confirm", handler);
       return () => ipcRenderer.removeListener("menu:confirm", handler);
     },
+    onOpenManual(cb: () => void) {
+      const handler = () => cb();
+      ipcRenderer.on("menu:open-manual", handler);
+      return () => ipcRenderer.removeListener("menu:open-manual", handler);
+    },
     respondConfirm(id: number, confirmed: boolean) {
       ipcRenderer.send("menu:confirm-result", { id, confirmed });
     },

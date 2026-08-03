@@ -60,6 +60,7 @@ function installHorizon(): Capture {
         return capture.unsubscribeConfirm;
       },
       respondConfirm: capture.respondConfirm,
+      onOpenManual: () => () => {},
     },
   };
   return capture;

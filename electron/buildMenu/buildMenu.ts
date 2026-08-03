@@ -16,6 +16,7 @@ export interface MenuHandlers {
   checkUpdates: () => void;
   about: () => void;
   showDataFolder: () => void;
+  manual: () => void;
 }
 
 export function buildMenu(
@@ -87,6 +88,11 @@ export function buildMenu(
     {
       label: "Help",
       submenu: [
+        {
+          label: "User Manual",
+          click: () => handlers.manual(),
+        },
+        { type: "separator" },
         {
           label: "Check for Updates…",
           click: () => handlers.checkUpdates(),

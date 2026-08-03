@@ -44,6 +44,7 @@ function makeHorizon(
       onNotify: () => () => {},
       onConfirm: () => () => {},
       respondConfirm: vi.fn(),
+      onOpenManual: () => () => {},
     },
   };
   return setAutoDownload;

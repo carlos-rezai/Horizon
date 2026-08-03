@@ -68,6 +68,7 @@ function installHorizon(): Capture {
       onNotify: () => () => {},
       onConfirm: () => () => {},
       respondConfirm: vi.fn(),
+      onOpenManual: () => () => {},
     },
   };
   return capture;

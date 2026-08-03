@@ -38,6 +38,7 @@ function mockHorizon(appVersion = "1.0.1") {
       onNotify: () => () => {},
       onConfirm: () => () => {},
       respondConfirm: vi.fn(),
+      onOpenManual: () => () => {},
     },
   };
 }

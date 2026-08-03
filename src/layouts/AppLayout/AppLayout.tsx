@@ -15,6 +15,7 @@ import {
   InsufficientFundsWarnings,
 } from "../../features/settlements";
 import { useMenuDialogs } from "../../features/menu/useMenuDialogs";
+import { useMenuOpenManual } from "../../features/menu/useMenuOpenManual";
 import { useManualDrawer, ManualDrawer } from "../../features/manual";
 import Clock from "../../components/Clock/Clock";
 import BrandMark from "../../components/BrandMark/BrandMark";
@@ -66,6 +67,7 @@ function AppLayoutContent({ children }: AppLayoutProps) {
   const { pathname } = useLocation();
   const manual = useManualDrawer();
   useMenuDialogs();
+  useMenuOpenManual(manual.open);
 
   return (
     <StyledWrapper>

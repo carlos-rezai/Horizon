@@ -37,6 +37,7 @@ function mockHorizon(autoDownload = true) {
       onNotify: () => () => {},
       onConfirm: () => () => {},
       respondConfirm: vi.fn(),
+      onOpenManual: () => () => {},
     },
   };
 }

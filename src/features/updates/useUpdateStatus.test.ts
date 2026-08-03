@@ -30,6 +30,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -61,6 +62,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -95,6 +97,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -131,6 +134,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -165,6 +169,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -205,6 +210,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -247,6 +253,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 
@@ -289,6 +296,7 @@ describe("useUpdateStatus", () => {
         onNotify: () => () => {},
         onConfirm: () => () => {},
         respondConfirm: vi.fn(),
+        onOpenManual: () => () => {},
       },
     };
 

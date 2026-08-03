@@ -392,6 +392,11 @@ function installApplicationMenu(): void {
       },
       about: showAbout,
       showDataFolder,
+      // The manual is a drawer, not a route, so this carries no payload —
+      // `menu:navigate` would have to invent a route string that does not exist.
+      manual: () => {
+        mainWindow?.webContents.send("menu:open-manual");
+      },
     })
   );
   Menu.setApplicationMenu(menu);

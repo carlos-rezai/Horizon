@@ -66,6 +66,7 @@ declare global {
         onNotify: (cb: (notification: MenuNotification) => void) => () => void;
         onConfirm: (cb: (request: MenuConfirmRequest) => void) => () => void;
         respondConfirm: (id: number, confirmed: boolean) => void;
+        onOpenManual: (cb: () => void) => () => void;
       };
     };
   }
