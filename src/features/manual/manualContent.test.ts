@@ -33,21 +33,11 @@ const ACCOUNT_KINDS = [
 ];
 
 /**
- * The topics whose copy has actually been written. Each copy slice appends to
- * this list; a topic outside it is still a stub and is exempt from the
- * populated-row invariant below.
+ * The topics whose copy has actually been written. Each copy slice appended to
+ * this list; with Settings written it is the whole set, so no topic is exempt
+ * from the populated-row invariant below any more and none can be added exempt.
  */
-const WRITTEN_TOPIC_IDS: ManualTopicId[] = [
-  "start",
-  "dashboard",
-  "streak",
-  "outlook",
-  "month",
-  "history",
-  "import",
-  "accounts",
-  "categories",
-];
+const WRITTEN_TOPIC_IDS: ManualTopicId[] = EXPECTED_TOPIC_IDS;
 
 /** Every word a topic's detail rows say, as one searchable string. */
 const detailText = (id: ManualTopicId): string =>
@@ -589,9 +579,119 @@ describe("the Categories topic", () => {
   });
 });
 
+const SETTINGS_SUBJECTS = [
+  // The three shipped cards, as their SectionHeads label and title them.
+  "Storage",
+  "Database",
+  "Preferences",
+  "About",
+  // The one stat on the Storage card that is not self-explanatory.
+  "WAL mode",
+  // The two Storage actions, as StorageCard labels its buttons.
+  "Create backup",
+  "Restore",
+  // The Preferences row the auto-update toggle sits in.
+  "Automatic updates",
+  // The About card's action.
+  "Check for updates",
+];
+
+describe("the Settings topic", () => {
+  it("covers the database, backup and restore, the preferences and the app info", () => {
+    const text = topicText("settings");
+
+    SETTINGS_SUBJECTS.forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // `SettingsStoragePage` renders exactly three cards. One row each, so a
+  // reader looking at the screen can map what they see onto what they read.
+  it("gives the three shipped cards a row each", () => {
+    expect(rowOf("settings", /database|storage/i)).toBeDefined();
+    expect(rowOf("settings", /preference/i)).toBeDefined();
+    expect(rowOf("settings", /about/i)).toBeDefined();
+  });
+
+  // The Storage card is the only place the database file's location is ever
+  // shown, and its two buttons are the whole in-app backup story. A reader who
+  // does not know where the file is cannot protect it.
+  it("names the local database path and the backup and restore actions", () => {
+    const row = rowOf("settings", /database|storage/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/path|file/i);
+    expect(row?.body).toMatch(/back ?up/i);
+    expect(row?.body).toMatch(/restore/i);
+  });
+
+  // `AutoUpdateToggle` writes the `autoDownload` preference, which sets
+  // `autoUpdater.autoDownload`. Off does not stop Horizon noticing a release —
+  // it stops the download starting by itself — so the row has to say what the
+  // switch actually governs rather than "updates on/off".
+  it("states what the automatic-updates toggle governs", () => {
+    const row = rowOf("settings", /preference/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/download/i);
+  });
+
+  // Settings -> Preferences -> Categories -> "Manage" is the only way into the
+  // category manager, and the Categories topic tells the reader to come here.
+  it("points at the Categories manager from the preferences row", () => {
+    const row = rowOf("settings", /preference/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/categor/i);
+  });
+
+  /**
+   * A prohibition, green from the start and there to stay green. The handoff
+   * describes a "Notification previews" card that fires each snackbar variant.
+   * `SettingsStoragePage` renders Storage, Preferences and About — nothing
+   * else — so the row is cut rather than the card built.
+   */
+  it("promises no Notification previews card the app does not ship", () => {
+    expect(rowOf("settings", /notification/i)).toBeUndefined();
+    expect(topicText("settings")).not.toMatch(/notification preview/i);
+  });
+
+  /**
+   * Beyond the handoff. `buildMenu` puts four things in the native menu that
+   * have no in-app equivalent: `Start Fresh…`, `Show Data Folder`, and the
+   * `Ctrl+,` / `Ctrl+S` accelerators. Everything else it offers — backup,
+   * restore, the update check — is on the Settings screen too, which is why
+   * this is one row here rather than a topic of its own.
+   */
+  it("carries a row for what only the native menu can do", () => {
+    const row = rowOf("settings", /menu/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/start fresh/i);
+    expect(row?.body).toMatch(/show data folder/i);
+    expect(row?.body).toContain("Ctrl+,");
+    expect(row?.body).toContain("Ctrl+S");
+  });
+
+  /**
+   * The manual's one destructive warning. `startFresh` confirms, resets and
+   * reloads; there is no archive and no undo, and the backup that would have
+   * saved the reader has to be taken before they click it, not after.
+   */
+  it("marks Start Fresh as destructive and irreversible, with a backup first", () => {
+    const row = rowOf("settings", /menu/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(
+      /permanent|cannot be undone|no undo|irreversible/i
+    );
+    expect(row?.body).toMatch(/back ?up/i);
+  });
+});
+
 /**
- * A prohibition rather than a requirement, so it is green from the start — it
- * exists to stay green as the remaining copy slices are written.
+ * A prohibition rather than a requirement, so it has been green from the start
+ * — it exists to stay green now that every copy slice has been written.
  *
  * Account Detail's "recurring net per month" is not documented anywhere,
  * deliberately: the helper behind it sums raw amounts with no link handling
