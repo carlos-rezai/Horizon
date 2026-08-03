@@ -44,6 +44,9 @@ const WRITTEN_TOPIC_IDS: ManualTopicId[] = [
   "outlook",
   "month",
   "history",
+  "import",
+  "accounts",
+  "categories",
 ];
 
 /** Every word a topic's detail rows say, as one searchable string. */
@@ -351,6 +354,238 @@ describe("the History topic", () => {
     expect(row).toBeDefined();
     expect(row?.body).toMatch(/import/i);
     expect(row?.body).toMatch(/statement/i);
+  });
+});
+
+const IMPORT_SUBJECTS = [
+  // The Import page's action, as ImportView's PageHeader labels it.
+  "New import",
+  // The wizard's second step, as STEP_LABELS names it.
+  "Map columns",
+  // The history card, as ImportHistory's head titles it.
+  "Import history",
+];
+
+describe("the Import topic", () => {
+  it("covers the import action, the mapping step and the history card", () => {
+    const text = topicText("import");
+
+    IMPORT_SUBJECTS.forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // `STEP_LABELS` is ["Account", "Map columns", "Review"], rendered as a
+  // three-dot stepper the reader walks in order. A manual that summarises the
+  // wizard as one lump leaves them guessing which step they are stuck on.
+  it("gives the three wizard steps a row each, in the order they are walked", () => {
+    const headings = MANUAL_TOPICS.import.details.map((d) => d.heading);
+    const steps = [/account/i, /map columns/i, /review/i].map((step) =>
+      headings.findIndex((heading) => step.test(heading))
+    );
+
+    steps.forEach((index) => expect(index).toBeGreaterThan(-1));
+    expect(steps).toEqual([...steps].sort((a, b) => a - b));
+  });
+
+  // The commit route persists the mapping and format per bank, and the
+  // Map-columns step opens on "Mapping remembered from your last <bank> import".
+  // A reader who does not know it is remembered re-checks three selects every
+  // time.
+  it("states in the mapping row that the column mapping is remembered per bank", () => {
+    const row = rowOf("import", /map columns/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/remember/i);
+    expect(row?.body).toMatch(/bank/i);
+  });
+
+  // Duplicate, recurring and pending rows arrive unchecked — a soft exclusion
+  // the reader can opt back into. Re-checking them is exactly the
+  // double-counting the pre-uncheck exists to prevent, so the row has to say
+  // why they are off rather than leaving it to be discovered.
+  it("explains in the review row why duplicate and recurring rows arrive unchecked", () => {
+    const row = rowOf("import", /review/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/duplicate/i);
+    expect(row?.body).toMatch(/recurring/i);
+    expect(row?.body).toMatch(/uncheck/i);
+  });
+
+  // `detectStatement` matches a preset by header signature; anything it does
+  // not recognise is imported under DEFAULT_BANK — "Generic" — and remembers
+  // its mapping under that label. Naming the four real presets would tie the
+  // manual to `bankPresets.ts`, so the copy documents the mechanism instead.
+  it("states that an unrecognised export falls back to a Generic import", () => {
+    expect(detailText("import")).toMatch(/generic/i);
+  });
+
+  // Written in the blurb by issue #212 as a one-line teaser. The row a reader
+  // expands for reassurance about their bank data has to carry it too.
+  it("states in its rows that parsing and storage are local", () => {
+    expect(detailText("import")).toMatch(/local|this device/i);
+  });
+
+  /**
+   * Two prohibitions, green from the start and there to stay green.
+   *
+   * The handoff promises "Sparkasse, DKB, ING and other common export formats"
+   * — written before Real Bank CSV Import replaced the guessed presets with
+   * ones built from real exports. DKB and ING have no preset and never did.
+   *
+   * It also promises four per-file actions in Import History. `ImportHistory`
+   * renders two: Preview and Delete. Re-categorize and re-download do not
+   * exist, so the copy is cut rather than the buttons built.
+   */
+  it("makes no bank-preset claim that Real Bank CSV Import invalidated", () => {
+    expect(topicText("import")).not.toMatch(/\bDKB\b|\bING\b/);
+  });
+
+  it("promises no Import History action the app does not ship", () => {
+    expect(topicText("import")).not.toMatch(
+      /re-?download|re-?categoriz|re-?categoris/i
+    );
+  });
+});
+
+const ACCOUNT_SUBJECTS = [
+  // The Account Detail card, as its SectionHead titles it.
+  "Recurring transactions",
+  // The optional link field, as RecurringTransactionModal labels it.
+  "Transfer to account",
+];
+
+describe("the Accounts topic", () => {
+  it("covers every account kind and the recurring-transaction surface", () => {
+    const text = topicText("accounts");
+
+    [...ACCOUNT_KINDS, ...ACCOUNT_SUBJECTS].forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // The same closed union Getting Started walks, expanded here into what each
+  // kind *does* rather than when to create it. Total Liquid and Restschuld are
+  // where the kinds diverge in the projection: Girokonto and Tagesgeld sum into
+  // one, Mortgage becomes the other, and CreditCard and Investment are in
+  // neither.
+  it("expands the kinds row into all five, in the closed union's order", () => {
+    const row = rowOf("accounts", /kind/i);
+
+    expect(row).toBeDefined();
+    expect(row?.terms?.map((entry) => entry.term)).toEqual(ACCOUNT_KINDS);
+    (row?.terms ?? []).forEach((entry) => {
+      expect(entry.definition.trim()).not.toBe("");
+    });
+  });
+
+  it("says how the kinds feed the projection, not only what they are", () => {
+    const row = rowOf("accounts", /kind/i);
+    const text = [row?.body, ...(row?.terms ?? []).map((e) => e.definition)]
+      .filter(Boolean)
+      .join("\n");
+
+    expect(text).toContain("Total Liquid");
+    expect(text).toContain("Restschuld");
+  });
+
+  // Every field `RecurringTransactionModal` asks for, since a rule with the
+  // wrong day or frequency projects a wrong twenty years quietly.
+  it("covers what a recurring transaction is made of, including the link", () => {
+    const row = rowOf("accounts", /recurring/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/amount/i);
+    expect(row?.body).toMatch(/frequency/i);
+    expect(row?.body).toMatch(/day/i);
+    expect(row?.body).toMatch(/categor/i);
+    expect(row?.body).toMatch(/link/i);
+  });
+
+  // The Transfer Direction Rule. The form has no direction control at all — it
+  // rejects a linked amount that is not greater than zero — so the sign is the
+  // one thing a reader cannot infer from the fields in front of them. Input
+  // only: the manual stops before Account Detail's recurring-net figure.
+  it("states the transfer input rule: positive on the account the money leaves", () => {
+    const text = detailText("accounts");
+
+    expect(text).toMatch(/positive/i);
+    expect(text).toMatch(/leaves|leaving/i);
+  });
+
+  /**
+   * The App-Wins Rule at its sharpest. The handoff — and the issue's own
+   * acceptance criterion — say deleting an account takes its recurring
+   * transactions with it. It does not: `AccountHero` disables Delete while the
+   * account holds any transaction, and the storage driver refuses outright when
+   * a recurring row points at it from either end (`account_id` or
+   * `linked_account_id`). Nothing cascades; the delete is blocked. A reader
+   * told to expect a cascade meets a 409 the manual never mentioned, so the row
+   * documents the refusal and the order of operations it forces.
+   */
+  it("states that deletion is refused while transactions or recurring rules remain", () => {
+    const row = rowOf("accounts", /delet/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/refuses|cannot|can't|will not|won't|blocked/i);
+    expect(row?.body).toMatch(/recurring/i);
+    expect(row?.body).toMatch(/transaction/i);
+  });
+
+  it("tells the reader to back up before a deletion there is no undo for", () => {
+    const row = rowOf("accounts", /delet/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/back ?up/i);
+  });
+});
+
+const CATEGORY_SUBJECTS = [
+  // The manager's two sections, as CategoryManagerModal labels them.
+  "Default",
+  "Custom",
+  // The button that opens it, on the Settings Preferences card.
+  "Manage",
+];
+
+describe("the Categories topic", () => {
+  it("covers the manager's two sections and where it is opened from", () => {
+    const text = topicText("categories");
+
+    CATEGORY_SUBJECTS.forEach((subject) => {
+      expect(text).toContain(subject);
+    });
+  });
+
+  // The two sections are not two labels over one behaviour: a Default can be
+  // recoloured and hidden but never renamed or deleted, and a Custom can be
+  // renamed, recoloured and deleted but never hidden. One row each, so the
+  // asymmetry is where a reader looks for it.
+  it("gives the Default and Custom sections a row each", () => {
+    expect(rowOf("categories", /default/i)).toBeDefined();
+    expect(rowOf("categories", /custom/i)).toBeDefined();
+  });
+
+  it("covers adding, renaming, recolouring and removing a category", () => {
+    const text = detailText("categories");
+
+    expect(text).toMatch(/add/i);
+    expect(text).toMatch(/rename/i);
+    expect(text).toMatch(/colour|color/i);
+    expect(text).toMatch(/delete|remove/i);
+  });
+
+  // Deleting a category transactions still reference does not fail — it opens
+  // the reassign prompt, which moves them to another category (defaulting to
+  // Miscellaneous) and then deletes. Unexplained, that modal reads as an error
+  // rather than the second half of the action.
+  it("explains the reassignment prompt a category still in use opens", () => {
+    const row = rowOf("categories", /delet|remov/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toMatch(/reassign/i);
+    expect(row?.body).toMatch(/transaction/i);
   });
 });
 
