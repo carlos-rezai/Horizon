@@ -18,8 +18,8 @@ import type { ManualGroup, ManualTopicRecord } from "./manualTypes";
  *
  * The detail-row bodies are written and verified line by line against shipped
  * code in the copy slices — where this module and the app disagree, the app is
- * correct and the copy is rewritten. Every topic but Settings is written; that
- * one fills in with the last copy pass.
+ * correct and the copy is rewritten. Every topic is written; a claim added here
+ * later is held to the same rule.
  */
 
 /** Fixed order. The rail renders these groups top to bottom. */
@@ -404,6 +404,23 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     title: "Settings",
     blurb:
       "Storage, preferences and app info. Horizon is offline-first: no cloud, no telemetry, no account.",
-    details: [],
+    details: [
+      {
+        heading: "The Storage card: your database",
+        body: "Storage → Database is the only place Horizon tells you where your data actually is. The Path box holds the full file path of the SQLite database — one file, on this device, with nothing behind it in a cloud — and the badge in the corner reports the integrity check Horizon runs every time it opens that file. Size is what the file weighs on disk, and “WAL mode: active” means recent writes sit in a horizon.db-wal file beside it and are folded back in when Horizon closes cleanly. That is exactly why the two buttons matter: “Create backup” writes a consistent copy of the whole database as horizon-backup.db, whereas copying the file yourself while the app is running can miss the newest writes. “Restore” asks for a .db file and replaces everything live with it after one confirmation — a file that fails its integrity check, or that was written by a newer version of Horizon, is refused rather than half-loaded. This card refreshes itself afterwards, but other screens keep whatever they had already loaded, so restart Horizon to be sure you are reading the restored data.",
+      },
+      {
+        heading: "The Preferences card",
+        body: "Application → Preferences holds four rows, and only one of them is a switch. “Automatic updates” governs downloading rather than checking: left on, a new release is fetched in the background and the banner that appears offers “Restart to update”; turned off, Horizon still notices the release and still tells you, but the banner offers “Download” and nothing transfers until you ask for it. “Appearance” is fixed at Dark — Horizon ships one theme, and this row says so rather than offering a choice. “Categories” is the way in to the category manager: its “Manage” button opens the only surface that adds, renames, recolours, hides or deletes the categories your spending is tagged with, which the Categories topic covers in full. “Privacy” is a statement rather than a setting — no cloud, no telemetry, no account — which is the same reason nothing here syncs anywhere.",
+      },
+      {
+        heading: "The About card",
+        body: "About → Horizon shows the version you are running and the stack it runs on. “Check for updates” reports the state Horizon already holds rather than contacting GitHub while you wait, so it answers instantly: nothing pending gives you “You're on the latest version”, an update already found offers “Download”, and one already downloaded offers “Restart to update”. A fresh look at GitHub Releases is Help → “Check for Updates…” in the native menu, which reports back that it is checking, that you are up to date, or that the check failed. A packaged Horizon also checks once at every launch; a development build never checks at all, and says so when you ask it to.",
+      },
+      {
+        heading: "What only the native menu can do",
+        body: "Most of what the title-bar menu offers exists on this screen too, but four things live only there. File → “Start Fresh…” erases every account, transaction, recurring entry and import, leaving Horizon as it was on first launch — it is the one permanently destructive action in the app, there is no archive and no undo, and the only thing that can save you is a backup made before you click it, so cancel, run File → “Create Backup…”, and come back. It asks once, and the confirming button is labelled “Erase everything”. Help → “Show Data Folder” opens your file manager with the database file selected, which is the quickest way to reach the folder the Path box names. And two accelerators: Ctrl+, jumps to this Settings screen from anywhere, and Ctrl+S runs “Create Backup…”, which unlike the button above lets you choose where the copy is written. Everything else the menu carries — restoring a backup, checking for updates, the version dialog — has an equivalent here.",
+      },
+    ],
   },
 };
