@@ -11,7 +11,7 @@ import {
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../../tokens";
-import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent";
+import { MANUAL_TOPICS } from "../manualContent";
 import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex";
 import ManualDrawer from "./ManualDrawer";
 
@@ -222,16 +222,7 @@ describe("ManualDrawer — content", () => {
 });
 
 describe("ManualDrawer — the table of contents", () => {
-  it("renders all five group labels in fixed order", () => {
-    stubReducedMotion(false);
-    renderDrawer(<ManualDrawer open onClose={vi.fn()} />);
-
-    expect(
-      screen.getAllByTestId("manual-group-label").map((el) => el.textContent)
-    ).toEqual(MANUAL_GROUPS.map((group) => group.label));
-  });
-
-  it("lists every topic under its group, in index order", () => {
+  it("hands the rail the whole manual, so every topic in the index has an entry", () => {
     stubReducedMotion(false);
     renderDrawer(<ManualDrawer open onClose={vi.fn()} />);
 
@@ -264,21 +255,6 @@ describe("ManualDrawer — the table of contents", () => {
     fireEvent.click(entry);
 
     expect(entry).toHaveAttribute("aria-current", "true");
-  });
-
-  it("marks exactly one entry active at a time", () => {
-    stubReducedMotion(false);
-    renderDrawer(<ManualDrawer open onClose={vi.fn()} />);
-    pane().scrollTo = vi.fn();
-
-    fireEvent.click(
-      within(rail()).getByRole("button", { name: MANUAL_TOPICS.history.title })
-    );
-
-    const current = within(rail())
-      .getAllByRole("button")
-      .filter((button) => button.getAttribute("aria-current") === "true");
-    expect(current).toHaveLength(1);
   });
 
   it("scrolls the content pane rather than the page, so the screen behind stays put", () => {

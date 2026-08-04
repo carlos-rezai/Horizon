@@ -2,6 +2,7 @@ import { useRef, type RefObject } from "react";
 import { BookOpen, X } from "lucide-react";
 import { useDialogKeyboard } from "../../../hooks/useDialogKeyboard";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
+import ManualRail from "../ManualRail/ManualRail";
 import ManualSection from "../ManualSection/ManualSection";
 import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent";
 import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex";
@@ -18,10 +19,6 @@ import {
   StyledSubtitle,
   StyledClose,
   StyledColumns,
-  StyledRail,
-  StyledGroup,
-  StyledGroupLabel,
-  StyledRailEntry,
   StyledPane,
 } from "./ManualDrawer.styles";
 
@@ -43,10 +40,10 @@ interface ManualDrawerProps {
 }
 
 /**
- * The manual's slide-over shell: a grouped table of contents on the left and
- * every topic, all at once, on the right. The rail navigates — it never routes,
- * so nothing is unmounted by clicking it and a reader can always scroll on past
- * the topic they arrived at.
+ * The manual's slide-over shell: the table-of-contents rail on the left and
+ * every topic, all at once, in the scrolling pane on the right. The drawer wires
+ * the two together through the scroll spy — the rail says where to go, the pane
+ * says where the reader now is — and owns nothing else about either.
  *
  * The panel reports its own motion state — `data-state` for the transition and
  * `data-motion` for whether there is one at all — since the animation itself is
@@ -108,33 +105,12 @@ export default function ManualDrawer({
         </StyledHeader>
 
         <StyledColumns>
-          <StyledRail aria-label="Manual topics">
-            {MANUAL_GROUPS.map((group) => (
-              <StyledGroup key={group.label}>
-                <StyledGroupLabel data-testid="manual-group-label">
-                  {group.label}
-                </StyledGroupLabel>
-                {group.topicIds.map((id) => {
-                  const topic = MANUAL_TOPICS[id];
-                  const EntryIcon = topic.icon;
-                  const isActive = activeTopicId === id;
-
-                  return (
-                    <StyledRailEntry
-                      key={id}
-                      type="button"
-                      $active={isActive}
-                      aria-current={isActive ? "true" : undefined}
-                      onClick={() => jumpTo(id)}
-                    >
-                      <EntryIcon size={15} />
-                      {topic.title}
-                    </StyledRailEntry>
-                  );
-                })}
-              </StyledGroup>
-            ))}
-          </StyledRail>
+          <ManualRail
+            groups={MANUAL_GROUPS}
+            topics={MANUAL_TOPICS}
+            activeTopicId={activeTopicId}
+            onJumpTo={jumpTo}
+          />
 
           <StyledPane data-testid="manual-pane" ref={paneRef}>
             {MANUAL_TOPICS_IN_ORDER.map((topic) => (
