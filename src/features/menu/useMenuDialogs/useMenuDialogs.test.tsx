@@ -9,10 +9,10 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, type Mock } from "vitest";
 import { ThemeProvider } from "styled-components";
-import { theme } from "../../tokens";
-import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
-import AlertProvider from "../../components/AlertProvider/AlertProvider";
-import ConfirmProvider from "../../components/ConfirmProvider/ConfirmProvider";
+import { theme } from "../../../tokens";
+import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
+import AlertProvider from "../../../components/AlertProvider/AlertProvider";
+import ConfirmProvider from "../../../components/ConfirmProvider/ConfirmProvider";
 import { useMenuDialogs } from "./useMenuDialogs";
 import type { MenuNotification, MenuConfirmRequest } from "../../types/horizon";
 

@@ -1,7 +1,7 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout/AppLayout";
 import CacheProvider from "./components/CacheProvider/CacheProvider";
-import { useMenuNavigation } from "./features/menu/useMenuNavigation";
+import { useMenuNavigation } from "./features/menu/useMenuNavigation/useMenuNavigation";
 import {
   DashboardPage,
   AccountDetailPage,

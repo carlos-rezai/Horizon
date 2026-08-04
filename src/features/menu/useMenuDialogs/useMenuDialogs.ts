@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
-import { useAlert } from "../../components/AlertProvider/useAlert";
-import { useConfirm } from "../../components/ConfirmProvider/useConfirm";
-import { subscribeToMenu } from "./subscribeToMenu";
+import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
+import { useAlert } from "../../../components/AlertProvider/useAlert";
+import { useConfirm } from "../../../components/ConfirmProvider/useConfirm";
+import { subscribeToMenu } from "../subscribeToMenu/subscribeToMenu";
 
 /**
  * Renderer host for menu-action dialogs. It subscribes to the two in-app

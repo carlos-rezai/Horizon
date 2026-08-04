@@ -14,8 +14,8 @@ import {
   useSettlementWarnings,
   InsufficientFundsWarnings,
 } from "../../features/settlements";
-import { useMenuDialogs } from "../../features/menu/useMenuDialogs";
-import { useMenuOpenManual } from "../../features/menu/useMenuOpenManual";
+import { useMenuDialogs } from "../../features/menu/useMenuDialogs/useMenuDialogs";
+import { useMenuOpenManual } from "../../features/menu/useMenuOpenManual/useMenuOpenManual";
 import { useManualDrawer, ManualDrawer } from "../../features/manual";
 import Clock from "../../components/Clock/Clock";
 import BrandMark from "../../components/BrandMark/BrandMark";

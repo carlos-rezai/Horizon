@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { subscribeToMenu } from "./subscribeToMenu";
+import { subscribeToMenu } from "../subscribeToMenu/subscribeToMenu";
 
 /**
  * Subscribes to the native Help menu's manual request (`menu:open-manual`,

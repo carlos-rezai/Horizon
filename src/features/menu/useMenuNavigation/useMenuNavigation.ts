@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { subscribeToMenu } from "./subscribeToMenu";
+import { subscribeToMenu } from "../subscribeToMenu/subscribeToMenu";
 
 /**
  * Subscribes to native-menu navigation requests (`menu:navigate`, surfaced on
