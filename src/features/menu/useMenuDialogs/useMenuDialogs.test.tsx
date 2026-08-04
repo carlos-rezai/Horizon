@@ -14,7 +14,10 @@ import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvi
 import AlertProvider from "../../../components/AlertProvider/AlertProvider";
 import ConfirmProvider from "../../../components/ConfirmProvider/ConfirmProvider";
 import { useMenuDialogs } from "./useMenuDialogs";
-import type { MenuNotification, MenuConfirmRequest } from "../../types/horizon";
+import type {
+  MenuNotification,
+  MenuConfirmRequest,
+} from "../../../types/horizon";
 
 type NotifyCb = (notification: MenuNotification) => void;
 type ConfirmCb = (request: MenuConfirmRequest) => void;

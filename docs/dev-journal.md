@@ -1121,3 +1121,84 @@ is; only A/B builds tell you what removes it." #208 adds: when the defect is
 intermittent, one A/B pair tells you nothing either — you need the distribution.
 The fix looked confirmed at 0.01 on the very first after-trace; it was the pre-fix
 build _also_ reading 0.01 on a fast reload that showed why a single number lies.
+
+## 2026-08-04 — #219 Quick Start Guide refactor: the shared dialog keyboard, and a filing rule
+
+Two halves, semantic first so the file-move noise could not hide a behaviour
+change. The semantic half is the one worth writing down.
+
+### The manual paid for the keyboard; the rest of the app inherited it
+
+`Modal` had declared `role="dialog"` and `aria-modal="true"` for eleven
+surfaces while implementing none of what those attributes promise. Issue #218
+had built the real thing — focus trap, capture and restore, ESC — inside
+`ManualDrawer`, the one surface that is not shared. Lifting it to
+`src/hooks/useDialogKeyboard.ts` and calling it from `Modal` was a one-line
+change at the consumer and fixed all eleven at once.
+
+The evidence the lift was faithful is that **the drawer's focus tests were not
+touched in the commit that rewired it**. They assert observable keyboard
+behaviour, so if the extraction had changed anything they would have gone red.
+They stayed green without an edit — which is worth more than any test written
+afterwards against the new shape.
+
+### Focus lands on the surface, not on its first control
+
+The plan flagged the risk that a trap is only correct if the dialog's first
+focusable element is the right place to land, and named the case that would
+hurt: a dialog whose first control is destructive. Landing focus on the dialog
+container itself (`tabindex="-1"`, as the drawer already did) removes the
+question entirely — nothing is pre-selected, and Shift+Tab from the container
+walks to the last control. No consumer needed a per-dialog entry point.
+
+### The one consumer that broke, and how it was found
+
+The full suite went green after wiring `Modal`, which was not the same thing as
+being correct. Grepping for nested `"Escape"` handlers turned up
+`CategoryManagerModal`: its inline rename and add-category inputs each handled
+ESC to abandon the edit, and neither stopped propagation. With a document-level
+ESC listener on the dialog, one press would cancel the rename _and_ close the
+whole manager — a real regression no test covered, because no test had ever
+pressed ESC on those inputs. Fixed by consuming the key in the nearer intent.
+
+Two lessons: a green suite after an accessibility change proves the tests did
+not assert the old behaviour, not that the new behaviour is right. And the way
+to find keyboard conflicts is to grep for the key, not to re-read the diff.
+
+### The trap yields to the topmost dialog
+
+A menu-driven confirm can land over an open feature form. Two live traps is a
+keyboard deadlock rather than a cosmetic bug, so the hook keeps a module-level
+stack and every listener checks it _per key_ rather than at bind time — a
+surface that was topmost when it opened stops being so the moment another opens
+over it.
+
+### The structural half, and why it is a rule rather than a cleanup
+
+`src/utils/` and `server/src/services/` have nested every module in a folder
+named after itself since refactors #15 and #17. `src/features/` never did, so
+the codebase answered "where does a new hook go?" two ways depending on the
+layer. Thirty-seven modules across thirteen features moved, one commit each.
+
+The moves were scripted rather than hand-edited, and the script _resolved_ each
+relative specifier and re-relativised it instead of pattern-matching text. The
+first version rewrote specifiers that had not moved — it stripped `./App.tsx`
+to `./App` and mangled two `import.meta.glob` patterns. The rule that fixed it
+is the one that should have been there first: **touch nothing unless it pointed
+at something that moved.**
+
+`tsc -b` then caught the one case resolution could not see: a `.d.ts` import
+(`../../types/horizon`), which no `.ts`/`.tsx` candidate matches. Worth
+remembering that `npm run typecheck` would not have caught it either — the root
+`tsconfig` has an empty `files` array, so it verifies nothing. Use `tsc -b`.
+
+### Two things found along the way, neither in scope
+
+- `server/src/routes/projection/projection.test.ts` hardcodes `"2026-07"` as
+  "the current month" and reads the real clock. It has failed since
+  2026-08-01 and will keep failing every month. Not a regression from this
+  refactor — it was already red at the baseline and is red for the same reason
+  now. Needs a frozen clock.
+- `ImportWizard.test.tsx`'s inline-category commit test failed once under
+  full-suite parallelism and passed in isolation and in three consecutive
+  full-suite runs afterwards. Recorded as an observed flake, not diagnosed.
