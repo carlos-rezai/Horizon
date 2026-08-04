@@ -4,7 +4,7 @@ import SectionHead from "../../../components/SectionHead/SectionHead";
 import BrandMark from "../../../components/BrandMark/BrandMark";
 import Button from "../../../primitives/Button/Button";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
-import { useUpdateStatus } from "../../updates/useUpdateStatus";
+import { useUpdateStatus } from "../../updates/useUpdateStatus/useUpdateStatus";
 import {
   Layout,
   Identity,

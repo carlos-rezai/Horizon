@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import StackedSnackbar from "../../../components/SnackbarProvider/StackedSnackbar";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import { useAlert } from "../../../components/AlertProvider/useAlert";
-import { useUpdateStatus } from "../useUpdateStatus";
+import { useUpdateStatus } from "../useUpdateStatus/useUpdateStatus";
 
 export default function UpdateBanner() {
   const { state, message, install, download } = useUpdateStatus();
