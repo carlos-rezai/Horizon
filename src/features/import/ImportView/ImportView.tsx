@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useAccounts } from "../../accounts/useAccounts";
+import { useAccounts } from "../../accounts/useAccounts/useAccounts";
 import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import PageHeader from "../../../components/PageHeader/PageHeader";

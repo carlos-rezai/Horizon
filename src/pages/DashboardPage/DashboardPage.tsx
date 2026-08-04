@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccounts } from "../../features/accounts/useAccounts";
+import { useAccounts } from "../../features/accounts/useAccounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection";
 import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
 import PlanSummary from "../../features/projection/PlanSummary/PlanSummary";

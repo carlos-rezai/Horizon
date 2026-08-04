@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../utils/api/api";
 import type { AccountKind } from "../../types/account";
-import { useAccounts } from "../accounts/useAccounts";
+import { useAccounts } from "../accounts/useAccounts/useAccounts";
 import { useHistory } from "../history/useHistory";
 import { computeSavingsGoal } from "../../utils/savingsGoal/savingsGoal";
 import type { SavingsGoal, SavingsGoalConfig } from "./savingsTypes";

@@ -1,7 +1,7 @@
-import { ACCOUNTS } from "../../components/CacheProvider/cacheKeys";
-import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
-import type { AccountWithBalance } from "../../types/account";
-import { fetchJson } from "../../utils/api/fetchJson";
+import { ACCOUNTS } from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
+import type { AccountWithBalance } from "../../../types/account";
+import { fetchJson } from "../../../utils/api/fetchJson";
 
 interface UseAccountsResult {
   accounts: AccountWithBalance[];

@@ -2,7 +2,7 @@ import { Clock, TriangleAlert } from "lucide-react";
 import PageHeader from "../../../components/PageHeader/PageHeader";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import Spinner from "../../../primitives/Spinner/Spinner";
-import { useAccounts } from "../../accounts/useAccounts";
+import { useAccounts } from "../../accounts/useAccounts/useAccounts";
 import { useHistory } from "../useHistory";
 import HistoryChart from "../HistoryChart/HistoryChart";
 import YearArchive from "../YearArchive/YearArchive";

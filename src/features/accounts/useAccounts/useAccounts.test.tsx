@@ -9,9 +9,9 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import { useAccounts } from "./useAccounts";
-import type { AccountWithBalance } from "../../types/account";
+import type { AccountWithBalance } from "../../../types/account";
 
 const account1: AccountWithBalance = {
   id: "a1",
