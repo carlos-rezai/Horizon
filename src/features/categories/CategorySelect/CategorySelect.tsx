@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd/useCategoriesWithInlineAdd";
 import Select from "../../../primitives/Select/Select";
 import Input from "../../../primitives/Input/Input";
@@ -36,6 +36,14 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
+  // The Import review table renders one of these per row, so the ids have to be
+  // per-instance: a duplicated id is invalid HTML and quietly re-points every
+  // `<label for>` at the first match in the document, which would leave a row's
+  // label focusing the first row's picker.
+  const instanceId = useId();
+  const selectId = `category-select-${instanceId}`;
+  const newCategoryInputId = `new-category-input-${instanceId}`;
+
   // Emit the selected category's name (not its id): transactions store the
   // category by name, so this is what consumers persist.
   useEffect(() => {
@@ -68,10 +76,10 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
   if (showInlineAdd) {
     return (
       <StyledWrapper>
-        <StyledLabel htmlFor="new-category-input">
+        <StyledLabel htmlFor={newCategoryInputId}>
           New category name
           <Input
-            id="new-category-input"
+            id={newCategoryInputId}
             type="text"
             aria-label="New category name"
             value={newCategoryName}
@@ -91,10 +99,10 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
 
   return (
     <StyledWrapper>
-      <StyledLabel htmlFor="category-select">
+      <StyledLabel htmlFor={selectId}>
         Category
         <Select
-          id="category-select"
+          id={selectId}
           aria-label="Category"
           value={selectedCategoryId}
           onChange={(e) => handleCategoryChange(e.target.value)}

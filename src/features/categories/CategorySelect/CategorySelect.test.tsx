@@ -270,3 +270,79 @@ describe("CategorySelect — hidden categories (issue #162)", () => {
     });
   });
 });
+
+/**
+ * The Import wizard's review table renders one `CategorySelect` per row, so the
+ * component has to be safe to mount many times over. Hardcoded element ids
+ * would collide, and a duplicated id silently re-points every `<label for>` at
+ * the first match in the document — clicking row two's label would focus row
+ * one's picker.
+ */
+describe("CategorySelect — many on one page", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => existingCategories,
+    } as Response);
+  });
+
+  function renderThree() {
+    render(
+      <ThemeProvider theme={theme}>
+        <CategorySelect onChange={vi.fn()} initialCategory="Food" />
+        <CategorySelect onChange={vi.fn()} initialCategory="Income" />
+        <CategorySelect onChange={vi.fn()} initialCategory="Food" />
+      </ThemeProvider>
+    );
+  }
+
+  it("gives each picker an id of its own", async () => {
+    renderThree();
+    await screen.findAllByRole("option", { name: "Food" });
+
+    const ids = screen
+      .getAllByLabelText(/^category$/i)
+      .map((select) => select.id);
+
+    expect(ids).toHaveLength(3);
+    expect(ids.every((id) => id.length > 0)).toBe(true);
+    expect(new Set(ids).size).toBe(3);
+  });
+
+  it("points every label at its own picker, not at the first one on the page", async () => {
+    renderThree();
+    await screen.findAllByRole("option", { name: "Food" });
+
+    const pickers = screen.getAllByLabelText(/^category$/i);
+    const labels = Array.from(
+      document.querySelectorAll<HTMLLabelElement>("label")
+    );
+
+    expect(labels).toHaveLength(3);
+    labels.forEach((label, index) => {
+      expect(label.control).toBe(pickers[index]);
+    });
+  });
+
+  it("gives each inline-add field an id of its own once two rows are adding at once", async () => {
+    renderThree();
+    await screen.findAllByRole("option", { name: "Food" });
+
+    const pickers = screen.getAllByLabelText(/^category$/i);
+    fireEvent.change(pickers[0], { target: { value: "__add__" } });
+    fireEvent.change(pickers[1], { target: { value: "__add__" } });
+
+    const inputs = await screen.findAllByRole("textbox", {
+      name: /new category/i,
+    });
+    const ids = inputs.map((input) => input.id);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    Array.from(document.querySelectorAll<HTMLLabelElement>("label"))
+      .filter((label) => /new category/i.test(label.textContent ?? ""))
+      .forEach((label, index) => {
+        expect(label.control).toBe(inputs[index]);
+      });
+  });
+});

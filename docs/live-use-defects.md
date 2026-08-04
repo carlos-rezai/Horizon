@@ -108,9 +108,11 @@ Not a screen-reader-only problem: the accessible name is still correct via
 `aria-label`, so the pickers are announced properly and are individually
 operable. What breaks is label-click targeting.
 
-**Fix shape:** take the id from React's `useId()` (or accept an `id` prop) and
-derive both the select and the inline-add input from it. Small and local to
-`CategorySelect`.
+**Fixed** 2026-08-04: both ids now derive from React's `useId()`, so each
+instance carries its own. Locked by three tests in `CategorySelect.test.tsx`
+that mount three pickers at once and assert distinct ids, that every
+`<label>.control` resolves to its own picker, and that two rows adding a
+category at the same time get distinct inline-add fields.
 
 **Found:** 2026-08-04, while investigating the `ImportWizard` test flake — the
 test drives rows by `getAllByLabelText` index, which is what put the duplicate
