@@ -22,10 +22,13 @@ function Surface({
   open,
   onClose,
   returnFocusRef,
+  name = "surface",
 }: {
   open: boolean;
   onClose: () => void;
   returnFocusRef?: React.RefObject<HTMLElement | null>;
+  /** Distinguishes the two surfaces in the stacking tests. */
+  name?: string;
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
 
@@ -36,13 +39,13 @@ function Surface({
       ref={surfaceRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Test dialog"
+      aria-label={`${name} dialog`}
       tabIndex={-1}
-      data-testid="surface"
+      data-testid={name}
     >
-      <button type="button">First</button>
-      <button type="button">Middle</button>
-      <button type="button">Last</button>
+      <button type="button">{name} First</button>
+      <button type="button">{name} Middle</button>
+      <button type="button">{name} Last</button>
     </div>
   );
 }
@@ -281,5 +284,91 @@ describe("useDialogKeyboard — giving the keyboard back", () => {
 
     expect(document.activeElement).toBe(fallback());
     expect(document.activeElement).not.toBe(document.body);
+  });
+});
+
+/**
+ * Two dialogs on screen at once — a menu-driven confirm landing over an open
+ * feature form is the real case. Rendered directly rather than through a
+ * provider, so the test is about the hook rather than about who raised what.
+ */
+function renderStacked({
+  innerOpen = true,
+  onCloseOuter = vi.fn(),
+  onCloseInner = vi.fn(),
+} = {}) {
+  const stack = (showInner: boolean) => (
+    <>
+      <Surface open onClose={onCloseOuter} name="outer" />
+      {showInner && <Surface open onClose={onCloseInner} name="inner" />}
+    </>
+  );
+  const { rerender } = render(stack(innerOpen));
+
+  return {
+    onCloseOuter,
+    onCloseInner,
+    closeInner: () => rerender(stack(false)),
+  };
+}
+
+function outerControls(): HTMLElement[] {
+  return within(screen.getByTestId("outer")).getAllByRole("button");
+}
+
+function innerControls(): HTMLElement[] {
+  return within(screen.getByTestId("inner")).getAllByRole("button");
+}
+
+describe("useDialogKeyboard — stacked surfaces", () => {
+  it("closes only the topmost surface on Escape, so one press does not dismiss both", () => {
+    const { onCloseOuter, onCloseInner } = renderStacked();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(onCloseInner).toHaveBeenCalledTimes(1);
+    expect(onCloseOuter).not.toHaveBeenCalled();
+  });
+
+  it("contains the keyboard in the topmost surface", () => {
+    renderStacked();
+    const controls = innerControls();
+    const last = controls[controls.length - 1];
+    last.focus();
+
+    fireEvent.keyDown(last, { key: "Tab" });
+
+    expect(document.activeElement).toBe(controls[0]);
+  });
+
+  it("leaves the surface underneath inert, so two traps cannot deadlock the keyboard", () => {
+    renderStacked();
+    const controls = outerControls();
+    const last = controls[controls.length - 1];
+    last.focus();
+
+    const event = createEvent.keyDown(last, { key: "Tab" });
+    fireEvent(last, event);
+
+    // The outer trap does not fight the inner one for a key it no longer owns.
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("hands the keyboard back to the surface underneath when the topmost one closes", () => {
+    const { onCloseOuter, closeInner } = renderStacked();
+
+    closeInner();
+
+    const controls = outerControls();
+    const last = controls[controls.length - 1];
+    last.focus();
+    const event = createEvent.keyDown(last, { key: "Tab" });
+    fireEvent(last, event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(controls[0]);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCloseOuter).toHaveBeenCalledTimes(1);
   });
 });

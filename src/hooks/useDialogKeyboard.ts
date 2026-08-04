@@ -1,10 +1,16 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useId, useRef, type RefObject } from "react";
 
 /** Everything a dialog surface can put a keyboard on. A surface carrying
  *  `tabindex="-1"` is excluded by the last clause, so it never joins the ring
  *  it bounds. */
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Every surface currently holding the keyboard, in the order it was taken —
+ *  topmost last. Two dialogs can share the screen (a menu-driven confirm over
+ *  an open form, say), and two live traps is a keyboard deadlock rather than a
+ *  cosmetic bug, so only the last entry here acts on a key. */
+const openSurfaces: string[] = [];
 
 export interface DialogKeyboardOptions {
   /** The surface the keyboard is confined to. It must be focusable itself —
@@ -42,6 +48,20 @@ export function useDialogKeyboard({
   returnFocusRef,
 }: DialogKeyboardOptions): void {
   const restoreRef = useRef<HTMLElement | null>(null);
+  const id = useId();
+
+  // Claims the top of the stack while open, and yields it back on close. Kept
+  // apart from the listener below so that a caller passing a fresh `onClose`
+  // each render re-binds its listener without reordering the stack.
+  useEffect(() => {
+    if (!open) return;
+
+    openSurfaces.push(id);
+    return () => {
+      const at = openSurfaces.lastIndexOf(id);
+      if (at !== -1) openSurfaces.splice(at, 1);
+    };
+  }, [open, id]);
 
   // Takes the keyboard on open and gives it back the moment `open` flips, not
   // when the surface finally leaves the tree — nobody should have to wait out
@@ -72,6 +92,10 @@ export function useDialogKeyboard({
     if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
+      // Checked per key rather than at bind time: a surface that was topmost
+      // when it opened stops being so the moment another opens over it.
+      if (openSurfaces[openSurfaces.length - 1] !== id) return;
+
       if (event.key === "Escape") {
         onClose();
         return;
@@ -107,5 +131,5 @@ export function useDialogKeyboard({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose, surfaceRef]);
+  }, [open, onClose, surfaceRef, id]);
 }
