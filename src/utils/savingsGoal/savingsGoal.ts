@@ -5,7 +5,7 @@ import type {
   SavingsGoalConfig,
   StreakSummary,
   YearTick,
-} from "../../features/savings/savingsTypes";
+} from "../../features/savings/savingsTypes/savingsTypes";
 
 // ---------------------------------------------------------------------------
 // computeSavingsGoal — a pure port of the prototype's savings-goal logic

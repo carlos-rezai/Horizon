@@ -2,9 +2,9 @@
 import type { ReactNode } from "react";
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
-import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import { useSavingsGoal } from "./useSavingsGoal";
-import type { SavingsGoalConfig } from "./savingsTypes";
+import type { SavingsGoalConfig } from "../savingsTypes/savingsTypes";
 
 // ---------------------------------------------------------------------------
 // useSavingsGoal — read-only in Phase 1. It derives the trackable account ids

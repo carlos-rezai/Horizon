@@ -11,7 +11,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
 import SavingsStreakCard from "./SavingsStreakCard";
-import type { SavingsGoal, YearTick } from "../savingsTypes";
+import type { SavingsGoal, YearTick } from "../savingsTypes/savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 
 afterEach(() => {

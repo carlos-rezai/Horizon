@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import type { YearTickStatus } from "../savingsTypes";
+import type { YearTickStatus } from "../savingsTypes/savingsTypes";
 
 export const StyledHeader = styled.div`
   display: flex;

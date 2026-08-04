@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { API_BASE } from "../../utils/api/api";
-import type { AccountKind } from "../../types/account";
-import { useAccounts } from "../accounts/useAccounts/useAccounts";
-import { useHistory } from "../history/useHistory/useHistory";
-import { computeSavingsGoal } from "../../utils/savingsGoal/savingsGoal";
-import type { SavingsGoal, SavingsGoalConfig } from "./savingsTypes";
-import type { HistoryPoint } from "../history/historyTypes/historyTypes";
+import { API_BASE } from "../../../utils/api/api";
+import type { AccountKind } from "../../../types/account";
+import { useAccounts } from "../../accounts/useAccounts/useAccounts";
+import { useHistory } from "../../history/useHistory/useHistory";
+import { computeSavingsGoal } from "../../../utils/savingsGoal/savingsGoal";
+import type {
+  SavingsGoal,
+  SavingsGoalConfig,
+} from "../savingsTypes/savingsTypes";
+import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 
 interface UseSavingsGoalResult {
   goal: SavingsGoal;

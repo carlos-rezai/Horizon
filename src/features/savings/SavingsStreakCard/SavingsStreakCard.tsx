@@ -17,7 +17,7 @@ import type {
   SavingsGoal,
   SavingsGoalConfig,
   PerAccountGoal,
-} from "../savingsTypes";
+} from "../savingsTypes/savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 import {

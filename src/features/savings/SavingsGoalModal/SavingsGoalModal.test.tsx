@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import SavingsGoalModal from "./SavingsGoalModal";
-import type { SavingsGoalConfig } from "../savingsTypes";
+import type { SavingsGoalConfig } from "../savingsTypes/savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 

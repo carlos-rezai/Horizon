@@ -6,7 +6,10 @@ import Button from "../../../primitives/Button/Button";
 import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
 import { milestoneSplit } from "../../../utils/savingsGoal/savingsGoal";
-import type { SavingsGoalConfig, SavingsGoalMode } from "../savingsTypes";
+import type {
+  SavingsGoalConfig,
+  SavingsGoalMode,
+} from "../savingsTypes/savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 import {

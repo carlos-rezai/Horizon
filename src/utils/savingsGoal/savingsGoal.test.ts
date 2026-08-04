@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeSavingsGoal, milestoneSplit } from "./savingsGoal";
-import type { SavingsGoalConfig } from "../../features/savings/savingsTypes";
+import type { SavingsGoalConfig } from "../../features/savings/savingsTypes/savingsTypes";
 import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
 
 // ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ import AccountCreateModal from "../../features/accounts/AccountCreateModal/Accou
 import MortgageCountdown from "../../features/mortgage/MortgageCountdown/MortgageCountdown";
 import SavingsStreakCard from "../../features/savings/SavingsStreakCard/SavingsStreakCard";
 import SavingsStreakCardSkeleton from "../../features/savings/SavingsStreakCard/SavingsStreakCardSkeleton";
-import { useSavingsGoal } from "../../features/savings/useSavingsGoal";
+import { useSavingsGoal } from "../../features/savings/useSavingsGoal/useSavingsGoal";
 import Card from "../../components/Card/Card";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import SectionHead from "../../components/SectionHead/SectionHead";
