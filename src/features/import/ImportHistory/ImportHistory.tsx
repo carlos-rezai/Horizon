@@ -7,7 +7,7 @@ import Tabs, { type TabItem } from "../../../primitives/Tabs/Tabs";
 import Button from "../../../primitives/Button/Button";
 import Badge from "../../../primitives/Badge/Badge";
 import EmptyState from "../../../components/EmptyState/EmptyState";
-import type { ImportedStatement } from "../importTypes";
+import type { ImportedStatement } from "../importTypes/importTypes";
 import {
   StyledHead,
   StyledHeadRow,

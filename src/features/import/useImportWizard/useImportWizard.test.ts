@@ -2,9 +2,12 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, type Mock } from "vitest";
 import { useImportWizard } from "./useImportWizard";
-import type { AccountWithBalance } from "../../types/account";
-import type { Category } from "../../types/category";
-import type { CommitImportInput, ImportPreview } from "./importTypes";
+import type { AccountWithBalance } from "../../../types/account";
+import type { Category } from "../../../types/category";
+import type {
+  CommitImportInput,
+  ImportPreview,
+} from "../importTypes/importTypes";
 
 // The exact param signatures useImportWizard expects. Typing the mocks against
 // these (rather than the loose `Mock<Procedure>` of a bare `vi.fn()`) keeps the

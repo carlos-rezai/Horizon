@@ -21,7 +21,10 @@ import { theme } from "../../../tokens";
 import ImportWizard from "./ImportWizard";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
-import type { CommitImportInput, ImportPreview } from "../importTypes";
+import type {
+  CommitImportInput,
+  ImportPreview,
+} from "../importTypes/importTypes";
 
 /**
  * Issue #163 — the Import wizard's Review step must use the shared

@@ -19,9 +19,9 @@ import { formatFileSizeKB, pluralize } from "../../../utils/format/format";
 import type {
   CommitImportInput,
   ImportPreview as ImportPreviewData,
-} from "../importTypes";
-import { useImportWizard } from "../useImportWizard";
-import type { RowFlag } from "../reviewRows";
+} from "../importTypes/importTypes";
+import { useImportWizard } from "../useImportWizard/useImportWizard";
+import type { RowFlag } from "../reviewRows/reviewRows";
 import ReviewTable, { type FlagSpec } from "./ReviewTable/ReviewTable";
 import {
   StyledWizard,

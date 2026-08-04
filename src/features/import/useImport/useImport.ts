@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AccountKind, AccountWithBalance } from "../../types/account";
-import { API_BASE } from "../../utils/api/api";
-import { formatFileSizeKB } from "../../utils/format/format";
-import { ImportCommitError, type AttributableIssue } from "./importErrors";
+import type { AccountKind, AccountWithBalance } from "../../../types/account";
+import { API_BASE } from "../../../utils/api/api";
+import { formatFileSizeKB } from "../../../utils/format/format";
+import {
+  ImportCommitError,
+  type AttributableIssue,
+} from "../importErrors/importErrors";
 import type {
   ColumnMapping,
   CommitImportInput,
@@ -11,7 +14,7 @@ import type {
   ImportTransactionRecord,
   ImportedStatement,
   ImportedTxn,
-} from "./importTypes";
+} from "../importTypes/importTypes";
 
 /** Account kinds that can receive imported bank statements. */
 const IMPORTABLE_KINDS = new Set<AccountKind>([

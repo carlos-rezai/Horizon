@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AccountWithBalance } from "../../types/account";
-import type { Category } from "../../types/category";
+import type { AccountWithBalance } from "../../../types/account";
+import type { Category } from "../../../types/category";
 import type {
   ColumnMapping,
   CommitImportInput,
   ImportPreview,
-} from "./importTypes";
+} from "../importTypes/importTypes";
 import {
   blockersFor,
   buildReviewRows,
@@ -13,8 +13,11 @@ import {
   summarizeReview,
   type ReviewRow,
   type ReviewSummary,
-} from "./reviewRows";
-import { attributeIssues, ImportCommitError } from "./importErrors";
+} from "../reviewRows/reviewRows";
+import {
+  attributeIssues,
+  ImportCommitError,
+} from "../importErrors/importErrors";
 
 /** Settle window for rapid Map-columns changes so the preview re-fetches once. */
 const REMAP_DEBOUNCE_MS = 300;

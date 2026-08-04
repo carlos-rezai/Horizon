@@ -7,7 +7,7 @@
  * `description`/`category` field names as the server end-to-end — no
  * translation layer.
  */
-import type { ParsedImportRow } from "./reviewRows";
+import type { ParsedImportRow } from "../reviewRows/reviewRows";
 
 /** Which raw CSV column feeds each Horizon field (server `ColumnMapping`). */
 export interface ColumnMapping {

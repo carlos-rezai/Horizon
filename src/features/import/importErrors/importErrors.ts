@@ -16,7 +16,7 @@
  * is ignored.
  */
 
-import type { RowBlocker } from "./reviewRows";
+import type { RowBlocker } from "../reviewRows/reviewRows";
 
 /** The structural subset of a Zod issue attribution needs. */
 export interface AttributableIssue {

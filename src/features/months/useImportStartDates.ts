@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { API_BASE } from "../../utils/api/api";
-import type { ImportRecord } from "../import/importTypes";
+import type { ImportRecord } from "../import/importTypes/importTypes";
 
 interface UseImportStartDatesResult {
   startDates: string[];

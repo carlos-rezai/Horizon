@@ -3,7 +3,7 @@ import { resolveAccountColor } from "../../../utils/color/color";
 import Modal from "../../../components/Modal/Modal";
 import Button from "../../../primitives/Button/Button";
 import Money from "../../../primitives/Money/Money";
-import type { ImportedStatement } from "../importTypes";
+import type { ImportedStatement } from "../importTypes/importTypes";
 import {
   StyledPreview,
   StyledMeta,
