@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { ManualTopicId } from "./manualTypes";
+import type { ManualTopicId } from "../manualTypes/manualTypes";
 
 /**
  * Breathing room above a jumped-to section, and the same line the spy measures

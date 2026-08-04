@@ -9,7 +9,7 @@ import {
 import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../../tokens";
-import type { ManualDetail } from "../manualTypes";
+import type { ManualDetail } from "../manualTypes/manualTypes";
 import ManualDetailRow from "./ManualDetailRow";
 
 /**

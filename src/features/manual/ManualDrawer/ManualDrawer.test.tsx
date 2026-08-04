@@ -11,8 +11,8 @@ import {
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../../tokens";
-import { MANUAL_TOPICS } from "../manualContent";
-import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex";
+import { MANUAL_TOPICS } from "../manualContent/manualContent";
+import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex/manualIndex";
 import ManualDrawer from "./ManualDrawer";
 
 const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";

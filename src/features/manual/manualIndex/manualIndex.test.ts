@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { Flag, LayoutDashboard } from "lucide-react";
-import type { ManualGroup, ManualTopic, ManualTopicId } from "./manualTypes";
-import { MANUAL_GROUPS, MANUAL_TOPICS } from "./manualContent";
+import type {
+  ManualGroup,
+  ManualTopic,
+  ManualTopicId,
+} from "../manualTypes/manualTypes";
+import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent/manualContent";
 import {
   orderManualTopics,
   findManualIndexFaults,

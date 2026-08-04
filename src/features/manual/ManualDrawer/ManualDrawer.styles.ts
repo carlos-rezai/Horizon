@@ -1,5 +1,5 @@
 import styled, { css, keyframes } from "styled-components";
-import { MANUAL_TRANSITION_MS } from "../useManualDrawer";
+import { MANUAL_TRANSITION_MS } from "../useManualDrawer/useManualDrawer";
 
 // The panel's own curve: a fast-out settle, distinct from the token swap easing
 // because this is a 320ms travelling surface, not a 180ms cross-fade.

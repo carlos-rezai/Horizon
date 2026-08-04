@@ -11,7 +11,7 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
-import { MANUAL_TRANSITION_MS } from "../../features/manual/useManualDrawer";
+import { MANUAL_TRANSITION_MS } from "../../features/manual/useManualDrawer/useManualDrawer";
 import AppLayout from "./AppLayout";
 
 // Lets the manual tests prove the drawer is an overlay and not a navigation.

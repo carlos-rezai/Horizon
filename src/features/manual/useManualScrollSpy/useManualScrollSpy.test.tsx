@@ -2,7 +2,7 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import type { Mock } from "vitest";
-import type { ManualTopicId } from "./manualTypes";
+import type { ManualTopicId } from "../manualTypes/manualTypes";
 import { useManualScrollSpy } from "./useManualScrollSpy";
 
 /**

@@ -10,7 +10,10 @@ import {
   Tags,
   Settings,
 } from "lucide-react";
-import type { ManualGroup, ManualTopicRecord } from "./manualTypes";
+import type {
+  ManualGroup,
+  ManualTopicRecord,
+} from "../manualTypes/manualTypes";
 
 /**
  * Every claim the manual makes lives here, as typed data rather than prose

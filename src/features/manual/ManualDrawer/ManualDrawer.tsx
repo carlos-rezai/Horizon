@@ -4,10 +4,10 @@ import { useDialogKeyboard } from "../../../hooks/useDialogKeyboard";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
 import ManualRail from "../ManualRail/ManualRail";
 import ManualSection from "../ManualSection/ManualSection";
-import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent";
-import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex";
-import type { ManualTopicId } from "../manualTypes";
-import { useManualScrollSpy } from "../useManualScrollSpy";
+import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent/manualContent";
+import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex/manualIndex";
+import type { ManualTopicId } from "../manualTypes/manualTypes";
+import { useManualScrollSpy } from "../useManualScrollSpy/useManualScrollSpy";
 import {
   StyledOverlay,
   StyledBackdrop,

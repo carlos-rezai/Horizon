@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { Flag } from "lucide-react";
 import { theme } from "../../../tokens";
-import type { ManualTopic } from "../manualTypes";
+import type { ManualTopic } from "../manualTypes/manualTypes";
 import ManualSection from "./ManualSection";
 
 const TOPIC: ManualTopic = {

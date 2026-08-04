@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { ManualTopicId } from "./manualTypes";
+import type { ManualTopicId } from "../manualTypes/manualTypes";
 import { MANUAL_GROUPS, MANUAL_TOPICS } from "./manualContent";
 
 /**

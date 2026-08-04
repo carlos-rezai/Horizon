@@ -3,8 +3,8 @@ import type {
   ManualTopic,
   ManualTopicId,
   ManualTopicRecord,
-} from "./manualTypes";
-import { MANUAL_GROUPS, MANUAL_TOPICS } from "./manualContent";
+} from "../manualTypes/manualTypes";
+import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent/manualContent";
 
 /**
  * The only module that knows how the table of contents and the content pane

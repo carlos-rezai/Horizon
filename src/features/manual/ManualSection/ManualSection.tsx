@@ -1,6 +1,6 @@
 import type { Ref } from "react";
 import ManualDetailRow from "../ManualDetailRow/ManualDetailRow";
-import type { ManualTopic } from "../manualTypes";
+import type { ManualTopic } from "../manualTypes/manualTypes";
 import {
   StyledSection,
   StyledSectionHead,

@@ -14,7 +14,7 @@ import type {
   ManualGroup,
   ManualTopicId,
   ManualTopicRecord,
-} from "../manualTypes";
+} from "../manualTypes/manualTypes";
 import ManualRail from "./ManualRail";
 
 /**

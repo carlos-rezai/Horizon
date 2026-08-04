@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "../../hooks/useReducedMotion";
+import { useReducedMotion } from "../../../hooks/useReducedMotion";
 
 /** How long the panel takes to slide in and back out. Owned here because this
  *  hook owns the delayed unmount that waits for it; the styles read it back. */

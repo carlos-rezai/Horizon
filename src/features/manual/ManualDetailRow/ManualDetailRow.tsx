@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import type { ManualDetail } from "../manualTypes";
+import type { ManualDetail } from "../manualTypes/manualTypes";
 import {
   StyledRow,
   StyledToggle,
