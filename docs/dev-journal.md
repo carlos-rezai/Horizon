@@ -1205,5 +1205,80 @@ remembering that `npm run typecheck` would not have caught it either — the roo
   asserts `2026-07` on a machine whose real date is 2026-08, which can only
   pass if the freeze bites. Suite is now 2355/2355 green.
 - `ImportWizard.test.tsx`'s inline-category commit test failed once under
-  full-suite parallelism and passed in isolation and in three consecutive
-  full-suite runs afterwards. Recorded as an observed flake, not diagnosed.
+  full-suite parallelism and passed in isolation. **Diagnosed and fixed
+  afterwards** — see the entry below.
+
+## 2026-08-04 — The flake was the clock, not the code
+
+One `ImportWizard` test failed once during the #219 refactor and never again.
+Chasing it turned up the wrong answer four times before the right one, and the
+wrong answers are the useful part.
+
+### What it was not
+
+Every plausible story was testable, and every one was wrong:
+
+| Theory                                                 | How it was tested                           | Verdict                        |
+| ------------------------------------------------------ | ------------------------------------------- | ------------------------------ |
+| Slow under CPU load                                    | the file alone under 24 burners on 16 cores | passed                         |
+| Thin `waitFor` margins                                 | `asyncUtilTimeout` cut 1000 → 10ms          | **passed at 10ms**             |
+| The 300ms re-preview debounce rebuilding rows mid-test | traced `updateMap` callers                  | never called by that test      |
+| Lost update between the two rows' `onChange` effects   | read `setCategory`                          | already a functional `setRows` |
+
+The 10ms result should have been the clue and was initially read as
+exonerating. `asyncUtilTimeout` (how long one `waitFor` polls) and
+`testTimeout` (the deadline for the whole test body) are different knobs.
+Every individual await settling instantly is entirely compatible with the test
+body as a whole blowing a wall-clock deadline — which is exactly what was
+happening.
+
+### Reproducing it
+
+Isolated runs (25), full-suite runs (28), cold-transform-cache runs, and the
+file under heavy load all stayed green. It took **cold cache plus CPU
+saturation plus the full suite** together before it appeared — in
+`migrate.test.ts`, a completely different file, with the message that ended the
+hunt:
+
+```
+Error: Test timed out in 5000ms.
+```
+
+Not a logic race at all. Vitest's default `testTimeout` is 5s, and the suite's
+slowest tests measure **3.0–3.4s on an idle machine**: the
+`is importable from <layer>/index.ts` tests each `await import()` a whole
+barrel and pay to transform its entire module graph. An 18% margin at rest is
+no margin under parallel-fork contention, and the victim is whichever file
+happens to get starved — which is why it looked random and never reproduced in
+the same place twice.
+
+### The A/B that closed it
+
+Same 8-burner load, same cold cache, only the timeout changed:
+
+| `testTimeout`        | Run 1       | Run 2       |
+| -------------------- | ----------- | ----------- |
+| 5000ms (old default) | 1 failed    | 7 failed    |
+| 20000ms (now)        | 2358 passed | 2358 passed |
+
+All seven failures were barrel-import tests, including the two (`Chip`,
+`Sparkline`) that had flaked earlier in the session unprompted. `testTimeout`
+and `hookTimeout` are now 20s in `vitest.config.ts` — a backstop against
+scheduling noise, not permission for slow tests.
+
+One caveat worth recording: at _20_ burners the machine could not fork workers
+at all (`Failed to start forks worker … Timeout waiting for worker to respond`,
+41 files never ran). That is an artefact of over-stressing the box, not the
+defect, and a run that collects 1701 of 2358 tests is not evidence of anything.
+Stress hard enough to starve the scheduler, not hard enough to break the pool.
+
+### The bug found on the way
+
+`CategorySelect` hardcoded `id="category-select"` and `id="new-category-input"`,
+and the Import review table renders one per row — so an N-row statement put N
+elements in the document sharing one id. Measured: every `<label>.control`
+resolved to the _first_ picker, so clicking row two's label focused row one's.
+Fixed with `useId()`. It was **not** the flake — `getAllByLabelText` still
+returns document order, so the test's indexing was always correct — which is
+worth stating, because it was a tempting story and believing it would have
+ended the investigation three hours early with the real cause still in place.
