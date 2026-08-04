@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd";
+import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd/useCategoriesWithInlineAdd";
 import Select from "../../../primitives/Select/Select";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";

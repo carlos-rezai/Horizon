@@ -1,8 +1,8 @@
-import type { Category } from "../../types/category";
-import { API_BASE } from "../../utils/api/api";
-import { fetchJson } from "../../utils/api/fetchJson";
+import type { Category } from "../../../types/category";
+import { API_BASE } from "../../../utils/api/api";
+import { fetchJson } from "../../../utils/api/fetchJson";
 
-export { readErrorMessage } from "../../utils/api/readErrorMessage";
+export { readErrorMessage } from "../../../utils/api/readErrorMessage";
 
 /**
  * Feature-local request layer for the categories API. Holds the raw fetch

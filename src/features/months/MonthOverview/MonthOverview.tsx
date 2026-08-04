@@ -24,7 +24,7 @@ import FadeSwap from "../../../components/FadeSwap/FadeSwap";
 import { useAllMonthTransactions } from "../useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison";
 import { useImportStartDates } from "../useImportStartDates";
-import { useCategories } from "../../categories/useCategories";
+import { useCategories } from "../../categories/useCategories/useCategories";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
 import TransactionEditModal from "../../transactions/TransactionEditModal/TransactionEditModal";
 import {

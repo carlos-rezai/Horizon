@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useAccounts } from "../../accounts/useAccounts/useAccounts";
-import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd";
+import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd/useCategoriesWithInlineAdd";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import PageHeader from "../../../components/PageHeader/PageHeader";
 import Button from "../../../primitives/Button/Button";

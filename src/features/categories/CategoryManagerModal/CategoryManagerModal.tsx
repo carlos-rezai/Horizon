@@ -17,11 +17,11 @@ import SwatchPicker from "../../../primitives/SwatchPicker/SwatchPicker";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import type { Category } from "../../../types/category";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";
-import { useCategoryManager } from "../useCategoryManager";
+import { useCategoryManager } from "../useCategoryManager/useCategoryManager";
 import type {
   CreateCategoryResult,
   RenameCategoryResult,
-} from "../useCategoryManager";
+} from "../useCategoryManager/useCategoryManager";
 import {
   Sections,
   Section,

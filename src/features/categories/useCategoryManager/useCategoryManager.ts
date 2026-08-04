@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import type { Category } from "../../types/category";
+import type { Category } from "../../../types/category";
 import {
   createCategory,
   deleteCategory,
   fetchCategories,
   patchCategory,
   readErrorMessage,
-} from "./categoriesApi";
+} from "../categoriesApi/categoriesApi";
 
 export type CreateCategoryResult = { ok: true } | { ok: false; error: string };
 export type RenameCategoryResult = { ok: true } | { ok: false; error: string };

@@ -9,9 +9,9 @@ import {
   act,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import { useCategories } from "./useCategories";
-import type { Category } from "../../types/category";
+import type { Category } from "../../../types/category";
 
 const food: Category = {
   id: "cat-1",

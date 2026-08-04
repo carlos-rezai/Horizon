@@ -2,7 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useCategoriesWithInlineAdd } from "./useCategoriesWithInlineAdd";
-import type { Category } from "../../types/category";
+import type { Category } from "../../../types/category";
 
 const existingCategories: Category[] = [
   {

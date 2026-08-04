@@ -1,7 +1,7 @@
-import { CATEGORIES } from "../../components/CacheProvider/cacheKeys";
-import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
-import type { Category } from "../../types/category";
-import { fetchCategories } from "./categoriesApi";
+import { CATEGORIES } from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
+import type { Category } from "../../../types/category";
+import { fetchCategories } from "../categoriesApi/categoriesApi";
 
 /**
  * Stable identity for the not-yet-loaded case, so consumers never see a fresh

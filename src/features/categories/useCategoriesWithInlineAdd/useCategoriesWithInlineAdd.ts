@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { Category } from "../../types/category";
-import { API_BASE } from "../../utils/api/api";
-import { fetchCategories } from "./categoriesApi";
+import type { Category } from "../../../types/category";
+import { API_BASE } from "../../../utils/api/api";
+import { fetchCategories } from "../categoriesApi/categoriesApi";
 
 interface UseCategoriesWithInlineAddResult {
   categories: Category[];
