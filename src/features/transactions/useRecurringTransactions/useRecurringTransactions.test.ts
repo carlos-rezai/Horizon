@@ -2,7 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useRecurringTransactions } from "./useRecurringTransactions";
-import type { RecurringTransaction } from "../../types/recurring";
+import type { RecurringTransaction } from "../../../types/recurring";
 
 const ACCOUNT_ID = "acc-1";
 

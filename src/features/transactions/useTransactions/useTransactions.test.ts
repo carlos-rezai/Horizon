@@ -2,7 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useTransactions } from "./useTransactions";
-import type { Transaction } from "../../types/transaction";
+import type { Transaction } from "../../../types/transaction";
 
 const ACCOUNT_ID = "acc-1";
 

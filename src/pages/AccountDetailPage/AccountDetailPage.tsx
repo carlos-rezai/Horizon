@@ -8,7 +8,7 @@ import AccountStatStrip from "../../features/accounts/AccountStatStrip/AccountSt
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";
 import RecurringTransactionList from "../../features/transactions/RecurringTransactionList/RecurringTransactionList";
 import RecurringTransactionModal from "../../features/transactions/RecurringTransactionModal/RecurringTransactionModal";
-import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions";
+import { useRecurringTransactions } from "../../features/transactions/useRecurringTransactions/useRecurringTransactions";
 import Card from "../../components/Card/Card";
 import SectionHead from "../../components/SectionHead/SectionHead";
 import Button from "../../primitives/Button/Button";

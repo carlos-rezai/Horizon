@@ -1,5 +1,5 @@
-export { useTransactions } from "./useTransactions";
-export { useRecurringTransactions } from "./useRecurringTransactions";
+export { useTransactions } from "./useTransactions/useTransactions";
+export { useRecurringTransactions } from "./useRecurringTransactions/useRecurringTransactions";
 export { default as TransactionList } from "./TransactionList/TransactionList";
 export { default as TransactionCreateModal } from "./TransactionCreateModal/TransactionCreateModal";
 export { default as TransactionEditModal } from "./TransactionEditModal/TransactionEditModal";
