@@ -1,6 +1,6 @@
 import { useState } from "react";
 import StackedSnackbar from "../../../components/SnackbarProvider/StackedSnackbar";
-import type { InsufficientFundsWarning } from "../useSettlementWarnings";
+import type { InsufficientFundsWarning } from "../useSettlementWarnings/useSettlementWarnings";
 
 interface Props {
   warnings: InsufficientFundsWarning[];

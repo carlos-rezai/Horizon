@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { API_BASE } from "../../utils/api/api";
+import { API_BASE } from "../../../utils/api/api";
 
 export interface InsufficientFundsWarning {
   ccAccountId: string;
