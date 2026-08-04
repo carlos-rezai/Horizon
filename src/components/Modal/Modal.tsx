@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useRef } from "react";
+import { useDialogKeyboard } from "../../hooks/useDialogKeyboard";
 import {
   StyledOverlay,
   StyledDialog,
@@ -29,11 +30,20 @@ export default function Modal({
   children,
   width,
 }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Makes good on `aria-modal`: focus arrives here, Tab stays here, ESC closes,
+  // and the keyboard goes back where it came from. Shared with the manual
+  // drawer, which is the surface that first paid for it.
+  useDialogKeyboard({ surfaceRef: dialogRef, onClose });
+
   return (
     <StyledOverlay data-testid="modal-overlay" onClick={onClose}>
       <StyledDialog
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         $width={width}
         onClick={(e) => e.stopPropagation()}
       >
