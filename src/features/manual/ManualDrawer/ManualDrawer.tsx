@@ -1,5 +1,6 @@
-import { useEffect, useRef, type KeyboardEvent, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import { BookOpen, X } from "lucide-react";
+import { useDialogKeyboard } from "../../../hooks/useDialogKeyboard";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
 import ManualSection from "../ManualSection/ManualSection";
 import { MANUAL_GROUPS, MANUAL_TOPICS } from "../manualContent";
@@ -29,11 +30,6 @@ import {
 const MANUAL_TOPIC_ORDER: ManualTopicId[] = MANUAL_TOPICS_IN_ORDER.map(
   (topic) => topic.id
 );
-
-/** Everything the drawer's own markup can put a keyboard on. The panel itself
- *  is excluded by its `tabindex="-1"`, so it never joins the ring it bounds. */
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface ManualDrawerProps {
   /** Drives the enter and exit transitions. Mounting belongs to the caller,
@@ -69,61 +65,13 @@ export default function ManualDrawer({
   const { activeTopicId, paneRef, registerSection, jumpTo } =
     useManualScrollSpy(MANUAL_TOPIC_ORDER);
   const panelRef = useRef<HTMLDivElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
 
-  // Takes the keyboard on open and gives it back the moment `open` flips, not
-  // when the drawer finally leaves the tree — a reader must not have to wait
-  // out the exit transition to carry on where they were.
-  useEffect(() => {
-    if (!open) return;
-
-    const previous = document.activeElement;
-    restoreRef.current =
-      previous instanceof HTMLElement && previous !== document.body
-        ? previous
-        : null;
-    panelRef.current?.focus();
-
-    return () => {
-      const restore = restoreRef.current;
-      // Reading the fallback here, in the cleanup, is the point: it has to be
-      // whatever is on screen when the drawer closes, not what was there when
-      // it opened.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      const fallback = returnFocusRef?.current ?? null;
-      const target = restore?.isConnected ? restore : fallback;
-      target?.focus();
-    };
-  }, [open, returnFocusRef]);
-
-  // The browser already knows how to walk a tab ring; this only closes it, at
-  // the two edges where the next stop would be the screen behind the backdrop.
-  function trapTab(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Tab") return;
-
-    const panel = panelRef.current;
-    if (!panel) return;
-
-    const focusable = Array.from(
-      panel.querySelectorAll<HTMLElement>(FOCUSABLE)
-    );
-    if (focusable.length === 0) return;
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-
-    if (event.shiftKey && (active === first || active === panel)) {
-      event.preventDefault();
-      last.focus();
-      return;
-    }
-
-    if (!event.shiftKey && active === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
+  useDialogKeyboard({
+    surfaceRef: panelRef,
+    onClose,
+    open,
+    returnFocusRef,
+  });
 
   return (
     <StyledOverlay>
@@ -134,7 +82,6 @@ export default function ManualDrawer({
         aria-modal="true"
         aria-label="User Manual"
         tabIndex={-1}
-        onKeyDown={trapTab}
         data-testid="manual-panel"
         data-state={open ? "open" : "closed"}
         data-motion={reduced ? "none" : "slide"}
