@@ -8,7 +8,7 @@ import type { Transaction } from "../../../types/transaction";
 import MonthCard from "./MonthCard";
 
 const mockUseAllMonthTransactions = vi.fn();
-vi.mock("../useAllMonthTransactions", () => ({
+vi.mock("../useAllMonthTransactions/useAllMonthTransactions", () => ({
   useAllMonthTransactions: (...args: unknown[]) =>
     mockUseAllMonthTransactions(...args),
 }));

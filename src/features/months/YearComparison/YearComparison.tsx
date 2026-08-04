@@ -3,7 +3,7 @@ import SectionHead from "../../../components/SectionHead/SectionHead";
 import { formatBalance } from "../../../utils/format/format";
 import { resolveCategoryColor } from "../../../utils/categoryColor/categoryColor";
 import type { Category } from "../../../types/category";
-import type { YearComparisonRow } from "../useYearComparison";
+import type { YearComparisonRow } from "../useYearComparison/useYearComparison";
 import {
   StyledIntro,
   StyledEmpty,

@@ -24,18 +24,18 @@ vi.mock("react-router-dom", async (importOriginal) => {
 });
 
 const mockUseAllMonthTransactions = vi.fn();
-vi.mock("../useAllMonthTransactions", () => ({
+vi.mock("../useAllMonthTransactions/useAllMonthTransactions", () => ({
   useAllMonthTransactions: (...args: unknown[]) =>
     mockUseAllMonthTransactions(...args),
 }));
 
 const mockUseYearComparison = vi.fn();
-vi.mock("../useYearComparison", () => ({
+vi.mock("../useYearComparison/useYearComparison", () => ({
   useYearComparison: (...args: unknown[]) => mockUseYearComparison(...args),
 }));
 
 const mockUseImportStartDates = vi.fn();
-vi.mock("../useImportStartDates", () => ({
+vi.mock("../useImportStartDates/useImportStartDates", () => ({
   useImportStartDates: (...args: unknown[]) => mockUseImportStartDates(...args),
 }));
 
@@ -576,8 +576,8 @@ describe("MonthOverview — section states", () => {
 describe("MonthOverview — first load of a month", () => {
   beforeEach(async () => {
     const actual = await vi.importActual<
-      typeof import("../useAllMonthTransactions")
-    >("../useAllMonthTransactions");
+      typeof import("../useAllMonthTransactions/useAllMonthTransactions")
+    >("../useAllMonthTransactions/useAllMonthTransactions");
     mockUseAllMonthTransactions.mockImplementation(
       actual.useAllMonthTransactions
     );
@@ -627,8 +627,8 @@ describe("MonthOverview — first load of a month", () => {
 describe("MonthOverview — optimistic add", () => {
   beforeEach(async () => {
     const actual = await vi.importActual<
-      typeof import("../useAllMonthTransactions")
-    >("../useAllMonthTransactions");
+      typeof import("../useAllMonthTransactions/useAllMonthTransactions")
+    >("../useAllMonthTransactions/useAllMonthTransactions");
     mockUseAllMonthTransactions.mockImplementation(
       actual.useAllMonthTransactions
     );

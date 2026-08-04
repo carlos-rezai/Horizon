@@ -2,7 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useImportStartDates } from "./useImportStartDates";
-import type { ImportRecord } from "../import/importTypes/importTypes";
+import type { ImportRecord } from "../../import/importTypes/importTypes";
 
 const records: Partial<ImportRecord>[] = [
   { id: "imp-1", startDate: "2023-03-15" },

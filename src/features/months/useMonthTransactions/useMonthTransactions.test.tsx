@@ -10,13 +10,13 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
-import { theme } from "../../tokens";
-import CacheProvider from "../../components/CacheProvider/CacheProvider";
-import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
-import { useAccounts } from "../accounts/useAccounts/useAccounts";
-import { useProjection } from "../projection/useProjection/useProjection";
+import { theme } from "../../../tokens";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
+import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
+import { useAccounts } from "../../accounts/useAccounts/useAccounts";
+import { useProjection } from "../../projection/useProjection/useProjection";
 import { useMonthTransactions } from "./useMonthTransactions";
-import type { Transaction } from "../../types/transaction";
+import type { Transaction } from "../../../types/transaction";
 
 const ACCOUNT_ID = "acc-1";
 const MONTH = "2026-05";

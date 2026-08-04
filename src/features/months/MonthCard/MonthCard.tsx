@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
-import { useAllMonthTransactions } from "../useAllMonthTransactions";
+import { useAllMonthTransactions } from "../useAllMonthTransactions/useAllMonthTransactions";
 import {
   StyledMonthCard,
   StyledTotalSpent,
