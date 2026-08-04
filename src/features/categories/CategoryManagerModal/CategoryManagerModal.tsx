@@ -164,7 +164,13 @@ function CategoryRow({
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void handleSave();
-                if (e.key === "Escape") cancelEdit();
+                if (e.key === "Escape") {
+                  // The dialog closes on ESC too. Abandoning a rename is the
+                  // nearer of the two intents, so it consumes the key rather
+                  // than letting one press discard the whole session.
+                  e.stopPropagation();
+                  cancelEdit();
+                }
               }}
             />
             <EditActionButton
@@ -345,7 +351,12 @@ function CategoryAddRow({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") void handleAdd();
-            if (e.key === "Escape") setOpen(false);
+            if (e.key === "Escape") {
+              // As above: ESC collapses the add form, it does not close the
+              // manager behind it.
+              e.stopPropagation();
+              setOpen(false);
+            }
           }}
         />
         <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>

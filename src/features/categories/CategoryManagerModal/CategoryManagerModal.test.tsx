@@ -45,7 +45,7 @@ const vetCustom: Category = {
   hidden: false,
 };
 
-function renderModal(list: Category[]) {
+function renderModal(list: Category[], onClose: () => void = vi.fn()) {
   vi.spyOn(globalThis, "fetch").mockResolvedValue({
     ok: true,
     json: async () => list,
@@ -53,7 +53,7 @@ function renderModal(list: Category[]) {
 
   return render(
     <ThemeProvider theme={theme}>
-      <CategoryManagerModal onClose={vi.fn()} />
+      <CategoryManagerModal onClose={onClose} />
     </ThemeProvider>
   );
 }
@@ -605,5 +605,60 @@ describe("CategoryManagerModal — hide / un-hide a default category (issue #162
         within(updated).getByRole("button", { name: /^hide$/i })
       ).toBeInTheDocument();
     });
+  });
+});
+
+describe("CategoryManagerModal — ESC inside an inline editor", () => {
+  it("cancels a rename without closing the manager, so one ESC does not discard the whole session", async () => {
+    const onClose = vi.fn();
+    renderModal([foodDefault, vetCustom], onClose);
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: /rename/i }));
+    const input = within(
+      screen.getByTestId(`category-row-${vetCustom.id}`)
+    ).getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Pets" } });
+
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    // The edit is abandoned and the original name is back...
+    expect(
+      within(screen.getByTestId(`category-row-${vetCustom.id}`)).queryByRole(
+        "textbox"
+      )
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Vet")).toBeInTheDocument();
+    // ...but the manager itself stays open behind it.
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("cancels the add form without closing the manager", async () => {
+    const onClose = vi.fn();
+    renderModal([foodDefault], onClose);
+
+    fireEvent.click(await screen.findByTestId("category-add-row"));
+    const input = within(screen.getByTestId("category-add-row")).getByLabelText(
+      /new category name/i
+    );
+
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(
+      within(screen.getByTestId("category-add-row")).queryByLabelText(
+        /new category name/i
+      )
+    ).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes the manager on ESC when no inline editor is open", async () => {
+    const onClose = vi.fn();
+    renderModal([foodDefault, vetCustom], onClose);
+    await screen.findByTestId(`category-row-${vetCustom.id}`);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
