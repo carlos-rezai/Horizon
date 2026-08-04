@@ -8,7 +8,7 @@ import { centsToEuros, eurosToCents } from "../../../utils/currency/currency";
 import { milestoneSplit } from "../../../utils/savingsGoal/savingsGoal";
 import type { SavingsGoalConfig, SavingsGoalMode } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
-import type { HistoryPoint } from "../../history/historyTypes";
+import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 import {
   StyledBody,
   StyledFieldLabel,

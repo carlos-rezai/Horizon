@@ -11,7 +11,7 @@ import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import YearArchive from "./YearArchive";
-import type { HistoryPoint } from "../historyTypes";
+import type { HistoryPoint } from "../historyTypes/historyTypes";
 
 afterEach(cleanup);
 

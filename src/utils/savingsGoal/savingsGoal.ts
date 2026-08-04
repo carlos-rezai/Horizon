@@ -1,4 +1,4 @@
-import type { HistoryPoint } from "../../features/history/historyTypes";
+import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
 import type {
   PerAccountGoal,
   SavingsGoal,

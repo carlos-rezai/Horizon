@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computeSavingsGoal, milestoneSplit } from "./savingsGoal";
 import type { SavingsGoalConfig } from "../../features/savings/savingsTypes";
-import type { HistoryPoint } from "../../features/history/historyTypes";
+import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
 
 // ---------------------------------------------------------------------------
 // computeSavingsGoal(config, points, trackableIds) — pure port of the

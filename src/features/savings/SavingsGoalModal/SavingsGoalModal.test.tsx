@@ -6,7 +6,7 @@ import { theme } from "../../../tokens";
 import SavingsGoalModal from "./SavingsGoalModal";
 import type { SavingsGoalConfig } from "../savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
-import type { HistoryPoint } from "../../history/historyTypes";
+import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 
 // ---------------------------------------------------------------------------
 // SavingsGoalModal — Manual mode (Phase 3). The editor lists every trackable

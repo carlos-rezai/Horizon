@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { AccountWithBalance } from "../../../types/account";
-import type { HistoryPoint } from "../historyTypes";
+import type { HistoryPoint } from "../historyTypes/historyTypes";
 import {
   buildSeriesDescriptors,
   computeVisibleYDomain,

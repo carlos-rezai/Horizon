@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { API_BASE } from "../../utils/api/api";
-import type { ImportRecord } from "../import/importTypes";
-import type { HistoryPoint } from "./historyTypes";
+import { API_BASE } from "../../../utils/api/api";
+import type { ImportRecord } from "../../import/importTypes";
+import type { HistoryPoint } from "../historyTypes/historyTypes";
 
 interface UseHistoryResult {
   /** Reconstructed months from `GET /projection/history`. */

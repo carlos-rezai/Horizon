@@ -5,7 +5,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import HistoryChart, { HistoryChartTooltip } from "./HistoryChart";
 import { formatBalance } from "../../../utils/format/format";
-import type { HistoryPoint } from "../historyTypes";
+import type { HistoryPoint } from "../historyTypes/historyTypes";
 import type { AccountWithBalance } from "../../../types/account";
 
 afterEach(() => {

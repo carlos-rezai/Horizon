@@ -3,7 +3,7 @@ import PageHeader from "../../../components/PageHeader/PageHeader";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import Spinner from "../../../primitives/Spinner/Spinner";
 import { useAccounts } from "../../accounts/useAccounts/useAccounts";
-import { useHistory } from "../useHistory";
+import { useHistory } from "../useHistory/useHistory";
 import HistoryChart from "../HistoryChart/HistoryChart";
 import YearArchive from "../YearArchive/YearArchive";
 import { StyledPage, StyledCta } from "./HistoryPage.styles";
