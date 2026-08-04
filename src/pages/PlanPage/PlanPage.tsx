@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts/useAccounts";
-import { useProjection } from "../../features/projection/useProjection";
+import { useProjection } from "../../features/projection/useProjection/useProjection";
 import { ProjectionAccordion } from "../../features/projection";
 import ProjectionAccordionSkeleton from "../../features/projection/ProjectionAccordion/ProjectionAccordionSkeleton";
 import OutlookSummary from "../../features/projection/OutlookSummary/OutlookSummary";

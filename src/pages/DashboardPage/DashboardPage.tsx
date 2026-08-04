@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts/useAccounts";
-import { useProjection } from "../../features/projection/useProjection";
-import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions";
+import { useProjection } from "../../features/projection/useProjection/useProjection";
+import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions/useAllRecurringTransactions";
 import PlanSummary from "../../features/projection/PlanSummary/PlanSummary";
 import PlanSummarySkeleton from "../../features/projection/PlanSummary/PlanSummarySkeleton";
 import KpiStrip from "../../features/projection/KpiStrip/KpiStrip";

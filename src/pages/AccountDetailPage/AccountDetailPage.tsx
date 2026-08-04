@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAccounts } from "../../features/accounts/useAccounts/useAccounts";
-import { useProjection } from "../../features/projection/useProjection";
+import { useProjection } from "../../features/projection/useProjection/useProjection";
 import AccountHero from "../../features/accounts/AccountHero/AccountHero";
 import AccountStatStrip from "../../features/accounts/AccountStatStrip/AccountStatStrip";
 import AccountCreateModal from "../../features/accounts/AccountCreateModal/AccountCreateModal";

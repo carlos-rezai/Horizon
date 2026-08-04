@@ -1,7 +1,7 @@
-import { PROJECTION } from "../../components/CacheProvider/cacheKeys";
-import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
-import type { MonthlySnapshot } from "../../types/projection";
-import { fetchJson } from "../../utils/api/fetchJson";
+import { PROJECTION } from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
+import type { MonthlySnapshot } from "../../../types/projection";
+import { fetchJson } from "../../../utils/api/fetchJson";
 
 interface UseProjectionResult {
   snapshots: MonthlySnapshot[];

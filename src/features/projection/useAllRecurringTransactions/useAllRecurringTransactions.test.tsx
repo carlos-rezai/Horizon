@@ -9,9 +9,9 @@ import {
   act,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import { useAllRecurringTransactions } from "./useAllRecurringTransactions";
-import type { RecurringTransaction } from "../../types/recurring";
+import type { RecurringTransaction } from "../../../types/recurring";
 
 const rt1: RecurringTransaction = {
   id: "rt-1",

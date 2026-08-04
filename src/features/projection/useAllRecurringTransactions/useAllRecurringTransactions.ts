@@ -1,7 +1,7 @@
-import { RECURRING } from "../../components/CacheProvider/cacheKeys";
-import { useCachedResource } from "../../components/CacheProvider/useCachedResource";
-import type { RecurringTransaction } from "../../types/recurring";
-import { fetchJson } from "../../utils/api/fetchJson";
+import { RECURRING } from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
+import type { RecurringTransaction } from "../../../types/recurring";
+import { fetchJson } from "../../../utils/api/fetchJson";
 
 interface UseAllRecurringTransactionsResult {
   recurringTransactions: RecurringTransaction[];

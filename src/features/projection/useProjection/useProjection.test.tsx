@@ -9,9 +9,9 @@ import {
   act,
 } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import CacheProvider from "../../components/CacheProvider/CacheProvider";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import { useProjection } from "./useProjection";
-import type { MonthlySnapshot } from "../../types/projection";
+import type { MonthlySnapshot } from "../../../types/projection";
 
 const snapshot: MonthlySnapshot = {
   month: "2026-04",

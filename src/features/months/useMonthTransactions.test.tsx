@@ -14,7 +14,7 @@ import { theme } from "../../tokens";
 import CacheProvider from "../../components/CacheProvider/CacheProvider";
 import SnackbarProvider from "../../components/SnackbarProvider/SnackbarProvider";
 import { useAccounts } from "../accounts/useAccounts/useAccounts";
-import { useProjection } from "../projection/useProjection";
+import { useProjection } from "../projection/useProjection/useProjection";
 import { useMonthTransactions } from "./useMonthTransactions";
 import type { Transaction } from "../../types/transaction";
 
