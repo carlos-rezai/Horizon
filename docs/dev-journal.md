@@ -1194,11 +1194,16 @@ remembering that `npm run typecheck` would not have caught it either — the roo
 
 ### Two things found along the way, neither in scope
 
-- `server/src/routes/projection/projection.test.ts` hardcodes `"2026-07"` as
-  "the current month" and reads the real clock. It has failed since
-  2026-08-01 and will keep failing every month. Not a regression from this
-  refactor — it was already red at the baseline and is red for the same reason
-  now. Needs a frozen clock.
+- `server/src/routes/projection/projection.test.ts` hardcoded `"2026-07"` as
+  "the current month" while reading the real clock, so it had failed since
+  2026-08-01 and would have failed every month after. Not a regression from
+  this refactor — it was already red at the baseline. **Fixed immediately
+  after**: the file now freezes the clock with
+  `vi.useFakeTimers({ toFake: ["Date"] })` and `vi.setSystemTime`, faking
+  `Date` alone because supertest runs a real HTTP server and faking its timers
+  too would hang every request in the file. The fix proves itself — the test
+  asserts `2026-07` on a machine whose real date is 2026-08, which can only
+  pass if the freeze bites. Suite is now 2355/2355 green.
 - `ImportWizard.test.tsx`'s inline-category commit test failed once under
   full-suite parallelism and passed in isolation and in three consecutive
   full-suite runs afterwards. Recorded as an observed flake, not diagnosed.

@@ -1,13 +1,34 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
+
+/**
+ * The clock this file runs against. `/projection/history` spans through "the
+ * current month", so against the real clock its upper bound moves with the
+ * calendar and the assertion below would only hold during one month of one year.
+ */
+const NOW = new Date("2026-07-15T12:00:00");
+const CURRENT_MONTH = "2026-07";
 
 let app: Express;
 let reset: () => Promise<void>;
 let cleanup: () => Promise<void>;
 
 beforeAll(async () => {
+  // Only `Date` is faked. Supertest runs a real HTTP server against a real
+  // socket, so faking its timers as well would hang every request in the file.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+
   const handle = await createSqliteAppHandle();
   app = handle.app;
   reset = handle.reset;
@@ -16,6 +37,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanup();
+  vi.useRealTimers();
 });
 
 afterEach(async () => {
@@ -113,9 +135,8 @@ describe("GET /projection/history", () => {
     const points = res.body as HistoryPoint[];
 
     expect(res.status).toBe(200);
-    // current month is 2026-07 in this project's clock
     expect(points[0].month).toBe("2026-03");
-    expect(points[points.length - 1].month).toBe("2026-07");
+    expect(points[points.length - 1].month).toBe(CURRENT_MONTH);
   });
 
   it("sets the lower bound to the earliest imported transaction month", async () => {
