@@ -94,6 +94,23 @@ horizon/
     └── dev-journal.md
 ```
 
+### Module filing rule
+
+Every non-component module gets a folder named after itself, holding the
+module and its co-located test — the shape `src/utils/`,
+`server/src/services/` and `src/features/` all share:
+
+```
+src/features/import/useImport/useImport.ts
+src/features/import/useImport/useImport.test.ts
+```
+
+Components keep their PascalCase folders with their `.styles.ts` and
+`.test.tsx` beside them. Nested folders get no per-folder barrel — the
+feature-level `index.ts` stays the single public face of a feature.
+`src/hooks/` is exempt and stays flat: it is a deliberately shallow drawer
+of cross-feature hooks, not a layer with domains in it.
+
 ---
 
 ## Installing the Desktop App
