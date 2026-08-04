@@ -74,11 +74,46 @@ auditing every Dashboard surface that returns `null` on empty data.
 
 ---
 
-## 3.
+## 3. Every Import review row shares one DOM id, so row labels focus the wrong picker
 
-**Did:**
-**Expected:**
-**Actual:**
+**Did:** Opened the Import wizard's Review step with a multi-row statement and
+clicked the "Category" label on the second row.
+**Expected:** Focus to land on that row's own category picker.
+**Actual:** Focus lands on the _first_ row's picker. The same applies to the
+inline "New category name" field once a row is adding a category.
 
-**Class:**
-**Evidence:**
+**Class:** never-worked
+**Evidence:** `src/features/categories/CategorySelect/CategorySelect.tsx:71,74,94,97`
+
+```tsx
+<StyledLabel htmlFor="category-select">
+  Category
+  <Select id="category-select" aria-label="Category" ...>
+```
+
+Both ids are hardcoded string literals, and `ReviewTable` renders one
+`CategorySelect` per row (`ReviewTable.tsx:94`), so an N-row statement puts N
+elements in the document sharing `id="category-select"` — invalid HTML. Every
+`<label for="category-select">` then resolves to the first match in document
+order.
+
+Measured directly against two mounted `CategorySelect`s: both labels report a
+`.control` of the _first_ select. It has been this way since the component was
+written; the other two call sites
+(`TransactionCreateModal`, `RecurringTransactionModal`) each render exactly one
+at a time inside a dialog, which is why it never showed up before the Review
+table started rendering them in a list.
+
+Not a screen-reader-only problem: the accessible name is still correct via
+`aria-label`, so the pickers are announced properly and are individually
+operable. What breaks is label-click targeting.
+
+**Fix shape:** take the id from React's `useId()` (or accept an `id` prop) and
+derive both the select and the inline-add input from it. Small and local to
+`CategorySelect`.
+
+**Found:** 2026-08-04, while investigating the `ImportWizard` test flake — the
+test drives rows by `getAllByLabelText` index, which is what put the duplicate
+ids under a microscope. The duplicate ids are _not_ the cause of that flake:
+`getAllByLabelText` still returns the pickers in document order, so the test's
+indexing is correct.
