@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
 import { useAlert } from "../../components/AlertProvider/useAlert";
 import { useConfirm } from "../../components/ConfirmProvider/useConfirm";
+import { subscribeToMenu } from "./subscribeToMenu";
 
 /**
  * Renderer host for menu-action dialogs. It subscribes to the two in-app
@@ -22,35 +23,39 @@ export function useMenuDialogs(): void {
   const confirm = useConfirm();
 
   useEffect(() => {
-    const unsubscribeNotify = window.horizon?.menu.onNotify((notification) => {
-      if (notification.tone === "error") {
-        alert({
-          title: notification.title,
-          message: notification.message,
-          detail: notification.detail,
-          tone: "error",
-        });
-        return;
-      }
-      notify(notification.message, notification.tone);
-    });
+    const unsubscribeNotify = subscribeToMenu((menu) =>
+      menu.onNotify((notification) => {
+        if (notification.tone === "error") {
+          alert({
+            title: notification.title,
+            message: notification.message,
+            detail: notification.detail,
+            tone: "error",
+          });
+          return;
+        }
+        notify(notification.message, notification.tone);
+      })
+    );
 
-    const unsubscribeConfirm = window.horizon?.menu.onConfirm((request) => {
-      void confirm({
-        title: request.title,
-        message: request.message,
-        detail: request.detail,
-        tone: request.tone,
-        confirmLabel: request.confirmLabel,
-        cancelLabel: request.cancelLabel,
-      }).then((confirmed) => {
-        window.horizon?.menu.respondConfirm(request.id, confirmed);
-      });
-    });
+    const unsubscribeConfirm = subscribeToMenu((menu) =>
+      menu.onConfirm((request) => {
+        void confirm({
+          title: request.title,
+          message: request.message,
+          detail: request.detail,
+          tone: request.tone,
+          confirmLabel: request.confirmLabel,
+          cancelLabel: request.cancelLabel,
+        }).then((confirmed) => {
+          menu.respondConfirm(request.id, confirmed);
+        });
+      })
+    );
 
     return () => {
-      unsubscribeNotify?.();
-      unsubscribeConfirm?.();
+      unsubscribeNotify();
+      unsubscribeConfirm();
     };
   }, [notify, alert, confirm]);
 }

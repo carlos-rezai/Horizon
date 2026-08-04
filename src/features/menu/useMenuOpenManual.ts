@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { subscribeToMenu } from "./subscribeToMenu";
 
 /**
  * Subscribes to the native Help menu's manual request (`menu:open-manual`,
@@ -9,12 +10,13 @@ import { useEffect } from "react";
  * server).
  */
 export function useMenuOpenManual(open: () => void): void {
-  useEffect(() => {
-    const unsubscribe = window.horizon?.menu.onOpenManual(() => {
-      open();
-    });
-    return () => {
-      unsubscribe?.();
-    };
-  }, [open]);
+  useEffect(
+    () =>
+      subscribeToMenu((menu) =>
+        menu.onOpenManual(() => {
+          open();
+        })
+      ),
+    [open]
+  );
 }

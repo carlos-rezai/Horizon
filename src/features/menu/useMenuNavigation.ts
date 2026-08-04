@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { subscribeToMenu } from "./subscribeToMenu";
 
 /**
  * Subscribes to native-menu navigation requests (`menu:navigate`, surfaced on
@@ -12,12 +13,13 @@ import { useNavigate } from "react-router-dom";
 export function useMenuNavigation(): void {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = window.horizon?.menu.onNavigate((route) => {
-      navigate(route);
-    });
-    return () => {
-      unsubscribe?.();
-    };
-  }, [navigate]);
+  useEffect(
+    () =>
+      subscribeToMenu((menu) =>
+        menu.onNavigate((route) => {
+          navigate(route);
+        })
+      ),
+    [navigate]
+  );
 }
