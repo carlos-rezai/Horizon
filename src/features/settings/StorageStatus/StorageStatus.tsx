@@ -2,9 +2,9 @@ import { useRef, useState } from "react";
 import Button from "../../../primitives/Button/Button";
 import Spinner from "../../../primitives/Spinner/Spinner";
 import Text from "../../../primitives/Text/Text";
-import { downloadBackup } from "../downloadBackup";
-import { uploadRestore } from "../uploadRestore";
-import { useStorageStatus } from "../useStorageStatus";
+import { downloadBackup } from "../downloadBackup/downloadBackup";
+import { uploadRestore } from "../uploadRestore/uploadRestore";
+import { useStorageStatus } from "../useStorageStatus/useStorageStatus";
 import {
   Actions,
   ConfirmActions,

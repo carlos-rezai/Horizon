@@ -6,9 +6,9 @@ import Text from "../../../primitives/Text/Text";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import { formatBytes } from "../../../utils/format/format";
-import { downloadBackup } from "../downloadBackup";
-import { uploadRestore } from "../uploadRestore";
-import { useStorageStatus } from "../useStorageStatus";
+import { downloadBackup } from "../downloadBackup/downloadBackup";
+import { uploadRestore } from "../uploadRestore/uploadRestore";
+import { useStorageStatus } from "../useStorageStatus/useStorageStatus";
 import {
   Actions,
   ConfirmActions,

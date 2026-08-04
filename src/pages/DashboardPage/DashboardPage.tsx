@@ -22,7 +22,7 @@ import SectionHead from "../../components/SectionHead/SectionHead";
 import SectionState from "../../components/SectionState/SectionState";
 import { useSnackbar } from "../../components/SnackbarProvider/useSnackbar";
 import Button from "../../primitives/Button/Button";
-import { downloadBackup } from "../../features/settings/downloadBackup";
+import { downloadBackup } from "../../features/settings/downloadBackup/downloadBackup";
 import {
   StyledDashboard,
   StyledGrid,
