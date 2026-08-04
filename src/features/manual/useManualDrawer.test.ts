@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook, act, fireEvent, cleanup } from "@testing-library/react";
+import { renderHook, act, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { useManualDrawer, MANUAL_TRANSITION_MS } from "./useManualDrawer";
 
@@ -13,10 +13,6 @@ function stubReducedMotion(matches: boolean) {
     addEventListener: () => {},
     removeEventListener: () => {},
   }));
-}
-
-function pressEscape() {
-  fireEvent.keyDown(document, { key: "Escape" });
 }
 
 afterEach(() => {
@@ -119,55 +115,6 @@ describe("useManualDrawer — opening and closing", () => {
   });
 });
 
-describe("useManualDrawer — ESC", () => {
-  it("closes an open drawer", () => {
-    stubReducedMotion(false);
-    vi.useFakeTimers();
-
-    const { result } = renderHook(() => useManualDrawer());
-    act(() => result.current.open());
-    act(() => pressEscape());
-
-    expect(result.current.isOpen).toBe(false);
-  });
-
-  it("unmounts the drawer it closed once the transition has run", () => {
-    stubReducedMotion(false);
-    vi.useFakeTimers();
-
-    const { result } = renderHook(() => useManualDrawer());
-    act(() => result.current.open());
-    act(() => pressEscape());
-    act(() => {
-      vi.advanceTimersByTime(MANUAL_TRANSITION_MS);
-    });
-
-    expect(result.current.isMounted).toBe(false);
-  });
-
-  it("does nothing when the drawer is already closed", () => {
-    stubReducedMotion(false);
-
-    const { result } = renderHook(() => useManualDrawer());
-    act(() => pressEscape());
-
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.isMounted).toBe(false);
-  });
-
-  it("ignores other keys while the drawer is open", () => {
-    stubReducedMotion(false);
-
-    const { result } = renderHook(() => useManualDrawer());
-    act(() => result.current.open());
-    act(() => {
-      fireEvent.keyDown(document, { key: "Enter" });
-    });
-
-    expect(result.current.isOpen).toBe(true);
-  });
-});
-
 describe("useManualDrawer — reduced motion", () => {
   it("opens and mounts the drawer the same way", () => {
     stubReducedMotion(true);
@@ -190,17 +137,6 @@ describe("useManualDrawer — reduced motion", () => {
     // No timers advanced: a reduced-motion reader is never left with an
     // invisible overlay mounted over the screen.
     expect(result.current.isOpen).toBe(false);
-    expect(result.current.isMounted).toBe(false);
-  });
-
-  it("unmounts on ESC with no lingering mount", () => {
-    stubReducedMotion(true);
-    vi.useFakeTimers();
-
-    const { result } = renderHook(() => useManualDrawer());
-    act(() => result.current.open());
-    act(() => pressEscape());
-
     expect(result.current.isMounted).toBe(false);
   });
 });

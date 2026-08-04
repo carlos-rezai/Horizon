@@ -23,6 +23,10 @@ export interface ManualDrawerState {
  * the delay collapses and the drawer leaves immediately — otherwise a
  * reduced-motion reader would be left with an invisible overlay sitting over
  * the screen for a third of a second.
+ *
+ * The mount lifetime is all this owns. The keyboard — ESC, the focus trap and
+ * the hand-back on close — belongs to the drawer itself through
+ * `useDialogKeyboard`, which every modal surface in the app shares.
  */
 export function useManualDrawer(): ManualDrawerState {
   const reduced = useReducedMotion();
@@ -61,17 +65,6 @@ export function useManualDrawer(): ManualDrawerState {
   }, [reduced, cancelPendingUnmount]);
 
   useEffect(() => cancelPendingUnmount, [cancelPendingUnmount]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") close();
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, close]);
 
   return { isOpen, isMounted, open, close };
 }

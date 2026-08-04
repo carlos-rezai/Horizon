@@ -330,6 +330,36 @@ describe("ManualDrawer — dismissal", () => {
 
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("closes on ESC", () => {
+    stubReducedMotion(false);
+    const onClose = vi.fn();
+    renderDrawer(<ManualDrawer open onClose={onClose} />);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores other keys while it is open", () => {
+    stubReducedMotion(false);
+    const onClose = vi.fn();
+    renderDrawer(<ManualDrawer open onClose={onClose} />);
+
+    fireEvent.keyDown(document, { key: "Enter" });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("does not close on ESC once it is already closing, so the exit transition owns no keyboard", () => {
+    stubReducedMotion(false);
+    const onClose = vi.fn();
+    renderDrawer(<ManualDrawer open={false} onClose={onClose} />);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });
 
 describe("ManualDrawer — motion", () => {
