@@ -31,15 +31,15 @@
 
 ## Mortgage
 
-| Term                        | Definition                                                                                                         | Aliases to avoid                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| **Restschuld**              | The outstanding mortgage principal remaining — the balance of the Mortgage account                                 | Remaining balance, outstanding debt |
-| **Sondertilgung (ST)**      | An annual extra mortgage repayment that directly reduces the Restschuld                                            | Extra payment, overpayment          |
-| **Darlehen**                | The regular monthly mortgage payment (covers Zinsen + Tilgung) — modelled as a RecurringTransaction                | Mortgage payment, monthly payment   |
-| **Zinsen**                  | The interest portion of the Darlehen payment — not tracked separately in Horizon                                   | Interest                            |
-| **Tilgung**                 | The principal repayment portion of the Darlehen payment — not tracked separately in Horizon                        | Principal repayment                 |
-| **ST-only Model**           | The projection approach where Restschuld decreases only from Sondertilgung payments, not from the monthly Darlehen | Amortization model                  |
-| **Sondertilgung Allowance** | The maximum annual ST amount permitted by the lender — stored on the Mortgage account                              | ST cap, ST limit                    |
+| Term                            | Definition                                                                                                                                                                                | Aliases to avoid                    |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Restschuld**                  | The outstanding mortgage principal remaining — the balance of the Mortgage account                                                                                                        | Remaining balance, outstanding debt |
+| **Sondertilgung (ST)**          | An annual extra mortgage repayment that directly reduces the Restschuld                                                                                                                   | Extra payment, overpayment          |
+| **Darlehen** (updated)          | The regular monthly mortgage payment (covers Zinsen + Tilgung) — modelled as a **Repayment Transfer** into the Mortgage account; interest is not modelled                                 | Mortgage payment, monthly payment   |
+| **Zinsen**                      | The interest portion of the Darlehen payment — not tracked separately in Horizon                                                                                                          | Interest                            |
+| **Tilgung**                     | The principal repayment portion of the Darlehen payment — not tracked separately in Horizon                                                                                               | Principal repayment                 |
+| ~~**ST-only Model**~~ (retired) | ~~Restschuld decreases only from Sondertilgung payments.~~ Never what the engine did: any **Recurring Transfer** into a Mortgage reduces Restschuld. Retired by Live-Use Repair — Round 1 | Amortization model                  |
+| **Sondertilgung Allowance**     | The maximum annual ST amount permitted by the lender — stored on the Mortgage account                                                                                                     | ST cap, ST limit                    |
 
 ## Projections
 
@@ -64,19 +64,19 @@
 
 ## Dashboard
 
-| Term                           | Definition                                                                                                                                                    | Aliases to avoid                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| ~~**Milestone**~~ (removed)    | ~~A user-defined named target: a specific account must reach a specific balance.~~ Removed in UI redesign — was designed for permanently-deferred AI features | ~~Goal, target, checkpoint~~     |
-| **Mortgage Countdown**         | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account                                                                   | Payoff tracker, countdown        |
-| **Plan Summary** (new)         | The compact dashboard widget showing one clickable Year Summary Row per projected year-end, linking to the Plan Page                                          | Plan widget, plan preview        |
-| **Year Summary Row** (new)     | A single row in the Plan Summary showing end-of-year Total Liquid, Restschuld, and ST amount for one projected year                                           | Annual row, year row             |
-| **Plan Page** (updated)        | The dedicated `/plan` route that displays the full Projection Accordion — labeled **Outlook** in the sidebar nav                                              | Plan view, projection page       |
-| **Outlook** (new)              | The sidebar nav label for the Plan Page — chosen over "Plan" to convey forward-looking intent and pair cleanly with "Dashboard"                               | Plan, Forecast, Projection       |
-| **Projection Accordion** (new) | The year-grouped, expandable UI on the Plan Page — collapsed shows Year Summary Row data, expanded shows 12 monthly rows                                      | Plan table, projection table     |
-| **Trajectory Horizon** (new)   | The 20-year chart widget on the Dashboard showing Total Liquid, Restschuld, and Net Cashflow as three lines over 240 months                                   | Projection chart, plan chart     |
-| **Payoff Marker** (new)        | The vertical dashed reference line on the Trajectory Horizon chart that marks the Payoff Month                                                                | Payoff line, payoff indicator    |
-| **Freedom Phase** (new)        | The post-payoff period in the Trajectory Horizon chart where Restschuld is zero and Total Liquid accelerates — the second act of the 20-year arc              | Post-payoff phase, savings phase |
-| **Sidebar Clock** (new)        | The live date and time widget rendered in the sidebar, always visible across all pages — displays HH:MM (24-hour) and the current weekday and date            | Dashboard clock, clock widget    |
+| Term                               | Definition                                                                                                                                                                                       | Aliases to avoid                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| ~~**Milestone**~~ (removed)        | ~~A user-defined named target: a specific account must reach a specific balance.~~ Removed in UI redesign — was designed for permanently-deferred AI features                                    | ~~Goal, target, checkpoint~~     |
+| **Mortgage Countdown**             | The dashboard display showing current Restschuld and Payoff Month for each Mortgage account                                                                                                      | Payoff tracker, countdown        |
+| **Plan Summary** (new)             | The compact dashboard widget showing one clickable Year Summary Row per projected year-end, linking to the Plan Page                                                                             | Plan widget, plan preview        |
+| **Year Summary Row** (new)         | A single row in the Plan Summary showing end-of-year Total Liquid, Restschuld, and ST amount for one projected year                                                                              | Annual row, year row             |
+| **Plan Page** (updated)            | The dedicated `/plan` route that displays the full Projection Accordion — labeled **Outlook** in the sidebar nav                                                                                 | Plan view, projection page       |
+| **Outlook** (new)                  | The sidebar nav label for the Plan Page — chosen over "Plan" to convey forward-looking intent and pair cleanly with "Dashboard"                                                                  | Plan, Forecast, Projection       |
+| **Projection Accordion** (updated) | The year-grouped, expandable UI on the Plan Page, titled "Projection" — columns Period · one per non-Mortgage account (in sortOrder) · Total Liquid · Restschuld; expanded shows 12 monthly rows | Plan table, projection table     |
+| **Trajectory Horizon** (new)       | The 20-year chart widget on the Dashboard showing Total Liquid, Restschuld, and Net Cashflow as three lines over 240 months                                                                      | Projection chart, plan chart     |
+| **Payoff Marker** (new)            | The vertical dashed reference line on the Trajectory Horizon chart that marks the Payoff Month                                                                                                   | Payoff line, payoff indicator    |
+| **Freedom Phase** (new)            | The post-payoff period in the Trajectory Horizon chart where Restschuld is zero and Total Liquid accelerates — the second act of the 20-year arc                                                 | Post-payoff phase, savings phase |
+| **Sidebar Clock** (new)            | The live date and time widget rendered in the sidebar, always visible across all pages — displays HH:MM (24-hour) and the current weekday and date                                               | Dashboard clock, clock widget    |
 
 ## Derived Metrics
 
@@ -1128,17 +1128,17 @@
 
 ## Quick Start Guide (new)
 
-| Term                        | Definition                                                                                                                                                                         | Aliases to avoid                   |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| **User Manual**             | The in-app documentation surface as a whole — what the reader sees titled "User Manual · How to use Horizon"                                                                       | Manual, help, docs, guide          |
-| **Manual Drawer**           | The right-side slide-over overlay that renders the **User Manual** — closes on ESC or backdrop, owns no route, and preserves the screen beneath it                                 | Help modal, guide page, docs panel |
-| **Manual Topic**            | One documented surface of Horizon, with a title, a blurb, and its **Detail Rows** — ten exist, one per real screen or concern                                                      | Section, article, chapter          |
-| **Manual Group**            | A labelled cluster of **Manual Topics** in the drawer's TOC rail — Getting Started, Overview, Planning, Data, System                                                               | Category, nav group                |
-| **Detail Row**              | A collapsible heading-plus-body unit inside a **Manual Topic**, optionally carrying a term list — the atom of manual copy                                                          | Entry, item, accordion row         |
-| **Getting Started**         | The single **Manual Topic** giving the six ordered steps from an empty database to a working projection — the chosen alternative to seeding demo data                              | Onboarding, quick start, tutorial  |
-| **App-Wins Rule**           | The editorial rule that where the manual's copy and the shipped app disagree, the app is correct and the copy is rewritten — behaviour the copy describes but the app lacks is cut | Doc accuracy, sync, parity         |
-| **Empty-Hidden Surface**    | A surface that renders nothing at all when its underlying data is absent — Mortgage Countdown, the mortgage KPI tiles, Year Archive years, Month picker bounds                     | Hidden card, conditional card      |
-| **Transfer Direction Rule** | The convention that a **Recurring Transfer** is entered as a positive amount on the account the money _leaves_, with the linked account deriving the direction                     | Transfer sign, signed pair         |
+| Term                                  | Definition                                                                                                                                                                                                  | Aliases to avoid                   |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **User Manual**                       | The in-app documentation surface as a whole — what the reader sees titled "User Manual · How to use Horizon"                                                                                                | Manual, help, docs, guide          |
+| **Manual Drawer**                     | The right-side slide-over overlay that renders the **User Manual** — closes on ESC or backdrop, owns no route, and preserves the screen beneath it                                                          | Help modal, guide page, docs panel |
+| **Manual Topic**                      | One documented surface of Horizon, with a title, a blurb, and its **Detail Rows** — ten exist, one per real screen or concern                                                                               | Section, article, chapter          |
+| **Manual Group**                      | A labelled cluster of **Manual Topics** in the drawer's TOC rail — Getting Started, Overview, Planning, Data, System                                                                                        | Category, nav group                |
+| **Detail Row**                        | A collapsible heading-plus-body unit inside a **Manual Topic**, optionally carrying a term list — the atom of manual copy                                                                                   | Entry, item, accordion row         |
+| **Getting Started**                   | The single **Manual Topic** giving the six ordered steps from an empty database to a working projection — the chosen alternative to seeding demo data                                                       | Onboarding, quick start, tutorial  |
+| **App-Wins Rule**                     | The editorial rule that where the manual's copy and the shipped app disagree, the app is correct and the copy is rewritten — behaviour the copy describes but the app lacks is cut                          | Doc accuracy, sync, parity         |
+| **Empty-Hidden Surface** (updated)    | A surface that renders nothing at all when its underlying data is absent — the mortgage KPI tiles, Year Archive years, Month picker bounds (Mortgage Countdown left this list in Live-Use Repair — Round 1) | Hidden card, conditional card      |
+| **Transfer Direction Rule** (updated) | The convention that a **Recurring Transfer** amount is always entered positive and its **Transfer Direction** (To / From) decides which account is the source                                               | Transfer sign, signed pair         |
 
 ## Relationships (Quick Start Guide additions)
 
@@ -1172,3 +1172,47 @@
   - **Getting Started** — one **Manual Topic** inside it, and one **Manual Group** label.
     A sentence like "open the Quick Start Guide" is wrong on two counts: nothing in the app carries that name, and it usually means **Getting Started** specifically.
 - **"guide"** (new) — avoid entirely as a noun for the surface; it collides with the epic name and reads as a separate document from the **User Manual**. There is one surface.
+
+## Live-Use Repair — Round 1 (new)
+
+| Term                      | Definition                                                                                                                                                           | Aliases to avoid                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| **Live-Use Defect**       | A finding from running Horizon as the real finance tracker, logged in `docs/live-use-defects.md` and classified at triage, never at capture                          | Bug report, issue                         |
+| **Live-Use Round**        | A frozen batch of **Live-Use Defects** that becomes one Live-Use Repair epic; later findings go to the next round, never into a frozen one                           | Sprint, batch                             |
+| **Transfer Direction**    | The To / From choice on the recurring modal that decides which account owns (sources) a **Recurring Transfer** — a UI choice, never stored                           | Transfer sign, flow                       |
+| **Source Account**        | The account a **Recurring Transfer** row belongs to (`accountId`) — money leaves it; the row shows there as −amount in red and is edited there                       | Owner account, from-account               |
+| **Destination Account**   | The account a **Recurring Transfer** names in `linkedAccountId` — money arrives there (or comes off Restschuld for a Mortgage)                                       | Target account, linked account (in prose) |
+| **Mirrored Transfer Row** | The read-only row on the **Destination Account** showing a **Recurring Transfer** as +amount in green, "from <source>", linking to the source                        | Shadow row, ghost row, copy               |
+| **Repayment Transfer**    | Any **Recurring Transfer** into a Mortgage account — the monthly **Darlehen** rate or an annual **Sondertilgung** — the only thing that moves Restschuld             | Mortgage payment, Rate                    |
+| **Mortgage Setup**        | The one-form flow (`MortgageSetupModal`, `POST /mortgages`) that creates a Mortgage account, its **Mortgage Origination** and its **Repayment Transfers** atomically | Mortgage wizard, onboarding               |
+| **ST Month** (updated)    | A projected month in which an annual **Repayment Transfer** fires (`deriveSTMonths`) — never inferred from a Restschuld step-down                                    | ST date, step-down month                  |
+
+## Relationships (Live-Use Repair — Round 1 additions)
+
+- A **Recurring Transfer** is exactly one stored row: one **Source Account**, one **Destination Account**, a positive `amount`
+- Every **Recurring Transfer** renders twice: as −amount on its **Source Account** (editable) and as a **Mirrored Transfer Row** on its **Destination Account** (read-only)
+- Choosing **Transfer Direction** "From" on account A makes the other account the **Source Account**; the row is stored there, not on A
+- A Mortgage has zero or more **Repayment Transfers**; with none, the Mortgage Countdown shows no Payoff Month and says so
+- **Mortgage Setup** creates one Mortgage account, its origination, and up to two **Repayment Transfers** (monthly rate, optional annual Sondertilgung) — all or nothing
+- A **Live-Use Round** contains one or more **Live-Use Defects**; Round 1 is #1–#5 (#5 added at its grill), Round 2 starts at #6
+- An **ST Month** exists only while the Mortgage has Restschuld left — after the **Payoff Month** an annual **Repayment Transfer** is refunded by the engine and counts as nothing
+
+## Example dialogue (Live-Use Repair — Round 1)
+
+> **Dev:** "On the Mortgage page the user picks 'From Postbank' and types 955. Which account does the row go on?"
+>
+> **Domain expert:** "Postbank. 'From' makes Postbank the **Source Account** — the row is stored there, positive, with the Mortgage as **Destination Account**. The **Transfer Direction** is never stored."
+>
+> **Dev:** "So the Mortgage page shows nothing?"
+>
+> **Domain expert:** "It shows a **Mirrored Transfer Row** — +955 in green, 'from Postbank'. Clicking it takes you to Postbank, where the real row is edited."
+>
+> **Dev:** "And the €955 is a Sondertilgung?"
+>
+> **Domain expert:** "No — it's a **Repayment Transfer**, the monthly rate. Only the annual one in November is a Sondertilgung, and that's what makes an **ST Month**. A Restschuld step-down alone tells you nothing any more."
+
+## Flagged ambiguities (Live-Use Repair — Round 1)
+
+- **"Sondertilgung" for every Restschuld reduction** (new) — the **ST-only Model** made every step-down a Sondertilgung; with monthly **Repayment Transfers** that is false. Say **Repayment Transfer** for any transfer into a Mortgage, **Sondertilgung** only for the annual extra one. `outlook.ts` conflated them until Live-Use defect #5, fixed in Round 1.
+- **"linked account"** (new) — in code `linkedAccountId` means both a CreditCard's funding account and a Recurring Transfer's destination. In prose about transfers say **Destination Account**; in prose about settlement say **funding account**.
+- **"direction"** (new) — on one-off transactions "Direction" is Outflow/Inflow (a sign); on recurring transfers it is To/From (which account is the source). Both chip pairs share the `FormField label="Direction"` pattern; qualify as **Transfer Direction** when writing about recurring transfers.

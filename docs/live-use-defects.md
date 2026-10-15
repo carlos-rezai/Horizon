@@ -6,7 +6,8 @@ in rounds: each round's defects are frozen at a grill-me session and become one
 **Live-Use Repair — Round N** epic. Anything found afterwards is appended under
 the next round's heading, never into a frozen round.
 
-**Round 1** (defects #1–#4) was frozen at the 2026-10-15 backlog grill. Log new
+**Round 1** (defects #1–#4) was frozen at the 2026-10-15 backlog grill; #5 was
+added at the Round 1 grill the same day as a recorded exception. Log new
 findings under **Round 2** at the bottom of this file.
 
 ## How to log one
@@ -204,6 +205,48 @@ is what is being reverted.
 
 ---
 
+## 5. Outlook summary counts every Restschuld step-down as a Sondertilgung
+
+**Did:** Set up a €955 monthly recurring transfer Postbank → Mortgage plus a
+€6,500 November Sondertilgung, then read the Outlook summary.
+**Expected:** Total Sondertilgung and its count to cover the November
+payments only.
+**Actual:** Every monthly repayment is counted as a Sondertilgung — twelve a
+year, and the total includes all the monthly rates.
+
+**Class:** product gap
+**Evidence:** `src/utils/outlook/outlook.ts:27`
+
+```ts
+for (let i = 1; i < points.length; i++) {
+  const step = points[i - 1].restschuld - points[i].restschuld;
+  if (step > 0) {
+```
+
+The derivation assumes the ST-only model ("the Restschuld only ever decreases
+via a Sondertilgung"), but the engine reduces Restschuld for **any** Recurring
+Transfer into a Mortgage (`server/src/lib/projection/projection.ts:93`).
+`deriveSTMonths` (`src/utils/projection/projection.ts:60`) already identifies
+Sondertilgung from the recurring's shape and is what `TrajectoryHorizon` and
+`PlanSummary` use.
+
+Introduced `3f195e6` (2026-06-15, #138 `deriveOutlookSummary` util) and
+unchanged since — working as coded under the ST-only assumption.
+
+**Found:** 2026-10-15, during the Live-Use Repair — Round 1 grill, after the
+freeze. **Added to Round 1** by the user's decision (design log 29, Q3): the fix
+is small, and Round 1's Mortgage Setup makes a monthly repayment transfer the
+default path, so shipping Round 1 without it would spread the miscount to every
+mortgage. A deliberate, recorded exception to the freeze rule.
+
+**Decided (Round 1 grill, 2026-10-15):** a Sondertilgung is an annual
+Repayment Transfer firing while Restschuld remains (`effectiveSTMonths`), read
+by every Sondertilgung surface — Outlook summary, Projection accordion,
+`PlanSummary`, `TrajectoryHorizon`. The monthly rate is the Darlehen, never
+Sondertilgung.
+
+---
+
 # Round 2
 
-_Open — append new live-use findings here, numbered from 5._
+_Open — append new live-use findings here, numbered from 6._
