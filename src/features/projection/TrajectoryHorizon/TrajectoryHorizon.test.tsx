@@ -8,8 +8,33 @@ import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 
+// The chart itself cannot lay out in jsdom, so the recharts boundary is
+// stubbed: ResponsiveContainer passes its children through and ComposedChart
+// records the data points it was handed, which carry the ST marks.
+const chart = vi.hoisted(() => ({
+  data: [] as { label: string; isSTMonth: boolean }[],
+}));
+vi.mock("recharts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("recharts")>();
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+      <>{children}</>
+    ),
+    ComposedChart: ({
+      data,
+    }: {
+      data: { label: string; isSTMonth: boolean }[];
+    }) => {
+      chart.data = data;
+      return null;
+    },
+  };
+});
+
 afterEach(() => {
   cleanup();
+  chart.data = [];
 });
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -414,5 +439,66 @@ describe("TrajectoryHorizon", () => {
         screen.getByRole("button", { name: /view history/i })
       ).toBeInTheDocument();
     });
+  });
+});
+
+describe("TrajectoryHorizon — ST marks", () => {
+  function transfer(
+    id: string,
+    amount: number,
+    frequency: RecurringTransaction["frequency"],
+    monthOfYear?: number
+  ): RecurringTransaction {
+    return {
+      id,
+      accountId: "g1",
+      amount,
+      description: id,
+      category: "Housing",
+      frequency,
+      dayOfMonth: 1,
+      linkedAccountId: "m1",
+      monthOfYear,
+    };
+  }
+
+  // Monthly snapshots from October 2026 to December 2028: €25,000 Restschuld
+  // falling €100 every month and €20,000 more each November, paid off in
+  // November 2027.
+  const monthly: MonthlySnapshot[] = [];
+  let restschuld = 2500000;
+  for (let i = 0; i < 27; i++) {
+    const year = 2026 + Math.floor((9 + i) / 12);
+    const monthNum = ((9 + i) % 12) + 1;
+    if (i > 0) {
+      restschuld -= 10000;
+      if (monthNum === 11) restschuld -= 2000000;
+      restschuld = Math.max(0, restschuld);
+    }
+    monthly.push({
+      month: `${year}-${String(monthNum).padStart(2, "0")}`,
+      accounts: { g1: { projected: 100000 }, m1: { projected: restschuld } },
+      netCashflow: 0,
+      totalLiquid: 100000,
+    });
+  }
+
+  const stMarked = () =>
+    chart.data.filter((p) => p.isSTMonth).map((p) => p.label);
+
+  it("marks only annual Sondertilgung months up to and including payoff", () => {
+    renderWithTheme(
+      <TrajectoryHorizon
+        snapshots={monthly}
+        accounts={[giroAccount, mortgageAccount]}
+        recurringTransactions={[
+          transfer("Darlehen", 10000, "monthly"),
+          transfer("Sondertilgung", 2000000, "annual", 11),
+        ]}
+        isLoading={false}
+      />
+    );
+
+    expect(stMarked()).toEqual(["2026-11", "2027-11"]);
   });
 });

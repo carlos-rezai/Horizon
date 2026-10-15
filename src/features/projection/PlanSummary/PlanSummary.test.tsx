@@ -176,3 +176,93 @@ describe("PlanSummary — payoff year", () => {
     expect(screen.getAllByText("Payoff")).toHaveLength(1);
   });
 });
+
+describe("PlanSummary — Sondertilgung column", () => {
+  const mortgage: AccountWithBalance = {
+    id: "m1",
+    kind: "Mortgage",
+    name: "Home Loan",
+    openingBalance: 2500000,
+    openingDate: "2026-01-01",
+    balance: 2500000,
+  };
+
+  function transfer(
+    id: string,
+    amount: number,
+    frequency: RecurringTransaction["frequency"],
+    monthOfYear?: number
+  ): RecurringTransaction {
+    return {
+      id,
+      accountId: "g1",
+      amount,
+      description: id,
+      category: "Housing",
+      frequency,
+      dayOfMonth: 1,
+      linkedAccountId: "m1",
+      monthOfYear,
+    };
+  }
+
+  // Monthly snapshots from October 2026 to December 2028: €25,000 Restschuld
+  // falling €100 every month and €20,000 more each November. November 2027 is
+  // the Payoff Month, with only €3,800 left the month before.
+  const snapshots: MonthlySnapshot[] = [];
+  let restschuld = 2500000;
+  for (let i = 0; i < 27; i++) {
+    const year = 2026 + Math.floor((9 + i) / 12);
+    const monthNum = ((9 + i) % 12) + 1;
+    if (i > 0) {
+      restschuld -= 10000;
+      if (monthNum === 11) restschuld -= 2000000;
+      restschuld = Math.max(0, restschuld);
+    }
+    snapshots.push({
+      month: `${year}-${String(monthNum).padStart(2, "0")}`,
+      accounts: { m1: { projected: restschuld }, g1: { projected: 100000 } },
+      netCashflow: 0,
+      totalLiquid: 100000,
+    });
+  }
+
+  const recurring = [
+    transfer("Darlehen", 10000, "monthly"),
+    transfer("Sondertilgung", 2000000, "annual", 11),
+  ];
+
+  function renderWithRecurring() {
+    return render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <PlanSummary
+            snapshots={snapshots}
+            accounts={[giroAccount, mortgage]}
+            recurringTransactions={recurring}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+  }
+
+  function stCell(row: HTMLElement): HTMLElement {
+    const cells = row.querySelectorAll("td");
+    return cells[cells.length - 1] as HTMLElement;
+  }
+
+  it("caps the payoff year's Sondertilgung at the Restschuld that was left", () => {
+    renderWithRecurring();
+    const rows = screen.getAllByTestId("year-summary-row");
+
+    expect(stCell(rows[1])).toHaveTextContent(/-3\.800,00/);
+  });
+
+  it("reports no Sondertilgung for a year after payoff", () => {
+    renderWithRecurring();
+    const rows = screen.getAllByTestId("year-summary-row");
+
+    expect(rows[2]).toHaveTextContent("2028");
+    expect(stCell(rows[2])).toHaveTextContent("—");
+  });
+});

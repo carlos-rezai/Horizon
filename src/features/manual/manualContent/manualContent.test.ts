@@ -272,6 +272,30 @@ describe("the Outlook topic", () => {
     expect(row?.body).toMatch(/tint/i);
   });
 
+  // Live-Use Repair #5: Total Sondertilgung counts only the annual transfers
+  // into the Mortgage up to payoff — never the monthly repayment, never a
+  // Restschuld step-down as such.
+  describe("the Total Sondertilgung definition", () => {
+    const definition = (): string =>
+      MANUAL_TOPICS.outlook.details
+        .flatMap((detail) => detail.terms ?? [])
+        .find((entry) => entry.term === "Total Sondertilgung")?.definition ??
+      "";
+
+    it("counts only the annual extras up to payoff", () => {
+      expect(definition()).toMatch(/annual/i);
+      expect(definition()).toMatch(/payoff|paid off/i);
+    });
+
+    it("says the monthly repayment is not counted", () => {
+      expect(definition()).toMatch(/monthly/i);
+    });
+
+    it("no longer reads Sondertilgung off Restschuld step-downs", () => {
+      expect(definition()).not.toMatch(/steps down/i);
+    });
+  });
+
   it("no longer lists Net Cashflow or Sondertilgung as accordion columns", () => {
     const row = rowOf("outlook", /accordion/i);
 
