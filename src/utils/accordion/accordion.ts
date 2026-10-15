@@ -1,12 +1,14 @@
 /**
- * One projected month reduced to the figures the Projection Accordion's
- * collapsed year row needs. `restschuld` is the total Mortgage balance.
+ * One projected month reduced to the figures a year accordion's collapsed
+ * year row needs. `restschuld` is the total Mortgage balance; `accounts` is
+ * the projected balance of each non-Mortgage account, keyed by account id.
  */
 export interface YearAggPoint {
   month: string;
   totalLiquid: number;
   restschuld: number;
   netCashflow: number;
+  accounts: Record<string, number>;
 }
 
 export interface YearSummary {
@@ -17,21 +19,20 @@ export interface YearSummary {
   restschuld: number;
   /** Sum of the year's monthly Net Cashflow. */
   netCashflow: number;
-  /** Sum of Restschuld step-downs that occurred during the year. */
-  sondertilgung: number;
+  /** End-of-year projected balance per account (the year's final month). */
+  accounts: Record<string, number>;
 }
 
 /**
  * Collapse a month-by-month projection into one summary per year. Net Cashflow
- * is summed; Total Liquid and Restschuld are taken from the year's final month;
- * Sondertilgung is the sum of Restschuld step-downs attributed to the year the
- * step occurred in (each step-down is one ST payment in the ST-only model).
+ * is summed; Total Liquid, Restschuld and the per-account balances are taken
+ * from the year's final available month.
  */
 export function aggregateYearSummaries(points: YearAggPoint[]): YearSummary[] {
   const order: number[] = [];
   const byYear = new Map<number, YearSummary>();
 
-  points.forEach((point, i) => {
+  for (const point of points) {
     const year = parseInt(point.month.slice(0, 4), 10);
     let summary = byYear.get(year);
     if (!summary) {
@@ -40,7 +41,7 @@ export function aggregateYearSummaries(points: YearAggPoint[]): YearSummary[] {
         totalLiquid: 0,
         restschuld: 0,
         netCashflow: 0,
-        sondertilgung: 0,
+        accounts: {},
       };
       byYear.set(year, summary);
       order.push(year);
@@ -50,12 +51,8 @@ export function aggregateYearSummaries(points: YearAggPoint[]): YearSummary[] {
     // The year's final month wins for end-of-year balances (points are ordered).
     summary.totalLiquid = point.totalLiquid;
     summary.restschuld = point.restschuld;
-
-    if (i > 0) {
-      const step = points[i - 1].restschuld - point.restschuld;
-      if (step > 0) summary.sondertilgung += step;
-    }
-  });
+    summary.accounts = { ...point.accounts };
+  }
 
   return order.map((year) => byYear.get(year)!);
 }

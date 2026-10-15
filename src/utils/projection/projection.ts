@@ -6,28 +6,32 @@ import type {
 } from "../../types/projection";
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
-
-const KIND_ORDER: Record<AccountKind, number> = {
-  Girokonto: 0,
-  Tagesgeld: 1,
-  Investment: 2,
-  CreditCard: 3,
-  Mortgage: 4,
-};
+import { resolveAccountColor } from "../color/color";
 
 export interface AccountColumn {
   id: string;
   name: string;
   kind: AccountKind;
+  /** The account's resolved colour — its own, else its kind's chart colour. */
+  color: string;
 }
 
+/**
+ * One column per non-Mortgage account, in input order — the server already
+ * returns accounts by their sortOrder. Accounts hidden from the trajectory
+ * chart are still columns; the Mortgage is the Restschuld column instead.
+ */
 export function buildAccountColumns(
   accounts: AccountWithBalance[]
 ): AccountColumn[] {
   return accounts
     .filter((a) => a.kind !== "Mortgage")
-    .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind])
-    .map((a) => ({ id: a.id, name: a.name, kind: a.kind }));
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      kind: a.kind,
+      color: resolveAccountColor(a),
+    }));
 }
 
 export function findMilestoneMonth(
@@ -95,6 +99,51 @@ export function deriveSTMonths(
     }
   }
 
+  return result;
+}
+
+function restschuldIn(
+  snapshot: MonthlySnapshot,
+  mortgageIds: string[]
+): number {
+  return mortgageIds.reduce(
+    (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
+    0
+  );
+}
+
+/**
+ * The ST Months that actually reduce the Restschuld: every `deriveSTMonths`
+ * entry up to and including the Payoff Month, its amount capped at the
+ * Restschuld left at the end of the previous month. Transfers after payoff
+ * are dropped — the engine refunds them to their source.
+ */
+export function effectiveSTMonths(
+  stMonths: Map<string, number>,
+  snapshots: MonthlySnapshot[],
+  mortgageIds: string[]
+): Map<string, number> {
+  const result = new Map<string, number>();
+  if (mortgageIds.length === 0 || stMonths.size === 0) return result;
+
+  const previousRestschuld = new Map<string, number>();
+  let payoffMonth: string | null = null;
+  let prior: number | undefined;
+  for (const snapshot of snapshots) {
+    const restschuld = restschuldIn(snapshot, mortgageIds);
+    if (prior !== undefined) previousRestschuld.set(snapshot.month, prior);
+    if (payoffMonth === null && restschuld <= 0) payoffMonth = snapshot.month;
+    prior = restschuld;
+  }
+
+  const ordered = [...stMonths.entries()].sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0
+  );
+  for (const [month, amount] of ordered) {
+    if (payoffMonth !== null && month > payoffMonth) continue;
+    const before = previousRestschuld.get(month);
+    result.set(month, before === undefined ? amount : Math.min(amount, before));
+  }
   return result;
 }
 

@@ -203,6 +203,15 @@ is what is being reverted.
 - Each account column header carries the account's **colour chip** (Account
   Color Identity).
 
+**Fixed** 2026-10-15 (issue #221; RED `73c3191`, build in the `feat:` commit
+closing #221): the accordion reads "Projection", with columns Period · one per
+non-Mortgage account in sortOrder (colour chip + name) · Total Liquid ·
+Restschuld, in year and month rows; the body scrolls horizontally inside its
+card. Net Cashflow and Sondertilgung columns are gone; ST months stay tinted,
+now from `effectiveSTMonths` (annual transfers before payoff) instead of
+Restschuld step-downs. The skeleton matches; the Year Archive keeps Net
+Cashflow.
+
 ---
 
 ## 5. Outlook summary counts every Restschuld step-down as a Sondertilgung

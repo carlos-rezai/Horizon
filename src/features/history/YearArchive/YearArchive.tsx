@@ -61,6 +61,7 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
           totalLiquid: p.totalLiquid,
           restschuld: p.restschuld,
           netCashflow: p.netCashflow,
+          accounts: {},
         }))
     ).map((summary) => [summary.year, summary])
   );

@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useAccounts } from "../../features/accounts/useAccounts/useAccounts";
 import { useProjection } from "../../features/projection/useProjection/useProjection";
+import { useAllRecurringTransactions } from "../../features/projection/useAllRecurringTransactions/useAllRecurringTransactions";
 import { ProjectionAccordion } from "../../features/projection";
 import ProjectionAccordionSkeleton from "../../features/projection/ProjectionAccordion/ProjectionAccordionSkeleton";
 import OutlookSummary from "../../features/projection/OutlookSummary/OutlookSummary";
@@ -26,6 +27,8 @@ export default function PlanPage() {
     error: projectionError,
     refetch,
   } = useProjection();
+
+  const { recurringTransactions } = useAllRecurringTransactions();
 
   const initialYear = location.state?.year as number | undefined;
 
@@ -73,6 +76,7 @@ export default function PlanPage() {
           <ProjectionAccordion
             snapshots={snapshots}
             accounts={accounts}
+            recurringTransactions={recurringTransactions}
             initialYear={initialYear}
           />
         </SectionState>

@@ -13,6 +13,7 @@ export {
   buildAccountColumns,
   findMilestoneMonth,
   deriveSTMonths,
+  effectiveSTMonths,
   deriveYearSummaries,
   deriveOutlookSummary,
   buildTrajectoryData,

@@ -5,6 +5,8 @@ import {
   StyledSectionTitle,
   StyledLegend,
   StyledLegendDot,
+  StyledScroll,
+  StyledScrollBody,
   StyledColumnHeader,
   StyledYearSection,
 } from "./ProjectionAccordion.styles";
@@ -17,8 +19,10 @@ import {
 // to know how far the projection reaches.
 const YEARS = Array.from({ length: 8 }, (_, year) => year);
 
-// Total Liquid · Restschuld · Net Cashflow · Sondertilgung
-const FIGURES = [96, 104, 84, 76];
+// Two placeholder accounts — the real count is not known until the accounts
+// land — then Total Liquid · Restschuld.
+const PLACEHOLDER_ACCOUNTS = 2;
+const FIGURES = [88, 92, 96, 104];
 
 const ROW_HEIGHT = 15;
 
@@ -32,35 +36,45 @@ export default function ProjectionAccordionSkeleton() {
   return (
     <StyledAccordion data-testid="projection-accordion-skeleton">
       <StyledSectionHead>
-        <StyledSectionTitle>Projection Accordion</StyledSectionTitle>
+        <StyledSectionTitle>Projection</StyledSectionTitle>
         <StyledLegend>
           <StyledLegendDot />
           Payoff year highlighted
         </StyledLegend>
       </StyledSectionHead>
 
-      <StyledColumnHeader>
-        <span />
-        <span>Period</span>
-        <span>Total Liquid</span>
-        <span>Restschuld</span>
-        <span>Net Cashflow</span>
-        <span>Sondertilgung</span>
-      </StyledColumnHeader>
-
-      {YEARS.map((year) => (
-        <StyledYearSection key={year}>
-          <StyledYearRow aria-hidden="true">
-            <Skeleton width={17} height={17} />
-            <Skeleton width={44} height={ROW_HEIGHT} />
-            {FIGURES.map((width) => (
-              <StyledNumCell key={width}>
-                <Skeleton width={width} height={ROW_HEIGHT} />
-              </StyledNumCell>
+      <StyledScroll>
+        <StyledScrollBody>
+          <StyledColumnHeader $accountCount={PLACEHOLDER_ACCOUNTS}>
+            <span />
+            <span>Period</span>
+            {Array.from({ length: PLACEHOLDER_ACCOUNTS }, (_, i) => (
+              <span key={i} aria-hidden="true">
+                <Skeleton width={72} height={11} />
+              </span>
             ))}
-          </StyledYearRow>
-        </StyledYearSection>
-      ))}
+            <span>Total Liquid</span>
+            <span>Restschuld</span>
+          </StyledColumnHeader>
+
+          {YEARS.map((year) => (
+            <StyledYearSection key={year}>
+              <StyledYearRow
+                aria-hidden="true"
+                $accountCount={PLACEHOLDER_ACCOUNTS}
+              >
+                <Skeleton width={17} height={17} />
+                <Skeleton width={44} height={ROW_HEIGHT} />
+                {FIGURES.map((width) => (
+                  <StyledNumCell key={width}>
+                    <Skeleton width={width} height={ROW_HEIGHT} />
+                  </StyledNumCell>
+                ))}
+              </StyledYearRow>
+            </StyledYearSection>
+          ))}
+        </StyledScrollBody>
+      </StyledScroll>
     </StyledAccordion>
   );
 }

@@ -219,7 +219,7 @@ describe("PlanPage — progressive reveal", () => {
       section("outlook").getByTestId("outlook-summary")
     ).toBeInTheDocument();
     expect(
-      section("accordion").getByText("Projection Accordion")
+      section("accordion").getByText("Projection", { exact: true })
     ).toBeInTheDocument();
     expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
   });
