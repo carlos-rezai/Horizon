@@ -64,7 +64,11 @@ export default function PlanPage() {
         error={error}
         skeleton={<OutlookSummarySkeleton />}
       >
-        <OutlookSummary snapshots={snapshots} accounts={accounts} />
+        <OutlookSummary
+          snapshots={snapshots}
+          accounts={accounts}
+          recurringTransactions={recurringTransactions}
+        />
       </SectionState>
       <Card>
         <SectionState

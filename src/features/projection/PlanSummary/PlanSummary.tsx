@@ -6,6 +6,7 @@ import type { RecurringTransaction } from "../../../types/recurring";
 import {
   deriveSTMonths,
   deriveYearSummaries,
+  effectiveSTMonths,
 } from "../../../utils/projection/projection";
 import { formatBalance } from "../../../utils/format/format";
 import SectionHead from "../../../components/SectionHead/SectionHead";
@@ -48,11 +49,15 @@ export default function PlanSummary({
 
   const stMonths =
     snapshots.length > 0
-      ? deriveSTMonths(
-          recurringTransactions,
-          accounts,
-          snapshots[0].month,
-          snapshots.length
+      ? effectiveSTMonths(
+          deriveSTMonths(
+            recurringTransactions,
+            accounts,
+            snapshots[0].month,
+            snapshots.length
+          ),
+          snapshots,
+          mortgageIds
         )
       : new Map<string, number>();
 

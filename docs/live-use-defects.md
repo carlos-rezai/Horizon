@@ -254,6 +254,17 @@ by every Sondertilgung surface — Outlook summary, Projection accordion,
 `PlanSummary`, `TrajectoryHorizon`. The monthly rate is the Darlehen, never
 Sondertilgung.
 
+**Fixed** 2026-10-15 (issue #222; RED `ce749bc`, build in the `feat:` commit
+closing #222): `deriveOutlookSummary` takes the effective ST map as a second
+argument and totals and counts from it, so a monthly-only repayment yields zero
+Sondertilgung and zero payments. `OutlookSummary` receives the recurring
+transactions; `PlanSummary` and `TrajectoryHorizon` switch from
+`deriveSTMonths` to `effectiveSTMonths`, so no surface reports Sondertilgung
+after payoff and the payoff year's payment is capped at the Restschuld left.
+The reference case (€955/month, €6,500 each November, payoff Oct 2031) reads
+−€32,500 over 5 payments. The manual's Total Sondertilgung definition is
+rewritten to match.
+
 ---
 
 # Round 2

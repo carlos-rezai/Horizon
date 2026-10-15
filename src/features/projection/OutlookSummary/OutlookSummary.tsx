@@ -1,11 +1,16 @@
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
+import type { RecurringTransaction } from "../../../types/recurring";
 import StatBlock from "../../../components/StatBlock/StatBlock";
 import Money from "../../../primitives/Money/Money";
 import {
   deriveOutlookSummary,
   type OutlookPoint,
 } from "../../../utils/outlook/outlook";
+import {
+  deriveSTMonths,
+  effectiveSTMonths,
+} from "../../../utils/projection/projection";
 import { formatMonth } from "../../../utils/format/format";
 import {
   StyledStrip,
@@ -17,9 +22,14 @@ import {
 interface Props {
   snapshots: MonthlySnapshot[];
   accounts: AccountWithBalance[];
+  recurringTransactions: RecurringTransaction[];
 }
 
-export default function OutlookSummary({ snapshots, accounts }: Props) {
+export default function OutlookSummary({
+  snapshots,
+  accounts,
+  recurringTransactions,
+}: Props) {
   const mortgageIds = accounts
     .filter((a) => a.kind === "Mortgage")
     .map((a) => a.id);
@@ -33,7 +43,21 @@ export default function OutlookSummary({ snapshots, accounts }: Props) {
     }, 0),
   }));
 
-  const summary = deriveOutlookSummary(points);
+  const stMonths =
+    snapshots.length > 0
+      ? effectiveSTMonths(
+          deriveSTMonths(
+            recurringTransactions,
+            accounts,
+            snapshots[0].month,
+            snapshots.length
+          ),
+          snapshots,
+          mortgageIds
+        )
+      : new Map<string, number>();
+
+  const summary = deriveOutlookSummary(points, stMonths);
 
   return (
     <StyledStrip data-testid="outlook-summary">

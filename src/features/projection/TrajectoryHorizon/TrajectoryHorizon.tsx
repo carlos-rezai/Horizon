@@ -23,6 +23,7 @@ import type { RecurringTransaction } from "../../../types/recurring";
 import {
   buildTrajectoryData,
   deriveSTMonths,
+  effectiveSTMonths,
   findMortgagePayoffMonth,
 } from "../../../utils/projection/projection";
 import {
@@ -191,11 +192,15 @@ export default function TrajectoryHorizon({
 
   const stMonths =
     horizonSnapshots.length > 0
-      ? deriveSTMonths(
-          recurringTransactions,
-          accounts,
-          horizonSnapshots[0].month,
-          horizonSnapshots.length
+      ? effectiveSTMonths(
+          deriveSTMonths(
+            recurringTransactions,
+            accounts,
+            horizonSnapshots[0].month,
+            horizonSnapshots.length
+          ),
+          horizonSnapshots,
+          mortgageIds
         )
       : new Map<string, number>();
 

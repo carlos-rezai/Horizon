@@ -211,7 +211,7 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
           {
             term: "Total Sondertilgung",
             definition:
-              "Every extra mortgage repayment the plan expects of you across all twenty years, added up and shown as money leaving you, with the number of months one falls in noted underneath. Horizon reads these off the projection itself: each month the Restschuld steps down is one Sondertilgung.",
+              "Every annual extra repayment into your Mortgage the plan expects of you, up to the month it is paid off, added up and shown as money leaving you, with the number of annual payments noted underneath. Your regular monthly repayment is not counted, the last payment counts only what was still owed, and any annual transfer after payoff is left out.",
           },
         ],
       },

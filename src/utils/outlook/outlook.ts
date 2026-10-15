@@ -15,18 +15,23 @@ export interface OutlookSummary {
   finalYear: number;
   /** First month the Restschuld reaches zero, or null if it never does. */
   debtFreeMonth: string | null;
-  /** Sum of every Restschuld step-down (each is a Sondertilgung payment). */
+  /** Sum of every effective Sondertilgung payment in the ST map. */
   totalSondertilgung: number;
-  /** Number of months in which a Sondertilgung fired. */
+  /** Number of months in which a Sondertilgung reduced the Restschuld. */
   sondertilgungCount: number;
 }
 
 /**
  * Derive the three Outlook summary figures from a month-by-month projection.
- * In the ST-only model the Restschuld only ever decreases via a Sondertilgung,
- * so each month-over-month step-down is one ST payment.
+ * Sondertilgung is totalled and counted from `stMonths` — the effective ST
+ * Months (annual Repayment Transfers firing while Restschuld remains, see
+ * `effectiveSTMonths`) — never from Restschuld step-downs, which also include
+ * the monthly repayment.
  */
-export function deriveOutlookSummary(points: OutlookPoint[]): OutlookSummary {
+export function deriveOutlookSummary(
+  points: OutlookPoint[],
+  stMonths: Map<string, number>
+): OutlookSummary {
   if (points.length === 0) {
     return {
       finalTotalLiquid: 0,
@@ -49,10 +54,9 @@ export function deriveOutlookSummary(points: OutlookPoint[]): OutlookSummary {
 
   let totalSondertilgung = 0;
   let sondertilgungCount = 0;
-  for (let i = 1; i < points.length; i++) {
-    const step = points[i - 1].restschuld - points[i].restschuld;
-    if (step > 0) {
-      totalSondertilgung += step;
+  for (const amount of stMonths.values()) {
+    if (amount > 0) {
+      totalSondertilgung += amount;
       sondertilgungCount += 1;
     }
   }
