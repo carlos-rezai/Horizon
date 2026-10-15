@@ -5,6 +5,7 @@ import {
   cleanup,
   waitFor,
   fireEvent,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
@@ -13,6 +14,7 @@ import { theme } from "../../tokens";
 import AccountDetailPage from "./AccountDetailPage";
 import CacheProvider from "../../components/CacheProvider/CacheProvider";
 import type { AccountWithBalance } from "../../types/account";
+import type { RecurringTransaction } from "../../types/recurring";
 
 afterEach(() => {
   cleanup();
@@ -177,5 +179,96 @@ describe("AccountDetailPage — error states", () => {
     await waitFor(() => {
       expect(getInjectedCSS()).toContain(theme.colors.error);
     });
+  });
+});
+
+describe("AccountDetailPage — recurring stat strip counts transfers by the signed rule", () => {
+  const transferAccounts: AccountWithBalance[] = [
+    {
+      id: "acc-1",
+      kind: "Mortgage",
+      name: "Mortgage",
+      openingBalance: -30000000,
+      openingDate: "2026-01-01",
+      balance: -30000000,
+    },
+    {
+      id: "acc-2",
+      kind: "Girokonto",
+      name: "Postbank",
+      openingBalance: 100000,
+      openingDate: "2026-01-01",
+      balance: 100000,
+    },
+  ];
+
+  const repayment: RecurringTransaction = {
+    id: "rt-repayment",
+    accountId: "acc-2",
+    amount: 95500,
+    description: "Mortgage repayment",
+    category: "Transfer",
+    frequency: "monthly",
+    dayOfMonth: 1,
+    linkedAccountId: "acc-1",
+  };
+
+  const salary: RecurringTransaction = {
+    id: "rt-salary",
+    accountId: "acc-2",
+    amount: 300000,
+    description: "Salary",
+    category: "Income",
+    frequency: "monthly",
+    dayOfMonth: 1,
+  };
+
+  function mockByUrl(recurrings: RecurringTransaction[]) {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      const body = url.includes("/recurring-transactions")
+        ? recurrings
+        : /\/accounts$/.test(url)
+          ? transferAccounts
+          : [];
+      return { ok: true, json: async () => body } as Response;
+    });
+  }
+
+  function renderAt(accountId: string) {
+    return render(
+      <ThemeProvider theme={theme}>
+        <CacheProvider>
+          <MemoryRouter initialEntries={[`/accounts/${accountId}`]}>
+            <Routes>
+              <Route path="/accounts/:id" element={<AccountDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </CacheProvider>
+      </ThemeProvider>
+    );
+  }
+
+  it("on the Mortgage account, the 955 repayment counts as +955 and as one recurring", async () => {
+    mockByUrl([repayment, salary]);
+    renderAt("acc-1");
+
+    const strip = await screen.findByTestId("account-stat-strip");
+    await waitFor(() => {
+      expect(within(strip).getByText(/\+955[.,]00/)).toBeInTheDocument();
+    });
+    expect(within(strip).getByText("1")).toBeInTheDocument();
+  });
+
+  it("on the source account, the repayment counts negative against the salary", async () => {
+    mockByUrl([repayment, salary]);
+    renderAt("acc-2");
+
+    const strip = await screen.findByTestId("account-stat-strip");
+    // 3,000.00 salary − 955.00 repayment
+    await waitFor(() => {
+      expect(within(strip).getByText(/\+2[.,]045[.,]00/)).toBeInTheDocument();
+    });
+    expect(within(strip).getByText("2")).toBeInTheDocument();
   });
 });

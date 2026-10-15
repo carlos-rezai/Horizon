@@ -57,6 +57,43 @@ describe("useRecurringTransactions — initial fetch", () => {
     ).toBe(true);
   });
 
+  it("returns both owned rows and transfers mirrored onto the viewed account", async () => {
+    const outgoing: RecurringTransaction = {
+      id: "rt-out",
+      accountId: ACCOUNT_ID,
+      amount: 50000,
+      description: "Savings deposit",
+      category: "Transfer",
+      frequency: "monthly",
+      dayOfMonth: 25,
+      linkedAccountId: "acc-2",
+    };
+    const incoming: RecurringTransaction = {
+      id: "rt-in",
+      accountId: "acc-3",
+      amount: 95500,
+      description: "Mortgage repayment",
+      category: "Transfer",
+      frequency: "monthly",
+      dayOfMonth: 1,
+      linkedAccountId: ACCOUNT_ID,
+    };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => [rt1, rt2, outgoing, incoming],
+    } as Response);
+
+    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
+
+    await act(async () => {});
+
+    expect(result.current.recurringTransactions).toHaveLength(3);
+    expect(result.current.recurringTransactions).toEqual(
+      expect.arrayContaining([rt1, outgoing, incoming])
+    );
+    expect(result.current.recurringTransactions).not.toContainEqual(rt2);
+  });
+
   it("starts in a loading state and resolves after fetch", async () => {
     const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
 

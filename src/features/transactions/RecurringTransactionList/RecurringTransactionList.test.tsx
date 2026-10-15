@@ -2,6 +2,7 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
+import { MemoryRouter } from "react-router-dom";
 import { theme } from "../../../tokens";
 import RecurringTransactionList from "./RecurringTransactionList";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -74,19 +75,23 @@ const mockAccounts: AccountWithBalance[] = [
 const renderRtList = (
   recurringTransactions: RecurringTransaction[],
   overrides: Partial<{
+    accountId: string;
     accounts: AccountWithBalance[];
     onRowClick: (rt: RecurringTransaction) => void;
   }> = {}
 ) => {
   const props = {
     recurringTransactions,
+    accountId: "acc-1",
     onRowClick: vi.fn(),
     ...overrides,
   };
   render(
-    <ThemeProvider theme={theme}>
-      <RecurringTransactionList {...props} />
-    </ThemeProvider>
+    <MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <RecurringTransactionList {...props} />
+      </ThemeProvider>
+    </MemoryRouter>
   );
   return props;
 };
@@ -192,16 +197,24 @@ describe("RecurringTransactionList — empty state", () => {
 });
 
 describe("RecurringTransactionList — amount coloring", () => {
-  function renderForCSS(recurringTransactions: RecurringTransaction[]) {
+  function renderForCSS(
+    recurringTransactions: RecurringTransaction[],
+    accountId = "acc-1",
+    accounts: AccountWithBalance[] = []
+  ) {
     render(
-      <StyleSheetManager disableCSSOMInjection>
-        <ThemeProvider theme={theme}>
-          <RecurringTransactionList
-            recurringTransactions={recurringTransactions}
-            onRowClick={vi.fn()}
-          />
-        </ThemeProvider>
-      </StyleSheetManager>
+      <MemoryRouter>
+        <StyleSheetManager disableCSSOMInjection>
+          <ThemeProvider theme={theme}>
+            <RecurringTransactionList
+              recurringTransactions={recurringTransactions}
+              accountId={accountId}
+              accounts={accounts}
+              onRowClick={vi.fn()}
+            />
+          </ThemeProvider>
+        </StyleSheetManager>
+      </MemoryRouter>
     );
   }
 
@@ -217,5 +230,103 @@ describe("RecurringTransactionList — amount coloring", () => {
 
     const amountEl = screen.getByText(/-1[.,]200/);
     expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
+  });
+
+  it("a transfer renders as a red −amount on its source account", () => {
+    renderForCSS([transfer], "acc-1", transferAccounts);
+
+    const amountEl = screen.getByText(/-500[.,]00/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.error);
+  });
+
+  it("a Mirrored Transfer Row renders as a green +amount from its source", () => {
+    renderForCSS([transfer], "acc-2", transferAccounts);
+
+    const amountEl = screen.getByText(/\+500[.,]00/);
+    expect(getCSSForElement(amountEl)).toContain(theme.colors.secondary);
+    expect(screen.getByTestId("data-row")).toHaveTextContent(/from\s*Postbank/);
+  });
+});
+
+const transfer: RecurringTransaction = {
+  id: "rt-transfer",
+  accountId: "acc-1",
+  amount: 50000,
+  description: "Savings deposit",
+  category: "Transfer",
+  frequency: "monthly",
+  dayOfMonth: 25,
+  linkedAccountId: "acc-2",
+};
+
+const transferAccounts: AccountWithBalance[] = [
+  {
+    id: "acc-1",
+    kind: "Girokonto",
+    name: "Postbank",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  },
+  {
+    id: "acc-2",
+    kind: "Tagesgeld",
+    name: "Savings",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  },
+];
+
+describe("RecurringTransactionList — recurring transfer on its source account", () => {
+  it("shows −amount with the destination account and opens the edit modal", () => {
+    const onRowClick = vi.fn();
+    renderRtList([transfer], {
+      accountId: "acc-1",
+      accounts: transferAccounts,
+      onRowClick,
+    });
+
+    expect(screen.getByText(/-500[.,]00/)).toBeInTheDocument();
+    expect(screen.getByText("Savings")).toBeInTheDocument();
+    expect(screen.queryByRole("link")).toBeNull();
+
+    fireEvent.click(screen.getByText("Savings deposit"));
+    expect(onRowClick).toHaveBeenCalledWith(transfer);
+  });
+});
+
+describe("RecurringTransactionList — Mirrored Transfer Row on the destination account", () => {
+  it("shows +amount and 'from <source>'", () => {
+    renderRtList([transfer], {
+      accountId: "acc-2",
+      accounts: transferAccounts,
+    });
+
+    expect(screen.getByText(/\+500[.,]00/)).toBeInTheDocument();
+    expect(screen.getByTestId("data-row")).toHaveTextContent(/from\s*Postbank/);
+  });
+
+  it("is a link to the source account page", () => {
+    renderRtList([transfer], {
+      accountId: "acc-2",
+      accounts: transferAccounts,
+    });
+
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/accounts/acc-1");
+    expect(link).toHaveTextContent("Savings deposit");
+  });
+
+  it("never opens the edit modal", () => {
+    const onRowClick = vi.fn();
+    renderRtList([transfer], {
+      accountId: "acc-2",
+      accounts: transferAccounts,
+      onRowClick,
+    });
+
+    fireEvent.click(screen.getByText("Savings deposit"));
+    expect(onRowClick).not.toHaveBeenCalled();
   });
 });

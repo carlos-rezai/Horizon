@@ -3,9 +3,14 @@
 import { describe, it, expect } from "vitest";
 import * as utils from "./index";
 import { effectiveSTMonths } from "./projection/projection";
+import { recurringAmountFor } from "./recurring/recurring";
 
 describe("the utils barrel", () => {
   it("exports effectiveSTMonths", () => {
     expect(utils).toHaveProperty("effectiveSTMonths", effectiveSTMonths);
+  });
+
+  it("exports recurringAmountFor", () => {
+    expect(utils).toHaveProperty("recurringAmountFor", recurringAmountFor);
   });
 });

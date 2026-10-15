@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { recurringNetPerMonth } from "./recurring";
+import { recurringAmountFor, recurringNetPerMonth } from "./recurring";
 import type { RecurringTransaction } from "../../types/recurring";
 
 /**
@@ -84,20 +84,42 @@ describe("recurringNetPerMonth", () => {
     expect(recurringNetPerMonth(items, "acc-1")).toBe(-120000);
   });
 
-  it("does not count a transfer toward its linked (target) account's net", () => {
-    // A savings transfer leaving acc-1 into acc-2: it belongs to acc-1, and
-    // acc-2 is only the linkedAccountId target — it must not affect acc-2's net.
+  it("counts a transfer negative on its source and positive on its destination", () => {
+    // A savings transfer stored positive on its source acc-1, linked to acc-2.
     const items = [
       rt({
         id: "savings-transfer",
         accountId: "acc-1",
         linkedAccountId: "acc-2",
-        amount: -50000,
+        amount: 50000,
         frequency: "monthly",
       }),
     ];
-    expect(recurringNetPerMonth(items, "acc-2")).toBe(0);
     expect(recurringNetPerMonth(items, "acc-1")).toBe(-50000);
+    expect(recurringNetPerMonth(items, "acc-2")).toBe(50000);
+  });
+
+  it("weights a transfer by frequency on both its source and its destination", () => {
+    // An annual Sondertilgung of 1,200.00 from acc-1 into the mortgage.
+    const items = [
+      rt({
+        id: "annual-st",
+        accountId: "acc-1",
+        linkedAccountId: "mortgage",
+        amount: 120000,
+        frequency: "annual",
+      }),
+      rt({
+        id: "quarterly-transfer",
+        accountId: "acc-1",
+        linkedAccountId: "mortgage",
+        amount: 90000,
+        frequency: "quarterly",
+      }),
+    ];
+    // 120000/12 + 90000/3 = 10000 + 30000
+    expect(recurringNetPerMonth(items, "acc-1")).toBe(-40000);
+    expect(recurringNetPerMonth(items, "mortgage")).toBe(40000);
   });
 
   it("returns 0 for an account with no recurrings", () => {
@@ -110,5 +132,45 @@ describe("recurringNetPerMonth", () => {
       rt({ accountId: "acc-1", amount: -100000, frequency: "annual" }),
     ];
     expect(recurringNetPerMonth(items, "acc-1")).toBe(-8333);
+  });
+});
+
+describe("recurringAmountFor", () => {
+  it("returns a plain recurring's stored amount on its own account", () => {
+    expect(
+      recurringAmountFor(rt({ accountId: "acc-1", amount: -120000 }), "acc-1")
+    ).toBe(-120000);
+    expect(
+      recurringAmountFor(rt({ accountId: "acc-1", amount: 300000 }), "acc-1")
+    ).toBe(300000);
+  });
+
+  it("returns a transfer as negative on its source account", () => {
+    const transfer = rt({
+      accountId: "acc-1",
+      linkedAccountId: "acc-2",
+      amount: 95500,
+    });
+    expect(recurringAmountFor(transfer, "acc-1")).toBe(-95500);
+  });
+
+  it("returns a transfer as positive on its destination account", () => {
+    const transfer = rt({
+      accountId: "acc-1",
+      linkedAccountId: "acc-2",
+      amount: 95500,
+    });
+    expect(recurringAmountFor(transfer, "acc-2")).toBe(95500);
+  });
+
+  it("returns 0 for an account the recurring does not touch", () => {
+    const transfer = rt({
+      accountId: "acc-1",
+      linkedAccountId: "acc-2",
+      amount: 95500,
+    });
+    const plain = rt({ accountId: "acc-1", amount: -120000 });
+    expect(recurringAmountFor(transfer, "acc-3")).toBe(0);
+    expect(recurringAmountFor(plain, "acc-3")).toBe(0);
   });
 });
