@@ -1,0 +1,9 @@
+# The typecheck runs here rather than in pre-commit because it reads the
+# subject, and pre-commit fires before git has written the message.
+# A `test:` commit typechecks the shipping code only: a RED test against a
+# module that does not exist yet cannot typecheck. Never `--no-verify` it.
+subject=$(head -n 1 "$1")
+case "$subject" in
+  test:*) node scripts/typecheck.mjs --shipping ;;
+  *) node scripts/typecheck.mjs ;;
+esac
