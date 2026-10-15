@@ -278,7 +278,11 @@ The generated installer will be signed with your local certificate and will inst
 | Import Review Repair                      | ✅ Complete |
 | Performance + UX Polish                   | ✅ Complete |
 | Quick Start Guide                         | ✅ Complete |
-| Live-Use Repair                           | 📋 Planned  |
+| Live-Use Repair — Round 1                 | 📋 Planned  |
+| Balance Anchor                            | 📋 Planned  |
+| Financial History                         | 📋 Planned  |
+| Month Cash Flow                           | 📋 Planned  |
+| Import Category Learning                  | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
@@ -293,7 +297,7 @@ The generated installer will be signed with your local certificate and will inst
 - [Refactor Plans](./docs/refactor-plans/)
 - [Design Handoff](./docs/handoff/HANDOFF.md)
 - [Dev Journal](./docs/dev-journal.md)
-- [Live-Use Defects](./docs/live-use-defects.md) — running intake for the Live-Use Repair epic
+- [Live-Use Defects](./docs/live-use-defects.md) — running intake for the Live-Use Repair rounds
 
 ---
 

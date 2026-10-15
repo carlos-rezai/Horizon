@@ -1,9 +1,13 @@
 # Live-Use Defects
 
-Running intake for the **Live-Use Repair** epic — things that felt wrong while
-using Horizon as the real personal finance tracker. Append as you find them;
-this file is the input to the grill-me session, after which it stops growing
-and the design log takes over.
+Running intake for the **Live-Use Repair** rounds — things that felt wrong
+while using Horizon as the real personal finance tracker. Live use is reviewed
+in rounds: each round's defects are frozen at a grill-me session and become one
+**Live-Use Repair — Round N** epic. Anything found afterwards is appended under
+the next round's heading, never into a frozen round.
+
+**Round 1** (defects #1–#4) was frozen at the 2026-10-15 backlog grill. Log new
+findings under **Round 2** at the bottom of this file.
 
 ## How to log one
 
@@ -46,6 +50,29 @@ so it has never behaved otherwise.
 modal, or should the signed pair be directly expressible? These imply different
 data models.
 
+**Answered (backlog grill, 2026-10-15): direction control, display-only.** The
+same live session surfaced the display half of this defect: a €955 monthly
+recurring transfer Postbank → Mortgage (category Transfer > Mortgage) renders
+as **+955 in green** on Postbank, and the Mortgage account lists nothing. Cause:
+a recurring transfer is one stored row on the source account with a positive
+amount and `linkedAccountId` (`src/types/recurring.ts`);
+`RecurringTransactionList` renders `<Money cents={rt.amount} sign />` and lists
+only rows whose `accountId` is the viewed account. One-off transfers, by
+contrast, are already a signed pair linked by `transferId`
+(`src/types/transaction.ts`) — the two models disagree.
+
+Decision: keep the single stored row — no migration, the projection engine is
+untouched (it already treats the row correctly; the payoff month proves it).
+Fix it at the edges:
+
+- **Entry:** the modal gets a direction control (to / from account); the user
+  always types a positive amount and the sign follows the direction.
+- **Display:** the source account renders the row as **−amount in red**; the
+  destination account shows a **read-only mirrored row, +amount in green**,
+  labelled with its origin ("from Postbank") and editable only from the source.
+
+Goal: recurring transfers read exactly like one-off transfers.
+
 ---
 
 ## 2. Mortgage Countdown card absent on the Dashboard after a fresh start
@@ -71,6 +98,26 @@ Invisible during development because dev databases always had a mortgage.
 you to add a mortgage account, or is silent absence right and the gap is really
 in first-run onboarding? Likely a wider question than this one card — worth
 auditing every Dashboard surface that returns `null` on empty data.
+
+**Answered (backlog grill, 2026-10-15):** empty state. On an empty database the
+card renders an editable empty state whose action creates the Mortgage account
+and its origination in one flow — original principal, start date, term in
+years, and today's Restschuld (the opening balance) — instead of the current
+Accounts-page detour followed by the pencil edit. Real case: a 10-year contract
+entering year 4, where the paid-off-to-date amount must show from day one.
+The origination editor and "% paid off" already exist; the gap is only that
+nothing leads to them. The wider "show the past, not just the future" ask this
+raised is split out as the **Financial History** epic.
+
+The flow must also capture the **repayment transfer** (monthly rate from a
+funding account, optional annual Sondertilgung). The payoff month comes only
+from `findMortgagePayoffMonth` walking the projection — the term is used for
+the "year N of M" label alone, and no interest is modelled — so an origination
+without a linked transfer shows no payoff, and an under-entered transfer shows
+a misleadingly late one (a €90k Restschuld read as Jun 2037 until the real
+€955/month + €6,500 November Sondertilgung were set up, then Oct 2031). A
+"contract end vs projected payoff" line was considered and dropped: with the
+real transfers entered, the projected date alone is right.
 
 ---
 
@@ -119,3 +166,44 @@ test drives rows by `getAllByLabelText` index, which is what put the duplicate
 ids under a microscope. The duplicate ids are _not_ the cause of that flake:
 `getAllByLabelText` still returns the pickers in document order, so the test's
 indexing is correct.
+
+---
+
+## 4. Outlook accordion hides per-account balances behind summary columns
+
+**Did:** Opened the Financial Plan's Outlook accordion to read how each
+account develops year by year.
+**Expected:** A balance per account (Giro 1, Giro 2, Tagesgeld, …) beside the
+totals.
+**Actual:** Only Period · Total Liquid · Restschuld · Net Cashflow ·
+Sondertilgung, under a section title reading "Projection Accordion".
+
+**Class:** product gap
+**Evidence:** `src/features/projection/ProjectionAccordion/ProjectionAccordion.tsx:130`
+(title) and the `StyledColumnHeader` block below it. Before #138 (`1fe7ee1`,
+2026-06-15) the accordion rendered per-account columns via
+`buildAccountColumns` (`src/utils/projection/projection.ts:24`, still present);
+#138 replaced them with summary columns. Working as coded — the coded choice
+is what is being reverted.
+
+**Decided (backlog grill, 2026-10-15):**
+
+- Section title becomes **"Projection"** (kept, renamed — also in
+  `ProjectionAccordionSkeleton.tsx:35`).
+- Columns become **Period · one per account · Total Liquid · Restschuld**, in
+  both the year header rows (end-of-year balances, as Total Liquid and
+  Restschuld already are) and the month rows.
+- **Net Cashflow and Sondertilgung columns are removed.** The Sondertilgung
+  month keeps its row highlight so it still stands out.
+- **Every non-Mortgage account** gets a column — Girokonto, Tagesgeld,
+  Investment, CreditCard. The Mortgage is the Restschuld column.
+- Column order follows the user's account **`sortOrder`**, not
+  `buildAccountColumns`' kind order, which predates `sortOrder`.
+- Each account column header carries the account's **colour chip** (Account
+  Color Identity).
+
+---
+
+# Round 2
+
+_Open — append new live-use findings here, numbered from 5._
