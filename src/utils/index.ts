@@ -22,5 +22,8 @@ export {
 export type { AccountColumn } from "./projection/projection";
 export { API_BASE } from "./api/api";
 export { resolveAccountColor } from "./color/color";
-export { recurringNetPerMonth } from "./recurring/recurring";
+export {
+  recurringAmountFor,
+  recurringNetPerMonth,
+} from "./recurring/recurring";
 export { computeSavingsGoal, milestoneSplit } from "./savingsGoal/savingsGoal";

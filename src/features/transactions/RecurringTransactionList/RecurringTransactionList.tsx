@@ -1,8 +1,10 @@
-import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import { toOrdinal } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
+import { recurringAmountFor } from "../../../utils/recurring/recurring";
 import DataRow from "../../../components/DataRow/DataRow";
 import Badge from "../../../primitives/Badge/Badge";
 import Money from "../../../primitives/Money/Money";
@@ -23,12 +25,15 @@ const ROW_COLUMNS = ["1fr", "150px", "120px", "110px"];
 
 interface Props {
   recurringTransactions: RecurringTransaction[];
+  /** The account being viewed — decides which way a transfer reads. */
+  accountId: string;
   accounts?: AccountWithBalance[];
   onRowClick: (rt: RecurringTransaction) => void;
 }
 
 export default function RecurringTransactionList({
   recurringTransactions,
+  accountId,
   accounts = [],
   onRowClick,
 }: Props) {
@@ -45,33 +50,59 @@ export default function RecurringTransactionList({
         <StyledHeaderCell $right>Frequency</StyledHeaderCell>
       </StyledHeaderRow>
       {recurringTransactions.map((rt, i) => {
-        const linked = rt.linkedAccountId
-          ? accounts.find((a) => a.id === rt.linkedAccountId)
+        // A Mirrored Transfer Row: a transfer viewed from its destination.
+        const mirrored =
+          rt.linkedAccountId === accountId && rt.accountId !== accountId;
+        const counterpartId = mirrored ? rt.accountId : rt.linkedAccountId;
+        const counterpart = counterpartId
+          ? accounts.find((a) => a.id === counterpartId)
           : undefined;
-        return (
-          <DataRow
-            key={rt.id}
-            columns={ROW_COLUMNS}
-            last={i === recurringTransactions.length - 1}
-            onClick={() => onRowClick(rt)}
-          >
+        const last = i === recurringTransactions.length - 1;
+        const cells = (
+          <>
             <div>
               <StyledName>{rt.description}</StyledName>
-              {linked && (
+              {counterpart && (
                 <StyledLinkedLine>
-                  <ArrowRight size={12} />
-                  <Chip color={resolveAccountColor(linked)} size="sm" />
-                  <StyledLinkedName>{linked.name}</StyledLinkedName>
+                  {mirrored ? (
+                    <ArrowLeft size={12} />
+                  ) : (
+                    <ArrowRight size={12} />
+                  )}
+                  <Chip color={resolveAccountColor(counterpart)} size="sm" />
+                  <StyledLinkedName>
+                    {mirrored ? `from ${counterpart.name}` : counterpart.name}
+                  </StyledLinkedName>
                 </StyledLinkedLine>
               )}
             </div>
             <StyledRight>
-              <Money cents={rt.amount} sign />
+              <Money cents={recurringAmountFor(rt, accountId)} sign />
             </StyledRight>
             <StyledDay>{toOrdinal(rt.dayOfMonth)}</StyledDay>
             <StyledRight>
               <Badge>{rt.frequency}</Badge>
             </StyledRight>
+          </>
+        );
+        return mirrored ? (
+          <DataRow
+            key={rt.id}
+            columns={ROW_COLUMNS}
+            last={last}
+            as={Link}
+            to={`/accounts/${rt.accountId}`}
+          >
+            {cells}
+          </DataRow>
+        ) : (
+          <DataRow
+            key={rt.id}
+            columns={ROW_COLUMNS}
+            last={last}
+            onClick={() => onRowClick(rt)}
+          >
+            {cells}
           </DataRow>
         );
       })}

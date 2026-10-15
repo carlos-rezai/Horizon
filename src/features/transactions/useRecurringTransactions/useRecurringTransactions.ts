@@ -57,7 +57,10 @@ export function useRecurringTransactions(
       .then((data) => {
         if (!cancelled) {
           setRecurringTransactions(
-            data.filter((rt) => rt.accountId === accountId)
+            data.filter(
+              (rt) =>
+                rt.accountId === accountId || rt.linkedAccountId === accountId
+            )
           );
           setIsLoading(false);
         }

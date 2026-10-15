@@ -104,6 +104,7 @@ export default function AccountDetailPage() {
           />
           <RecurringTransactionList
             recurringTransactions={recurringTransactions}
+            accountId={account.id}
             accounts={accounts}
             onRowClick={(rt) => setEditingRecurring(rt)}
           />
