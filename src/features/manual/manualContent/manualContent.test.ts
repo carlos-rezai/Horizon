@@ -257,6 +257,28 @@ describe("the Outlook topic", () => {
   it("states in its rows that the projection is driven only by recurring transactions", () => {
     expect(detailText("outlook")).toMatch(/recurring/i);
   });
+
+  // Live-Use Repair #4: the accordion is titled “Projection” and has one
+  // column per account between Period and Total Liquid; Net Cashflow and
+  // Sondertilgung are no longer columns, and ST months are still tinted.
+  it("describes the accordion's title and its per-account columns", () => {
+    const row = rowOf("outlook", /accordion/i);
+
+    expect(row).toBeDefined();
+    expect(row?.body).toContain("“Projection”");
+    expect(row?.body).toMatch(/each account|every account|per account/i);
+    expect(row?.body).toContain("Total Liquid");
+    expect(row?.body).toContain("Restschuld");
+    expect(row?.body).toMatch(/tint/i);
+  });
+
+  it("no longer lists Net Cashflow or Sondertilgung as accordion columns", () => {
+    const row = rowOf("outlook", /accordion/i);
+
+    expect(row?.body).not.toContain("Net Cashflow");
+    expect(row?.body).not.toMatch(/Sondertilgung (are|is) summed/i);
+    expect(row?.body).not.toMatch(/Sondertilgung columns/i);
+  });
 });
 
 const MONTH_SUBJECTS = [

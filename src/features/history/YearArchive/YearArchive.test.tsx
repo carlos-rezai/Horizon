@@ -198,6 +198,22 @@ describe("YearArchive — year summary row", () => {
     ).toBeInTheDocument();
   });
 
+  // Live-Use Repair #4 takes Net Cashflow out of the Projection Accordion and
+  // out of nothing else: the shared year aggregation still sums it, and the
+  // Year Archive keeps its column per year and per month.
+  it("keeps its Net Cashflow column on every expanded month row", () => {
+    renderArchive();
+
+    expect(screen.getByText("Net Cashflow")).toBeInTheDocument();
+    const marRow = screen.getByRole("link", { name: /Mar/i });
+    expect(
+      within(marRow).getByText(
+        (_, el) =>
+          el?.textContent === euroSigned(9000) && el.children.length === 0
+      )
+    ).toBeInTheDocument();
+  });
+
   it("shows an imported-statement count badge per year", () => {
     renderArchive();
 

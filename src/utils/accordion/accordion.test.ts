@@ -5,15 +5,16 @@ const pt = (
   month: string,
   totalLiquid: number,
   restschuld: number,
-  netCashflow: number
-): YearAggPoint => ({ month, totalLiquid, restschuld, netCashflow });
+  netCashflow: number,
+  accounts: Record<string, number> = {}
+): YearAggPoint => ({ month, totalLiquid, restschuld, netCashflow, accounts });
 
 describe("aggregateYearSummaries", () => {
   const points: YearAggPoint[] = [
-    pt("2026-01", 100, 900, 50),
-    pt("2026-10", 200, 720, 60),
-    pt("2026-12", 250, 720, 55),
-    pt("2027-10", 400, 0, 70),
+    pt("2026-01", 100, 900, 50, { g1: 60, t1: 40 }),
+    pt("2026-10", 200, 720, 60, { g1: 120, t1: 80 }),
+    pt("2026-12", 250, 720, 55, { g1: 150, t1: 100 }),
+    pt("2027-10", 400, 0, 70, { g1: 300, t1: 100 }),
   ];
 
   it("produces one summary per year, in order", () => {
@@ -34,12 +35,22 @@ describe("aggregateYearSummaries", () => {
     expect(y2026.netCashflow).toBe(165); // 50 + 60 + 55
   });
 
-  it("attributes each Restschuld step-down to the year of the month it occurred", () => {
+  it("gives each account its end-of-year projected balance", () => {
     const [y2026, y2027] = aggregateYearSummaries(points);
-    // 2026: 900 → 720 in October = 180
-    expect(y2026.sondertilgung).toBe(180);
-    // 2027: previous month (Dec 2026, 720) → 0 in October = 720
-    expect(y2027.sondertilgung).toBe(720);
+    expect(y2026.accounts).toEqual({ g1: 150, t1: 100 });
+    expect(y2027.accounts).toEqual({ g1: 300, t1: 100 });
+  });
+
+  it("takes a partial year's balances from its last available month", () => {
+    const [, y2027] = aggregateYearSummaries(points);
+    // 2027 stops at October — October's balances are the year's closing ones.
+    expect(y2027.accounts.g1).toBe(300);
+  });
+
+  it("no longer derives a Sondertilgung figure from Restschuld step-downs", () => {
+    const [y2026, y2027] = aggregateYearSummaries(points);
+    expect(y2026).not.toHaveProperty("sondertilgung");
+    expect(y2027).not.toHaveProperty("sondertilgung");
   });
 
   it("returns an empty array for no points", () => {

@@ -7,7 +7,9 @@ import {
   deriveYearSummaries,
   deriveOutlookSummary,
   buildTrajectoryData,
+  effectiveSTMonths,
 } from "./projection";
+import { chartColors } from "../../tokens/colors";
 import type { MonthlySnapshot } from "../../types/projection";
 import type { AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
@@ -144,31 +146,48 @@ describe("buildAccountColumns", () => {
     expect(columns.map((c) => c.id)).toContain("g1");
   });
 
-  it("orders kinds: Girokonto before Tagesgeld before Investment before CreditCard", () => {
+  it("keeps the input order — the server's sortOrder — rather than grouping by kind", () => {
     const accounts = [
       account("cc1", "Amex", "CreditCard"),
       account("i1", "ETF", "Investment"),
+      account("g1", "Main", "Girokonto"),
       account("t1", "Tagesgeld", "Tagesgeld"),
+    ];
+    const columns = buildAccountColumns(accounts);
+    expect(columns.map((c) => c.id)).toEqual(["cc1", "i1", "g1", "t1"]);
+  });
+
+  it("includes accounts hidden from the trajectory chart", () => {
+    const accounts = [
+      { ...account("t1", "Reserve", "Tagesgeld"), showInTrajectory: false },
       account("g1", "Main", "Girokonto"),
     ];
     const columns = buildAccountColumns(accounts);
-    const kinds = columns.map((c) => c.kind);
-    expect(kinds.indexOf("Girokonto")).toBeLessThan(kinds.indexOf("Tagesgeld"));
-    expect(kinds.indexOf("Tagesgeld")).toBeLessThan(
-      kinds.indexOf("Investment")
-    );
-    expect(kinds.indexOf("Investment")).toBeLessThan(
-      kinds.indexOf("CreditCard")
-    );
+    expect(columns.map((c) => c.id)).toEqual(["t1", "g1"]);
   });
 
-  it("preserves account id and name on each output column", () => {
-    const accounts = [account("g1", "My Girokonto", "Girokonto")];
+  it("carries the account's own colour when it has one", () => {
+    const accounts = [
+      { ...account("g1", "Main", "Girokonto"), color: "#123456" },
+    ];
+    expect(buildAccountColumns(accounts)[0].color).toBe("#123456");
+  });
+
+  it("falls back to the kind's chart colour when the account has none", () => {
+    const accounts = [account("i1", "ETF", "Investment")];
+    expect(buildAccountColumns(accounts)[0].color).toBe(chartColors.Investment);
+  });
+
+  it("preserves account id, name and kind on each output column", () => {
+    const accounts = [
+      { ...account("g1", "My Girokonto", "Girokonto"), color: "#abcdef" },
+    ];
     const columns = buildAccountColumns(accounts);
     expect(columns[0]).toEqual({
       id: "g1",
       name: "My Girokonto",
       kind: "Girokonto",
+      color: "#abcdef",
     });
   });
 
@@ -841,5 +860,66 @@ describe("buildTrajectoryData", () => {
     const result = buildTrajectoryData(snapshots, new Map(), null, []);
 
     result.forEach((p) => expect(p.isPayoffMonth).toBe(false));
+  });
+});
+
+describe("effectiveSTMonths", () => {
+  const M = "mortgage-1";
+
+  // One snapshot per month from 2026-10 through 2028-12. The Restschuld is
+  // 25 000 until October 2026, 5 000 from November 2026 (a 20 000 Sondertilgung)
+  // and zero from November 2027 — the Payoff Month, where only the remaining
+  // 5 000 of the next 20 000 transfer is needed.
+  const restschuldAt = (month: string): number =>
+    month < "2026-11" ? 2500000 : month < "2027-11" ? 500000 : 0;
+
+  const months: string[] = [];
+  for (let y = 2026; y <= 2028; y++) {
+    for (let m = y === 2026 ? 10 : 1; m <= 12; m++) {
+      months.push(`${y}-${String(m).padStart(2, "0")}`);
+    }
+  }
+  const snapshots: MonthlySnapshot[] = months.map((month) =>
+    snapshot(month, M, restschuldAt(month))
+  );
+
+  const stMonths = new Map<string, number>([
+    ["2026-11", 2000000],
+    ["2027-11", 2000000],
+    ["2028-11", 2000000],
+  ]);
+
+  it("keeps an ST month before the Payoff Month at its full amount", () => {
+    const result = effectiveSTMonths(stMonths, snapshots, [M]);
+    expect(result.get("2026-11")).toBe(2000000);
+  });
+
+  it("caps the Payoff Month entry at the Restschuld left the month before", () => {
+    const result = effectiveSTMonths(stMonths, snapshots, [M]);
+    expect(result.get("2027-11")).toBe(500000);
+  });
+
+  it("drops ST months after the Payoff Month", () => {
+    const result = effectiveSTMonths(stMonths, snapshots, [M]);
+    expect(result.has("2028-11")).toBe(false);
+    expect([...result.keys()]).toEqual(["2026-11", "2027-11"]);
+  });
+
+  it("keeps every entry when the mortgage is never paid off", () => {
+    const neverPaid = months.map((month) => snapshot(month, M, 9000000));
+    const result = effectiveSTMonths(stMonths, neverPaid, [M]);
+    expect(Object.fromEntries(result)).toEqual({
+      "2026-11": 2000000,
+      "2027-11": 2000000,
+      "2028-11": 2000000,
+    });
+  });
+
+  it("returns an empty map when there is no mortgage", () => {
+    expect(effectiveSTMonths(stMonths, snapshots, []).size).toBe(0);
+  });
+
+  it("returns an empty map when there is no ST month", () => {
+    expect(effectiveSTMonths(new Map(), snapshots, [M]).size).toBe(0);
   });
 });
