@@ -1282,3 +1282,52 @@ Fixed with `useId()`. It was **not** the flake — `getAllByLabelText` still
 returns document order, so the test's indexing was always correct — which is
 worth stating, because it was a tempting story and believing it would have
 ended the investigation three hours early with the real cause still in place.
+
+## 2026-10-16 — #228 Live-Use Repair — Round 1 refactor: one rule per fact
+
+Refactor plan 31, worked commit by commit. Round 1 had fixed five defects as
+five patches; this pass makes each fact have a single home.
+
+- **Projection derivations.** `totalRestschuld`, `findDebtFreeMonth` and
+  `stMonthsFor` are now the only way any surface sums Restschuld, finds the
+  plan-level payoff or gets ST Months. The dead projection-utils
+  `deriveOutlookSummary` and `deriveYearSummaries` are gone; Plan Summary
+  runs on the shared `aggregateYearSummaries` in the renamed `yearSummaries`
+  module.
+- **The one behaviour change users could see:** with two or more mortgages,
+  the Projection payoff flag and the Trajectory Horizon Payoff Marker used to
+  sit on the _first_ mortgage's payoff while the Outlook tile and the ST
+  cutoff used the combined total. All of them now read the **Debt-free
+  Month**. With one mortgage nothing changed — pinned by an equivalence test.
+- **Recurring transfers.** `transferSideFor` answers "source, destination or
+  neither" once; the form's seed/payload rules live in
+  `features/transactions/transferForm`. A refused save now keeps the dialog
+  open with the server's `{ issues }` message instead of closing silently
+  (`apiErrorMessage`, shared with Mortgage Setup).
+- **Mortgage Setup.** `fundingAccountId` → `paidFromAccountId` (Funding
+  Account means only the CreditCard link again); form rules in
+  `features/mortgage/mortgageSetupForm`; the account and recurring INSERTs
+  exist once, as synchronous writers the repos and the mortgage transaction
+  share; the colour is chosen on the client from the account palette.
+
+### Where the plan met code that had moved on
+
+- **C8/C9 had nothing to turn red.** The plan assumed `POST /mortgages` did
+  not check the paid-from account. It did: #227 shipped the rule with tests
+  for a missing account, a Mortgage, a CreditCard and an Investment, and
+  Girokonto/Tagesgeld acceptance. C9 shrank to moving the kinds constant
+  beside the setup schema.
+- **Two signature changes forced test edits the plan called "unedited".**
+  The outlook util now takes `(snapshots, mortgageIds, stMonths)` so it can
+  call `findDebtFreeMonth` (its tests changed builder and call shape only,
+  assertions untouched), and `buildTrajectoryData` derives its post-payoff
+  nulling from the payoff month it receives, so its one nulling test now
+  passes that month instead of `null`.
+
+### Left alone
+
+`KpiStrip`'s private `restschuldOf` still sums by hand. It reads
+`actual ?? projected` — the current Restschuld for the KPI tile — which is a
+different question from the projection-only `totalRestschuld`, and the
+KPI strip is outside this plan. A candidate for the next refactor, not drift
+to paper over here.
