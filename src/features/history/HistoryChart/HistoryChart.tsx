@@ -76,8 +76,8 @@ interface HistoryChartTooltipProps {
 }
 
 /**
- * Hover card for the History chart. Mirrors the Dashboard tooltip but always
- * ends with the month's Net Cashflow — the "what happened" number that the
+ * Hover card for the History chart. Mirrors the Dashboard tooltip but ends
+ * with the month's Net Cashflow (left out when every series is Unknown) — the "what happened" number that the
  * forward-looking Trajectory tooltip doesn't carry.
  */
 export function HistoryChartTooltip({
@@ -89,6 +89,11 @@ export function HistoryChartTooltip({
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
   if (!point) return null;
+  // A month where every series is Unknown has no real Net Cashflow.
+  const allUnknown =
+    point.totalLiquid === null &&
+    point.restschuld === null &&
+    series.every((s) => point[s.key] === null);
 
   return (
     <ChartTooltip label={formatMonth(point.label)}>
@@ -113,10 +118,12 @@ export function HistoryChartTooltip({
           </StyledTooltipRow>
         );
       })}
-      <StyledTooltipNetRow>
-        <span>Net Cashflow</span>
-        <span>{formatBalance(point.netCashflow)}</span>
-      </StyledTooltipNetRow>
+      {!allUnknown && (
+        <StyledTooltipNetRow>
+          <span>Net Cashflow</span>
+          <span>{formatBalance(point.netCashflow)}</span>
+        </StyledTooltipNetRow>
+      )}
     </ChartTooltip>
   );
 }

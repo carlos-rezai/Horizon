@@ -4,6 +4,7 @@ import {
   toProjectionAccountEntry,
 } from "../../lib/projection/projection.js";
 import { deriveHistory } from "../../lib/projection/history.js";
+import { historySpanStart } from "../../lib/historySpan/historySpan.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
@@ -70,32 +71,21 @@ router.get("/", async (req, res) => {
 
 router.get("/history", async (req, res) => {
   const storage = getStorage(req);
-  const [accounts, transactions, recurringTransactions, imports] =
-    await Promise.all([
-      storage.accounts.findAll(),
-      storage.transactions.findAll(),
-      storage.recurringTransactions.findActive(),
-      storage.imports.findAll(),
-    ]);
+  const [accounts, transactions, recurringTransactions] = await Promise.all([
+    storage.accounts.findAll(),
+    storage.transactions.findAll(),
+    storage.recurringTransactions.findActive(),
+  ]);
 
-  // No imported statements → no history to reconstruct.
-  if (imports.length === 0) {
+  // The History Span: the earliest Known Since across all accounts through the
+  // current month. A span holding only the current month has no history.
+  const current = currentMonth();
+  const from = historySpanStart(accounts, transactions, current);
+  if (from >= current) {
     res.json([]);
     return;
   }
 
-  // Lower bound: the month of the earliest imported transaction. An import's
-  // startDate is the earliest row date it carries, so the min across imports is
-  // the earliest imported transaction month.
-  const from = imports.reduce(
-    (earliest, imp) => {
-      const month = imp.startDate.slice(0, 7);
-      return month < earliest ? month : earliest;
-    },
-    imports[0].startDate.slice(0, 7)
-  );
-
-  const current = currentMonth();
   const months = monthsBetween(from, current) + 1;
 
   const accountEntries = accounts.map(toProjectionAccountEntry);

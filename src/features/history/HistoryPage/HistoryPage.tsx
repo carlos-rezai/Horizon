@@ -11,7 +11,6 @@ import { StyledPage, StyledCta } from "./HistoryPage.styles";
 export default function HistoryPage() {
   const {
     points,
-    years,
     statementCounts,
     isLoading: historyLoading,
     error: historyError,
@@ -28,7 +27,7 @@ export default function HistoryPage() {
   if (historyLoading || accountsLoading) return <Spinner />;
 
   const hasError = historyError !== null || accountsError !== null;
-  const isEmpty = years.length === 0;
+  const isEmpty = points.length === 0;
 
   return (
     <StyledPage>
@@ -47,17 +46,13 @@ export default function HistoryPage() {
         <EmptyState
           icon={<Clock size={22} />}
           title="No history yet"
-          hint="Import a bank statement to reconstruct past balances and see them here."
+          hint="Import a bank statement or add your mortgage's origination to see your history"
           action={<StyledCta to="/import">Go to Import</StyledCta>}
         />
       ) : (
         <>
           <HistoryChart points={points} accounts={accounts} isLoading={false} />
-          <YearArchive
-            points={points}
-            years={years}
-            statementCounts={statementCounts}
-          />
+          <YearArchive points={points} statementCounts={statementCounts} />
         </>
       )}
     </StyledPage>

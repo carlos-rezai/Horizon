@@ -22,10 +22,8 @@ import {
 } from "./YearArchive.styles";
 
 interface Props {
-  /** Reconstructed months across all imported periods. */
+  /** Reconstructed months across the History Span. */
   points: HistoryPoint[];
-  /** Years with at least one imported statement — the only years that render. */
-  years: number[];
   /** Imported-statement count per year, keyed by year. */
   statementCounts: Record<number, number>;
 }
@@ -51,16 +49,24 @@ function monthsOfYear(points: HistoryPoint[], year: number): HistoryPoint[] {
   return points.filter((p) => Number(p.month.slice(0, 4)) === year);
 }
 
+/** Years holding at least one known month, newest first. */
+function knownYears(points: HistoryPoint[]): number[] {
+  const years = new Set<number>();
+  for (const p of points) {
+    if (!isUnknownMonth(p)) years.add(Number(p.month.slice(0, 4)));
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
 /**
- * The Year Archive lists only years that hold imported statements. Each year
+ * The Year Archive lists every year with at least one known month. Each year
  * summarises its own months — Total Liquid and Restschuld snapshot the last
  * available month (partial-year safe), Net Cashflow is the year's sum — and
  * every month row deep-links into the existing Month Overview.
  */
-export default function YearArchive({ points, years, statementCounts }: Props) {
-  // Import-gated: never render a year absent from `years`, even if `points`
-  // carry it. Descending so the newest imported year sits on top.
-  const orderedYears = [...years].sort((a, b) => b - a);
+export default function YearArchive({ points, statementCounts }: Props) {
+  // Descending so the newest known year sits on top.
+  const orderedYears = knownYears(points);
 
   const [expanded, setExpanded] = useState<number | null>(
     orderedYears.length > 0 ? orderedYears[0] : null
@@ -94,7 +100,6 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
         // Total Liquid / Restschuld snapshot the year's final available month
         // (possibly Unknown); Net Cashflow is the year's sum.
         const [summary] = aggregateYearSummaries<number | null>(months);
-        const yearKnown = months.some((p) => !isUnknownMonth(p));
 
         return (
           <StyledYearSection key={year}>
@@ -110,14 +115,13 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
                 <StyledYearLabel>{year}</StyledYearLabel>
                 <BalanceCell cents={summary?.totalLiquid} />
                 <BalanceCell cents={summary?.restschuld} />
-                <CashflowCell
-                  cents={summary?.netCashflow ?? 0}
-                  known={yearKnown}
-                />
+                <CashflowCell cents={summary?.netCashflow ?? 0} known />
               </StyledYearHeader>
-              <StyledCountBadge to="/import">
-                {count} {count === 1 ? "statement" : "statements"}
-              </StyledCountBadge>
+              {count > 0 && (
+                <StyledCountBadge to="/import">
+                  {count} {count === 1 ? "statement" : "statements"}
+                </StyledCountBadge>
+              )}
             </StyledYearRow>
 
             {isOpen &&
