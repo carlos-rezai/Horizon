@@ -209,7 +209,115 @@ describe("deriveHistory - Unknown months", () => {
       totalLiquid: null,
       restschuld: null,
       netCashflow: 0,
+      restschuldBridge: null,
       accounts: { g1: null, t1: null, m1: null, i1: null },
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Paydown Bridge (Financial History, issue #240) — a straight line in cents
+// from the Original Principal in the Mortgage Start month to the Restschuld in
+// the Mortgage's first known month. It never writes into `restschuld`.
+// ---------------------------------------------------------------------------
+
+describe("deriveHistory - restschuldBridge", () => {
+  // Mortgage Start 2025-01, Original Principal 500000. The mortgage is Known
+  // Since 2025-04, where its replayed Restschuld is 200000: three monthly steps
+  // of 100000 each.
+  const originatedAccounts = [
+    { id: "g1", kind: "Girokonto" as AccountKind },
+    {
+      id: "m1",
+      kind: "Mortgage" as AccountKind,
+      originalPrincipal: 500000,
+      startDate: "2025-01-15",
+    },
+  ];
+
+  const bridgeSnapshots = [
+    snapshotKnowing("2024-12", ["g1"]),
+    snapshotKnowing("2025-01", ["g1"]),
+    snapshotKnowing("2025-02", ["g1"]),
+    snapshotKnowing("2025-03", ["g1"]),
+    snapshotKnowing("2025-04", ["g1", "m1"]),
+    snapshotKnowing("2025-05", ["g1", "m1"]),
+  ];
+
+  function bridge(accountList: Parameters<typeof deriveHistory>[2]) {
+    return deriveHistory(bridgeSnapshots, [], accountList).map(
+      (p) => p.restschuldBridge
+    );
+  }
+
+  it("starts at the Original Principal in the Mortgage Start month and ends at the first known Restschuld", () => {
+    const points = deriveHistory(bridgeSnapshots, [], originatedAccounts);
+
+    expect(points[1].restschuldBridge).toBe(500000);
+    expect(points[4].restschuldBridge).toBe(200000);
+  });
+
+  it("runs linearly between its start and end, in integer cents", () => {
+    const points = deriveHistory(bridgeSnapshots, [], originatedAccounts);
+
+    expect(points[2].restschuldBridge).toBe(400000);
+    expect(points[3].restschuldBridge).toBe(300000);
+  });
+
+  it("equals the Restschuld in the month where they join", () => {
+    const points = deriveHistory(bridgeSnapshots, [], originatedAccounts);
+
+    expect(points[4].restschuld).toBe(200000);
+    expect(points[4].restschuldBridge).toBe(points[4].restschuld);
+  });
+
+  it("is null before the Mortgage Start month and after the first known month", () => {
+    const points = deriveHistory(bridgeSnapshots, [], originatedAccounts);
+
+    expect(points[0].restschuldBridge).toBeNull();
+    expect(points[5].restschuldBridge).toBeNull();
+  });
+
+  it("keeps the Restschuld null under the bridge", () => {
+    const points = deriveHistory(bridgeSnapshots, [], originatedAccounts);
+
+    for (const i of [1, 2, 3]) {
+      expect(points[i].restschuldBridge).toEqual(expect.any(Number));
+      expect(points[i].restschuld).toBeNull();
+    }
+  });
+
+  it("is null in every month when there is no Mortgage", () => {
+    expect(bridge([{ id: "g1", kind: "Girokonto" }])).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it("is null in every month when the Mortgage has no origination", () => {
+    expect(
+      bridge([
+        { id: "g1", kind: "Girokonto" },
+        { id: "m1", kind: "Mortgage" },
+      ])
+    ).toEqual([null, null, null, null, null, null]);
+  });
+
+  it("is null in every month when the Mortgage Start month equals Known Since", () => {
+    expect(
+      bridge([
+        { id: "g1", kind: "Girokonto" },
+        {
+          id: "m1",
+          kind: "Mortgage",
+          originalPrincipal: 500000,
+          startDate: "2025-04-01",
+        },
+      ])
+    ).toEqual([null, null, null, null, null, null]);
   });
 });

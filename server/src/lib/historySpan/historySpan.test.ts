@@ -54,6 +54,29 @@ describe("historySpanStart", () => {
     );
   });
 
+  // Paydown Bridge (issue #240): a Mortgage's origination reaches further back
+  // than any Known Since, so its Mortgage Start month opens the span.
+  it("starts at the Mortgage Start month when it predates every Known Since", () => {
+    const accounts = [
+      { id: "giro", anchorBalance: 100000, anchorDate: "2026-04-01" },
+      {
+        id: "haus",
+        kind: "Mortgage" as const,
+        anchorBalance: 30000000,
+        anchorDate: "2026-07-01",
+        originalPrincipal: 45000000,
+        startDate: "2022-06-15",
+      },
+    ];
+    const transactions = [
+      { accountId: "giro", date: "2026-02-03", amount: -1000 },
+    ];
+
+    expect(historySpanStart(accounts, transactions, CURRENT_MONTH)).toBe(
+      "2022-06"
+    );
+  });
+
   it("is the current month when there are no accounts", () => {
     expect(historySpanStart([], [], CURRENT_MONTH)).toBe(CURRENT_MONTH);
   });

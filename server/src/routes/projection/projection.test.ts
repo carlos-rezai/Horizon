@@ -254,3 +254,47 @@ describe("GET /projection/history — Unknown before Known Since", () => {
     expect(may.accounts[tagesgeld.id]).toBe(500000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// GET /projection/history — Paydown Bridge (Financial History, issue #240)
+// ---------------------------------------------------------------------------
+
+describe("GET /projection/history — Paydown Bridge", () => {
+  it("returns points from the Mortgage Start month for a mortgage origination with no imports", async () => {
+    // Anchored this month: without the origination the span would hold only
+    // the current month and the response would be [].
+    const mortgage = await createAccount({
+      kind: "Mortgage",
+      name: "Haus",
+      anchorBalance: 30000000,
+      anchorDate: "2026-07-01",
+    });
+    const patched = await request(app)
+      .patch(`/accounts/${mortgage.id}/mortgage`)
+      .send({
+        originalPrincipal: 32000000,
+        startDate: "2026-03-01",
+        termYears: 10,
+      });
+    expect(patched.status).toBe(200);
+
+    const res = await request(app).get("/projection/history");
+    const points = res.body as {
+      month: string;
+      restschuld: number | null;
+      restschuldBridge: number | null;
+    }[];
+
+    expect(res.status).toBe(200);
+    expect(points.map((p) => p.month)).toEqual([
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      CURRENT_MONTH,
+    ]);
+    expect(points[0].restschuldBridge).toBe(32000000);
+    expect(points[0].restschuld).toBeNull();
+    expect(points[4].restschuldBridge).toBe(points[4].restschuld);
+  });
+});

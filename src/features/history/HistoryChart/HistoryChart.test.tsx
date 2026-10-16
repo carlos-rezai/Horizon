@@ -634,3 +634,145 @@ describe("HistoryChart — Unknown months", () => {
     expect(screen.getByText(/Net Cashflow/i)).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Paydown Bridge (Financial History, issue #240) — a dotted, faded line from
+// the Original Principal in the Mortgage Start month to the Restschuld in the
+// Mortgage's first known month, governed by the Restschuld toggle.
+// ---------------------------------------------------------------------------
+
+describe("HistoryChart — Paydown Bridge", () => {
+  // Mortgage Start Feb 2026 at 20000000; the mortgage is Known Since Apr 2026
+  // at 19000000, so 1000000 was paid off Feb 2026–Apr 2026.
+  const originatedMortgage: AccountWithBalance = {
+    ...mortgage,
+    originalPrincipal: 20000000,
+    startDate: "2026-02-01",
+  };
+
+  const bridgePoints: HistoryPoint[] = [
+    {
+      month: "2026-01",
+      totalLiquid: 100000,
+      restschuld: null,
+      restschuldBridge: null,
+      netCashflow: 0,
+      accounts: { g1: 100000, m1: null },
+    },
+    {
+      month: "2026-02",
+      totalLiquid: 100000,
+      restschuld: null,
+      restschuldBridge: 20000000,
+      netCashflow: 0,
+      accounts: { g1: 100000, m1: null },
+    },
+    {
+      month: "2026-03",
+      totalLiquid: 100000,
+      restschuld: null,
+      restschuldBridge: 19500000,
+      netCashflow: 0,
+      accounts: { g1: 100000, m1: null },
+    },
+    {
+      month: "2026-04",
+      totalLiquid: 100000,
+      restschuld: 19000000,
+      restschuldBridge: 19000000,
+      netCashflow: 0,
+      accounts: { g1: 100000, m1: 19000000 },
+    },
+    {
+      month: "2026-05",
+      totalLiquid: 100000,
+      restschuld: 18900000,
+      restschuldBridge: null,
+      netCashflow: 0,
+      accounts: { g1: 100000, m1: 18900000 },
+    },
+  ] as HistoryPoint[];
+
+  function renderBridge() {
+    return renderWithTheme(
+      <HistoryChart
+        points={bridgePoints}
+        accounts={[giro, originatedMortgage]}
+        isLoading={false}
+      />
+    );
+  }
+
+  function hover(index: number) {
+    const content = chart.tooltipContent;
+    if (!content) throw new Error("the chart rendered no Tooltip");
+    return renderWithTheme(
+      <>
+        {content({ active: true, payload: [{ payload: chart.data[index] }] })}
+      </>
+    );
+  }
+
+  function bridgeLine() {
+    return chart.lines.find((l) => l.dataKey === "restschuldBridge");
+  }
+
+  function restschuldLine() {
+    return chart.lines.find((l) => l.dataKey === "restschuld");
+  }
+
+  it("renders a dotted bridge line in the Restschuld colour", () => {
+    renderBridge();
+
+    const line = bridgeLine();
+    expect(line).toBeDefined();
+    expect(line?.stroke).toBe(theme.colors.restschuldStrokeColor);
+    expect(line?.strokeDasharray).toBeDefined();
+    expect(line?.hide).toBe(false);
+  });
+
+  it("hands the chart the bridge values month by month", () => {
+    renderBridge();
+
+    expect(chart.data.map((d) => d.restschuldBridge)).toEqual([
+      null,
+      20000000,
+      19500000,
+      19000000,
+      null,
+    ]);
+  });
+
+  it('reads "No monthly data · €X paid off {Mon YYYY}–{Mon YYYY}" for the Restschuld in a bridge month', () => {
+    renderBridge();
+    hover(2);
+
+    const expected = `No monthly data · ${formatBalance(1000000)} paid off Feb 2026–Apr 2026`;
+    expect(
+      screen.getByText(
+        (_, el) => el?.textContent === expected && el.children.length === 0
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("never shows the interpolated bridge amount in the tooltip", () => {
+    renderBridge();
+    hover(2);
+
+    expect(
+      screen.queryByText((_, el) =>
+        (el?.textContent ?? "").includes(formatBalance(19500000))
+      )
+    ).toBeNull();
+    expect(screen.queryByText(/No data before/)).toBeNull();
+  });
+
+  it("hides both the Restschuld line and its bridge when Restschuld is toggled off", () => {
+    renderBridge();
+
+    fireEvent.click(screen.getByRole("button", { name: /Restschuld/i }));
+
+    expect(restschuldLine()?.hide).toBe(true);
+    expect(bridgeLine()?.hide).toBe(true);
+  });
+});

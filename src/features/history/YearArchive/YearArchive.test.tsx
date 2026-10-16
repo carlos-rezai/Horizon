@@ -348,3 +348,45 @@ describe("YearArchive — Unknown months", () => {
     expect(screen.getByRole("button", { name: /2024/ })).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Paydown Bridge (Financial History, issue #240) — the bridge is not monthly
+// data, so a year it alone covers is not listed.
+// ---------------------------------------------------------------------------
+
+describe("YearArchive — Paydown Bridge", () => {
+  // 2025 is covered only by the bridge; the mortgage is Known Since 2026-01.
+  const BRIDGE_POINTS = [
+    {
+      month: "2025-11",
+      totalLiquid: null,
+      restschuld: null,
+      restschuldBridge: 20000000,
+      netCashflow: 0,
+      accounts: { m1: null },
+    },
+    {
+      month: "2025-12",
+      totalLiquid: null,
+      restschuld: null,
+      restschuldBridge: 19500000,
+      netCashflow: 0,
+      accounts: { m1: null },
+    },
+    {
+      month: "2026-01",
+      totalLiquid: null,
+      restschuld: 19000000,
+      restschuldBridge: 19000000,
+      netCashflow: 0,
+      accounts: { m1: 19000000 },
+    },
+  ] as HistoryPoint[];
+
+  it("does not list a year covered only by the bridge", () => {
+    renderArchive({ points: BRIDGE_POINTS, statementCounts: {} });
+
+    expect(screen.queryByRole("button", { name: /2025/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /2026/ })).toBeInTheDocument();
+  });
+});
