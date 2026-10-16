@@ -138,6 +138,7 @@ export default function MortgageSetupModal({
               aria-label="as of"
               value={values.asOf}
               onChange={set("asOf")}
+              maxDate={todayIso()}
             />
           </FormField>
         </StyledGroup>
