@@ -708,3 +708,108 @@ describe("DashboardPage — Past Lead-in", () => {
     expect(historyFetches).toHaveLength(1);
   });
 });
+
+// A mortgage set up or edited from the Dashboard moves the history too: the
+// Past Lead-in and the Paydown Bridge are drawn from it (log 31 Q7).
+describe("DashboardPage — history after a mortgage update", () => {
+  const mortgage: AccountWithBalance = {
+    id: "m-new",
+    kind: "Mortgage",
+    name: "Haus",
+    anchorBalance: 20000000,
+    anchorDate: "2026-10-16",
+    balance: 20000000,
+    originalPrincipal: 40000000,
+    startDate: "2020-06-01",
+    termYears: 25,
+  };
+
+  const before = [
+    {
+      month: "2026-09",
+      totalLiquid: 150000,
+      restschuld: null,
+      restschuldBridge: null,
+      netCashflow: 0,
+      accounts: { "acc-1": 150000 },
+    },
+  ];
+  const after = [
+    {
+      month: "2026-09",
+      totalLiquid: 150000,
+      restschuld: 20100000,
+      restschuldBridge: 20100000,
+      netCashflow: 0,
+      accounts: { "acc-1": 150000, "m-new": 20100000 },
+    },
+  ];
+
+  let saved: boolean;
+
+  beforeEach(() => {
+    saved = false;
+    trajectoryProps.length = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (method === "POST" && url.endsWith("/mortgages")) {
+        saved = true;
+        return {
+          ok: true,
+          status: 201,
+          json: async () => mortgage,
+        } as Response;
+      }
+      if (method === "GET" && url.endsWith("/accounts")) {
+        const snapshot = saved ? [...accounts, mortgage] : accounts;
+        return { ok: true, json: async () => snapshot } as Response;
+      }
+      if (method === "GET" && url.includes("/projection/history")) {
+        const snapshot = saved ? after : before;
+        return { ok: true, json: async () => snapshot } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+  });
+
+  it("refetches the history and draws the new lead-in after the mortgage is saved", async () => {
+    renderPage();
+
+    await waitFor(() => {
+      expect(trajectoryProps.at(-1)?.history).toEqual(before);
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Set up mortgage" })
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/^name$/i), {
+      target: { value: "Haus" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/restschuld today/i), {
+      target: { value: "200000" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/original principal/i), {
+      target: { value: "400000" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/^start date$/i), {
+      target: { value: "01.06.2020" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/term/i), {
+      target: { value: "25" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText("remaining Restschuld")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(trajectoryProps.at(-1)?.history).toEqual(after);
+    });
+    const historyFetches = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter(([input]) =>
+        String(input).includes("/projection/history")
+      );
+    expect(historyFetches).toHaveLength(2);
+  });
+});
