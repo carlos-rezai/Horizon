@@ -8,7 +8,7 @@ import type {
   SavingsGoal,
   SavingsGoalConfig,
 } from "../savingsTypes/savingsTypes";
-import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 interface UseSavingsGoalResult {
   goal: SavingsGoal;

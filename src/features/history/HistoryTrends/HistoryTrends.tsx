@@ -16,7 +16,7 @@ import ChartTooltip from "../../../components/ChartTooltip/ChartTooltip";
 import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import { pointsInRange, type HistoryRange } from "../historyRange/historyRange";
 import { trailingAverage } from "../trailingAverage/trailingAverage";
 import { firstKnownMonthOf } from "../knownSince/knownSince";

@@ -15,7 +15,7 @@ import { chartColors } from "../../tokens/colors";
 import type { MonthlySnapshot } from "../../types/projection";
 import type { AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
-import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
+import type { HistoryPoint } from "../../types/history";
 
 const snapshot = (
   month: string,

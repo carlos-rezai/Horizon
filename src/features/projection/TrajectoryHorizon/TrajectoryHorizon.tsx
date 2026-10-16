@@ -19,7 +19,7 @@ import type {
   PastLeadInRow,
   TrajectoryDataPoint,
 } from "../../../types/projection";
-import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import {

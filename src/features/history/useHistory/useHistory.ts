@@ -3,7 +3,7 @@ import { IMPORT_HISTORY } from "../../../components/CacheProvider/cacheKeys";
 import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
 import { fetchJson } from "../../../utils/api/fetchJson";
 import type { ImportRecord } from "../../import/importTypes/importTypes";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import { useHistoryPoints } from "../useHistoryPoints/useHistoryPoints";
 
 interface UseHistoryResult {

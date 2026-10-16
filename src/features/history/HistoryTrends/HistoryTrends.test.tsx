@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import HistoryTrends from "./HistoryTrends";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 // History Trends card (Financial History, issue #243): Saved bars diverging
 // around zero, an Unknown month drawn as no bar, and a trailing-12-month

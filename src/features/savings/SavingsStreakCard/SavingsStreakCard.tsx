@@ -19,7 +19,7 @@ import type {
   PerAccountGoal,
 } from "../savingsTypes/savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
-import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import {
   StyledHeader,
   StyledTitleGroup,

@@ -3,7 +3,7 @@ import type {
   PastLeadInRow,
   TrajectoryDataPoint,
 } from "../../types/projection";
-import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
+import type { HistoryPoint } from "../../types/history";
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
 import { resolveAccountColor } from "../color/color";

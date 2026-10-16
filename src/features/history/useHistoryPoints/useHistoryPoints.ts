@@ -1,6 +1,6 @@
 import { HISTORY } from "../../../components/CacheProvider/cacheKeys";
 import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import { fetchJson } from "../../../utils/api/fetchJson";
 
 interface UseHistoryPointsResult {

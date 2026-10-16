@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import {
   firstKnownMonthOf,
   firstKnownMonths,

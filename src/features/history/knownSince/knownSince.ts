@@ -3,7 +3,7 @@
  * months. A balance is `null` in a month before its series' Known Since —
  * the server derives that; these rules only read it off the points.
  */
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 /**
  * The first month each series carries a non-null value, keyed by series key:

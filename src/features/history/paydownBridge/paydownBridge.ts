@@ -4,7 +4,7 @@
  * Mortgage's first known month. The server derives the line; this rule only
  * reads its extent off the points.
  */
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 /** The Paydown Bridge's extent: its first and last month and what it spans. */
 export interface PaydownBridgeSpan {

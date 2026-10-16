@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import Money from "../../../primitives/Money/Money";
 import { formatMonth } from "../../../utils/format/format";
 import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import { isUnknownMonth, knownYears } from "../knownSince/knownSince";
 import {
   StyledArchive,

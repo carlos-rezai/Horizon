@@ -2,7 +2,7 @@
  * The History page's range: the 1 Year / 3 Years / All history chips, shared
  * by the chart and the trends card, and the rule that windows the points.
  */
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 export type HistoryRange = "1y" | "3y" | "all";
 

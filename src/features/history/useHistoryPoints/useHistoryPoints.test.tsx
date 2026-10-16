@@ -4,7 +4,7 @@ import { renderHook, act, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import { useHistoryPoints } from "./useHistoryPoints";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 const point = (month: string, totalLiquid: number): HistoryPoint => ({
   month,

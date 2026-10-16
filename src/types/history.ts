@@ -1,9 +1,8 @@
 /**
- * Frontend shapes for the History feature.
- *
- * The backend ("Historical Month Navigation") owns the reconstruction; this
- * type mirrors the server's `HistoryPoint` as it crosses `GET
- * /projection/history`. All monetary values are integer cents.
+ * The client mirror of the server's `HistoryPoint`, as it crosses
+ * `GET /projection/history`. The server owns the reconstruction; the history,
+ * savings and projection features and the projection and savings-goal utils
+ * all read it. All monetary values are integer cents.
  */
 
 /** A single reconstructed month as returned by `GET /projection/history`. */

@@ -10,7 +10,7 @@ import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import { formatMonth } from "../../../utils/format/format";
-import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 
 // The chart itself cannot lay out in jsdom, so the recharts boundary is
 // stubbed: ResponsiveContainer passes its children through and ComposedChart

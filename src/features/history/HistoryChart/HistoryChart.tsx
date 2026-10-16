@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { AccountWithBalance } from "../../../types/account";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import type { HistoryPoint } from "../../../types/history";
 import {
   HISTORY_RANGE_OPTIONS,
   pointsInRange,
