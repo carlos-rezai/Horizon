@@ -405,3 +405,79 @@ describe("buildPreview", () => {
     ).rejects.toThrow(/Too many columns/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #234 — Balance Anchor: no recurring flag on or before the anchor.
+// The Anchor Balance already contains every row dated on or before the Anchor
+// Date (end-of-day semantics), and the Anchor Gate means no RecurringTransaction
+// replays them, so Recurring Detection must not pre-uncheck those rows. Rows
+// after the anchor are flagged exactly as before.
+// The Sparkasse fixture holds Gehalt (+2.500,00) on 2026-06-05 and
+// MUSTER DIENST GMBH (-9,90) on 2026-06-10.
+// ---------------------------------------------------------------------------
+
+describe("buildPreview — recurring detection respects the Anchor Date", () => {
+  const dienstRule = makeRecurring({
+    id: "rDienst",
+    description: "MUSTER DIENST GMBH",
+    amount: -990,
+  });
+  const gehaltRule = makeRecurring({
+    id: "rGehalt",
+    description: "ARBEITGEBER MUSTER AG",
+    amount: 250000,
+    category: "Income",
+  });
+
+  it("does not flag a matching row dated before the anchor date", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [dienstRule],
+      anchorDate: "2026-06-30",
+      getRememberedPreset: noPreset,
+    });
+
+    const dienst = preview.rows.find(
+      (r) => r.description === "MUSTER DIENST GMBH"
+    );
+    expect(dienst?.recurring).toBe(false);
+    expect(preview.summary.recurring).toBe(0);
+  });
+
+  it("does not flag a matching row dated on the anchor date itself", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [dienstRule],
+      anchorDate: "2026-06-10",
+      getRememberedPreset: noPreset,
+    });
+
+    const dienst = preview.rows.find(
+      (r) => r.description === "MUSTER DIENST GMBH"
+    );
+    expect(dienst?.recurring).toBe(false);
+    expect(preview.summary.recurring).toBe(0);
+  });
+
+  it("still flags a matching row dated after the anchor date, while one before it is not", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [gehaltRule, dienstRule],
+      anchorDate: "2026-06-07",
+      getRememberedPreset: noPreset,
+    });
+
+    const gehalt = preview.rows.find(
+      (r) => r.description === "ARBEITGEBER MUSTER AG"
+    );
+    const dienst = preview.rows.find(
+      (r) => r.description === "MUSTER DIENST GMBH"
+    );
+    expect(gehalt?.recurring).toBe(false);
+    expect(dienst?.recurring).toBe(true);
+    expect(preview.summary.recurring).toBe(1);
+  });
+});

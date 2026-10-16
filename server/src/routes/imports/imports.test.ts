@@ -581,3 +581,42 @@ describe("POST /imports/preview", () => {
     expect(typeof res.body.error).toBe("string");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #234 — the preview supplies the target account's Anchor Date to
+// Recurring Detection: a matching row on or before it is not flagged, one
+// after it still is. Sparkasse fixture: Gehalt on 2026-06-05, MUSTER DIENST
+// GMBH on 2026-06-10.
+// ---------------------------------------------------------------------------
+
+describe("POST /imports/preview — Anchor Date", () => {
+  it("flags recurring rows only after the target account's anchor date", async () => {
+    const accountRes = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Anchored",
+      anchorBalance: 500000,
+      anchorDate: "2026-06-07",
+    });
+    const accountId = (accountRes.body as { id: string }).id;
+    await createRecurring(accountId, {
+      description: "ARBEITGEBER MUSTER AG",
+      amount: 250000,
+      category: "Miscellaneous",
+    });
+    await createRecurring(accountId, {
+      description: "MUSTER DIENST GMBH",
+      amount: -990,
+      category: "Miscellaneous",
+    });
+
+    const res = await previewFixture("sparkasse-giro.csv", accountId);
+
+    expect(res.status).toBe(200);
+    const rows = res.body.rows as PreviewRow[];
+    expect(rowByDescription(rows, "ARBEITGEBER MUSTER AG")?.recurring).toBe(
+      false
+    );
+    expect(rowByDescription(rows, "MUSTER DIENST GMBH")?.recurring).toBe(true);
+    expect(res.body.summary.recurring).toBe(1);
+  });
+});
