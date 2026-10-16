@@ -42,7 +42,10 @@ export interface AccountsRepo {
 }
 
 export interface MortgagesRepo {
-  /** Creates the Mortgage account and its origination in one transaction. */
+  /**
+   * Creates the Mortgage account, its origination and its Repayment
+   * Transfers (when the setup has a repayment) in one transaction.
+   */
   create(setup: MortgageSetup): Promise<AccountWithBalance>;
 }
 

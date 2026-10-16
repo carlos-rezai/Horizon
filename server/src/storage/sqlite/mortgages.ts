@@ -3,6 +3,8 @@ import type Database from "better-sqlite3";
 import type { AccountsRepo, MortgagesRepo } from "../Storage.js";
 import type { MortgageSetup } from "../types.js";
 import { categoryColorPalette } from "../categoryColors.js";
+import { accountWriters } from "./accountWriters.js";
+import { recurringWriters } from "./recurringWriters.js";
 
 function randomPaletteColor(): string {
   return categoryColorPalette[
@@ -14,71 +16,48 @@ export function createSqliteMortgagesRepo(
   db: Database.Database,
   accounts: AccountsRepo
 ): MortgagesRepo {
-  const nextSortOrderStmt = db.prepare(
-    `SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM accounts`
-  );
-  const insertAccountStmt = db.prepare(
-    `INSERT INTO accounts
-       (id, kind, name, opening_balance, opening_date, icon, color,
-        show_in_trajectory, sort_order)
-     VALUES (?, 'Mortgage', ?, ?, ?, NULL, ?, 1, ?)`
-  );
-  const setOriginationStmt = db.prepare(
-    `UPDATE accounts
-       SET original_principal = ?, start_date = ?, term_years = ?
-     WHERE id = ?`
-  );
-
-  const insertRecurringStmt = db.prepare(
-    `INSERT INTO recurring_transactions
-       (id, account_id, amount, description, category, frequency,
-        day_of_month, linked_account_id, month_of_year)
-     VALUES (?, ?, ?, ?, 'Transfer', ?, ?, ?, ?)`
-  );
+  const accountWriter = accountWriters(db);
+  const recurringWriter = recurringWriters(db);
 
   const createInTransaction = db.transaction(
     (id: string, setup: MortgageSetup): void => {
-      const nextSortOrder = (nextSortOrderStmt.get() as { next: number }).next;
-      insertAccountStmt.run(
-        id,
-        setup.name,
-        setup.openingBalance,
-        setup.openingDate,
-        randomPaletteColor(),
-        nextSortOrder
-      );
-      setOriginationStmt.run(
-        setup.originalPrincipal,
-        setup.startDate,
-        setup.termYears,
-        id
-      );
+      accountWriter.insert(id, {
+        kind: "Mortgage",
+        name: setup.name,
+        openingBalance: setup.openingBalance,
+        openingDate: setup.openingDate,
+        color: randomPaletteColor(),
+      });
+      accountWriter.setOrigination(id, {
+        originalPrincipal: setup.originalPrincipal,
+        startDate: setup.startDate,
+        termYears: setup.termYears,
+      });
       const repayment = setup.repayment;
       if (repayment) {
-        insertRecurringStmt.run(
-          randomUUID(),
-          repayment.paidFromAccountId,
-          repayment.monthlyAmount,
-          "Mortgage repayment",
-          "monthly",
-          repayment.dayOfMonth,
-          id,
-          null
-        );
+        recurringWriter.insert(randomUUID(), {
+          accountId: repayment.paidFromAccountId,
+          amount: repayment.monthlyAmount,
+          description: "Mortgage repayment",
+          category: "Transfer",
+          frequency: "monthly",
+          dayOfMonth: repayment.dayOfMonth,
+          linkedAccountId: id,
+        });
         if (
           repayment.sondertilgungAmount !== undefined &&
           repayment.sondertilgungMonth !== undefined
         ) {
-          insertRecurringStmt.run(
-            randomUUID(),
-            repayment.paidFromAccountId,
-            repayment.sondertilgungAmount,
-            "Sondertilgung",
-            "annual",
-            repayment.dayOfMonth,
-            id,
-            repayment.sondertilgungMonth
-          );
+          recurringWriter.insert(randomUUID(), {
+            accountId: repayment.paidFromAccountId,
+            amount: repayment.sondertilgungAmount,
+            description: "Sondertilgung",
+            category: "Transfer",
+            frequency: "annual",
+            dayOfMonth: repayment.dayOfMonth,
+            linkedAccountId: id,
+            monthOfYear: repayment.sondertilgungMonth,
+          });
         }
       }
     }
