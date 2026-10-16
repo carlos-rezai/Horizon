@@ -4,14 +4,36 @@ import {
   type DatedAmount,
 } from "../balanceAnchor/balanceAnchor.js";
 import type { AccountKind } from "../../storage/types.js";
+import type { HistoryAccount } from "../projection/history.js";
 
-export interface HistorySpanAccount extends BalanceAnchor {
+/** The origination fields `mortgageStartMonth` reads off an account. */
+type OriginationFields = Pick<
+  HistoryAccount,
+  "originalPrincipal" | "startDate"
+>;
+
+export interface HistorySpanAccount extends BalanceAnchor, OriginationFields {
   id: string;
+  /** Optional: an anchor-only account need not say what kind it is. */
   kind?: AccountKind;
-  /** The Mortgage's Original Principal in cents, when originated. */
-  originalPrincipal?: number;
-  /** The Mortgage Start date (ISO), when originated. */
-  startDate?: string;
+}
+
+/**
+ * The Mortgage Start month ("YYYY-MM") of an originated Mortgage — one with
+ * both an Original Principal and a Mortgage Start date. Null for any other
+ * account, and for a Mortgage missing either origination field.
+ */
+export function mortgageStartMonth(
+  account: OriginationFields & { kind?: AccountKind }
+): string | null {
+  if (
+    account.kind !== "Mortgage" ||
+    account.originalPrincipal === undefined ||
+    account.startDate === undefined
+  ) {
+    return null;
+  }
+  return account.startDate.slice(0, 7);
 }
 
 export interface HistorySpanTransaction extends DatedAmount {
@@ -31,12 +53,7 @@ export function historySpanStart(
   return accounts.reduce((earliest, account) => {
     const own = transactions.filter((tx) => tx.accountId === account.id);
     const known = knownSince(account, own).slice(0, 7);
-    const mortgageStart =
-      account.kind === "Mortgage" &&
-      account.originalPrincipal !== undefined &&
-      account.startDate !== undefined
-        ? account.startDate.slice(0, 7)
-        : known;
+    const mortgageStart = mortgageStartMonth(account) ?? known;
     const month = mortgageStart < known ? mortgageStart : known;
     return month < earliest ? month : earliest;
   }, currentMonth);

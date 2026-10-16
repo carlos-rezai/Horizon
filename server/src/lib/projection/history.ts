@@ -1,6 +1,7 @@
 import type { AccountKind } from "../../storage/types.js";
 import type { MonthlySnapshot } from "./projection.js";
 import { monthsBetween } from "../date/date.js";
+import { mortgageStartMonth } from "../historySpan/historySpan.js";
 import {
   selectLiquidAccounts,
   selectTrackableAccounts,
@@ -80,21 +81,18 @@ function paydownBridge(
   mortgage: HistoryAccount | undefined
 ): Map<string, number> {
   const bridge = new Map<string, number>();
-  if (
-    !mortgage ||
-    mortgage.originalPrincipal === undefined ||
-    mortgage.startDate === undefined
-  ) {
+  const startMonth = mortgage ? mortgageStartMonth(mortgage) : null;
+  // `principal` is defined whenever `startMonth` is; re-read for the type.
+  const principal = mortgage?.originalPrincipal;
+  if (!mortgage || startMonth === null || principal === undefined) {
     return bridge;
   }
 
   const firstKnown = snapshots.find(
     (s) => s.accounts[mortgage.id]?.actual !== undefined
   );
-  const startMonth = mortgage.startDate.slice(0, 7);
   if (!firstKnown || startMonth >= firstKnown.month) return bridge;
 
-  const principal = mortgage.originalPrincipal;
   const end = firstKnown.accounts[mortgage.id].projected;
   const steps = monthsBetween(startMonth, firstKnown.month);
   for (const snapshot of snapshots) {

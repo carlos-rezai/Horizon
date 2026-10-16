@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { historySpanStart } from "./historySpan.js";
+import { historySpanStart, mortgageStartMonth } from "./historySpan.js";
 
 // ---------------------------------------------------------------------------
 // The History Span runs from the earliest Known Since month across all
@@ -79,5 +79,39 @@ describe("historySpanStart", () => {
 
   it("is the current month when there are no accounts", () => {
     expect(historySpanStart([], [], CURRENT_MONTH)).toBe(CURRENT_MONTH);
+  });
+});
+
+describe("mortgageStartMonth", () => {
+  it("gives the Mortgage Start month of an originated Mortgage", () => {
+    expect(
+      mortgageStartMonth({
+        kind: "Mortgage",
+        originalPrincipal: 45000000,
+        startDate: "2023-01-15",
+      })
+    ).toBe("2023-01");
+  });
+
+  it("gives null for a Mortgage without a start date", () => {
+    expect(
+      mortgageStartMonth({ kind: "Mortgage", originalPrincipal: 45000000 })
+    ).toBeNull();
+  });
+
+  it("gives null for a Mortgage without an Original Principal", () => {
+    expect(
+      mortgageStartMonth({ kind: "Mortgage", startDate: "2023-01-15" })
+    ).toBeNull();
+  });
+
+  it("gives null for a Girokonto that carries a stray start date", () => {
+    expect(
+      mortgageStartMonth({
+        kind: "Girokonto",
+        originalPrincipal: 45000000,
+        startDate: "2023-01-15",
+      })
+    ).toBeNull();
   });
 });
