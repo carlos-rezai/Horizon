@@ -3,6 +3,7 @@ import type Database from "better-sqlite3";
 import type { AccountsRepo, TransactionsRepo } from "../Storage.js";
 import type { Account, AccountKind, AccountWithBalance } from "../types.js";
 import { isValidUuid } from "./uuid.js";
+import { accountWriters } from "./accountWriters.js";
 
 interface AccountRow {
   id: string;
@@ -66,15 +67,7 @@ export function createSqliteAccountsRepo(
   db: Database.Database,
   transactions: TransactionsRepo
 ): AccountsRepo {
-  const insertStmt = db.prepare(
-    `INSERT INTO accounts
-       (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color,
-        linked_account_id, settlement_day, linked_since, show_in_trajectory, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  );
-  const nextSortOrderStmt = db.prepare(
-    `SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM accounts`
-  );
+  const writers = accountWriters(db);
   const updateSortOrderStmt = db.prepare(
     `UPDATE accounts SET sort_order = ? WHERE id = ?`
   );
@@ -93,11 +86,6 @@ export function createSqliteAccountsRepo(
            settlement_day = ?,
            linked_since = ?,
            show_in_trajectory = ?
-     WHERE id = ?`
-  );
-  const setMortgageStmt = db.prepare(
-    `UPDATE accounts
-       SET original_principal = ?, start_date = ?, term_years = ?
      WHERE id = ?`
   );
   const deleteStmt = db.prepare(`DELETE FROM accounts WHERE id = ?`);
@@ -142,25 +130,7 @@ export function createSqliteAccountsRepo(
   return {
     async create(input) {
       const id = randomUUID();
-      const linkedSince =
-        input.linkedAccountId != null ? input.openingDate : null;
-      const showInTrajectory = input.showInTrajectory ?? true;
-      const nextSortOrder = (nextSortOrderStmt.get() as { next: number }).next;
-      insertStmt.run(
-        id,
-        input.kind,
-        input.name,
-        input.openingBalance,
-        input.openingDate,
-        input.sondertilgungAllowance ?? null,
-        input.icon ?? null,
-        input.color ?? null,
-        input.linkedAccountId ?? null,
-        input.settlementDay ?? null,
-        linkedSince,
-        showInTrajectory ? 1 : 0,
-        nextSortOrder
-      );
+      const { linkedSince, showInTrajectory } = writers.insert(id, input);
       const dto: Account = {
         id,
         kind: input.kind,
@@ -301,12 +271,7 @@ export function createSqliteAccountsRepo(
         return { ok: false, reason: "below_restschuld" };
       }
 
-      setMortgageStmt.run(
-        input.originalPrincipal,
-        input.startDate,
-        input.termYears,
-        id
-      );
+      writers.setOrigination(id, input);
       const updated = selectByIdStmt.get(id) as AccountRow;
       return { ok: true, account: toAccountDTO(updated) };
     },
