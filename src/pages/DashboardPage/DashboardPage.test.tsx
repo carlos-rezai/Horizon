@@ -524,3 +524,111 @@ describe("DashboardPage — Mortgage Setup", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
+
+// Live-Use Repair #2 (issue #227): a setup that includes the repayment ends
+// with a working payoff date on the Dashboard, without a reload.
+describe("DashboardPage — Mortgage Setup with a repayment", () => {
+  const mortgage: AccountWithBalance = {
+    id: "m-new",
+    kind: "Mortgage",
+    name: "Haus",
+    openingBalance: 20000000,
+    openingDate: "2026-10-16",
+    balance: 20000000,
+    originalPrincipal: 40000000,
+    startDate: "2020-06-01",
+    termYears: 25,
+  };
+
+  const transfers = [
+    {
+      id: "r-1",
+      accountId: "acc-1",
+      linkedAccountId: "m-new",
+      amount: 150000,
+      description: "Mortgage repayment",
+      category: "Transfer",
+      frequency: "monthly",
+      dayOfMonth: 1,
+    },
+  ];
+
+  const paidOff: MonthlySnapshot[] = [
+    {
+      month: "2037-03",
+      accounts: {
+        "acc-1": { projected: 100000 },
+        "m-new": { projected: 0 },
+      },
+      netCashflow: 0,
+      totalLiquid: 100000,
+    },
+  ];
+
+  let saved: boolean;
+
+  beforeEach(() => {
+    saved = false;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (method === "POST" && url.endsWith("/mortgages")) {
+        saved = true;
+        return {
+          ok: true,
+          status: 201,
+          json: async () => mortgage,
+        } as Response;
+      }
+      if (method === "GET" && url.endsWith("/accounts")) {
+        const snapshot = saved ? [...accounts, mortgage] : accounts;
+        return { ok: true, json: async () => snapshot } as Response;
+      }
+      if (method === "GET" && url.endsWith("/recurring-transactions")) {
+        const snapshot = saved ? transfers : [];
+        return { ok: true, json: async () => snapshot } as Response;
+      }
+      if (method === "GET" && url.includes("/projection?")) {
+        const snapshot = saved ? paidOff : [];
+        return { ok: true, json: async () => snapshot } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+  });
+
+  it("shows the payoff date in the countdown after saving a setup that includes the repayment", async () => {
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Set up mortgage" })
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/^name$/i), {
+      target: { value: "Haus" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/restschuld today/i), {
+      target: { value: "200000" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/original principal/i), {
+      target: { value: "400000" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/^start date$/i), {
+      target: { value: "01.06.2020" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/term/i), {
+      target: { value: "25" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/paid from/i), {
+      target: { value: "acc-1" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/monthly rate/i), {
+      target: { value: "1500" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText(/Mar 2037/)).toBeInTheDocument();
+    expect(screen.getByText("To Payoff")).toBeInTheDocument();
+    expect(screen.queryByText(/No repayment set up/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});

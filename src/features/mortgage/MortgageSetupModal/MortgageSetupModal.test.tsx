@@ -272,3 +272,241 @@ describe("MortgageSetupModal — live % paid off preview", () => {
     expect(screen.getByText(/50\s*% paid off/)).toBeInTheDocument();
   });
 });
+
+// Live-Use Repair #2 (issue #227): the Repayment group gets real fields
+// whenever a Girokonto or Tagesgeld exists, so one save ends with a working
+// payoff date.
+describe("MortgageSetupModal — Repayment", () => {
+  const giro: AccountWithBalance = {
+    id: "giro-1",
+    kind: "Girokonto",
+    name: "Main Checking",
+    openingBalance: 500000,
+    openingDate: "2026-01-01",
+    balance: 500000,
+  };
+  const tagesgeld: AccountWithBalance = {
+    id: "tg-1",
+    kind: "Tagesgeld",
+    name: "Reserve",
+    openingBalance: 1000000,
+    openingDate: "2026-01-01",
+    balance: 1000000,
+  };
+  const card: AccountWithBalance = {
+    id: "cc-1",
+    kind: "CreditCard",
+    name: "Visa",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  };
+  const depot: AccountWithBalance = {
+    id: "inv-1",
+    kind: "Investment",
+    name: "Depot",
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+    balance: 0,
+  };
+
+  const NOTE = "Add a Girokonto to set up the monthly repayment.";
+  const paidFromSelect = () =>
+    screen.getByLabelText(/paid from/i) as HTMLSelectElement;
+  const monthlyRateInput = () => screen.getByLabelText(/monthly rate/i);
+  const stAmountInput = () => screen.getByLabelText(/annual sondertilgung/i);
+  const stMonthSelect = () =>
+    screen.getByLabelText(/^in month$/i) as HTMLSelectElement;
+
+  function fillRepayment(
+    overrides: Partial<{
+      paidFrom: string;
+      rate: string;
+      stAmount: string;
+      stMonth: string;
+    }> = {}
+  ) {
+    const v = { paidFrom: "giro-1", rate: "1500", ...overrides };
+    fireEvent.change(paidFromSelect(), { target: { value: v.paidFrom } });
+    fireEvent.change(monthlyRateInput(), { target: { value: v.rate } });
+    if (v.stAmount !== undefined) {
+      fireEvent.change(stAmountInput(), { target: { value: v.stAmount } });
+    }
+    if (v.stMonth !== undefined) {
+      fireEvent.change(stMonthSelect(), { target: { value: v.stMonth } });
+    }
+  }
+
+  async function postedBody(): Promise<Record<string, unknown>> {
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const [, init] = vi.mocked(globalThis.fetch).mock.calls[0];
+    return JSON.parse((init as RequestInit).body as string) as Record<
+      string,
+      unknown
+    >;
+  }
+
+  describe("fields", () => {
+    it("shows the repayment fields instead of the note when a Girokonto exists", () => {
+      renderModal({ accounts: [giro] });
+
+      expect(paidFromSelect()).toBeInTheDocument();
+      expect(monthlyRateInput()).toBeInTheDocument();
+      expect(stAmountInput()).toBeInTheDocument();
+      expect(stMonthSelect()).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /increment/i })
+      ).toBeInTheDocument();
+      expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
+    });
+
+    it("shows the repayment fields when only a Tagesgeld exists", () => {
+      renderModal({ accounts: [tagesgeld] });
+
+      expect(paidFromSelect()).toBeInTheDocument();
+      expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
+    });
+
+    it("offers only the Girokonto and Tagesgeld accounts under Paid from", () => {
+      renderModal({ accounts: [giro, card, tagesgeld, depot] });
+
+      const offered = Array.from(paidFromSelect().options)
+        .map((o) => o.value)
+        .filter((v) => v !== "");
+      expect(offered).toEqual(["giro-1", "tg-1"]);
+    });
+  });
+
+  describe("no funding account", () => {
+    it("keeps the add-a-Girokonto note when no account can fund the repayment", () => {
+      renderModal({ accounts: [card, depot] });
+
+      expect(screen.getByText(NOTE)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/paid from/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/monthly rate/i)).not.toBeInTheDocument();
+    });
+
+    it("still creates the mortgage, with no repayment in the payload", async () => {
+      const onSuccess = vi.fn();
+      renderModal({ accounts: [card], onSuccess });
+      fillValid();
+      save();
+
+      const body = await postedBody();
+      expect(body.repayment).toBeUndefined();
+      await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(created));
+    });
+  });
+
+  describe("defaults", () => {
+    it("defaults the day of month to 1", () => {
+      renderModal({ accounts: [giro] });
+
+      expect(screen.getByText("1")).toBeInTheDocument();
+    });
+
+    it("defaults the Sondertilgung month to November", () => {
+      renderModal({ accounts: [giro] });
+
+      expect(stMonthSelect().value).toBe("11");
+    });
+
+    it("submits day 1 and November when they are left at their defaults", async () => {
+      renderModal({ accounts: [giro] });
+      fillValid();
+      fillRepayment({ stAmount: "5000" });
+      save();
+
+      const body = await postedBody();
+      expect(body.repayment).toMatchObject({
+        dayOfMonth: 1,
+        sondertilgungMonth: 11,
+      });
+    });
+
+    it("keeps the day of month within 1–31 on the Stepper", async () => {
+      renderModal({ accounts: [giro] });
+      fireEvent.click(screen.getByRole("button", { name: /decrement/i }));
+      fillValid();
+      fillRepayment();
+      save();
+
+      const body = await postedBody();
+      expect(body.repayment).toMatchObject({ dayOfMonth: 1 });
+    });
+  });
+
+  describe("field rules", () => {
+    it.each([
+      ["the monthly rate is zero", { rate: "0" }],
+      ["the monthly rate is negative", { rate: "-1500" }],
+      ["the Sondertilgung amount is zero", { stAmount: "0" }],
+      ["the Sondertilgung amount is negative", { stAmount: "-5000" }],
+      [
+        "a Sondertilgung amount is given without its month",
+        { stAmount: "5000", stMonth: "" },
+      ],
+    ])("blocks saving and explains why when %s", async (_label, overrides) => {
+      const onSuccess = vi.fn();
+      renderModal({ accounts: [giro], onSuccess });
+      fillValid();
+      fillRepayment(overrides);
+      save();
+
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
+      expect(fetch).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it("does not require a Sondertilgung month when no Sondertilgung amount is given", async () => {
+      renderModal({ accounts: [giro] });
+      fillValid();
+      fillRepayment({ stMonth: "" });
+      save();
+
+      const body = await postedBody();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(body.repayment).toBeDefined();
+    });
+  });
+
+  describe("payload", () => {
+    it("sends the monthly repayment in cents from the chosen account, with the day of month", async () => {
+      renderModal({ accounts: [giro, tagesgeld] });
+      fireEvent.click(screen.getByRole("button", { name: /increment/i }));
+      fireEvent.click(screen.getByRole("button", { name: /increment/i }));
+      fillValid();
+      fillRepayment({ paidFrom: "tg-1", rate: "1500" });
+      save();
+
+      const body = await postedBody();
+      expect(body).toMatchObject({
+        name: "Haus",
+        openingBalance: 20000000,
+        originalPrincipal: 40000000,
+        termYears: 25,
+      });
+      expect(body.repayment).toEqual({
+        fundingAccountId: "tg-1",
+        monthlyAmount: 150000,
+        dayOfMonth: 3,
+      });
+    });
+
+    it("adds the annual Sondertilgung and its month when an amount is given", async () => {
+      renderModal({ accounts: [giro] });
+      fillValid();
+      fillRepayment({ rate: "1500", stAmount: "5000", stMonth: "3" });
+      save();
+
+      const body = await postedBody();
+      expect(body.repayment).toEqual({
+        fundingAccountId: "giro-1",
+        monthlyAmount: 150000,
+        dayOfMonth: 1,
+        sondertilgungAmount: 500000,
+        sondertilgungMonth: 3,
+      });
+    });
+  });
+});

@@ -85,3 +85,88 @@ describe("SQLite mortgages.create", () => {
     expect(accounts.filter((a) => a.name === "Haus")).toHaveLength(0);
   });
 });
+
+// Live-Use Repair #2 (issue #227): the repayment's Recurring Transfers join the
+// same transaction as the account and its origination.
+
+/** The Sondertilgung amount the trigger refuses to store. */
+const POISONED_ST_AMOUNT = 77777777;
+
+function failRecurringInserts(): void {
+  const side = new Database(dbPath);
+  side.exec(`
+    CREATE TRIGGER fail_recurring_insert BEFORE INSERT ON recurring_transactions
+    WHEN NEW.amount = ${POISONED_ST_AMOUNT}
+    BEGIN SELECT RAISE(ABORT, 'recurring write failed'); END;
+  `);
+  side.close();
+}
+
+describe("SQLite mortgages.create — repayment", () => {
+  it("writes the monthly repayment and the Sondertilgung from the funding account into the Mortgage", async () => {
+    const giro = await storage.accounts.create({
+      kind: "Girokonto",
+      name: "Giro",
+      openingBalance: 500000,
+      openingDate: "2026-01-01",
+    });
+
+    const created = await storage.mortgages.create({
+      ...setup,
+      repayment: {
+        fundingAccountId: giro.id,
+        monthlyAmount: 150000,
+        dayOfMonth: 3,
+        sondertilgungAmount: 500000,
+        sondertilgungMonth: 11,
+      },
+    });
+
+    const recurring = await storage.recurringTransactions.findAll();
+    expect(recurring).toHaveLength(2);
+    expect(
+      recurring.every(
+        (r) =>
+          r.accountId === giro.id &&
+          r.linkedAccountId === created.id &&
+          r.category === "Transfer"
+      )
+    ).toBe(true);
+    expect(recurring.map((r) => r.description).sort()).toEqual([
+      "Mortgage repayment",
+      "Sondertilgung",
+    ]);
+  });
+
+  it("rolls everything back when a recurring insert fails: no account, no origination, no transfer remains", async () => {
+    const giro = await storage.accounts.create({
+      kind: "Girokonto",
+      name: "Giro",
+      openingBalance: 500000,
+      openingDate: "2026-01-01",
+    });
+    const mortgages = storage.mortgages;
+    failRecurringInserts();
+
+    await expect(
+      mortgages.create({
+        ...setup,
+        repayment: {
+          fundingAccountId: giro.id,
+          monthlyAmount: 150000,
+          dayOfMonth: 3,
+          sondertilgungAmount: POISONED_ST_AMOUNT,
+          sondertilgungMonth: 11,
+        },
+      })
+    ).rejects.toThrow(/recurring write failed/);
+
+    const accounts = await storage.accounts.findAll();
+    expect(accounts.filter((a) => a.name === "Haus")).toHaveLength(0);
+    expect(accounts.filter((a) => a.kind === "Mortgage")).toHaveLength(0);
+    expect(
+      accounts.filter((a) => a.originalPrincipal === setup.originalPrincipal)
+    ).toHaveLength(0);
+    expect(await storage.recurringTransactions.findAll()).toHaveLength(0);
+  });
+});

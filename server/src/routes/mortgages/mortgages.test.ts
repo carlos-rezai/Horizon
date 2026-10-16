@@ -123,3 +123,221 @@ describe("POST /mortgages — invalid setup", () => {
     expect(await mortgageCount()).toBe(0);
   });
 });
+
+// Live-Use Repair #2 (issue #227): Mortgage Setup also writes the repayment —
+// a monthly Recurring Transfer and an optional annual Sondertilgung, each from
+// the funding account into the new Mortgage.
+
+interface StoredRecurring {
+  id: string;
+  accountId: string;
+  linkedAccountId?: string;
+  amount: number;
+  description: string;
+  category: string;
+  frequency: string;
+  dayOfMonth: number;
+  monthOfYear?: number;
+}
+
+async function createAccount(
+  kind: string,
+  name: string,
+  openingBalance = 500000
+): Promise<string> {
+  const res = await request(app).post("/accounts").send({
+    kind,
+    name,
+    openingBalance,
+    openingDate: "2026-01-01",
+  });
+  expect(res.status).toBe(201);
+  return res.body.id as string;
+}
+
+async function allRecurring(): Promise<StoredRecurring[]> {
+  const res = await request(app).get("/recurring-transactions");
+  return res.body as StoredRecurring[];
+}
+
+/** 1,500 € a month on the 3rd, plus 5,000 € Sondertilgung every November. */
+function repaymentFrom(fundingAccountId: string) {
+  return {
+    fundingAccountId,
+    monthlyAmount: 150000,
+    dayOfMonth: 3,
+    sondertilgungAmount: 500000,
+    sondertilgungMonth: 11,
+  };
+}
+
+describe("POST /mortgages — with a repayment", () => {
+  it("writes no Recurring Transfer when the setup has no repayment", async () => {
+    const res = await request(app).post("/mortgages").send(validSetup);
+
+    expect(res.status).toBe(201);
+    expect(await allRecurring()).toHaveLength(0);
+  });
+
+  it("writes one monthly Recurring Transfer from the funding account into the Mortgage when no Sondertilgung is given", async () => {
+    const giro = await createAccount("Girokonto", "Giro");
+    const res = await request(app)
+      .post("/mortgages")
+      .send({
+        ...validSetup,
+        repayment: {
+          fundingAccountId: giro,
+          monthlyAmount: 150000,
+          dayOfMonth: 3,
+        },
+      });
+
+    expect(res.status).toBe(201);
+    const recurring = await allRecurring();
+    expect(recurring).toHaveLength(1);
+    expect(recurring[0]).toMatchObject({
+      accountId: giro,
+      linkedAccountId: res.body.id,
+      amount: 150000,
+      description: "Mortgage repayment",
+      category: "Transfer",
+      frequency: "monthly",
+      dayOfMonth: 3,
+    });
+  });
+
+  it("writes the monthly repayment and the annual Sondertilgung when both are given", async () => {
+    const giro = await createAccount("Girokonto", "Giro");
+    const res = await request(app)
+      .post("/mortgages")
+      .send({ ...validSetup, repayment: repaymentFrom(giro) });
+
+    expect(res.status).toBe(201);
+    const recurring = await allRecurring();
+    expect(recurring).toHaveLength(2);
+
+    const monthly = recurring.find((r) => r.frequency === "monthly");
+    const annual = recurring.find((r) => r.frequency === "annual");
+    expect(monthly).toMatchObject({
+      accountId: giro,
+      linkedAccountId: res.body.id,
+      amount: 150000,
+      description: "Mortgage repayment",
+      category: "Transfer",
+      dayOfMonth: 3,
+    });
+    expect(annual).toMatchObject({
+      accountId: giro,
+      linkedAccountId: res.body.id,
+      amount: 500000,
+      description: "Sondertilgung",
+      category: "Transfer",
+      dayOfMonth: 3,
+      monthOfYear: 11,
+    });
+  });
+
+  it("accepts a Tagesgeld as the funding account", async () => {
+    const tagesgeld = await createAccount("Tagesgeld", "Reserve");
+    const res = await request(app)
+      .post("/mortgages")
+      .send({ ...validSetup, repayment: repaymentFrom(tagesgeld) });
+
+    expect(res.status).toBe(201);
+    const recurring = await allRecurring();
+    expect(recurring).toHaveLength(2);
+    expect(recurring.every((r) => r.accountId === tagesgeld)).toBe(true);
+  });
+
+  it("projects the Mortgage to payoff and lists the transfers on the funding account", async () => {
+    const giro = await createAccount("Girokonto", "Giro", 100000000);
+    const res = await request(app)
+      .post("/mortgages")
+      .send({ ...validSetup, repayment: repaymentFrom(giro) });
+    expect(res.status).toBe(201);
+    const mortgageId = res.body.id as string;
+
+    const projection = await request(app).get("/projection?months=240");
+    expect(projection.status).toBe(200);
+    const snapshots = projection.body as {
+      month: string;
+      accounts: Record<string, { projected: number }>;
+    }[];
+    expect(
+      snapshots.some((s) => (s.accounts[mortgageId]?.projected ?? 1) <= 0)
+    ).toBe(true);
+
+    const onFunding = (await allRecurring()).filter(
+      (r) => r.accountId === giro || r.linkedAccountId === giro
+    );
+    expect(onFunding.map((r) => r.description).sort()).toEqual([
+      "Mortgage repayment",
+      "Sondertilgung",
+    ]);
+  });
+});
+
+describe("POST /mortgages — invalid repayment", () => {
+  it.each([
+    [
+      "a Sondertilgung amount is given without its month",
+      { sondertilgungMonth: undefined },
+    ],
+    ["the monthly rate is zero", { monthlyAmount: 0 }],
+    ["the monthly rate is negative", { monthlyAmount: -150000 }],
+    ["the Sondertilgung amount is zero", { sondertilgungAmount: 0 }],
+    ["the Sondertilgung amount is negative", { sondertilgungAmount: -500000 }],
+    ["the day of month is 0", { dayOfMonth: 0 }],
+    ["the day of month is 32", { dayOfMonth: 32 }],
+    ["the Sondertilgung month is 13", { sondertilgungMonth: 13 }],
+  ])("answers 400 with issues when %s", async (_label, override) => {
+    const giro = await createAccount("Girokonto", "Giro");
+    const res = await request(app)
+      .post("/mortgages")
+      .send({
+        ...validSetup,
+        repayment: { ...repaymentFrom(giro), ...override },
+      });
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+    expect(res.body.issues.length).toBeGreaterThan(0);
+    expect(await mortgageCount()).toBe(0);
+    expect(await allRecurring()).toHaveLength(0);
+  });
+
+  it.each([
+    ["a CreditCard", "CreditCard"],
+    ["an Investment account", "Investment"],
+    ["another Mortgage", "Mortgage"],
+  ])(
+    "answers 400 with issues when the funding account is %s",
+    async (_label, kind) => {
+      const ineligible = await createAccount(kind, "Not a funding account");
+      const res = await request(app)
+        .post("/mortgages")
+        .send({ ...validSetup, repayment: repaymentFrom(ineligible) });
+
+      expect(res.status).toBe(400);
+      expect(Array.isArray(res.body.issues)).toBe(true);
+      expect(res.body.issues.length).toBeGreaterThan(0);
+      expect(
+        (await request(app).get("/accounts")).body.filter(
+          (a: { name: string }) => a.name === "Haus"
+        )
+      ).toHaveLength(0);
+      expect(await allRecurring()).toHaveLength(0);
+    }
+  );
+
+  it("answers 400 with issues when the funding account does not exist", async () => {
+    const res = await request(app)
+      .post("/mortgages")
+      .send({ ...validSetup, repayment: repaymentFrom("no-such-account") });
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+    expect(res.body.issues.length).toBeGreaterThan(0);
+    expect(await mortgageCount()).toBe(0);
+  });
+});

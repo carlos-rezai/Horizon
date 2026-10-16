@@ -156,6 +156,26 @@ describe("the Getting Started topic", () => {
       expect(step()?.body).toContain("Mortgage Countdown");
     });
 
+    // Live-Use Repair #2 (issue #227): the same form sets up the repayment.
+    it("describes the Repayment group: paid from a Girokonto or Tagesgeld, the monthly rate, the day and an optional Sondertilgung", () => {
+      expect(step()?.body).toMatch(/paid from/i);
+      expect(step()?.body).toContain("Girokonto or Tagesgeld");
+      expect(step()?.body).toMatch(/monthly rate/i);
+      expect(step()?.body).toMatch(/day of (the )?month/i);
+      expect(step()?.body).toMatch(/Sondertilgung/);
+      expect(step()?.body).toContain("November");
+    });
+
+    it("quotes the note shown when no account can fund the repayment", () => {
+      expect(step()?.body).toContain(
+        "Add a Girokonto to set up the monthly repayment."
+      );
+    });
+
+    it("no longer defers the monthly repayment to a later step", () => {
+      expect(step()?.body).not.toMatch(/added in step 3/i);
+    });
+
     it("describes the one form: the Restschuld today and the origination together", () => {
       expect(step()?.body).toContain("Restschuld today");
       expect(step()?.body).toMatch(/one form/i);
@@ -225,6 +245,14 @@ describe("the Dashboard topic", () => {
       expect(row()?.body).toContain("Restschuld today");
       expect(row()?.body).toMatch(/one form/i);
       expect(row()?.body).toMatch(/original principal/i);
+    });
+
+    // Live-Use Repair #2 (issue #227): the setup form also carries the repayment.
+    it("says the setup form also sets up the repayment and its Sondertilgung", () => {
+      expect(row()?.body).toMatch(/repayment/i);
+      expect(row()?.body).toMatch(/monthly rate/i);
+      expect(row()?.body).toMatch(/Sondertilgung/);
+      expect(row()?.body).toMatch(/paid from/i);
     });
 
     it("no longer says the card is absent until a Mortgage account exists", () => {
