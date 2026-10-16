@@ -13,6 +13,25 @@ const PER_MONTH_WEIGHT: Record<RecurringFrequency, number> = {
   annual: 1 / 12,
 };
 
+/** Which end of a Recurring Transfer an account is. */
+export type TransferSide = "source" | "destination";
+
+/**
+ * How a recurring relates to `accountId`: `"source"` when it is a Recurring
+ * Transfer stored on that account, `"destination"` when the transfer lands on
+ * it (a Mirrored Transfer Row there), and `null` for a plain recurring or a
+ * row that does not touch the account.
+ */
+export const transferSideFor = (
+  r: RecurringTransaction,
+  accountId: string
+): TransferSide | null => {
+  if (r.linkedAccountId === undefined) return null;
+  if (r.accountId === accountId) return "source";
+  if (r.linkedAccountId === accountId) return "destination";
+  return null;
+};
+
 /**
  * What one recurring does to `accountId`, in signed cents. A plain recurring
  * carries its stored sign on its own account. A Recurring Transfer is stored
@@ -24,11 +43,10 @@ export const recurringAmountFor = (
   r: RecurringTransaction,
   accountId: string
 ): number => {
-  if (r.linkedAccountId !== undefined) {
-    if (r.accountId === accountId) return -r.amount;
-    if (r.linkedAccountId === accountId) return r.amount;
-    return 0;
-  }
+  const side = transferSideFor(r, accountId);
+  if (side === "source") return -r.amount;
+  if (side === "destination") return r.amount;
+  if (r.linkedAccountId !== undefined) return 0;
   return r.accountId === accountId ? r.amount : 0;
 };
 

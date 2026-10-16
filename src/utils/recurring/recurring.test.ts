@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { recurringAmountFor, recurringNetPerMonth } from "./recurring";
+import {
+  recurringAmountFor,
+  recurringNetPerMonth,
+  transferSideFor,
+} from "./recurring";
 import type { RecurringTransaction } from "../../types/recurring";
 
 /**
@@ -172,5 +176,29 @@ describe("recurringAmountFor", () => {
     const plain = rt({ accountId: "acc-1", amount: -120000 });
     expect(recurringAmountFor(transfer, "acc-3")).toBe(0);
     expect(recurringAmountFor(plain, "acc-3")).toBe(0);
+  });
+});
+
+describe("transferSideFor", () => {
+  const transfer = rt({
+    accountId: "giro",
+    linkedAccountId: "mortgage",
+    amount: 95500,
+  });
+
+  it("is the source on the account the transfer is stored on", () => {
+    expect(transferSideFor(transfer, "giro")).toBe("source");
+  });
+
+  it("is the destination on the account the transfer lands on", () => {
+    expect(transferSideFor(transfer, "mortgage")).toBe("destination");
+  });
+
+  it("is null on an account the transfer does not touch", () => {
+    expect(transferSideFor(transfer, "tagesgeld")).toBeNull();
+  });
+
+  it("is null for a plain recurring, even on its own account", () => {
+    expect(transferSideFor(rt({ accountId: "giro" }), "giro")).toBeNull();
   });
 });

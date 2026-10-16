@@ -26,5 +26,7 @@ export { resolveAccountColor } from "./color/color";
 export {
   recurringAmountFor,
   recurringNetPerMonth,
+  transferSideFor,
 } from "./recurring/recurring";
+export type { TransferSide } from "./recurring/recurring";
 export { computeSavingsGoal, milestoneSplit } from "./savingsGoal/savingsGoal";
