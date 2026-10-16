@@ -10,6 +10,10 @@ the next round's heading, never into a frozen round.
 added at the Round 1 grill the same day as a recorded exception. Log new
 findings under **Round 2** at the bottom of this file.
 
+**Round 1 closed** 2026-10-16: #1, #2, #4 and #5 fixed in issues #221–#227;
+#3 was already fixed on 2026-08-04, before the round began. Round 2 starts at
+#6.
+
 ## How to log one
 
 Record what you did, what you expected, and what happened. Leave **Class**
@@ -78,7 +82,7 @@ Goal: recurring transfers read exactly like one-off transfers.
 build `9461d81`): `recurringAmountFor` signs a transfer per viewed account, so
 the source reads −amount in red and the destination shows a mirrored row,
 +amount in green, labelled "from …" and linking to the source to edit. Entry —
-issue #224 (RED `f5eab36`, build in the `feat:` commit closing #224): the
+issue #224 (RED `f5eab36`, test fix `369795f`, build `ad38b51`): the
 modal's "Transfer" select gains a To / From Direction chip pair; amounts are
 typed positive, and "From B" is stored as B's transfer to this account. The
 hook passes the payload's `accountId` through, the update schema takes an
@@ -133,6 +137,20 @@ a misleadingly late one (a €90k Restschuld read as Jun 2037 until the real
 "contract end vs projected payoff" line was considered and dropped: with the
 real transfers entered, the projected date alone is right.
 
+**Fixed** 2026-10-16 in three issues. Footer — issue #225 (RED `0d6c826`,
+build `2706f2d`): a mortgage no recurring transfer pays into reads "No
+repayment set up — add a recurring transfer into this mortgage to see the
+payoff date." instead of a misleading "Not paid off within …". Empty state and
+setup — issue #226 (RED `dd475e3`, build `234ad05`): with no Mortgage account
+the card renders "No mortgage yet" and a **Set up mortgage** button opening
+`MortgageSetupModal`, one form that creates the Mortgage account and its
+origination through `POST /mortgages` in one transaction. Repayment — issue
+#227 (RED `c38317b`, test fix `c98d973`, build in the `feat:` commit closing
+#227): the form's Repayment group (Paid from, Monthly rate, day of month,
+optional annual Sondertilgung defaulting to November) writes the Recurring
+Transfers in the same transaction, so one save ends with a payoff date. The
+KPI mortgage tiles were left always-on, as they have been since #132.
+
 ---
 
 ## 3. Every Import review row shares one DOM id, so row labels focus the wrong picker
@@ -169,7 +187,8 @@ Not a screen-reader-only problem: the accessible name is still correct via
 `aria-label`, so the pickers are announced properly and are individually
 operable. What breaks is label-click targeting.
 
-**Fixed** 2026-08-04: both ids now derive from React's `useId()`, so each
+**Fixed** 2026-08-04 (already fixed before Round 1; recorded as such at the
+round's close, 2026-10-16): both ids now derive from React's `useId()`, so each
 instance carries its own. Locked by three tests in `CategorySelect.test.tsx`
 that mount three pickers at once and assert distinct ids, that every
 `<label>.control` resolves to its own picker, and that two rows adding a

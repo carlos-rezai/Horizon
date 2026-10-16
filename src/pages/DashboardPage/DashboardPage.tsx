@@ -55,7 +55,8 @@ export default function DashboardPage() {
     error: projectionError,
     refetch: refetchProjection,
   } = useProjection();
-  const { recurringTransactions } = useAllRecurringTransactions();
+  const { recurringTransactions, refresh: refreshRecurring } =
+    useAllRecurringTransactions();
   const {
     goal: savingsGoal,
     points: savingsPoints,
@@ -173,6 +174,7 @@ export default function DashboardPage() {
               onUpdated={() => {
                 refreshAccounts();
                 refetchProjection();
+                refreshRecurring();
               }}
             />
           )}

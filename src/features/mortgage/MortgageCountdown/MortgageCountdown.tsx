@@ -106,6 +106,7 @@ export default function MortgageCountdown({
         </Card>
         {settingUp && (
           <MortgageSetupModal
+            accounts={accounts}
             onClose={() => setSettingUp(false)}
             onSuccess={() => {
               setSettingUp(false);

@@ -4,6 +4,9 @@ import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
 
+/** The account kinds a Mortgage repayment may be paid from. */
+const FUNDING_KINDS: ReadonlySet<string> = new Set(["Girokonto", "Tagesgeld"]);
+
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
 }
@@ -14,7 +17,24 @@ router.post("/", async (req, res) => {
     res.status(400).json({ issues: parsed.error.issues });
     return;
   }
-  const account = await getStorage(req).mortgages.create(parsed.data);
+  const storage = getStorage(req);
+  const repayment = parsed.data.repayment;
+  if (repayment) {
+    const funding = await storage.accounts.findById(repayment.fundingAccountId);
+    if (!funding || !FUNDING_KINDS.has(funding.kind)) {
+      res.status(400).json({
+        issues: [
+          {
+            code: "custom",
+            path: ["repayment", "fundingAccountId"],
+            message: "The repayment must be paid from a Girokonto or Tagesgeld",
+          },
+        ],
+      });
+      return;
+    }
+  }
+  const account = await storage.mortgages.create(parsed.data);
   res.status(201).json(account);
 });
 

@@ -7,6 +7,8 @@ interface UseAllRecurringTransactionsResult {
   recurringTransactions: RecurringTransaction[];
   isLoading: boolean;
   error: string | null;
+  /** Refetch, after a write elsewhere added or changed recurring flows. */
+  refresh: () => void;
 }
 
 /**
@@ -20,7 +22,7 @@ function fetchAllRecurringTransactions(): Promise<RecurringTransaction[]> {
 }
 
 export function useAllRecurringTransactions(): UseAllRecurringTransactionsResult {
-  const { data, isLoading, error } = useCachedResource(
+  const { data, isLoading, error, refresh } = useCachedResource(
     RECURRING,
     fetchAllRecurringTransactions
   );
@@ -29,5 +31,6 @@ export function useAllRecurringTransactions(): UseAllRecurringTransactionsResult
     recurringTransactions: data ?? NO_RECURRING,
     isLoading,
     error,
+    refresh,
   };
 }

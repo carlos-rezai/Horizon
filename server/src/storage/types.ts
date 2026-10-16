@@ -45,6 +45,20 @@ export interface MortgageSetup {
   originalPrincipal: number;
   startDate: string;
   termYears: number;
+  repayment?: MortgageRepayment;
+}
+
+/**
+ * The repayment written with a Mortgage Setup: a monthly Recurring Transfer
+ * and an optional annual Sondertilgung, both from the funding account into
+ * the Mortgage on the same day of the month. Amounts in cents.
+ */
+export interface MortgageRepayment {
+  fundingAccountId: string;
+  monthlyAmount: number;
+  dayOfMonth: number;
+  sondertilgungAmount?: number;
+  sondertilgungMonth?: number;
 }
 
 export type SetMortgageOriginationResult =

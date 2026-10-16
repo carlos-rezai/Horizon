@@ -29,6 +29,13 @@ export function createSqliteMortgagesRepo(
      WHERE id = ?`
   );
 
+  const insertRecurringStmt = db.prepare(
+    `INSERT INTO recurring_transactions
+       (id, account_id, amount, description, category, frequency,
+        day_of_month, linked_account_id, month_of_year)
+     VALUES (?, ?, ?, ?, 'Transfer', ?, ?, ?, ?)`
+  );
+
   const createInTransaction = db.transaction(
     (id: string, setup: MortgageSetup): void => {
       const nextSortOrder = (nextSortOrderStmt.get() as { next: number }).next;
@@ -46,6 +53,34 @@ export function createSqliteMortgagesRepo(
         setup.termYears,
         id
       );
+      const repayment = setup.repayment;
+      if (repayment) {
+        insertRecurringStmt.run(
+          randomUUID(),
+          repayment.fundingAccountId,
+          repayment.monthlyAmount,
+          "Mortgage repayment",
+          "monthly",
+          repayment.dayOfMonth,
+          id,
+          null
+        );
+        if (
+          repayment.sondertilgungAmount !== undefined &&
+          repayment.sondertilgungMonth !== undefined
+        ) {
+          insertRecurringStmt.run(
+            randomUUID(),
+            repayment.fundingAccountId,
+            repayment.sondertilgungAmount,
+            "Sondertilgung",
+            "annual",
+            repayment.dayOfMonth,
+            id,
+            repayment.sondertilgungMonth
+          );
+        }
+      }
     }
   );
 
