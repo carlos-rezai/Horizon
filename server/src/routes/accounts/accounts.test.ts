@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
@@ -846,5 +854,79 @@ describe("PATCH /accounts/:id — re-anchoring", () => {
     expect(stored.body.anchorBalance).toBe(500000);
     expect(stored.body.anchorDate).toBe("2026-03-31");
     expect(stored.body.balance).toBe(495000);
+  });
+});
+
+describe("Anchor Date — today is the local calendar date", () => {
+  // 00:30 local time on 16 Oct 2026. East of UTC this is still 15 Oct in UTC,
+  // so a UTC "today" would wrongly reject the local date as later than today.
+  // Only `Date` is faked: supertest needs real timers for its socket.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function freezeJustAfterMidnight(): void {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 16, 0, 30));
+  }
+
+  it("POST /accounts accepts today's local date just after midnight", async () => {
+    freezeJustAfterMidnight();
+
+    const res = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 100000,
+      anchorDate: "2026-10-16",
+    });
+
+    expect(res.status).toBe(201);
+  });
+
+  it("POST /accounts still rejects the following day", async () => {
+    freezeJustAfterMidnight();
+
+    const res = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 100000,
+      anchorDate: "2026-10-17",
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("PATCH /accounts/:id accepts today's local date just after midnight", async () => {
+    freezeJustAfterMidnight();
+    const created = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
+    });
+    expect(created.status).toBe(201);
+
+    const res = await request(app)
+      .patch(`/accounts/${created.body.id as string}`)
+      .send({ anchorDate: "2026-10-16" });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("PATCH /accounts/:id still rejects the following day", async () => {
+    freezeJustAfterMidnight();
+    const created = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
+    });
+    expect(created.status).toBe(201);
+
+    const res = await request(app)
+      .patch(`/accounts/${created.body.id as string}`)
+      .send({ anchorDate: "2026-10-17" });
+
+    expect(res.status).toBe(400);
   });
 });
