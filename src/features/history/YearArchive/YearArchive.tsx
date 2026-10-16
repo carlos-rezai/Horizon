@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import Money from "../../../primitives/Money/Money";
 import { formatMonth } from "../../../utils/format/format";
+import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
 import { isUnknownMonth } from "../knownSince/knownSince";
 import {
@@ -90,11 +91,10 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
         const isOpen = expanded === year;
         const count = statementCounts[year] ?? 0;
         const months = monthsOfYear(points, year);
-        const lastMonth = months.at(-1);
-        const yearKnown = months.some((p) => !isUnknownMonth(p));
         // Total Liquid / Restschuld snapshot the year's final available month
         // (possibly Unknown); Net Cashflow is the year's sum.
-        const yearCashflow = months.reduce((sum, p) => sum + p.netCashflow, 0);
+        const [summary] = aggregateYearSummaries<number | null>(months);
+        const yearKnown = months.some((p) => !isUnknownMonth(p));
 
         return (
           <StyledYearSection key={year}>
@@ -108,9 +108,12 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
                   <ChevronRight size={17} />
                 </StyledChevron>
                 <StyledYearLabel>{year}</StyledYearLabel>
-                <BalanceCell cents={lastMonth?.totalLiquid} />
-                <BalanceCell cents={lastMonth?.restschuld} />
-                <CashflowCell cents={yearCashflow} known={yearKnown} />
+                <BalanceCell cents={summary?.totalLiquid} />
+                <BalanceCell cents={summary?.restschuld} />
+                <CashflowCell
+                  cents={summary?.netCashflow ?? 0}
+                  known={yearKnown}
+                />
               </StyledYearHeader>
               <StyledCountBadge to="/import">
                 {count} {count === 1 ? "statement" : "statements"}
