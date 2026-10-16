@@ -268,3 +268,31 @@ export function findDebtFreeMonth(
   );
   return paidOff ? paidOff.month : null;
 }
+
+/**
+ * The Sondertilgung months a plan-level surface shows: every annual Repayment
+ * Transfer across the snapshots' span (`deriveSTMonths`), cut at the
+ * Debt-free Month and capped at the Restschuld left (`effectiveSTMonths`).
+ * Empty with no snapshots. The only way a surface gets ST Months, so the
+ * surfaces cannot disagree.
+ */
+export function stMonthsFor(
+  recurringTransactions: RecurringTransaction[],
+  accounts: { id: string; kind: AccountKind }[],
+  snapshots: MonthlySnapshot[]
+): Map<string, number> {
+  if (snapshots.length === 0) return new Map<string, number>();
+  const mortgageIds = accounts
+    .filter((a) => a.kind === "Mortgage")
+    .map((a) => a.id);
+  return effectiveSTMonths(
+    deriveSTMonths(
+      recurringTransactions,
+      accounts,
+      snapshots[0].month,
+      snapshots.length
+    ),
+    snapshots,
+    mortgageIds
+  );
+}

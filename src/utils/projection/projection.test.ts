@@ -9,6 +9,7 @@ import {
   effectiveSTMonths,
   totalRestschuld,
   findDebtFreeMonth,
+  stMonthsFor,
 } from "./projection";
 import { chartColors } from "../../tokens/colors";
 import type { MonthlySnapshot } from "../../types/projection";
@@ -870,5 +871,85 @@ describe("findDebtFreeMonth", () => {
     expect(findDebtFreeMonth(snapshots.slice(0, 1), ["m1"])).toBe(
       findMortgagePayoffMonth(snapshots.slice(0, 1), "m1")
     );
+  });
+});
+
+describe("stMonthsFor — the real-world reference case", () => {
+  // €955/month and €6,500 each November into the Mortgage, starting October
+  // 2026 with €89,500 Restschuld: the loan is paid off in October 2031, so
+  // the Novembers 2026–2030 are the only Sondertilgung that count.
+  const MONTHLY = 95500;
+  const ANNUAL = 650000;
+  const recurring: RecurringTransaction[] = [
+    {
+      id: "r-monthly",
+      accountId: "g1",
+      amount: MONTHLY,
+      description: "Darlehen",
+      category: "Housing",
+      frequency: "monthly",
+      dayOfMonth: 1,
+      linkedAccountId: "m1",
+    },
+    {
+      id: "r-annual",
+      accountId: "g1",
+      amount: ANNUAL,
+      description: "Sondertilgung",
+      category: "Housing",
+      frequency: "annual",
+      dayOfMonth: 1,
+      linkedAccountId: "m1",
+      monthOfYear: 11,
+    },
+  ];
+  const accounts = [
+    { id: "g1", kind: "Girokonto" as const },
+    { id: "m1", kind: "Mortgage" as const },
+  ];
+
+  const snapshots: MonthlySnapshot[] = [];
+  let restschuld = 8950000;
+  for (let i = 0; i < 240; i++) {
+    const year = 2026 + Math.floor((9 + i) / 12);
+    const monthNum = ((9 + i) % 12) + 1;
+    if (i > 0) {
+      restschuld -= MONTHLY;
+      if (monthNum === 11) restschuld -= ANNUAL;
+      restschuld = Math.max(0, restschuld);
+    }
+    snapshots.push({
+      month: `${year}-${String(monthNum).padStart(2, "0")}`,
+      accounts: { m1: { projected: restschuld } },
+      netCashflow: 0,
+      totalLiquid: 0,
+    });
+  }
+
+  it("keeps the five Novembers before the October 2031 payoff", () => {
+    const st = stMonthsFor(recurring, accounts, snapshots);
+
+    expect([...st.keys()]).toEqual([
+      "2026-11",
+      "2027-11",
+      "2028-11",
+      "2029-11",
+      "2030-11",
+    ]);
+    expect([...st.values()].every((amount) => amount === ANNUAL)).toBe(true);
+  });
+
+  it("matches the composition it wraps", () => {
+    expect(stMonthsFor(recurring, accounts, snapshots)).toEqual(
+      effectiveSTMonths(
+        deriveSTMonths(recurring, accounts, snapshots[0].month, 240),
+        snapshots,
+        ["m1"]
+      )
+    );
+  });
+
+  it("is empty with no snapshots", () => {
+    expect(stMonthsFor(recurring, accounts, []).size).toBe(0);
   });
 });

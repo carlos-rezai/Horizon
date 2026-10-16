@@ -14,6 +14,7 @@ export {
   findMilestoneMonth,
   deriveSTMonths,
   effectiveSTMonths,
+  stMonthsFor,
   deriveYearSummaries,
   buildTrajectoryData,
   findMortgagePayoffMonth,
