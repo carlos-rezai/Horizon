@@ -92,6 +92,17 @@ describe("HistoryPage — header", () => {
       ).toBeInTheDocument();
     });
   });
+  // History comes from statements, Anchor Balances and the mortgage's
+  // origination, not only from imports.
+  it("names every source of history in the subtitle", async () => {
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        "Reconstructed balances from your statements, account balances and mortgage origination."
+      )
+    ).toBeInTheDocument();
+  });
 });
 
 describe("HistoryPage — empty state", () => {
