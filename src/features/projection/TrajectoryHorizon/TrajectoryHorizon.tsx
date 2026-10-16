@@ -31,6 +31,9 @@ import {
 import {
   buildSeriesDescriptors,
   computeVisibleYDomain,
+  RESTSCHULD_BRIDGE_KEY,
+  RESTSCHULD_KEY,
+  TOTAL_LIQUID_KEY,
   type SeriesDescriptor,
   type VisibilityAccount,
 } from "../../../utils/trajectory/trajectory";
@@ -56,10 +59,6 @@ import {
 } from "./TrajectoryHorizon.styles";
 
 const VISIBILITY_KEY = "horizon.trajectory.visibility.v2";
-
-const TOTAL_LIQUID_KEY = "totalLiquid";
-const RESTSCHULD_KEY = "restschuld";
-const RESTSCHULD_BRIDGE_KEY = "restschuldBridge";
 
 /** A chart row: a Past Lead-in month or a projected month. */
 type ChartPoint = TrajectoryDataPoint | PastLeadInRow;
@@ -264,12 +263,7 @@ export default function TrajectoryHorizon({
   } = useSeriesVisibility(visibilityAccounts, seriesKeys, VISIBILITY_KEY);
 
   const restschuldVisible = visibility[RESTSCHULD_KEY] === true;
-  // The bridge follows the Restschuld toggle, so it counts toward the domain
-  // whenever the Restschuld does.
-  const [, yMax] = computeVisibleYDomain(data, {
-    ...visibility,
-    [RESTSCHULD_BRIDGE_KEY]: restschuldVisible,
-  });
+  const [, yMax] = computeVisibleYDomain(data, visibility);
 
   const payoffIndex = payoffMonth
     ? data.findIndex((p) => p.label === payoffMonth)
