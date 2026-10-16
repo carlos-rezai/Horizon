@@ -6,9 +6,8 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import {
   buildAccountColumns,
-  deriveSTMonths,
-  effectiveSTMonths,
   findDebtFreeMonth,
+  stMonthsFor,
   totalRestschuld,
 } from "../../../utils/projection/projection";
 import { aggregateYearSummaries } from "../../../utils/accordion/accordion";
@@ -40,11 +39,9 @@ interface Props {
   snapshots: MonthlySnapshot[];
   accounts: AccountWithBalance[];
   /** Feeds the ST Month highlight: annual Repayment Transfers before payoff. */
-  recurringTransactions?: RecurringTransaction[];
+  recurringTransactions: RecurringTransaction[];
   initialYear?: number;
 }
-
-const NO_RECURRING: RecurringTransaction[] = [];
 
 function groupByYear(
   snapshots: MonthlySnapshot[]
@@ -61,7 +58,7 @@ function groupByYear(
 export default function ProjectionAccordion({
   snapshots,
   accounts,
-  recurringTransactions = NO_RECURRING,
+  recurringTransactions,
   initialYear,
 }: Props) {
   const navigate = useNavigate();
@@ -104,16 +101,7 @@ export default function ProjectionAccordion({
   );
 
   // ST Months: annual Repayment Transfers firing while Restschuld remains.
-  const stMonths = effectiveSTMonths(
-    deriveSTMonths(
-      recurringTransactions,
-      accounts,
-      snapshots[0].month,
-      snapshots.length
-    ),
-    snapshots,
-    mortgageIds
-  );
+  const stMonths = stMonthsFor(recurringTransactions, accounts, snapshots);
 
   const accountBalances = (snapshot: MonthlySnapshot) =>
     Object.fromEntries(

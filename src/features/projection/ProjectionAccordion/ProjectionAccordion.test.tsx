@@ -106,6 +106,7 @@ describe("ProjectionAccordion — payoff month row", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[mortgageAccount, giroAccount]}
+        recurringTransactions={[]}
         initialYear={2027}
       />
     );
@@ -118,6 +119,7 @@ describe("ProjectionAccordion — payoff month row", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[mortgageAccount, giroAccount]}
+        recurringTransactions={[]}
         initialYear={2027}
       />
     );
@@ -130,6 +132,7 @@ describe("ProjectionAccordion — payoff month row", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[giroAccount]}
+        recurringTransactions={[]}
         initialYear={2027}
       />
     );
@@ -142,6 +145,7 @@ describe("ProjectionAccordion — payoff month row", () => {
       <ProjectionAccordion
         snapshots={snapshotsNoPayoff}
         accounts={[mortgageAccount, giroAccount]}
+        recurringTransactions={[]}
         initialYear={2027}
       />
     );
@@ -156,6 +160,7 @@ describe("ProjectionAccordion — deep-link expand & scroll", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[giroAccount, mortgageAccount]}
+        recurringTransactions={[]}
         initialYear={2027}
       />
     );
@@ -179,6 +184,7 @@ describe("ProjectionAccordion — deep-link expand & scroll", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[giroAccount, mortgageAccount]}
+        recurringTransactions={[]}
         initialYear={2027}
       />
     );
@@ -193,6 +199,7 @@ describe("ProjectionAccordion — month row navigation", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[giroAccount]}
+        recurringTransactions={[]}
         initialYear={2026}
       />
     );
@@ -209,6 +216,7 @@ describe("ProjectionAccordion — month row navigation", () => {
       <ProjectionAccordion
         snapshots={snapshotsWithPayoff}
         accounts={[giroAccount]}
+        recurringTransactions={[]}
         initialYear={2026}
       />
     );
