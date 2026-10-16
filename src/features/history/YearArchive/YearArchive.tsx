@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import Money from "../../../primitives/Money/Money";
 import { formatMonth } from "../../../utils/format/format";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
+import { isUnknownMonth } from "../knownSince/knownSince";
 import {
   StyledArchive,
   StyledSectionHead,
@@ -38,18 +39,9 @@ function BalanceCell({ cents }: { cents: number | null | undefined }) {
 }
 
 /**
- * A month before every account's Known Since holds no data at all: its Net
- * Cashflow is not a real €0, so the cell stays empty rather than read €0.
+ * A Net Cashflow cell, empty when the period holds no known month: an Unknown
+ * month's Net Cashflow is not a real €0, so the cell never reads €0.
  */
-function isAllUnknown(point: HistoryPoint): boolean {
-  return (
-    point.totalLiquid === null &&
-    point.restschuld === null &&
-    Object.values(point.accounts).every((v) => v === null)
-  );
-}
-
-/** A Net Cashflow cell, empty when the period holds no known month. */
 function CashflowCell({ cents, known }: { cents: number; known: boolean }) {
   return known ? <Money cents={cents} sign /> : <span />;
 }
@@ -99,7 +91,7 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
         const count = statementCounts[year] ?? 0;
         const months = monthsOfYear(points, year);
         const lastMonth = months.at(-1);
-        const yearKnown = months.some((p) => !isAllUnknown(p));
+        const yearKnown = months.some((p) => !isUnknownMonth(p));
         // Total Liquid / Restschuld snapshot the year's final available month
         // (possibly Unknown); Net Cashflow is the year's sum.
         const yearCashflow = months.reduce((sum, p) => sum + p.netCashflow, 0);
@@ -141,7 +133,7 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
                   <StyledNum>
                     <CashflowCell
                       cents={point.netCashflow}
-                      known={!isAllUnknown(point)}
+                      known={!isUnknownMonth(point)}
                     />
                   </StyledNum>
                 </StyledMonthRow>
