@@ -17,10 +17,7 @@ import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
-import {
-  HISTORY_RANGE_OPTIONS,
-  type HistoryRange,
-} from "../historyRange/historyRange";
+import { pointsInRange, type HistoryRange } from "../historyRange/historyRange";
 import { trailingAverage } from "../trailingAverage/trailingAverage";
 import { firstKnownMonthOf } from "../knownSince/knownSince";
 import {
@@ -116,10 +113,7 @@ export default function HistoryTrends({ points, range, isLoading }: Props) {
   const active = METRICS.find((m) => m.value === metric) ?? METRICS[0];
   const field = active.field;
 
-  // Range narrows from the right edge, as on the History chart.
-  const rangeMonths =
-    HISTORY_RANGE_OPTIONS.find((o) => o.value === range)?.months ?? Infinity;
-  const windowed = points.slice(Math.max(0, points.length - rangeMonths));
+  const windowed = useMemo(() => pointsInRange(points, range), [points, range]);
 
   const data = useMemo<TrendsDataPoint[]>(
     () =>

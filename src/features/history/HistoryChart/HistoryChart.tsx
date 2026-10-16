@@ -14,6 +14,7 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
 import {
   HISTORY_RANGE_OPTIONS,
+  pointsInRange,
   type HistoryRange,
 } from "../historyRange/historyRange";
 import { firstKnownMonths } from "../knownSince/knownSince";
@@ -221,11 +222,7 @@ export default function HistoryChart({
     showAll: handleShowAll,
   } = useSeriesVisibility(visibilityAccounts, seriesKeys, VISIBILITY_KEY);
 
-  // Range narrows from the right edge (TODAY), so a shorter window always keeps
-  // the most recent months rather than the earliest.
-  const rangeMonths =
-    HISTORY_RANGE_OPTIONS.find((o) => o.value === range)?.months ?? Infinity;
-  const windowed = points.slice(Math.max(0, points.length - rangeMonths));
+  const windowed = useMemo(() => pointsInRange(points, range), [points, range]);
 
   const firstKnown = useMemo(() => firstKnownMonths(points), [points]);
   const bridge = useMemo(() => paydownBridgeSpan(points), [points]);
