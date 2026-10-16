@@ -2436,6 +2436,36 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
   });
 
+  describe("RecurringTransactionsRepo.findById", () => {
+    it("returns the recurring transaction by id", async () => {
+      const account = await makeAccount();
+      const created = await storage.recurringTransactions.create({
+        accountId: account.id,
+        amount: 95000,
+        description: "Rent",
+        category: "Housing",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      const found = await storage.recurringTransactions.findById(created!.id);
+
+      expect(found).toEqual(created);
+    });
+
+    it("returns null when no recurring transaction has the id", async () => {
+      const found = await storage.recurringTransactions.findById(
+        "00000000-0000-4000-8000-000000000000"
+      );
+      expect(found).toBeNull();
+    });
+
+    it("returns null for an unparseable id (no throw, no query)", async () => {
+      const found = await storage.recurringTransactions.findById("not-an-id");
+      expect(found).toBeNull();
+    });
+  });
+
   describe("RecurringTransactionsRepo.findActive", () => {
     it("returns all rows (all recurring transactions are always active)", async () => {
       const account = await makeAccount();

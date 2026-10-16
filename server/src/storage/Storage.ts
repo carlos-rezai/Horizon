@@ -92,6 +92,7 @@ export interface CategoriesRepo {
 
 export interface RecurringTransactionsRepo {
   findAll(): Promise<RecurringTransaction[]>;
+  findById(id: string): Promise<RecurringTransaction | null>;
   findActive(): Promise<RecurringTransaction[]>;
   create(
     input: RecurringTransactionCreateInput

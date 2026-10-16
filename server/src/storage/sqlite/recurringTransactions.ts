@@ -73,6 +73,12 @@ export function createSqliteRecurringTransactionsRepo(
       return rows.map(toDTO);
     },
 
+    async findById(id) {
+      if (!isValidUuid(id)) return null;
+      const row = selectByIdStmt.get(id) as RecurringTransactionRow | undefined;
+      return row ? toDTO(row) : null;
+    },
+
     async findActive() {
       const rows = selectAllStmt.all() as RecurringTransactionRow[];
       return rows.map(toDTO);

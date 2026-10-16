@@ -42,7 +42,7 @@ router.patch("/:id", async (req, res) => {
   }
 
   const repo = getStorage(req).recurringTransactions;
-  const stored = (await repo.findAll()).find((r) => r.id === req.params.id);
+  const stored = await repo.findById(req.params.id);
   if (!stored) {
     res.status(404).json({ error: "Recurring transaction not found" });
     return;
