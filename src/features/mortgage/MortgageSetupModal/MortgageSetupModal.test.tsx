@@ -156,6 +156,26 @@ describe("MortgageSetupModal — default values", () => {
   });
 });
 
+describe("MortgageSetupModal — As of is an Anchor Date", () => {
+  /** A local date `days` from today, as the DatePicker displays it. */
+  function displayDateDaysFromToday(days: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  }
+
+  it("caps the As of date at today: a later date is not taken", async () => {
+    renderModal();
+    fillValid({ asOf: displayDateDaysFromToday(3) });
+    save();
+
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    const [, init] = vi.mocked(globalThis.fetch).mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.anchorDate).toBe(today().iso);
+  });
+});
+
 describe("MortgageSetupModal — field rules", () => {
   it.each([
     ["the name is empty", { name: "" }],
