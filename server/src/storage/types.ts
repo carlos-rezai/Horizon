@@ -33,6 +33,20 @@ export interface MortgageOriginationInput {
   termYears: number;
 }
 
+/**
+ * One-form Mortgage Setup: the Mortgage account (its Restschuld today as the
+ * opening balance, as of the opening date) and its origination, created
+ * together. Amounts in cents, dates ISO.
+ */
+export interface MortgageSetup {
+  name: string;
+  openingBalance: number;
+  openingDate: string;
+  originalPrincipal: number;
+  startDate: string;
+  termYears: number;
+}
+
 export type SetMortgageOriginationResult =
   | { ok: true; account: Account }
   | { ok: false; reason: "below_restschuld" };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTheme } from "styled-components";
-import { Pencil, Flag } from "lucide-react";
+import { Pencil, Flag, Landmark } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -12,8 +12,11 @@ import {
 import { formatBalance } from "../../../utils/format/format";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
+import EmptyState from "../../../components/EmptyState/EmptyState";
 import ProgressBar from "../../../primitives/ProgressBar/ProgressBar";
+import Button from "../../../primitives/Button/Button";
 import MortgageModal from "../MortgageModal/MortgageModal";
+import MortgageSetupModal from "../MortgageSetupModal/MortgageSetupModal";
 import {
   StyledSection,
   StyledEditButton,
@@ -65,7 +68,8 @@ interface Props {
   snapshots: MonthlySnapshot[];
   /** All recurring transactions — decides whether anything repays a mortgage. */
   recurringTransactions: RecurringTransaction[];
-  /** Called after a mortgage's origination details are edited, to refetch data. */
+  /** Called after a mortgage is set up or its origination details are edited,
+   *  to refetch data. */
   onUpdated?: () => void;
 }
 
@@ -77,10 +81,40 @@ export default function MortgageCountdown({
 }: Props) {
   const theme = useTheme();
   const [editing, setEditing] = useState<AccountWithBalance | null>(null);
+  const [settingUp, setSettingUp] = useState(false);
 
   const mortgageAccounts = accounts.filter((a) => a.kind === "Mortgage");
   if (mortgageAccounts.length === 0) {
-    return null;
+    return (
+      <StyledSection>
+        <Card>
+          <SectionHead label="Mortgage Countdown" />
+          <EmptyState
+            icon={<Landmark size={22} />}
+            title="No mortgage yet"
+            hint="Add your mortgage to see what's paid off and when it's done."
+            action={
+              <Button
+                variant="primary"
+                icon="Plus"
+                onClick={() => setSettingUp(true)}
+              >
+                Set up mortgage
+              </Button>
+            }
+          />
+        </Card>
+        {settingUp && (
+          <MortgageSetupModal
+            onClose={() => setSettingUp(false)}
+            onSuccess={() => {
+              setSettingUp(false);
+              onUpdated?.();
+            }}
+          />
+        )}
+      </StyledSection>
+    );
   }
 
   const now = currentMonth();

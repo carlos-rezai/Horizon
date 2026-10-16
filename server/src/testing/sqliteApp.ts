@@ -16,6 +16,9 @@ export async function createSqliteAppHandle(): Promise<SqliteAppHandle> {
     get accounts() {
       return inner.accounts;
     },
+    get mortgages() {
+      return inner.mortgages;
+    },
     get transactions() {
       return inner.transactions;
     },

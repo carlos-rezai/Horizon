@@ -13,6 +13,7 @@ import type {
   ImportCreateInput,
   StoredImportPreset,
   MortgageOriginationInput,
+  MortgageSetup,
   RecurringTransaction,
   RecurringTransactionCreateInput,
   RecurringTransactionUpdateInput,
@@ -38,6 +39,11 @@ export interface AccountsRepo {
   findAllWithBalance(): Promise<AccountWithBalance[]>;
   findByIdWithBalance(id: string): Promise<AccountWithBalance | null>;
   getTotalLiquid(): Promise<number>;
+}
+
+export interface MortgagesRepo {
+  /** Creates the Mortgage account and its origination in one transaction. */
+  create(setup: MortgageSetup): Promise<AccountWithBalance>;
 }
 
 export interface TransactionsRepo {
@@ -125,6 +131,7 @@ export interface StorageStatus {
 
 export interface Storage {
   accounts: AccountsRepo;
+  mortgages: MortgagesRepo;
   transactions: TransactionsRepo;
   transfers: TransfersRepo;
   categories: CategoriesRepo;

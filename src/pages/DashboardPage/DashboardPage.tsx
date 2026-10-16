@@ -165,15 +165,17 @@ export default function DashboardPage() {
           )}
         </div>
         <StyledColumn>
-          <MortgageCountdown
-            accounts={accounts}
-            snapshots={snapshots}
-            recurringTransactions={recurringTransactions}
-            onUpdated={() => {
-              refreshAccounts();
-              refetchProjection();
-            }}
-          />
+          {!accountsLoading && !accountsError && (
+            <MortgageCountdown
+              accounts={accounts}
+              snapshots={snapshots}
+              recurringTransactions={recurringTransactions}
+              onUpdated={() => {
+                refreshAccounts();
+                refetchProjection();
+              }}
+            />
+          )}
           <Card>
             <SectionState
               testId="dashboard-section-plan"

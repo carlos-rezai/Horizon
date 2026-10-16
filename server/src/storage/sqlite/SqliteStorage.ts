@@ -9,6 +9,7 @@ import {
 import { StorageIntegrityError } from "./errors.js";
 import { assertIntegrity, assertSchemaNotAhead } from "./integrity.js";
 import { createSqliteAccountsRepo } from "./accounts.js";
+import { createSqliteMortgagesRepo } from "./mortgages.js";
 import { createSqliteCategoriesRepo } from "./categories.js";
 import { createSqliteRecurringTransactionsRepo } from "./recurringTransactions.js";
 import { createSqliteTransactionsRepo } from "./transactions.js";
@@ -23,6 +24,7 @@ export type SqliteStorageOptions = OpenConnectionOptions;
 
 interface Repos {
   accounts: ReturnType<typeof createSqliteAccountsRepo>;
+  mortgages: ReturnType<typeof createSqliteMortgagesRepo>;
   transactions: ReturnType<typeof createSqliteTransactionsRepo>;
   transfers: ReturnType<typeof createSqliteTransfersRepo>;
   categories: ReturnType<typeof createSqliteCategoriesRepo>;
@@ -37,6 +39,7 @@ interface Repos {
 function buildRepos(db: Database.Database): Repos {
   const transactions = createSqliteTransactionsRepo(db);
   const accounts = createSqliteAccountsRepo(db, transactions);
+  const mortgages = createSqliteMortgagesRepo(db, accounts);
   const transfers = createSqliteTransfersRepo(db);
   const categories = createSqliteCategoriesRepo(db);
   const recurringTransactions = createSqliteRecurringTransactionsRepo(db);
@@ -45,6 +48,7 @@ function buildRepos(db: Database.Database): Repos {
   const savingsGoal = createSqliteSavingsGoalRepo(db);
   return {
     accounts,
+    mortgages,
     transactions,
     transfers,
     categories,
@@ -87,6 +91,9 @@ export async function createSqliteStorage(
   return {
     get accounts() {
       return repos.accounts;
+    },
+    get mortgages() {
+      return repos.mortgages;
     },
     get transactions() {
       return repos.transactions;

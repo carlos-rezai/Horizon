@@ -6,6 +6,7 @@ import express, {
 } from "express";
 import cors from "cors";
 import accountsRouter from "./routes/accounts/accounts.js";
+import mortgagesRouter from "./routes/mortgages/mortgages.js";
 import transactionsRouter from "./routes/transactions/transactions.js";
 import categoriesRouter from "./routes/categories/categories.js";
 import transfersRouter from "./routes/transfers/transfers.js";
@@ -43,6 +44,7 @@ export async function createApp(storage: Storage): Promise<Express> {
   app.use(express.json());
 
   app.use("/accounts", accountsRouter);
+  app.use("/mortgages", mortgagesRouter);
   app.use("/", transactionsRouter);
   app.use("/categories", categoriesRouter);
   app.use("/transfers", transfersRouter);
