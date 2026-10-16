@@ -210,6 +210,7 @@ describe("deriveHistory - Unknown months", () => {
       restschuld: null,
       netCashflow: 0,
       restschuldBridge: null,
+      monthlySavings: null,
       accounts: { g1: null, t1: null, m1: null, i1: null },
     });
   });
@@ -319,5 +320,139 @@ describe("deriveHistory - restschuldBridge", () => {
         },
       ])
     ).toEqual([null, null, null, null, null, null]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Monthly Savings (Financial History, issue #243) — the sum of the
+// month-over-month gains of the Trackable Accounts (Girokonto, Tagesgeld,
+// Investment). Null when any Trackable Account is Unknown that month or the
+// month before, and in the span's first month.
+// ---------------------------------------------------------------------------
+
+/**
+ * A snapshot with explicit `actual` balances per account. An account left out
+ * of `actuals` is Unknown that month (no `actual`).
+ */
+function snapshotWith(
+  month: string,
+  actuals: Record<string, number>
+): MonthlySnapshot {
+  const snapAccounts: MonthlySnapshot["accounts"] = {};
+  for (const a of accounts) {
+    const actual = actuals[a.id];
+    snapAccounts[a.id] =
+      actual === undefined ? { projected: 0 } : { projected: actual, actual };
+  }
+  return { month, accounts: snapAccounts, netCashflow: 0, totalLiquid: 0 };
+}
+
+describe("deriveHistory - monthlySavings", () => {
+  const base = { g1: 100000, t1: 50000, i1: 20000, m1: 30000000 };
+
+  it("is null in the first month of the span", () => {
+    const points = deriveHistory(
+      [snapshotWith("2025-01", base), snapshotWith("2025-02", base)],
+      [],
+      accounts
+    );
+
+    expect(points[0].monthlySavings).toBeNull();
+  });
+
+  it("sums the month-over-month gains of the Trackable Accounts", () => {
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-01", base),
+        snapshotWith("2025-02", { ...base, g1: 103000, t1: 52000 }),
+      ],
+      [],
+      accounts
+    );
+
+    // +3000 (giro) + 2000 (tagesgeld)
+    expect(points[1].monthlySavings).toBe(5000);
+  });
+
+  it("nets a Recurring Transfer between two Trackable Accounts to zero", () => {
+    const transactions = [
+      { accountId: "g1", date: "2025-02-01", amount: -10000 },
+      { accountId: "t1", date: "2025-02-01", amount: 10000 },
+    ];
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-01", base),
+        snapshotWith("2025-02", { ...base, g1: 90000, t1: 60000 }),
+      ],
+      transactions,
+      accounts
+    );
+
+    expect(points[1].monthlySavings).toBe(0);
+  });
+
+  it("counts a Sondertilgung paid out of the Trackable Accounts as negative", () => {
+    // 500000 leaves the Girokonto and pays down the mortgage; the mortgage's
+    // movement is not a Trackable Account gain.
+    const transactions = [
+      { accountId: "g1", date: "2025-11-01", amount: -500000 },
+      { accountId: "m1", date: "2025-11-01", amount: 500000 },
+    ];
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-10", { ...base, g1: 600000 }),
+        snapshotWith("2025-11", { ...base, g1: 100000, m1: 29500000 }),
+      ],
+      transactions,
+      accounts
+    );
+
+    expect(points[1].monthlySavings).toBe(-500000);
+  });
+
+  it("is null when a Trackable Account is Unknown that month", () => {
+    const { t1: _t1, ...withoutTagesgeld } = base;
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-01", base),
+        snapshotWith("2025-02", withoutTagesgeld),
+      ],
+      [],
+      accounts
+    );
+
+    expect(points[1].monthlySavings).toBeNull();
+  });
+
+  it("is null when a Trackable Account is Unknown the month before", () => {
+    const { i1: _i1, ...withoutInvestment } = base;
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-01", withoutInvestment),
+        snapshotWith("2025-02", base),
+        snapshotWith("2025-03", { ...base, g1: 101000 }),
+      ],
+      [],
+      accounts
+    );
+
+    expect(points[1].monthlySavings).toBeNull();
+    // Known both months from here on: a real figure again.
+    expect(points[2].monthlySavings).toBe(1000);
+  });
+
+  it("counts a Trackable Account that has no savings target", () => {
+    // Only the Investment account moves; it carries no target, and its gain
+    // is still the month's saving.
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-01", base),
+        snapshotWith("2025-02", { ...base, i1: 27000 }),
+      ],
+      [],
+      accounts
+    );
+
+    expect(points[1].monthlySavings).toBe(7000);
   });
 });

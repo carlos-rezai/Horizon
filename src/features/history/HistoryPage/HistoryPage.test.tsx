@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  fireEvent,
+} from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
@@ -104,6 +110,12 @@ describe("HistoryPage — empty state", () => {
     expect(cta).toHaveAttribute("href", "/import");
   });
 
+  it("hides the History Trends card", async () => {
+    renderPage();
+    expect(await screen.findByText(/no history yet/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("history-trends")).not.toBeInTheDocument();
+  });
+
   it("hints at importing a statement or adding the mortgage's origination", async () => {
     renderPage();
     expect(
@@ -182,5 +194,65 @@ describe("HistoryPage — loading and error states", () => {
     expect(await screen.findByText(/couldn't load/i)).toBeInTheDocument();
     // The masquerade this closes: a failed fetch must not read as "no imports".
     expect(screen.queryByText(/no history yet/i)).not.toBeInTheDocument();
+  });
+});
+
+// History Trends (Financial History, issue #243): the card sits between the
+// chart and the Year Archive, and one set of 1Y / 3Y / All chips governs both.
+describe("HistoryPage — History Trends", () => {
+  // Fifteen months, 2023-01 through 2024-03; the first is the span's first
+  // month and has no Monthly Savings.
+  const LONG_POINTS = Array.from({ length: 15 }, (_, i) => {
+    const year = 2023 + Math.floor(i / 12);
+    const month = (i % 12) + 1;
+    return {
+      month: `${year}-${String(month).padStart(2, "0")}`,
+      totalLiquid: 500000 + i * 1000,
+      restschuld: 0,
+      restschuldBridge: null,
+      netCashflow: 1000,
+      monthlySavings: i === 0 ? null : 1000,
+      accounts: { "acc-1": 500000 + i * 1000 },
+    };
+  });
+
+  beforeEach(() => mockFetch(LONG_POINTS, [], ACCOUNTS));
+
+  it("renders the trends card between the chart and the Year Archive", async () => {
+    renderPage();
+    const trends = await screen.findByTestId("history-trends");
+    const chart = screen.getByTestId("history-chart");
+    const archive = screen.getByText("Year Archive");
+
+    expect(
+      chart.compareDocumentPosition(trends) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      trends.compareDocumentPosition(archive) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("one range chip change updates both the chart and the trends card", async () => {
+    renderPage();
+    const trends = await screen.findByTestId("history-trends");
+    expect(screen.getByTestId("history-chart")).toHaveAttribute(
+      "data-months",
+      "15"
+    );
+    expect(trends).toHaveAttribute("data-months", "15");
+
+    // One set of chips: a single 1 Year button on the page.
+    const chips = screen.getAllByRole("button", { name: "1 Year" });
+    expect(chips).toHaveLength(1);
+    fireEvent.click(chips[0]);
+
+    expect(screen.getByTestId("history-chart")).toHaveAttribute(
+      "data-months",
+      "12"
+    );
+    expect(screen.getByTestId("history-trends")).toHaveAttribute(
+      "data-months",
+      "12"
+    );
   });
 });
