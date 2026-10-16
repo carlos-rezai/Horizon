@@ -279,7 +279,7 @@ The generated installer will be signed with your local certificate and will inst
 | Performance + UX Polish                   | ✅ Complete |
 | Quick Start Guide                         | ✅ Complete |
 | Live-Use Repair — Round 1                 | ✅ Complete |
-| Balance Anchor                            | 📋 Planned  |
+| Balance Anchor                            | ✅ Complete |
 | Financial History                         | 📋 Planned  |
 | Month Cash Flow                           | 📋 Planned  |
 | Import Category Learning                  | 📋 Planned  |
