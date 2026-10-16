@@ -34,13 +34,13 @@ afterEach(async () => {
 async function createAccount(
   kind: string,
   name: string,
-  openingBalance: number
+  anchorBalance: number
 ) {
   const res = await request(app).post("/accounts").send({
     kind,
     name,
-    openingBalance,
-    openingDate: "2026-01-01",
+    anchorBalance,
+    anchorDate: "2026-01-01",
   });
   return res.body as { id: string };
 }

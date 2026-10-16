@@ -36,8 +36,8 @@ const account: AccountWithBalance = {
   id: "acc-1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 100000,
   color: "#7FA7D9",
 };

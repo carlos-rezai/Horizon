@@ -12,8 +12,8 @@ export const AccountCreateSchema = z
   .object({
     kind: AccountKindEnum,
     name: z.string().min(1),
-    openingBalance: z.number().int(),
-    openingDate: z.string().min(1),
+    anchorBalance: z.number().int(),
+    anchorDate: z.string().min(1),
     sondertilgungAllowance: z.number().int().optional(),
     icon: z.string().nullable().optional(),
     color: z.string().nullable().optional(),
@@ -45,7 +45,7 @@ export const MortgageOriginationSchema = z.object({
 
 export const AccountUpdateSchema = z.object({
   name: z.string().min(1).optional(),
-  openingBalance: z.number().int().optional(),
+  anchorBalance: z.number().int().optional(),
   sondertilgungAllowance: z.number().int().optional(),
   icon: z.string().nullable().optional(),
   color: z.string().nullable().optional(),

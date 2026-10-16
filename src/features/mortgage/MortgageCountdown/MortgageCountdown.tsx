@@ -105,9 +105,9 @@ export default function MortgageCountdown({
           recurringTransactions,
           account.id
         );
-        const start = account.originalPrincipal ?? account.openingBalance;
+        const start = account.originalPrincipal ?? account.anchorBalance;
         const pct = percentPaidOff(start, account.balance);
-        const sd = new Date(account.startDate ?? account.openingDate);
+        const sd = new Date(account.startDate ?? account.anchorDate);
         const startMonthIso = `${sd.getFullYear()}-${String(
           sd.getMonth() + 1
         ).padStart(2, "0")}`;

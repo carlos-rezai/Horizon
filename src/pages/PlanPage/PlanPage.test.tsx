@@ -27,8 +27,8 @@ const accounts: AccountWithBalance[] = [
     id: "acc-1",
     kind: "Girokonto",
     name: "Main Checking",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
+    anchorBalance: 100000,
+    anchorDate: "2026-01-01",
     balance: 150000,
   },
 ];

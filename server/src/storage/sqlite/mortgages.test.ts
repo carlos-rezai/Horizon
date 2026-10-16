@@ -27,8 +27,8 @@ afterEach(async () => {
 
 const setup: MortgageSetup = {
   name: "Haus",
-  openingBalance: 20000000,
-  openingDate: "2026-10-16",
+  anchorBalance: 20000000,
+  anchorDate: "2026-10-16",
   originalPrincipal: 40000000,
   startDate: "2020-06-01",
   termYears: 25,
@@ -107,8 +107,8 @@ describe("SQLite mortgages.create — repayment", () => {
     const giro = await storage.accounts.create({
       kind: "Girokonto",
       name: "Giro",
-      openingBalance: 500000,
-      openingDate: "2026-01-01",
+      anchorBalance: 500000,
+      anchorDate: "2026-01-01",
     });
 
     const created = await storage.mortgages.create({
@@ -142,8 +142,8 @@ describe("SQLite mortgages.create — repayment", () => {
     const giro = await storage.accounts.create({
       kind: "Girokonto",
       name: "Giro",
-      openingBalance: 500000,
-      openingDate: "2026-01-01",
+      anchorBalance: 500000,
+      anchorDate: "2026-01-01",
     });
     const mortgages = storage.mortgages;
     failRecurringInserts();

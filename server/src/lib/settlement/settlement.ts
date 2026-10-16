@@ -84,7 +84,7 @@ export function computeMissingSettlements(
         const virtualBalance = virtualSettlements
           .filter((v) => v.date < cutoff)
           .reduce((sum, v) => sum + v.amount, 0);
-        const closingBalance = cc.openingBalance + realBalance + virtualBalance;
+        const closingBalance = cc.anchorBalance + realBalance + virtualBalance;
 
         if (closingBalance < 0) {
           const amount = -closingBalance;

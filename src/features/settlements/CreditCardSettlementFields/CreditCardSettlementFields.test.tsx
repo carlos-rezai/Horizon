@@ -10,8 +10,8 @@ const mockGirokonto: AccountWithBalance = {
   id: "g-1",
   kind: "Girokonto",
   name: "Main Girokonto",
-  openingBalance: 100000,
-  openingDate: "2026-01-01",
+  anchorBalance: 100000,
+  anchorDate: "2026-01-01",
   balance: 120000,
 };
 

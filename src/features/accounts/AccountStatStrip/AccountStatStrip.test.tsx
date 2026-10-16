@@ -11,8 +11,8 @@ function renderStrip(
   return render(
     <ThemeProvider theme={theme}>
       <AccountStatStrip
-        openingBalance={props.openingBalance ?? 1274000}
-        openingDate={props.openingDate ?? "2025-01-01"}
+        anchorBalance={props.anchorBalance ?? 1274000}
+        anchorDate={props.anchorDate ?? "2025-01-01"}
         recurringCount={props.recurringCount ?? 2}
         recurringNet={props.recurringNet ?? -150000}
       />
@@ -32,13 +32,13 @@ describe("AccountStatStrip", () => {
   });
 
   it("formats the opening balance", () => {
-    renderStrip({ openingBalance: 1274000 });
+    renderStrip({ anchorBalance: 1274000 });
     // 1274000 cents → 12.740,00 €
     expect(screen.getByText(/12[.,]740/)).toBeInTheDocument();
   });
 
   it("shows the opening date as an ISO string", () => {
-    renderStrip({ openingDate: "2025-01-01" });
+    renderStrip({ anchorDate: "2025-01-01" });
     expect(screen.getByText("2025-01-01")).toBeInTheDocument();
   });
 

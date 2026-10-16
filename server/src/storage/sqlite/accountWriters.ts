@@ -29,7 +29,7 @@ export function accountWriters(db: Database.Database): AccountWriters {
 
   const insertStmt = db.prepare(
     `INSERT INTO accounts
-       (id, kind, name, opening_balance, opening_date, sondertilgung_allowance, icon, color,
+       (id, kind, name, anchor_balance, anchor_date, sondertilgung_allowance, icon, color,
         linked_account_id, settlement_day, linked_since, show_in_trajectory, sort_order)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
@@ -45,15 +45,15 @@ export function accountWriters(db: Database.Database): AccountWriters {
   const writers: AccountWriters = {
     insert(id, input) {
       const linkedSince =
-        input.linkedAccountId != null ? input.openingDate : null;
+        input.linkedAccountId != null ? input.anchorDate : null;
       const showInTrajectory = input.showInTrajectory ?? true;
       const nextSortOrder = (nextSortOrderStmt.get() as { next: number }).next;
       insertStmt.run(
         id,
         input.kind,
         input.name,
-        input.openingBalance,
-        input.openingDate,
+        input.anchorBalance,
+        input.anchorDate,
         input.sondertilgungAllowance ?? null,
         input.icon ?? null,
         input.color ?? null,

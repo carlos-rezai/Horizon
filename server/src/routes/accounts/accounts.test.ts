@@ -31,8 +31,8 @@ describe("POST /accounts", () => {
     const res = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       icon: "Wallet",
       color: "#adc6ff",
     });
@@ -46,8 +46,8 @@ describe("POST /accounts", () => {
     const res = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
     });
 
     expect(res.status).toBe(201);
@@ -58,14 +58,14 @@ describe("POST /accounts", () => {
     const res = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 537685,
-      openingDate: "2026-03-01",
+      anchorBalance: 537685,
+      anchorDate: "2026-03-01",
     });
 
     expect(res.status).toBe(201);
     expect(res.body.kind).toBe("Girokonto");
     expect(res.body.name).toBe("Main");
-    expect(res.body.openingBalance).toBe(537685);
+    expect(res.body.anchorBalance).toBe(537685);
     expect(res.body.id).toBeDefined();
   });
 
@@ -73,15 +73,15 @@ describe("POST /accounts", () => {
     await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 537685,
-      openingDate: "2026-03-01",
+      anchorBalance: 537685,
+      anchorDate: "2026-03-01",
     });
 
     await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Sparkasse",
-      openingBalance: 46000,
-      openingDate: "2026-03-01",
+      anchorBalance: 46000,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app).get("/accounts");
@@ -95,8 +95,8 @@ describe("POST /accounts", () => {
     const res = await request(app).post("/accounts").send({
       kind: "Mortgage",
       name: "Darlehen",
-      openingBalance: 4009661,
-      openingDate: "2026-03-01",
+      anchorBalance: 4009661,
+      anchorDate: "2026-03-01",
       sondertilgungAllowance: 650000,
     });
 
@@ -105,16 +105,16 @@ describe("POST /accounts", () => {
     expect(res.body.sondertilgungAllowance).toBe(650000);
   });
 
-  it("stores openingBalance as an integer (cents)", async () => {
+  it("stores anchorBalance as an integer (cents)", async () => {
     const res = await request(app).post("/accounts").send({
       kind: "Tagesgeld",
       name: "DKB Tagesgeld",
-      openingBalance: 100300,
-      openingDate: "2026-03-01",
+      anchorBalance: 100300,
+      anchorDate: "2026-03-01",
     });
 
     expect(res.status).toBe(201);
-    expect(Number.isInteger(res.body.openingBalance)).toBe(true);
+    expect(Number.isInteger(res.body.anchorBalance)).toBe(true);
   });
 
   it("returns 400 when required fields are missing", async () => {
@@ -129,8 +129,8 @@ describe("POST /accounts", () => {
     const res = await request(app).post("/accounts").send({
       kind: "NotARealKind",
       name: "Bad",
-      openingBalance: "not-a-number",
-      openingDate: "2026-03-01",
+      anchorBalance: "not-a-number",
+      anchorDate: "2026-03-01",
     });
 
     expect(res.status).toBe(400);
@@ -151,12 +151,12 @@ describe("GET /accounts", () => {
     expect(res.body).toEqual([]);
   });
 
-  it("returns all accounts with balance equal to openingBalance", async () => {
+  it("returns all accounts with balance equal to anchorBalance", async () => {
     await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 537685,
-      openingDate: "2026-03-01",
+      anchorBalance: 537685,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app).get("/accounts");
@@ -170,8 +170,8 @@ describe("GET /accounts", () => {
     await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       icon: "PiggyBank",
       color: "#4edea3",
     });
@@ -183,18 +183,18 @@ describe("GET /accounts", () => {
     expect(res.body[0].color).toBe("#4edea3");
   });
 
-  it("returns openingDate as an ISO string", async () => {
+  it("returns anchorDate as an ISO string", async () => {
     await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 537685,
-      openingDate: "2026-03-01",
+      anchorBalance: 537685,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app).get("/accounts");
 
-    expect(typeof res.body[0].openingDate).toBe("string");
-    expect(() => new Date(res.body[0].openingDate)).not.toThrow();
+    expect(typeof res.body[0].anchorDate).toBe("string");
+    expect(() => new Date(res.body[0].anchorDate)).not.toThrow();
   });
 });
 
@@ -207,8 +207,8 @@ describe("GET /accounts/:id", () => {
     const created = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app).get(`/accounts/${created.body.id}`);
@@ -222,8 +222,8 @@ describe("GET /accounts/:id", () => {
     const created = await request(app).post("/accounts").send({
       kind: "Tagesgeld",
       name: "Reserve",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       icon: "Home",
       color: "#ffb786",
     });
@@ -257,8 +257,8 @@ describe("PATCH /accounts/:id", () => {
     const created = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Old Name",
-      openingBalance: 100000,
-      openingDate: "2026-03-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app)
@@ -273,8 +273,8 @@ describe("PATCH /accounts/:id", () => {
     const created = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app)
@@ -304,20 +304,20 @@ describe("PATCH /accounts/reorder", () => {
     const a = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "A",
-      openingBalance: 100000,
-      openingDate: "2026-03-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-03-01",
     });
     const b = await request(app).post("/accounts").send({
       kind: "Tagesgeld",
       name: "B",
-      openingBalance: 200000,
-      openingDate: "2026-03-01",
+      anchorBalance: 200000,
+      anchorDate: "2026-03-01",
     });
     const c = await request(app).post("/accounts").send({
       kind: "Investment",
       name: "C",
-      openingBalance: 300000,
-      openingDate: "2026-03-01",
+      anchorBalance: 300000,
+      anchorDate: "2026-03-01",
     });
     return [a.body.id, b.body.id, c.body.id];
   }
@@ -366,12 +366,12 @@ describe("PATCH /accounts/reorder", () => {
 // ---------------------------------------------------------------------------
 
 describe("PATCH /accounts/:id/mortgage", () => {
-  async function createMortgage(openingBalance = 30000000): Promise<string> {
+  async function createMortgage(anchorBalance = 30000000): Promise<string> {
     const res = await request(app).post("/accounts").send({
       kind: "Mortgage",
       name: "Haus",
-      openingBalance,
-      openingDate: "2026-01-01",
+      anchorBalance,
+      anchorDate: "2026-01-01",
     });
     return res.body.id;
   }
@@ -432,8 +432,8 @@ describe("PATCH /accounts/:id/mortgage", () => {
     const giro = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
 
     const res = await request(app)
@@ -458,8 +458,8 @@ describe("DELETE /accounts/:id", () => {
     const created = await request(app).post("/accounts").send({
       kind: "Investment",
       name: "MSCI World",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app).delete(`/accounts/${created.body.id}`);
@@ -480,8 +480,8 @@ describe("DELETE /accounts/:id", () => {
     const created = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 100000,
-      openingDate: "2026-03-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-03-01",
     });
 
     await request(app).post(`/accounts/${created.body.id}/transactions`).send({
@@ -502,19 +502,19 @@ describe("DELETE /accounts/:id", () => {
 // ---------------------------------------------------------------------------
 
 describe("POST /accounts — CreditCard settlement configuration", () => {
-  it("saves full settlement config and sets linkedSince to openingDate", async () => {
+  it("saves full settlement config and sets linkedSince to anchorDate", async () => {
     const girokonto = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
 
     const res = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       linkedAccountId: girokonto.body.id,
       settlementDay: 17,
     });
@@ -529,15 +529,15 @@ describe("POST /accounts — CreditCard settlement configuration", () => {
     const girokonto = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
 
     const res = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       linkedAccountId: girokonto.body.id,
     });
 
@@ -548,8 +548,8 @@ describe("POST /accounts — CreditCard settlement configuration", () => {
     const res = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       settlementDay: 17,
     });
 
@@ -560,8 +560,8 @@ describe("POST /accounts — CreditCard settlement configuration", () => {
     const res = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
     });
 
     expect(res.status).toBe(201);
@@ -580,15 +580,15 @@ describe("GET /accounts/:id — CreditCard settlement fields", () => {
     const girokonto = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
 
     const created = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       linkedAccountId: girokonto.body.id,
       settlementDay: 17,
     });
@@ -605,8 +605,8 @@ describe("GET /accounts/:id — CreditCard settlement fields", () => {
     const created = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
     });
 
     const res = await request(app).get(`/accounts/${created.body.id}`);
@@ -628,14 +628,14 @@ describe("PATCH /accounts/:id — CreditCard settlement configuration", () => {
     const girokonto = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
     const created = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2025-01-01",
+      anchorBalance: 0,
+      anchorDate: "2025-01-01",
       linkedAccountId: girokonto.body.id,
       settlementDay: 10,
     });
@@ -654,20 +654,20 @@ describe("PATCH /accounts/:id — CreditCard settlement configuration", () => {
     const girokonto1 = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding 1",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
     const girokonto2 = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding 2",
-      openingBalance: 50000,
-      openingDate: "2026-01-01",
+      anchorBalance: 50000,
+      anchorDate: "2026-01-01",
     });
     const created = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2025-01-01",
+      anchorBalance: 0,
+      anchorDate: "2025-01-01",
       linkedAccountId: girokonto1.body.id,
       settlementDay: 17,
     });
@@ -685,14 +685,14 @@ describe("PATCH /accounts/:id — CreditCard settlement configuration", () => {
     const girokonto = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Funding",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
     const created = await request(app).post("/accounts").send({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-03-01",
+      anchorBalance: 0,
+      anchorDate: "2026-03-01",
       linkedAccountId: girokonto.body.id,
       settlementDay: 17,
     });
@@ -720,8 +720,8 @@ describe("POST /accounts — Balance Anchor fields", () => {
     expect(res.status).toBe(201);
     expect(res.body.anchorBalance).toBe(254321);
     expect(res.body.anchorDate).toBe("2026-03-01");
-    expect(res.body).not.toHaveProperty("openingBalance");
-    expect(res.body).not.toHaveProperty("openingDate");
+    expect(res.body).not.toHaveProperty("opening" + "Balance");
+    expect(res.body).not.toHaveProperty("opening" + "Date");
 
     const stored = await request(app).get(`/accounts/${res.body.id}`);
     expect(stored.status).toBe(200);

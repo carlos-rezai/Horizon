@@ -20,8 +20,8 @@ const mortgageAccount: AccountWithBalance = {
   id: "mortgage-1",
   kind: "Mortgage",
   name: "Berliner Darlehen",
-  openingBalance: 4000000,
-  openingDate: "2026-01-01",
+  anchorBalance: 4000000,
+  anchorDate: "2026-01-01",
   balance: 3800000,
 };
 
@@ -29,8 +29,8 @@ const assetAccount: AccountWithBalance = {
   id: "giro-1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 100000,
-  openingDate: "2026-01-01",
+  anchorBalance: 100000,
+  anchorDate: "2026-01-01",
   balance: 150000,
 };
 

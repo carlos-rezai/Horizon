@@ -41,8 +41,8 @@ describe("reset() — SQLite driver (real temp-file database)", () => {
     const account = await storage.accounts.create({
       name: "Everyday",
       kind: "Girokonto",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
     });
 
     await storage.transactions.create(account.id, {
@@ -133,8 +133,8 @@ describe("reset() — SQLite driver (real temp-file database)", () => {
     const account = await storage.accounts.create({
       name: "Fresh start",
       kind: "Tagesgeld",
-      openingBalance: 0,
-      openingDate: "2026-02-01",
+      anchorBalance: 0,
+      anchorDate: "2026-02-01",
     });
 
     const all = await storage.accounts.findAll();

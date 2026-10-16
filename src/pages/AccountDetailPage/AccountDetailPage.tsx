@@ -80,8 +80,8 @@ export default function AccountDetailPage() {
       />
 
       <AccountStatStrip
-        openingBalance={account.openingBalance}
-        openingDate={account.openingDate}
+        anchorBalance={account.anchorBalance}
+        anchorDate={account.anchorDate}
         recurringCount={recurringTransactions.length}
         recurringNet={recurringNetPerMonth(recurringTransactions, account.id)}
       />

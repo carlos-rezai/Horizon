@@ -40,8 +40,8 @@ const mortgageAccount: AccountWithBalance = {
   id: "m1",
   kind: "Mortgage",
   name: "DSL Mortgage",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
 };
 
@@ -49,8 +49,8 @@ const giroAccount: AccountWithBalance = {
   id: "g1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
 };
 
@@ -249,8 +249,8 @@ const reserveAccount: AccountWithBalance = {
   id: "t1",
   kind: "Tagesgeld",
   name: "Reserve",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
   color: "#aa3366",
   showInTrajectory: false,

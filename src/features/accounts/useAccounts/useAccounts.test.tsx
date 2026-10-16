@@ -17,14 +17,14 @@ const account1: AccountWithBalance = {
   id: "a1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 100000,
-  openingDate: "2026-01-01",
+  anchorBalance: 100000,
+  anchorDate: "2026-01-01",
   balance: 100000,
 };
 
 const account1Updated: AccountWithBalance = {
   ...account1,
-  openingBalance: 250000,
+  anchorBalance: 250000,
   balance: 250000,
 };
 

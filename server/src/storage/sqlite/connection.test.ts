@@ -179,8 +179,8 @@ describe("connection (SQLite)", () => {
       const account = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 100000,
-        openingDate: "2026-05-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-05-01",
       });
       await storage.transactions.create(account.id, {
         date: "2026-05-02",

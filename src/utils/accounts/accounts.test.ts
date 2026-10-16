@@ -11,8 +11,8 @@ interface AccountWithBalance {
   id: string;
   kind: AccountKind;
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   balance: number;
   sondertilgungAllowance?: number;
 }
@@ -21,8 +21,8 @@ const account = (kind: AccountKind, balance: number): AccountWithBalance => ({
   id: `id-${kind}`,
   kind,
   name: `${kind} account`,
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance,
 });
 

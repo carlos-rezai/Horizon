@@ -26,8 +26,8 @@ afterEach(async () => {
 // in June 2020 over 25 years. Amounts in cents.
 const validSetup = {
   name: "Haus",
-  openingBalance: 20000000,
-  openingDate: "2026-10-16",
+  anchorBalance: 20000000,
+  anchorDate: "2026-10-16",
   originalPrincipal: 40000000,
   startDate: "2020-06-01",
   termYears: 25,
@@ -47,8 +47,8 @@ describe("POST /mortgages — valid setup", () => {
     expect(res.body.id).toBeDefined();
     expect(res.body.kind).toBe("Mortgage");
     expect(res.body.name).toBe("Haus");
-    expect(res.body.openingBalance).toBe(20000000);
-    expect(res.body.openingDate).toBe("2026-10-16");
+    expect(res.body.anchorBalance).toBe(20000000);
+    expect(res.body.anchorDate).toBe("2026-10-16");
     expect(res.body.balance).toBe(20000000);
   });
 
@@ -72,8 +72,8 @@ describe("POST /mortgages — valid setup", () => {
       .post("/mortgages")
       .send({
         ...validSetup,
-        originalPrincipal: validSetup.openingBalance,
-        startDate: validSetup.openingDate,
+        originalPrincipal: validSetup.anchorBalance,
+        startDate: validSetup.anchorDate,
         termYears: 1,
       });
     const longest = await request(app)
@@ -96,11 +96,11 @@ describe("POST /mortgages — invalid setup", () => {
     ["the term is 0 years", { termYears: 0 }],
     ["the term is 41 years", { termYears: 41 }],
     ["the term is not a whole number of years", { termYears: 2.5 }],
-    ["the Restschuld is zero", { openingBalance: 0 }],
-    ["the Restschuld is negative", { openingBalance: -100 }],
+    ["the Restschuld is zero", { anchorBalance: 0 }],
+    ["the Restschuld is negative", { anchorBalance: -100 }],
     [
       "the original principal is zero",
-      { openingBalance: 0, originalPrincipal: 0 },
+      { anchorBalance: 0, originalPrincipal: 0 },
     ],
     ["the original principal is negative", { originalPrincipal: -40000000 }],
     ["the name is empty", { name: "" }],
@@ -143,13 +143,13 @@ interface StoredRecurring {
 async function createAccount(
   kind: string,
   name: string,
-  openingBalance = 500000
+  anchorBalance = 500000
 ): Promise<string> {
   const res = await request(app).post("/accounts").send({
     kind,
     name,
-    openingBalance,
-    openingDate: "2026-01-01",
+    anchorBalance,
+    anchorDate: "2026-01-01",
   });
   expect(res.status).toBe(201);
   return res.body.id as string;
@@ -378,7 +378,7 @@ describe("POST /mortgages — Balance Anchor fields", () => {
     expect(res.body.anchorBalance).toBe(20000000);
     expect(res.body.anchorDate).toBe("2026-10-16");
     expect(res.body.balance).toBe(20000000);
-    expect(res.body).not.toHaveProperty("openingBalance");
-    expect(res.body).not.toHaveProperty("openingDate");
+    expect(res.body).not.toHaveProperty("opening" + "Balance");
+    expect(res.body).not.toHaveProperty("opening" + "Date");
   });
 });

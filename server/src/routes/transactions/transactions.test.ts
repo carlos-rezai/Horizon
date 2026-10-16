@@ -32,8 +32,8 @@ async function createAccount(overrides = {}) {
     .send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
       ...overrides,
     });
   return res.body as { id: string; balance: number };
@@ -216,8 +216,8 @@ describe("DELETE /transactions/:id", () => {
 // ---------------------------------------------------------------------------
 
 describe("account balance derivation", () => {
-  it("equals openingBalance + sum of transaction amounts", async () => {
-    const account = await createAccount({ openingBalance: 100000 });
+  it("equals anchorBalance + sum of transaction amounts", async () => {
+    const account = await createAccount({ anchorBalance: 100000 });
 
     await request(app).post(`/accounts/${account.id}/transactions`).send({
       date: "2026-03-01",
@@ -246,7 +246,7 @@ describe("account balance derivation", () => {
   });
 
   it("updates correctly after a transaction is deleted", async () => {
-    const account = await createAccount({ openingBalance: 100000 });
+    const account = await createAccount({ anchorBalance: 100000 });
 
     const tx = await request(app)
       .post(`/accounts/${account.id}/transactions`)

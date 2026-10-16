@@ -34,8 +34,8 @@ async function createAccount(overrides: Record<string, unknown> = {}) {
     .send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 500000,
-      openingDate: "2026-01-01",
+      anchorBalance: 500000,
+      anchorDate: "2026-01-01",
       ...overrides,
     });
   return res.body as { id: string };
@@ -44,13 +44,13 @@ async function createAccount(overrides: Record<string, unknown> = {}) {
 async function seedCcWithSpending() {
   const giro = await createAccount({
     kind: "Girokonto",
-    openingBalance: 500000,
+    anchorBalance: 500000,
   });
   const cc = await createAccount({
     kind: "CreditCard",
     name: "Visa",
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
     linkedAccountId: giro.id,
     settlementDay: 15,
   });
@@ -111,13 +111,13 @@ describe("GET /settlements/warnings", () => {
     // Giro has 500000 — well above the upcoming 10000 settlement
     const giro = await createAccount({
       kind: "Girokonto",
-      openingBalance: 500000,
+      anchorBalance: 500000,
     });
     const cc = await createAccount({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: 0,
-      openingDate: "2026-01-01",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
       linkedAccountId: giro.id,
       settlementDay: 15,
     });
@@ -137,18 +137,18 @@ describe("GET /settlements/warnings", () => {
   it("returns 200 with one InsufficientFundsWarning when Giro balance cannot cover the upcoming settlement", async () => {
     // Giro opening balance is 5000; CC will owe 50000 — Giro cannot cover it
     const now = new Date();
-    const openingDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const anchorDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
     const giro = await createAccount({
       kind: "Girokonto",
-      openingBalance: 5000,
-      openingDate,
+      anchorBalance: 5000,
+      anchorDate,
     });
     const cc = await createAccount({
       kind: "CreditCard",
       name: "Visa",
-      openingBalance: -50000,
-      openingDate,
+      anchorBalance: -50000,
+      anchorDate,
       linkedAccountId: giro.id,
       settlementDay: 15,
     });
@@ -174,14 +174,14 @@ describe("createApp startup backfill", () => {
     const giro = await storage.accounts.create({
       kind: "Girokonto",
       name: "Giro",
-      openingBalance: 500000,
-      openingDate: "2026-01-01",
+      anchorBalance: 500000,
+      anchorDate: "2026-01-01",
     });
     const cc = await storage.accounts.create({
       kind: "CreditCard",
       name: "CC",
-      openingBalance: 0,
-      openingDate: "2026-01-01",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
       linkedAccountId: giro.id,
       settlementDay: 15,
     });

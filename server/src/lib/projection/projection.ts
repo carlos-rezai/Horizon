@@ -1,11 +1,12 @@
 import type { AccountKind } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
+import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
 
 export interface ProjectionAccountEntry {
   id: string;
   kind: AccountKind;
-  openingBalance: number;
-  openingDate?: string;
+  anchorBalance: number;
+  anchorDate?: string;
   linkedAccountId?: string;
   settlementDay?: number;
   linkedSince?: string;
@@ -141,16 +142,16 @@ export function projectBalances(
     (r) => r.isActive !== false
   );
 
-  // Initialise from opening balances
+  // Initialise from Anchor Balances
   const runningBalances = new Map<string, number>();
   for (const a of accounts) {
-    runningBalances.set(a.id, a.openingBalance);
+    runningBalances.set(a.id, a.anchorBalance);
   }
 
-  // Replay Loop: replay each account's recurring history from its Opening Date
+  // Replay Loop: replay each account's recurring history from its Anchor Date
   // up to (but not including) fromDate, using the same calendar-aware firing logic
   const replayStart = accounts.reduce((earliest, a) => {
-    const od = a.openingDate ? a.openingDate.slice(0, 7) : fromDate;
+    const od = a.anchorDate ? a.anchorDate.slice(0, 7) : fromDate;
     return od < earliest ? od : earliest;
   }, fromDate);
 
@@ -161,7 +162,7 @@ export function projectBalances(
 
     for (const r of activeRecurring) {
       const sourceOpened =
-        accountMap.get(r.accountId)?.openingDate?.slice(0, 7) ?? fromDate;
+        accountMap.get(r.accountId)?.anchorDate?.slice(0, 7) ?? fromDate;
       if (replayMonth < sourceOpened) continue;
 
       const indexFromOpening = monthsBetween(sourceOpened, replayMonth);
@@ -188,6 +189,26 @@ export function projectBalances(
       a.id,
       (runningBalances.get(a.id) ?? 0) + variableSpending
     );
+  }
+
+  // Each account's balance at the end of a month comes from its Balance
+  // Anchor. Without an Anchor Date the anchor precedes every transaction, so
+  // the balance is known from the start.
+  const anchored = new Map<
+    string,
+    { endOf: (month: string) => number; knownMonth: string }
+  >();
+  for (const a of accounts) {
+    const accountTx = transactions.filter((tx) => tx.accountId === a.id);
+    const anchor = {
+      anchorBalance: a.anchorBalance,
+      anchorDate: a.anchorDate ?? "",
+    };
+    anchored.set(a.id, {
+      // "-31" is the end of any month for ISO string comparison.
+      endOf: (month) => balanceAt(anchor, accountTx, `${month}-31`),
+      knownMonth: a.anchorDate ? knownSince(anchor, accountTx).slice(0, 7) : "",
+    });
   }
 
   const snapshots: MonthlySnapshot[] = [];
@@ -239,13 +260,10 @@ export function projectBalances(
       };
 
       if (month <= currentDate) {
-        snapshot.actual =
-          a.openingBalance +
-          transactions
-            .filter(
-              (tx) => tx.accountId === a.id && tx.date.slice(0, 7) <= month
-            )
-            .reduce((sum, tx) => sum + tx.amount, 0);
+        const balance = anchored.get(a.id);
+        if (balance && month >= balance.knownMonth) {
+          snapshot.actual = balance.endOf(month);
+        }
       }
 
       accountsSnapshot[a.id] = snapshot;
@@ -258,15 +276,8 @@ export function projectBalances(
     if (month <= currentDate) {
       for (const a of accounts) {
         if (a.kind === "Mortgage") continue;
-        runningBalances.set(
-          a.id,
-          a.openingBalance +
-            transactions
-              .filter(
-                (tx) => tx.accountId === a.id && tx.date.slice(0, 7) <= month
-              )
-              .reduce((sum, tx) => sum + tx.amount, 0)
-        );
+        const balance = anchored.get(a.id);
+        if (balance) runningBalances.set(a.id, balance.endOf(month));
       }
     }
 

@@ -46,8 +46,8 @@ const giroAccount: AccountWithBalance = {
   id: "g1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
   color: null,
 };
@@ -56,8 +56,8 @@ const giroAccountWithColor: AccountWithBalance = {
   id: "g1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
   color: "#FF6600",
 };
@@ -66,8 +66,8 @@ const giroAccount2WithColor: AccountWithBalance = {
   id: "g2",
   kind: "Girokonto",
   name: "Secondary",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
   color: "#0088FF",
 };
@@ -106,8 +106,8 @@ const mortgageAccount: AccountWithBalance = {
   id: "m1",
   kind: "Mortgage",
   name: "DSL Mortgage",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
 };
 

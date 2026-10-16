@@ -183,8 +183,8 @@ describe("POST /storage/backup-to — SQLite driver", () => {
     const seeded = await storage.accounts.create({
       name: "Backed up",
       kind: "Girokonto",
-      openingBalance: 4242,
-      openingDate: "2026-01-01",
+      anchorBalance: 4242,
+      anchorDate: "2026-01-01",
     });
 
     const outPath = path.join(tmpDir, "backup.db");
@@ -250,8 +250,8 @@ describe("POST /storage/restore — SQLite driver", () => {
     const before = await storage.accounts.create({
       name: "Pre-restore",
       kind: "Girokonto",
-      openingBalance: 1234,
-      openingDate: "2026-01-01",
+      anchorBalance: 1234,
+      anchorDate: "2026-01-01",
     });
 
     const snapPath = await makeValidBackup();
@@ -260,8 +260,8 @@ describe("POST /storage/restore — SQLite driver", () => {
     const after = await storage.accounts.create({
       name: "Post-restore",
       kind: "Tagesgeld",
-      openingBalance: 7777,
-      openingDate: "2026-02-01",
+      anchorBalance: 7777,
+      anchorDate: "2026-02-01",
     });
 
     const res = await request(app)
@@ -286,8 +286,8 @@ describe("POST /storage/restore — SQLite driver", () => {
     const before = await storage.accounts.create({
       name: "Pre-corrupt",
       kind: "Girokonto",
-      openingBalance: 999,
-      openingDate: "2026-01-01",
+      anchorBalance: 999,
+      anchorDate: "2026-01-01",
     });
 
     const corruptPath = path.join(tmpDir, "corrupt.db");
@@ -354,8 +354,8 @@ describe("POST /storage/restore-from — SQLite driver", () => {
     const before = await storage.accounts.create({
       name: "Pre-restore",
       kind: "Girokonto",
-      openingBalance: 1234,
-      openingDate: "2026-01-01",
+      anchorBalance: 1234,
+      anchorDate: "2026-01-01",
     });
 
     const snapPath = await makeValidBackup();
@@ -364,8 +364,8 @@ describe("POST /storage/restore-from — SQLite driver", () => {
     const after = await storage.accounts.create({
       name: "Post-restore",
       kind: "Tagesgeld",
-      openingBalance: 7777,
-      openingDate: "2026-02-01",
+      anchorBalance: 7777,
+      anchorDate: "2026-02-01",
     });
 
     const res = await request(app)
@@ -390,8 +390,8 @@ describe("POST /storage/restore-from — SQLite driver", () => {
     const before = await storage.accounts.create({
       name: "Pre-corrupt",
       kind: "Girokonto",
-      openingBalance: 999,
-      openingDate: "2026-01-01",
+      anchorBalance: 999,
+      anchorDate: "2026-01-01",
     });
 
     const corruptPath = path.join(tmpDir, "corrupt.db");
@@ -450,8 +450,8 @@ describe("POST /storage/reset — SQLite driver", () => {
     const account = await storage.accounts.create({
       name: "Pre-reset",
       kind: "Girokonto",
-      openingBalance: 5000,
-      openingDate: "2026-01-01",
+      anchorBalance: 5000,
+      anchorDate: "2026-01-01",
     });
     await storage.transactions.create(account.id, {
       date: "2026-01-05",

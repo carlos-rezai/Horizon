@@ -7,8 +7,8 @@ import {
 } from "./AccountStatStrip.styles";
 
 interface Props {
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   recurringCount: number;
   recurringNet: number;
 }
@@ -19,8 +19,8 @@ interface Props {
  * of MonthStatStrip.
  */
 export default function AccountStatStrip({
-  openingBalance,
-  openingDate,
+  anchorBalance,
+  anchorDate,
   recurringCount,
   recurringNet,
 }: Props) {
@@ -29,13 +29,13 @@ export default function AccountStatStrip({
       <StyledCell>
         <StatBlock label="Opening Balance">
           <StyledValue $muted>
-            <Money cents={openingBalance} />
+            <Money cents={anchorBalance} />
           </StyledValue>
         </StatBlock>
       </StyledCell>
       <StyledCell>
         <StatBlock label="Opening Date">
-          <StyledValue $muted>{openingDate}</StyledValue>
+          <StyledValue $muted>{anchorDate}</StyledValue>
         </StatBlock>
       </StyledCell>
       <StyledCell>

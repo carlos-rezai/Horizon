@@ -9,8 +9,8 @@ export interface AccountWithBalance {
   id: string;
   kind: AccountKind;
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   balance: number;
   sondertilgungAllowance?: number;
   icon?: string | null;

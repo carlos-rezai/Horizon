@@ -36,8 +36,8 @@ const RepaymentSchema = z
 export const MortgageSetupSchema = z
   .object({
     name: z.string().min(1),
-    openingBalance: z.number().int().positive(),
-    openingDate: IsoDate,
+    anchorBalance: z.number().int().positive(),
+    anchorDate: IsoDate,
     originalPrincipal: z.number().int().positive(),
     startDate: IsoDate,
     termYears: z.number().int().min(1).max(40),
@@ -45,14 +45,14 @@ export const MortgageSetupSchema = z
     repayment: RepaymentSchema.optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.originalPrincipal < data.openingBalance) {
+    if (data.originalPrincipal < data.anchorBalance) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["originalPrincipal"],
         message: "Original principal cannot be below the Restschuld today",
       });
     }
-    if (data.startDate > data.openingDate) {
+    if (data.startDate > data.anchorDate) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["startDate"],

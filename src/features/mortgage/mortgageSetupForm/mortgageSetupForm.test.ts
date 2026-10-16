@@ -55,8 +55,8 @@ describe("validate", () => {
       ok: true,
       payload: {
         name: "Haus",
-        openingBalance: 8950000,
-        openingDate: "2026-10-01",
+        anchorBalance: 8950000,
+        anchorDate: "2026-10-01",
         originalPrincipal: 20000000,
         startDate: "2022-10-01",
         termYears: 10,

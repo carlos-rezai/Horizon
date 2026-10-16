@@ -32,8 +32,8 @@ async function createAccount(overrides: Record<string, unknown> = {}) {
     .send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2025-01-01",
+      anchorBalance: 0,
+      anchorDate: "2025-01-01",
       ...overrides,
     });
   return res.body as { id: string };
@@ -128,7 +128,7 @@ describe("GET /reports/year-comparison", () => {
     const mort = await createAccount({
       kind: "Mortgage",
       name: "Darlehen",
-      openingBalance: -4000000,
+      anchorBalance: -4000000,
     });
     await addTransaction(giro.id, -1000, "2026-03-01", "Groceries");
     await addTransaction(mort.id, -50000, "2026-03-01", "Groceries");

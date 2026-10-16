@@ -9,8 +9,8 @@ interface AccountRow {
   id: string;
   kind: AccountKind;
   name: string;
-  opening_balance: number;
-  opening_date: string;
+  anchor_balance: number;
+  anchor_date: string;
   sondertilgung_allowance: number | null;
   icon: string | null;
   color: string | null;
@@ -33,8 +33,8 @@ function toAccountDTO(row: AccountRow): Account {
     id: row.id,
     kind: row.kind,
     name: row.name,
-    openingBalance: row.opening_balance,
-    openingDate: row.opening_date,
+    anchorBalance: row.anchor_balance,
+    anchorDate: row.anchor_date,
     icon: row.icon,
     color: row.color,
     linkedAccountId: row.linked_account_id ?? null,
@@ -78,7 +78,7 @@ export function createSqliteAccountsRepo(
   const updateStmt = db.prepare(
     `UPDATE accounts
        SET name = COALESCE(?, name),
-           opening_balance = COALESCE(?, opening_balance),
+           anchor_balance = COALESCE(?, anchor_balance),
            sondertilgung_allowance = COALESCE(?, sondertilgung_allowance),
            icon = ?,
            color = ?,
@@ -94,34 +94,37 @@ export function createSqliteAccountsRepo(
        WHERE account_id = ? OR linked_account_id = ?`
   );
   const selectAllWithBalanceStmt = db.prepare(
-    `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
+    `SELECT a.id, a.kind, a.name, a.anchor_balance, a.anchor_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
             a.show_in_trajectory, a.sort_order,
             a.original_principal, a.start_date, a.term_years,
-            a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
+            a.anchor_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
-       LEFT JOIN transactions t ON t.account_id = a.id
+       LEFT JOIN transactions t
+         ON t.account_id = a.id AND t.date > a.anchor_date
       GROUP BY a.id
       ORDER BY a.sort_order`
   );
   const selectByIdWithBalanceStmt = db.prepare(
-    `SELECT a.id, a.kind, a.name, a.opening_balance, a.opening_date,
+    `SELECT a.id, a.kind, a.name, a.anchor_balance, a.anchor_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
             a.show_in_trajectory, a.sort_order,
             a.original_principal, a.start_date, a.term_years,
-            a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
+            a.anchor_balance + COALESCE(SUM(t.amount), 0) AS balance
        FROM accounts a
-       LEFT JOIN transactions t ON t.account_id = a.id
+       LEFT JOIN transactions t
+         ON t.account_id = a.id AND t.date > a.anchor_date
       WHERE a.id = ?
       GROUP BY a.id`
   );
   const totalLiquidStmt = db.prepare(
     `SELECT COALESCE(SUM(balance), 0) AS total FROM (
-       SELECT a.opening_balance + COALESCE(SUM(t.amount), 0) AS balance
+       SELECT a.anchor_balance + COALESCE(SUM(t.amount), 0) AS balance
          FROM accounts a
-         LEFT JOIN transactions t ON t.account_id = a.id
+         LEFT JOIN transactions t
+         ON t.account_id = a.id AND t.date > a.anchor_date
         WHERE a.kind IN ('Girokonto', 'Tagesgeld')
         GROUP BY a.id
      )`
@@ -135,8 +138,8 @@ export function createSqliteAccountsRepo(
         id,
         kind: input.kind,
         name: input.name,
-        openingBalance: input.openingBalance,
-        openingDate: input.openingDate,
+        anchorBalance: input.anchorBalance,
+        anchorDate: input.anchorDate,
         icon: input.icon ?? null,
         color: input.color ?? null,
         linkedAccountId: input.linkedAccountId ?? null,
@@ -211,7 +214,7 @@ export function createSqliteAccountsRepo(
 
       updateStmt.run(
         input.name ?? null,
-        input.openingBalance ?? null,
+        input.anchorBalance ?? null,
         input.sondertilgungAllowance ?? null,
         "icon" in input ? (input.icon ?? null) : existing.icon,
         "color" in input ? (input.color ?? null) : existing.color,
@@ -266,7 +269,7 @@ export function createSqliteAccountsRepo(
         | undefined;
       const restschuld = balanceRow
         ? balanceRow.balance
-        : existing.opening_balance;
+        : existing.anchor_balance;
       if (input.originalPrincipal < restschuld) {
         return { ok: false, reason: "below_restschuld" };
       }

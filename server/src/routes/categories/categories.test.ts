@@ -41,8 +41,8 @@ async function createAccount() {
   const res = await request(app).post("/accounts").send({
     kind: "Girokonto",
     name: "Main",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
+    anchorBalance: 100000,
+    anchorDate: "2026-01-01",
   });
   return res.body as { id: string };
 }
@@ -99,8 +99,8 @@ describe("GET /categories", () => {
     const accountB = await request(app).post("/accounts").send({
       kind: "Tagesgeld",
       name: "Savings",
-      openingBalance: 0,
-      openingDate: "2026-01-01",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
     });
 
     await request(app).post(`/accounts/${accountA.id}/transactions`).send({

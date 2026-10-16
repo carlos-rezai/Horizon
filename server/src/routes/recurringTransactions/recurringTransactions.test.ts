@@ -18,8 +18,8 @@ async function createAccount(): Promise<string> {
   const res = await request(app).post("/accounts").send({
     kind: "Girokonto",
     name: "Main",
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
   });
   return res.body.id as string;
 }
@@ -63,14 +63,14 @@ describe("POST /recurring-transactions", () => {
     const sourceRes = await request(app).post("/accounts").send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2026-01-01",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
     });
     const destRes = await request(app).post("/accounts").send({
       kind: "Tagesgeld",
       name: "Savings",
-      openingBalance: 0,
-      openingDate: "2026-01-01",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
     });
 
     const res = await request(app).post("/recurring-transactions").send({
@@ -289,8 +289,8 @@ async function createNamedAccount(name: string): Promise<string> {
   const res = await request(app).post("/accounts").send({
     kind: "Girokonto",
     name,
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
   });
   return res.body.id as string;
 }

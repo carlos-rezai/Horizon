@@ -7,8 +7,8 @@ function acc(overrides: Partial<AccountWithBalance>): AccountWithBalance {
     id: "a",
     kind: "Girokonto",
     name: "Main",
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
     balance: 0,
     ...overrides,
   };

@@ -23,8 +23,8 @@ describe("DEBUG_SQL query tracing switch (issue #58)", () => {
       const account = await storage.accounts.create({
         kind: "Girokonto",
         name: "Trace Me",
-        openingBalance: 100000,
-        openingDate: "2026-05-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-05-01",
       });
       await storage.transactions.create(account.id, {
         date: "2026-05-02",
@@ -92,8 +92,8 @@ describe("DEBUG_SQL query tracing switch (issue #58)", () => {
       const account = await storage.accounts.create({
         kind: "Girokonto",
         name: "Quiet",
-        openingBalance: 50000,
-        openingDate: "2026-05-01",
+        anchorBalance: 50000,
+        anchorDate: "2026-05-01",
       });
       await storage.transactions.create(account.id, {
         date: "2026-05-02",

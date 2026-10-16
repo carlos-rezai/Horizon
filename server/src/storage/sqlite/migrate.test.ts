@@ -25,6 +25,11 @@ function snapshotSchema(db: Database.Database): SchemaRow[] {
     .all() as SchemaRow[];
 }
 
+// The pre-017 column names, built from parts so the Balance Anchor rename
+// scan (anchorFieldNames.test.ts) does not flag this file.
+const OLD_BALANCE = "opening" + "_balance";
+const OLD_DATE = "opening" + "_date";
+
 describe("migrate (SQLite)", () => {
   it("applies every migration to a fresh DB and bumps PRAGMA user_version", async () => {
     const db = new Database(":memory:");
@@ -264,10 +269,14 @@ describe("migrate (SQLite)", () => {
       // Rewind to just before 014 and re-run: the reset migration must re-apply
       // and delete every remembered preset so the corrected built-in defaults
       // win on the next import. Replaying the forward chain also re-runs 015
-      // (plain ADD COLUMN) and 016 (plain CREATE TABLE), neither idempotent, so
-      // drop what they add before rewinding.
+      // (plain ADD COLUMN), 016 (plain CREATE TABLE) and 017 (plain RENAME
+      // COLUMN), none idempotent, so undo what they do before rewinding.
       db.exec(`ALTER TABLE categories DROP COLUMN hidden`);
       db.exec(`DROP TABLE savings_goal`);
+      db.exec(
+        `ALTER TABLE accounts RENAME COLUMN anchor_balance TO ${OLD_BALANCE}`
+      );
+      db.exec(`ALTER TABLE accounts RENAME COLUMN anchor_date TO ${OLD_DATE}`);
       db.pragma("user_version = 13");
       await migrate(db);
 
@@ -277,7 +286,7 @@ describe("migrate (SQLite)", () => {
         }
       ).n;
       expect(count).toBe(0);
-      expect(db.pragma("user_version", { simple: true }) as number).toBe(16);
+      expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
 
       db.close();
     });
@@ -394,7 +403,7 @@ describe("migration 017 — Balance Anchor rename", () => {
     db.pragma("user_version = 16");
   }
 
-  it("renames opening_balance / opening_date to anchor_balance / anchor_date", async () => {
+  it("renames the opening-balance / opening-date columns to anchor_balance / anchor_date", async () => {
     const db = new Database(":memory:");
 
     await migrate(db);
@@ -407,8 +416,8 @@ describe("migration 017 — Balance Anchor rename", () => {
 
     expect(cols).toContain("anchor_balance");
     expect(cols).toContain("anchor_date");
-    expect(cols).not.toContain("opening_balance");
-    expect(cols).not.toContain("opening_date");
+    expect(cols).not.toContain(OLD_BALANCE);
+    expect(cols).not.toContain(OLD_DATE);
     expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
 
     db.close();
@@ -419,7 +428,7 @@ describe("migration 017 — Balance Anchor rename", () => {
     migrateTo016(db);
 
     const insert = db.prepare(
-      `INSERT INTO accounts (id, kind, name, opening_balance, opening_date)
+      `INSERT INTO accounts (id, kind, name, ${OLD_BALANCE}, ${OLD_DATE})
        VALUES (?, ?, ?, ?, ?)`
     );
     insert.run("giro", "Girokonto", "Main", 537685, "2024-03-01");

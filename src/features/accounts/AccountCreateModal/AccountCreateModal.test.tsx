@@ -28,8 +28,8 @@ beforeEach(() => {
       id: "new-account-id",
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 0,
-      openingDate: "2026-01-01",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
       balance: 0,
     }),
   } as Response);
@@ -300,8 +300,8 @@ describe("AccountCreateModal — edit mode", () => {
     id: "acc-1",
     kind: "Girokonto",
     name: "Main Account",
-    openingBalance: 100000,
-    openingDate: "2024-03-15",
+    anchorBalance: 100000,
+    anchorDate: "2024-03-15",
     balance: 120000,
   };
 
@@ -381,8 +381,8 @@ describe("AccountCreateModal — CreditCard settlement fields", () => {
     id: "g-1",
     kind: "Girokonto",
     name: "Main Girokonto",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
+    anchorBalance: 100000,
+    anchorDate: "2026-01-01",
     balance: 120000,
   };
 
@@ -467,8 +467,8 @@ describe("AccountCreateModal — edit mode (CreditCard with settlement config)",
     id: "g-1",
     kind: "Girokonto",
     name: "Main Girokonto",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
+    anchorBalance: 100000,
+    anchorDate: "2026-01-01",
     balance: 120000,
   };
 
@@ -476,8 +476,8 @@ describe("AccountCreateModal — edit mode (CreditCard with settlement config)",
     id: "cc-1",
     kind: "CreditCard" as const,
     name: "Visa",
-    openingBalance: 0,
-    openingDate: "2026-03-01",
+    anchorBalance: 0,
+    anchorDate: "2026-03-01",
     balance: -45000,
     linkedAccountId: "g-1",
     settlementDay: 17,
@@ -520,8 +520,8 @@ describe("AccountCreateModal — CreditCard settlement generation", () => {
     id: "g-1",
     kind: "Girokonto",
     name: "Main Girokonto",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
+    anchorBalance: 100000,
+    anchorDate: "2026-01-01",
     balance: 120000,
   };
 
@@ -697,8 +697,8 @@ describe("AccountCreateModal — Display in Trajectory Horizon toggle", () => {
       id: "acc-9",
       kind: "Girokonto",
       name: "Hidden",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
       balance: 100000,
       showInTrajectory: false,
     };

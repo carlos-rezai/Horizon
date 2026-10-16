@@ -24,8 +24,8 @@ const giroAccount: AccountWithBalance = {
   id: "g1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
 };
 
@@ -144,8 +144,8 @@ describe("PlanSummary — payoff year", () => {
     id: "m1",
     kind: "Mortgage",
     name: "Home Loan",
-    openingBalance: -20000000,
-    openingDate: "2026-01-01",
+    anchorBalance: -20000000,
+    anchorDate: "2026-01-01",
     balance: -20000000,
   };
 
@@ -182,8 +182,8 @@ describe("PlanSummary — Sondertilgung column", () => {
     id: "m1",
     kind: "Mortgage",
     name: "Home Loan",
-    openingBalance: 2500000,
-    openingDate: "2026-01-01",
+    anchorBalance: 2500000,
+    anchorDate: "2026-01-01",
     balance: 2500000,
   };
 

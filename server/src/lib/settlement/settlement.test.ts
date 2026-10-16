@@ -15,8 +15,8 @@ function makeGiro(id: string): Account {
     id,
     kind: "Girokonto",
     name: "Girokonto",
-    openingBalance: 500000,
-    openingDate: "2026-01-01",
+    anchorBalance: 500000,
+    anchorDate: "2026-01-01",
   };
 }
 
@@ -24,8 +24,8 @@ function makeCc(overrides: Partial<Account> & { id: string }): Account {
   return {
     kind: "CreditCard",
     name: "Credit Card",
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
     linkedAccountId: "giro1",
     settlementDay: 15,
     linkedSince: "2026-01-01",
@@ -75,7 +75,7 @@ describe("computeMissingSettlements", () => {
   it("emits nothing when CC closing balance is zero", () => {
     const accounts = [
       makeGiro("giro1"),
-      makeCc({ id: "cc1", openingBalance: 0 }),
+      makeCc({ id: "cc1", anchorBalance: 0 }),
     ];
 
     const result = computeMissingSettlements(accounts, [], "2026-02-28");
@@ -86,7 +86,7 @@ describe("computeMissingSettlements", () => {
   it("emits nothing when CC closing balance is positive", () => {
     const accounts = [
       makeGiro("giro1"),
-      makeCc({ id: "cc1", openingBalance: 5000 }),
+      makeCc({ id: "cc1", anchorBalance: 5000 }),
     ];
 
     const result = computeMissingSettlements(accounts, [], "2026-02-28");
@@ -280,8 +280,8 @@ describe("detectInsufficientFunds", () => {
         id: "cc1",
         kind: "CreditCard",
         name: "Credit Card",
-        openingBalance: -50000,
-        openingDate: "2026-01-01",
+        anchorBalance: -50000,
+        anchorDate: "2026-01-01",
         // no linkedAccountId, settlementDay, or linkedSince
       },
     ];

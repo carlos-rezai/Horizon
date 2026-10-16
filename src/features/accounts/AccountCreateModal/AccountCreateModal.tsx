@@ -60,10 +60,10 @@ export default function AccountCreateModal({
   const isEditMode = account !== undefined;
   const [kind, setKind] = useState<AccountKind>(account?.kind ?? "Girokonto");
   const [name, setName] = useState(account?.name ?? "");
-  const [openingBalance, setOpeningBalance] = useState(
-    account ? centsToEuros(account.openingBalance) : "0.00"
+  const [anchorBalance, setOpeningBalance] = useState(
+    account ? centsToEuros(account.anchorBalance) : "0.00"
   );
-  const [openingDate, setOpeningDate] = useState(account?.openingDate ?? "");
+  const [anchorDate, setOpeningDate] = useState(account?.anchorDate ?? "");
   const [sondertilgungAllowance, setSondertilgungAllowance] = useState(
     account?.sondertilgungAllowance != null
       ? centsToEuros(account.sondertilgungAllowance)
@@ -89,13 +89,13 @@ export default function AccountCreateModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !openingDate) return;
+    if (!name.trim() || !anchorDate) return;
 
     const body: Record<string, unknown> = {
       kind,
       name: name.trim(),
-      openingBalance: eurosToCents(openingBalance),
-      openingDate,
+      anchorBalance: eurosToCents(anchorBalance),
+      anchorDate,
       icon: selectedIcon,
       color: selectedColor,
     };
@@ -176,7 +176,7 @@ export default function AccountCreateModal({
             id="opening-balance"
             type="number"
             step="0.01"
-            value={openingBalance}
+            value={anchorBalance}
             onChange={(e) => setOpeningBalance(e.target.value)}
           />
         </FormField>
@@ -184,7 +184,7 @@ export default function AccountCreateModal({
         <FormField label="Opening Date" htmlFor="opening-date">
           <DatePicker
             aria-label="opening date"
-            value={openingDate}
+            value={anchorDate}
             onChange={setOpeningDate}
           />
         </FormField>

@@ -21,8 +21,8 @@ const created: AccountWithBalance = {
   id: "m-new",
   kind: "Mortgage",
   name: "Haus",
-  openingBalance: 20000000,
-  openingDate: "2026-10-16",
+  anchorBalance: 20000000,
+  anchorDate: "2026-10-16",
   balance: 20000000,
   originalPrincipal: 40000000,
   startDate: "2020-06-01",
@@ -152,7 +152,7 @@ describe("MortgageSetupModal — default values", () => {
     const [, init] = vi.mocked(globalThis.fetch).mock.calls[0];
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.name).toBe("Mortgage");
-    expect(body.openingDate).toBe(today().iso);
+    expect(body.anchorDate).toBe(today().iso);
   });
 });
 
@@ -216,8 +216,8 @@ describe("MortgageSetupModal — payload", () => {
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body).toMatchObject({
       name: "Haus",
-      openingBalance: 20000000,
-      openingDate: "2026-10-16",
+      anchorBalance: 20000000,
+      anchorDate: "2026-10-16",
       originalPrincipal: 40000000,
       startDate: "2020-06-01",
       termYears: 25,
@@ -282,32 +282,32 @@ describe("MortgageSetupModal — Repayment", () => {
     id: "giro-1",
     kind: "Girokonto",
     name: "Main Checking",
-    openingBalance: 500000,
-    openingDate: "2026-01-01",
+    anchorBalance: 500000,
+    anchorDate: "2026-01-01",
     balance: 500000,
   };
   const tagesgeld: AccountWithBalance = {
     id: "tg-1",
     kind: "Tagesgeld",
     name: "Reserve",
-    openingBalance: 1000000,
-    openingDate: "2026-01-01",
+    anchorBalance: 1000000,
+    anchorDate: "2026-01-01",
     balance: 1000000,
   };
   const card: AccountWithBalance = {
     id: "cc-1",
     kind: "CreditCard",
     name: "Visa",
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
     balance: 0,
   };
   const depot: AccountWithBalance = {
     id: "inv-1",
     kind: "Investment",
     name: "Depot",
-    openingBalance: 0,
-    openingDate: "2026-01-01",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
     balance: 0,
   };
 
@@ -483,7 +483,7 @@ describe("MortgageSetupModal — Repayment", () => {
       const body = await postedBody();
       expect(body).toMatchObject({
         name: "Haus",
-        openingBalance: 20000000,
+        anchorBalance: 20000000,
         originalPrincipal: 40000000,
         termYears: 25,
       });

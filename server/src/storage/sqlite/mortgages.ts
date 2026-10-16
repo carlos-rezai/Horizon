@@ -17,8 +17,8 @@ export function createSqliteMortgagesRepo(
       accountWriter.insert(id, {
         kind: "Mortgage",
         name: setup.name,
-        openingBalance: setup.openingBalance,
-        openingDate: setup.openingDate,
+        anchorBalance: setup.anchorBalance,
+        anchorDate: setup.anchorDate,
         color: setup.color,
       });
       accountWriter.setOrigination(id, {

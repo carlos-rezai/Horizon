@@ -20,8 +20,8 @@ interface AccountWithBalance {
   id: string;
   kind: AccountKind;
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   balance: number;
   sondertilgungAllowance?: number;
   icon?: string | null;
@@ -33,16 +33,16 @@ const mockAccounts: AccountWithBalance[] = [
     id: "1",
     kind: "Girokonto",
     name: "Main Checking",
-    openingBalance: 100000,
-    openingDate: "2026-01-01",
+    anchorBalance: 100000,
+    anchorDate: "2026-01-01",
     balance: 150000,
   },
   {
     id: "2",
     kind: "Tagesgeld",
     name: "DKB Reserve",
-    openingBalance: 200000,
-    openingDate: "2026-01-01",
+    anchorBalance: 200000,
+    anchorDate: "2026-01-01",
     balance: 220000,
   },
 ];
@@ -126,8 +126,8 @@ describe("AccountOverview — avatar rendering", () => {
         id: "1",
         kind: "Girokonto",
         name: "Main Checking",
-        openingBalance: 100000,
-        openingDate: "2026-01-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-01-01",
         balance: 150000,
         icon: null,
         color: null,

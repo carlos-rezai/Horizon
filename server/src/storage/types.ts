@@ -9,8 +9,8 @@ export interface Account {
   id: string;
   kind: AccountKind;
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;
@@ -40,8 +40,8 @@ export interface MortgageOriginationInput {
  */
 export interface MortgageSetup {
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   originalPrincipal: number;
   startDate: string;
   termYears: number;
@@ -70,8 +70,8 @@ export type SetMortgageOriginationResult =
 export interface AccountCreateInput {
   kind: AccountKind;
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;
@@ -82,7 +82,7 @@ export interface AccountCreateInput {
 
 export interface AccountUpdateInput {
   name?: string;
-  openingBalance?: number;
+  anchorBalance?: number;
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;

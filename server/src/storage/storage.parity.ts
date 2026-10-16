@@ -43,15 +43,15 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     overrides: Partial<{
       kind: Account["kind"];
       name: string;
-      openingBalance: number;
-      openingDate: string;
+      anchorBalance: number;
+      anchorDate: string;
     }> = {}
   ): Promise<Account> {
     return storage.accounts.create({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 100000,
-      openingDate: "2026-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
       ...overrides,
     });
   }
@@ -85,24 +85,24 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const account = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 537685,
-        openingDate: "2026-03-01",
+        anchorBalance: 537685,
+        anchorDate: "2026-03-01",
       });
 
       expect(typeof account.id).toBe("string");
       expect(account.id.length).toBeGreaterThan(0);
       expect(account.kind).toBe("Girokonto");
       expect(account.name).toBe("Main");
-      expect(account.openingBalance).toBe(537685);
-      expect(account.openingDate).toBe("2026-03-01");
+      expect(account.anchorBalance).toBe(537685);
+      expect(account.anchorDate).toBe("2026-03-01");
     });
 
     it("findAll returns DTOs with string ids", async () => {
       await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
       });
 
       const all = await storage.accounts.findAll();
@@ -120,8 +120,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Mortgage",
         name: "Darlehen",
-        openingBalance: 4000000,
-        openingDate: "2026-03-01",
+        anchorBalance: 4000000,
+        anchorDate: "2026-03-01",
         sondertilgungAllowance: 500000,
       });
 
@@ -138,8 +138,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "DKB",
-        openingBalance: 100300,
-        openingDate: "2026-03-01",
+        anchorBalance: 100300,
+        anchorDate: "2026-03-01",
       });
 
       const found = await storage.accounts.findById(created.id);
@@ -176,8 +176,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Old",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
       });
 
       const updated = await storage.accounts.update(created.id, {
@@ -188,20 +188,20 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(updated?.id).toBe(created.id);
     });
 
-    it("updates openingBalance and sondertilgungAllowance", async () => {
+    it("updates anchorBalance and sondertilgungAllowance", async () => {
       const created = await storage.accounts.create({
         kind: "Mortgage",
         name: "Darlehen",
-        openingBalance: 4000000,
-        openingDate: "2026-03-01",
+        anchorBalance: 4000000,
+        anchorDate: "2026-03-01",
       });
 
       const updated = await storage.accounts.update(created.id, {
-        openingBalance: 3900000,
+        anchorBalance: 3900000,
         sondertilgungAllowance: 500000,
       });
 
-      expect(updated?.openingBalance).toBe(3900000);
+      expect(updated?.anchorBalance).toBe(3900000);
       expect(updated?.sondertilgungAllowance).toBe(500000);
     });
 
@@ -222,8 +222,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
       });
 
       expect(created.showInTrajectory).toBe(true);
@@ -233,8 +233,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Hidden",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
         showInTrajectory: false,
       });
 
@@ -248,8 +248,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Reserve",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
       });
 
       const updated = await storage.accounts.update(created.id, {
@@ -265,8 +265,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       await storage.accounts.create({
         kind: "Girokonto",
         name: "Hidden",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
         showInTrajectory: false,
       });
 
@@ -289,20 +289,20 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const a = await storage.accounts.create({
         kind: "Girokonto",
         name: "A",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
       });
       const b = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "B",
-        openingBalance: 200000,
-        openingDate: "2026-03-01",
+        anchorBalance: 200000,
+        anchorDate: "2026-03-01",
       });
       const c = await storage.accounts.create({
         kind: "Investment",
         name: "C",
-        openingBalance: 300000,
-        openingDate: "2026-03-01",
+        anchorBalance: 300000,
+        anchorDate: "2026-03-01",
       });
       return [a, b, c];
     }
@@ -340,8 +340,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const d = await storage.accounts.create({
         kind: "Girokonto",
         name: "D",
-        openingBalance: 400000,
-        openingDate: "2026-03-01",
+        anchorBalance: 400000,
+        anchorDate: "2026-03-01",
       });
 
       const all = await storage.accounts.findAll();
@@ -385,8 +385,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       return storage.accounts.create({
         kind: "Mortgage",
         name: "Haus",
-        openingBalance: restschuld,
-        openingDate: "2026-01-01",
+        anchorBalance: restschuld,
+        anchorDate: "2026-01-01",
       });
     }
 
@@ -466,8 +466,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const giro = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 100000,
-        openingDate: "2026-01-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-01-01",
       });
 
       const result = await storage.accounts.setMortgageOrigination(giro.id, {
@@ -525,8 +525,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Investment",
         name: "MSCI",
-        openingBalance: 0,
-        openingDate: "2026-03-01",
+        anchorBalance: 0,
+        anchorDate: "2026-03-01",
       });
 
       const result = await storage.accounts.delete(created.id);
@@ -619,8 +619,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 500000,
-        openingDate: "2026-03-01",
+        anchorBalance: 500000,
+        anchorDate: "2026-03-01",
       });
 
       await storage.transactions.create(created.id, {
@@ -648,12 +648,12 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(result).toBeNull();
     });
 
-    it("returns balance = openingBalance for an account with no transactions", async () => {
+    it("returns balance = anchorBalance for an account with no transactions", async () => {
       const created = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Reserve",
-        openingBalance: 12345,
-        openingDate: "2026-03-01",
+        anchorBalance: 12345,
+        anchorDate: "2026-03-01",
       });
 
       const result = await storage.accounts.findByIdWithBalance(created.id);
@@ -671,14 +671,14 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const a = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 500000,
-        openingDate: "2026-03-01",
+        anchorBalance: 500000,
+        anchorDate: "2026-03-01",
       });
       const b = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Reserve",
-        openingBalance: 200000,
-        openingDate: "2026-03-01",
+        anchorBalance: 200000,
+        anchorDate: "2026-03-01",
       });
 
       await storage.transactions.create(a.id, {
@@ -701,12 +701,12 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(byId.get(b.id)?.balance).toBe(150000);
     });
 
-    it("returns balance = openingBalance for an account with no transactions", async () => {
+    it("returns balance = anchorBalance for an account with no transactions", async () => {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Empty",
-        openingBalance: 12345,
-        openingDate: "2026-03-01",
+        anchorBalance: 12345,
+        anchorDate: "2026-03-01",
       });
 
       const all = await storage.accounts.findAllWithBalance();
@@ -731,32 +731,32 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const giro = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
-        openingBalance: 500000,
-        openingDate: "2026-03-01",
+        anchorBalance: 500000,
+        anchorDate: "2026-03-01",
       });
       const tg = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Reserve",
-        openingBalance: 200000,
-        openingDate: "2026-03-01",
+        anchorBalance: 200000,
+        anchorDate: "2026-03-01",
       });
       await storage.accounts.create({
         kind: "Mortgage",
         name: "Darlehen",
-        openingBalance: 4000000,
-        openingDate: "2026-03-01",
+        anchorBalance: 4000000,
+        anchorDate: "2026-03-01",
       });
       await storage.accounts.create({
         kind: "Investment",
         name: "MSCI",
-        openingBalance: 100000,
-        openingDate: "2026-03-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-03-01",
       });
       await storage.accounts.create({
         kind: "CreditCard",
         name: "Visa",
-        openingBalance: 0,
-        openingDate: "2026-03-01",
+        anchorBalance: 0,
+        anchorDate: "2026-03-01",
       });
 
       await storage.transactions.create(giro.id, {
@@ -781,8 +781,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       await storage.accounts.create({
         kind: "Mortgage",
         name: "Darlehen",
-        openingBalance: 4000000,
-        openingDate: "2026-03-01",
+        anchorBalance: 4000000,
+        anchorDate: "2026-03-01",
       });
 
       const total = await storage.accounts.getTotalLiquid();
@@ -2932,8 +2932,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const account = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Backup Source",
-        openingBalance: 12345,
-        openingDate: "2026-04-01",
+        anchorBalance: 12345,
+        anchorDate: "2026-04-01",
       });
       await storage.transactions.create(account.id, {
         date: "2026-04-15",
@@ -2964,8 +2964,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const account = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Backup Source",
-        openingBalance: 12345,
-        openingDate: "2026-04-01",
+        anchorBalance: 12345,
+        anchorDate: "2026-04-01",
       });
       const tx = await storage.transactions.create(account.id, {
         date: "2026-04-15",
@@ -2988,7 +2988,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
           expect(accs[0].id).toBe(account.id);
           expect(accs[0].name).toBe("Backup Source");
           expect(accs[0].kind).toBe("Tagesgeld");
-          expect(accs[0].openingBalance).toBe(12345);
+          expect(accs[0].anchorBalance).toBe(12345);
 
           const txs = await restored.transactions.findAll();
           expect(txs).toHaveLength(1);
@@ -3019,8 +3019,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const before = await storage.accounts.create({
         kind: "Girokonto",
         name: "Before",
-        openingBalance: 100000,
-        openingDate: "2026-04-01",
+        anchorBalance: 100000,
+        anchorDate: "2026-04-01",
       });
 
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-backup-"));
@@ -3036,8 +3036,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const after = await storage.accounts.create({
           kind: "Tagesgeld",
           name: "After",
-          openingBalance: 50000,
-          openingDate: "2026-04-02",
+          anchorBalance: 50000,
+          anchorDate: "2026-04-02",
         });
 
         const all = await storage.accounts.findAll();
@@ -3086,8 +3086,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const seedAcc = await live.accounts.create({
           kind: "Tagesgeld",
           name: "Seed",
-          openingBalance: 200000,
-          openingDate: "2026-04-01",
+          anchorBalance: 200000,
+          anchorDate: "2026-04-01",
         });
         const seedTx = await live.transactions.create(seedAcc.id, {
           date: "2026-04-15",
@@ -3101,8 +3101,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const drift = await live.accounts.create({
           kind: "Girokonto",
           name: "Drift",
-          openingBalance: 50000,
-          openingDate: "2026-04-20",
+          anchorBalance: 50000,
+          anchorDate: "2026-04-20",
         });
         const deleteResult = await live.transactions.delete(seedTx!.id);
         expect(deleteResult).toEqual({ ok: true });
@@ -3127,8 +3127,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const post = await live.accounts.create({
           kind: "Girokonto",
           name: "Post-restore",
-          openingBalance: 1,
-          openingDate: "2026-04-25",
+          anchorBalance: 1,
+          anchorDate: "2026-04-25",
         });
         const finalAccs = await live.accounts.findAll();
         expect(finalAccs.map((a) => a.id)).toContain(post.id);
@@ -3153,8 +3153,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const liveAcc = await live.accounts.create({
           kind: "Girokonto",
           name: "Untouched",
-          openingBalance: 999000,
-          openingDate: "2026-04-01",
+          anchorBalance: 999000,
+          anchorDate: "2026-04-01",
         });
 
         // Build a corrupt source file: a real SQLite DB whose B-tree pages
@@ -3164,8 +3164,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         await seed.accounts.create({
           kind: "Tagesgeld",
           name: "Seed",
-          openingBalance: 1,
-          openingDate: "2026-04-01",
+          anchorBalance: 1,
+          anchorDate: "2026-04-01",
         });
         await seed.close();
         const buf = fs.readFileSync(corruptPath);
@@ -3204,8 +3204,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         const liveAcc = await live.accounts.create({
           kind: "Girokonto",
           name: "Untouched",
-          openingBalance: 999000,
-          openingDate: "2026-04-01",
+          anchorBalance: 999000,
+          anchorDate: "2026-04-01",
         });
 
         // Build a source whose user_version is far ahead of the latest

@@ -54,8 +54,8 @@ async function createAccount(overrides: Record<string, unknown> = {}) {
     .send({
       kind: "Girokonto",
       name: "Main",
-      openingBalance: 100000,
-      openingDate: "2025-01-01",
+      anchorBalance: 100000,
+      anchorDate: "2025-01-01",
       ...overrides,
     });
   return res.body as { id: string };
@@ -153,7 +153,7 @@ describe("GET /projection/history", () => {
   });
 
   it("reports totalLiquid from the account's actual balance", async () => {
-    const giro = await createAccount({ openingBalance: 100000 });
+    const giro = await createAccount({ anchorBalance: 100000 });
     await importStatement(giro.id, [{ date: "2026-03-15", amount: -1000 }]);
 
     const res = await request(app).get("/projection/history");

@@ -14,8 +14,8 @@ const giro: AccountWithBalance = {
   id: "g1",
   kind: "Girokonto",
   name: "Main",
-  openingBalance: 0,
-  openingDate: "2026-01-01",
+  anchorBalance: 0,
+  anchorDate: "2026-01-01",
   balance: 0,
 };
 
@@ -23,8 +23,8 @@ const mortgage: AccountWithBalance = {
   id: "m1",
   kind: "Mortgage",
   name: "Mortgage",
-  openingBalance: 900000,
-  openingDate: "2026-01-01",
+  anchorBalance: 900000,
+  anchorDate: "2026-01-01",
   balance: 900000,
 };
 

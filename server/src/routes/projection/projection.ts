@@ -31,8 +31,8 @@ router.get("/", async (req, res) => {
   const accountEntries = accounts.map((a) => ({
     id: a.id,
     kind: a.kind,
-    openingBalance: a.openingBalance,
-    openingDate: a.openingDate,
+    anchorBalance: a.anchorBalance,
+    anchorDate: a.anchorDate,
     ...(a.linkedAccountId != null && { linkedAccountId: a.linkedAccountId }),
     ...(a.settlementDay != null && { settlementDay: a.settlementDay }),
     ...(a.linkedSince != null && { linkedSince: a.linkedSince }),
@@ -106,8 +106,8 @@ router.get("/history", async (req, res) => {
   const accountEntries = accounts.map((a) => ({
     id: a.id,
     kind: a.kind,
-    openingBalance: a.openingBalance,
-    openingDate: a.openingDate,
+    anchorBalance: a.anchorBalance,
+    anchorDate: a.anchorDate,
     ...(a.linkedAccountId != null && { linkedAccountId: a.linkedAccountId }),
     ...(a.settlementDay != null && { settlementDay: a.settlementDay }),
     ...(a.linkedSince != null && { linkedSince: a.linkedSince }),

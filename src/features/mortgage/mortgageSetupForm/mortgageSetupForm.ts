@@ -15,8 +15,8 @@ export interface RepaymentPayload {
 
 export interface MortgageSetupPayload {
   name: string;
-  openingBalance: number;
-  openingDate: string;
+  anchorBalance: number;
+  anchorDate: string;
   originalPrincipal: number;
   startDate: string;
   termYears: number;
@@ -141,8 +141,8 @@ export function validate(
 
   const payload: MortgageSetupPayload = {
     name,
-    openingBalance: restschuld,
-    openingDate: values.asOf,
+    anchorBalance: restschuld,
+    anchorDate: values.asOf,
     originalPrincipal: principal,
     startDate: values.startDate,
     termYears,
