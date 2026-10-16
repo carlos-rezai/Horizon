@@ -1,7 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
-import { projectBalances } from "./projection.js";
+import { projectBalances, toProjectionAccountEntry } from "./projection.js";
+import type { Account } from "../../storage/types.js";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
 
 let app: Express;
@@ -21,6 +22,56 @@ afterAll(async () => {
 
 afterEach(async () => {
   await reset();
+});
+
+// ---------------------------------------------------------------------------
+// toProjectionAccountEntry
+// ---------------------------------------------------------------------------
+
+describe("toProjectionAccountEntry", () => {
+  const girokonto: Account = {
+    id: "giro",
+    kind: "Girokonto",
+    name: "Main",
+    anchorBalance: 100000,
+    anchorDate: "2026-10-16",
+    icon: "Wallet",
+    color: "#adc6ff",
+    linkedAccountId: null,
+    settlementDay: null,
+    linkedSince: null,
+    showInTrajectory: true,
+  };
+
+  it("carries the id, kind and both anchor fields, and omits null settlement fields", () => {
+    expect(toProjectionAccountEntry(girokonto)).toEqual({
+      id: "giro",
+      kind: "Girokonto",
+      anchorBalance: 100000,
+      anchorDate: "2026-10-16",
+    });
+  });
+
+  it("carries the settlement fields when they are set", () => {
+    const creditCard: Account = {
+      ...girokonto,
+      id: "cc",
+      kind: "CreditCard",
+      linkedAccountId: "giro",
+      settlementDay: 15,
+      linkedSince: "2026-01-01",
+    };
+
+    expect(toProjectionAccountEntry(creditCard)).toEqual({
+      id: "cc",
+      kind: "CreditCard",
+      anchorBalance: 100000,
+      anchorDate: "2026-10-16",
+      linkedAccountId: "giro",
+      settlementDay: 15,
+      linkedSince: "2026-01-01",
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

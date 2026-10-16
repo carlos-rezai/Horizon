@@ -1,4 +1,4 @@
-import type { AccountKind } from "../../storage/types.js";
+import type { Account, AccountKind } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
 import { daysInMonth, endOfMonth } from "../date/date.js";
@@ -11,6 +11,28 @@ export interface ProjectionAccountEntry {
   linkedAccountId?: string;
   settlementDay?: number;
   linkedSince?: string;
+}
+
+/**
+ * A stored Account as the engine's account entry: the id, kind and both
+ * anchor fields, plus the settlement link fields only when they are set.
+ */
+export function toProjectionAccountEntry(
+  account: Account
+): ProjectionAccountEntry {
+  return {
+    id: account.id,
+    kind: account.kind,
+    anchorBalance: account.anchorBalance,
+    anchorDate: account.anchorDate,
+    ...(account.linkedAccountId != null && {
+      linkedAccountId: account.linkedAccountId,
+    }),
+    ...(account.settlementDay != null && {
+      settlementDay: account.settlementDay,
+    }),
+    ...(account.linkedSince != null && { linkedSince: account.linkedSince }),
+  };
 }
 
 export interface ProjectionTxEntry {
