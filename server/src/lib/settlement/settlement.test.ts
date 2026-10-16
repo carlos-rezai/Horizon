@@ -212,6 +212,87 @@ describe("computeMissingSettlements", () => {
   });
 });
 
+describe("computeMissingSettlements from the Balance Anchor", () => {
+  it("does not settle past statements already absorbed into the anchor", () => {
+    // Anchored today-of-creation (Mar 31) at 0, then Jan–Mar imported.
+    // balanceAt(Mar 31) = 0 → no settlement for March.
+    // balanceAt(Apr 30) = -10000 (only the April purchase) → 10000 on May 15.
+    const accounts = [
+      makeGiro("giro1"),
+      makeCc({
+        id: "cc1",
+        anchorBalance: 0,
+        anchorDate: "2026-03-31",
+        linkedSince: "2026-03-31",
+      }),
+    ];
+    const transactions = [
+      makeTx({
+        id: "p1",
+        accountId: "cc1",
+        date: "2026-01-12",
+        amount: -12000,
+      }),
+      makeTx({ id: "p2", accountId: "cc1", date: "2026-02-08", amount: -8000 }),
+      makeTx({
+        id: "p3",
+        accountId: "cc1",
+        date: "2026-03-20",
+        amount: -10000,
+      }),
+      makeTx({
+        id: "a1",
+        accountId: "cc1",
+        date: "2026-04-10",
+        amount: -10000,
+      }),
+    ];
+
+    const result = computeMissingSettlements(
+      accounts,
+      transactions,
+      "2026-04-30"
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].amount).toBe(10000);
+    expect(result[0].date).toBe("2026-05-15");
+  });
+
+  it("closing balance equals balanceAt(end of month) for a mid-month anchor", () => {
+    // Anchor -5000 on Mar 15 already includes the Mar 10 purchase.
+    // balanceAt(Mar 31) = -5000 + (-3000) = -8000 → 8000 on Apr 15.
+    const accounts = [
+      makeGiro("giro1"),
+      makeCc({
+        id: "cc1",
+        anchorBalance: -5000,
+        anchorDate: "2026-03-15",
+        linkedSince: "2026-03-15",
+      }),
+    ];
+    const transactions = [
+      makeTx({
+        id: "p1",
+        accountId: "cc1",
+        date: "2026-03-10",
+        amount: -20000,
+      }),
+      makeTx({ id: "a1", accountId: "cc1", date: "2026-03-20", amount: -3000 }),
+    ];
+
+    const result = computeMissingSettlements(
+      accounts,
+      transactions,
+      "2026-03-31"
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].amount).toBe(8000);
+    expect(result[0].date).toBe("2026-04-15");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // detectInsufficientFunds
 // ---------------------------------------------------------------------------
