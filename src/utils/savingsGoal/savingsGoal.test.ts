@@ -332,3 +332,83 @@ describe("computeSavingsGoal — empty history", () => {
     expect(goal.perAccount[0].cumulativeTarget).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unknown months (Balance Anchor, issue #235). A Tracked Account is Unknown —
+// `null` — in every month before its Known Since. A month in which any Tracked
+// Account is Unknown, in that month or the month before, is neither met nor
+// missed: its strip tile stays Upcoming, and the streak and the Recent Savings
+// Pace skip it.
+// ---------------------------------------------------------------------------
+
+/** A HistoryPoint whose per-account balances may be Unknown (`null`). */
+function ptU(
+  month: string,
+  accounts: Record<string, number | null>
+): HistoryPoint {
+  return {
+    month,
+    totalLiquid: null,
+    restschuld: null,
+    netCashflow: 0,
+    accounts,
+  };
+}
+
+describe("computeSavingsGoal — Unknown months", () => {
+  // Two tracked accounts, €50/mo each. a1 is known throughout; a2 is Unknown
+  // in Jan and Feb (Known Since March) and then gains €100 a month.
+  const config = manualConfig({ a1: 5000, a2: 5000 });
+  const trackableIds = ["a1", "a2"];
+  const points: HistoryPoint[] = [
+    ptU("2026-01", { a1: 0, a2: null }),
+    ptU("2026-02", { a1: 10000, a2: null }),
+    ptU("2026-03", { a1: 20000, a2: 50000 }),
+    ptU("2026-04", { a1: 30000, a2: 60000 }),
+    ptU("2026-05", { a1: 40000, a2: 70000 }),
+  ];
+
+  it("neither meets nor misses a month in which a Tracked Account is Unknown", () => {
+    const goal = computeSavingsGoal(config, points, trackableIds);
+
+    // February: a2 has no balance that month.
+    expect(goal.streak.yearTicks[1].status).toBe("upcoming");
+  });
+
+  it("neither meets nor misses a month whose prior month has a Tracked Account Unknown", () => {
+    const goal = computeSavingsGoal(config, points, trackableIds);
+
+    // March: a2 is known, but February — the month it is compared against — is not.
+    expect(goal.streak.yearTicks[2].status).toBe("upcoming");
+    expect(goal.streak.yearTicks[3].status).toBe("met");
+    expect(goal.streak.yearTicks[4].status).toBe("met");
+  });
+
+  it("skips Unknown months when counting the current and best streak", () => {
+    const goal = computeSavingsGoal(config, points, trackableIds);
+
+    // Only April and May resolve — never a gain read off a phantom €0.
+    expect(goal.streak.current).toBe(2);
+    expect(goal.streak.best).toBe(2);
+  });
+});
+
+describe("milestoneSplit — Unknown months", () => {
+  it("skips Unknown months when measuring the Recent Savings Pace", () => {
+    // Both accounts truly save €100 a month. a2 is Unknown in Jan and Feb, then
+    // known at €10,000 — that jump from Unknown is not a gain.
+    const points: HistoryPoint[] = [
+      ptU("2026-01", { a1: 0, a2: null }),
+      ptU("2026-02", { a1: 10000, a2: null }),
+      ptU("2026-03", { a1: 20000, a2: 1000000 }),
+      ptU("2026-04", { a1: 30000, a2: 1010000 }),
+      ptU("2026-05", { a1: 40000, a2: 1020000 }),
+    ];
+
+    // €1,200 over the 6 months from May to November → €200 a month, split
+    // evenly between two accounts with the same pace.
+    const split = milestoneSplit(120000, "2026-11", points, ["a1", "a2"]);
+
+    expect(split).toEqual({ a1: 10000, a2: 10000 });
+  });
+});

@@ -178,3 +178,35 @@ describe("GET /projection/history", () => {
     expect(march.netCashflow).toBe(-1000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// GET /projection/history — Unknown months (Balance Anchor, issue #235)
+// ---------------------------------------------------------------------------
+
+describe("GET /projection/history — Unknown before Known Since", () => {
+  it("returns null for an account in the months before its Known Since", async () => {
+    const giro = await createAccount({ anchorDate: "2025-01-01" });
+    // Anchored in May with no transactions: Known Since is 2026-05.
+    const tagesgeld = await createAccount({
+      kind: "Tagesgeld",
+      name: "Savings",
+      anchorBalance: 500000,
+      anchorDate: "2026-05-10",
+    });
+    await importStatement(giro.id, [{ date: "2026-03-15", amount: -1000 }]);
+
+    const res = await request(app).get("/projection/history");
+    const points = res.body as {
+      month: string;
+      accounts: Record<string, number | null>;
+    }[];
+
+    const march = points.find((p) => p.month === "2026-03")!;
+    const april = points.find((p) => p.month === "2026-04")!;
+    const may = points.find((p) => p.month === "2026-05")!;
+
+    expect(march.accounts).toHaveProperty(tagesgeld.id, null);
+    expect(april.accounts).toHaveProperty(tagesgeld.id, null);
+    expect(may.accounts[tagesgeld.id]).toBe(500000);
+  });
+});

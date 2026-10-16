@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import HistoryChart, { HistoryChartTooltip } from "./HistoryChart";
@@ -8,9 +8,58 @@ import { formatBalance } from "../../../utils/format/format";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
 import type { AccountWithBalance } from "../../../types/account";
 
+// The chart cannot lay out in jsdom, so the recharts boundary is stubbed: the
+// container passes its children through, ComposedChart records the data it was
+// handed, each Line records its props, and Tooltip records its content renderer
+// so a hover can be simulated. Everything outside recharts renders for real.
+const chart = vi.hoisted(() => ({
+  data: [] as Record<string, unknown>[],
+  lines: [] as Record<string, unknown>[],
+  tooltipContent: null as ((props: unknown) => React.ReactNode) | null,
+}));
+vi.mock("recharts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("recharts")>();
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+      <>{children}</>
+    ),
+    ComposedChart: ({
+      data,
+      children,
+    }: {
+      data: Record<string, unknown>[];
+      children: React.ReactNode;
+    }) => {
+      chart.data = data;
+      chart.lines = [];
+      return <>{children}</>;
+    },
+    Line: (props: Record<string, unknown>) => {
+      chart.lines.push(props);
+      return null;
+    },
+    Tooltip: ({
+      content,
+    }: {
+      content: (props: unknown) => React.ReactNode;
+    }) => {
+      chart.tooltipContent = content;
+      return null;
+    },
+    CartesianGrid: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+    ReferenceLine: () => null,
+  };
+});
+
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  chart.data = [];
+  chart.lines = [];
+  chart.tooltipContent = null;
 });
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -500,5 +549,72 @@ describe("HistoryChartTooltip", () => {
     expect(
       screen.getByText((_, el) => el?.textContent === formatBalance(120000))
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unknown months (Balance Anchor, issue #235) — a month before Known Since
+// carries `null`, and the tooltip names that series' first known month instead
+// of showing €0.
+// ---------------------------------------------------------------------------
+
+describe("HistoryChart — Unknown months", () => {
+  // The Main account is Known Since March 2026, the mortgage since February.
+  const unknownPoints: HistoryPoint[] = [
+    {
+      month: "2026-01",
+      totalLiquid: null,
+      restschuld: null,
+      netCashflow: 0,
+      accounts: { g1: null, m1: null },
+    },
+    {
+      month: "2026-02",
+      totalLiquid: null,
+      restschuld: 20000000,
+      netCashflow: 0,
+      accounts: { g1: null, m1: 20000000 },
+    },
+    {
+      month: "2026-03",
+      totalLiquid: 100000,
+      restschuld: 19900000,
+      netCashflow: 5000,
+      accounts: { g1: 100000, m1: 19900000 },
+    },
+  ];
+
+  function renderUnknown() {
+    return renderWithTheme(
+      <HistoryChart
+        points={unknownPoints}
+        accounts={[giro, mortgage]}
+        isLoading={false}
+      />
+    );
+  }
+
+  function hover(index: number) {
+    const content = chart.tooltipContent;
+    if (!content) throw new Error("the chart rendered no Tooltip");
+    return renderWithTheme(
+      <>
+        {content({ active: true, payload: [{ payload: chart.data[index] }] })}
+      </>
+    );
+  }
+
+  it('reads "No data before {Mon YYYY}" in the tooltip for an Unknown account', () => {
+    renderUnknown();
+    hover(0);
+
+    expect(screen.getByText("No data before Mar 2026")).toBeInTheDocument();
+  });
+
+  it('reads "No data before {Mon YYYY}" for an Unknown Restschuld, from the mortgage\'s own first known month', () => {
+    renderUnknown();
+    hover(0);
+
+    expect(screen.getByText("No data before Feb 2026")).toBeInTheDocument();
   });
 });

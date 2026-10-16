@@ -126,3 +126,90 @@ describe("deriveHistory - netCashflow", () => {
     expect(points[0].netCashflow).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unknown months (Balance Anchor, issue #235)
+// ---------------------------------------------------------------------------
+
+/**
+ * A snapshot in which only the listed accounts carry an `actual` — the engine
+ * omits `actual` for an account in a month before its Known Since.
+ */
+function snapshotKnowing(month: string, known: string[]): MonthlySnapshot {
+  const all: Record<string, { projected: number; actual: number }> = {
+    g1: { projected: 999999, actual: 50000 },
+    t1: { projected: 888888, actual: 30000 },
+    m1: { projected: 200000, actual: 300000 },
+    i1: { projected: 777777, actual: 10000 },
+  };
+  const snapAccounts: MonthlySnapshot["accounts"] = {};
+  for (const [id, values] of Object.entries(all)) {
+    snapAccounts[id] = known.includes(id)
+      ? values
+      : { projected: values.projected };
+  }
+  return { month, accounts: snapAccounts, netCashflow: 0, totalLiquid: 0 };
+}
+
+describe("deriveHistory - Unknown months", () => {
+  it("carries an explicit null for an account before its Known Since, never 0 or an omitted key", () => {
+    const points = deriveHistory(
+      [snapshotKnowing("2025-01", ["g1", "t1", "m1"])],
+      [],
+      accounts
+    );
+
+    expect(Object.keys(points[0].accounts)).toContain("i1");
+    expect(points[0].accounts.i1).toBeNull();
+    expect(points[0].accounts.g1).toBe(50000);
+  });
+
+  it("sums a partial Total Liquid from the liquid accounts known that month", () => {
+    const points = deriveHistory(
+      [snapshotKnowing("2025-01", ["g1", "m1", "i1"])],
+      [],
+      accounts
+    );
+
+    // Tagesgeld is Unknown: Total Liquid is the Girokonto alone, and the
+    // Tagesgeld stays null rather than counting as a 0 balance.
+    expect(points[0].accounts.t1).toBeNull();
+    expect(points[0].totalLiquid).toBe(50000);
+  });
+
+  it("is null for Total Liquid when no liquid account is known that month", () => {
+    const points = deriveHistory(
+      [snapshotKnowing("2025-01", ["m1", "i1"])],
+      [],
+      accounts
+    );
+
+    expect(points[0].totalLiquid).toBeNull();
+  });
+
+  it("is null for the Restschuld before the Mortgage's Known Since", () => {
+    const points = deriveHistory(
+      [snapshotKnowing("2025-01", ["g1", "t1", "i1"])],
+      [],
+      accounts
+    );
+
+    expect(points[0].restschuld).toBeNull();
+  });
+
+  it("reads null everywhere in an all-Unknown month, while netCashflow stays a number", () => {
+    const points = deriveHistory(
+      [snapshotKnowing("2025-01", [])],
+      [],
+      accounts
+    );
+
+    expect(points[0]).toEqual({
+      month: "2025-01",
+      totalLiquid: null,
+      restschuld: null,
+      netCashflow: 0,
+      accounts: { g1: null, t1: null, m1: null, i1: null },
+    });
+  });
+});

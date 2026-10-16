@@ -265,3 +265,74 @@ describe("YearArchive — month deep-links", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Unknown months (Balance Anchor, issue #235) — a month before Known Since
+// carries `null` and reads "—", never "€0".
+// ---------------------------------------------------------------------------
+
+describe("YearArchive — Unknown months", () => {
+  // 2023 is wholly before Known Since; 2024 becomes known in March.
+  const UNKNOWN_POINTS: HistoryPoint[] = [
+    {
+      month: "2023-11",
+      totalLiquid: null,
+      restschuld: null,
+      netCashflow: 0,
+      accounts: { g1: null },
+    },
+    {
+      month: "2023-12",
+      totalLiquid: null,
+      restschuld: null,
+      netCashflow: 0,
+      accounts: { g1: null },
+    },
+    {
+      month: "2024-01",
+      totalLiquid: null,
+      restschuld: null,
+      netCashflow: 0,
+      accounts: { g1: null },
+    },
+    {
+      month: "2024-03",
+      totalLiquid: 355000,
+      restschuld: 27000000,
+      netCashflow: 9000,
+      accounts: { g1: 355000 },
+    },
+  ];
+
+  function renderUnknown() {
+    return renderArchive({
+      points: UNKNOWN_POINTS,
+      years: [2023, 2024],
+      statementCounts: { 2023: 1, 2024: 1 },
+    });
+  }
+
+  it("renders — for a month row's Unknown Total Liquid and Restschuld, never €0", () => {
+    renderUnknown();
+
+    const janRow = screen.getByRole("link", { name: /Jan/i });
+    expect(within(janRow).getAllByText("—")).toHaveLength(2);
+    expect(
+      within(janRow).queryByText(
+        (_, el) => el?.textContent === euro(0) && el.children.length === 0
+      )
+    ).toBeNull();
+  });
+
+  it("renders — in the year row of a year with no known month, never €0", () => {
+    renderUnknown();
+
+    const yearRow = screen.getByRole("button", { name: /2023/ });
+    expect(within(yearRow).getAllByText("—")).toHaveLength(2);
+    expect(
+      within(yearRow).queryByText(
+        (_, el) => el?.textContent === euro(0) && el.children.length === 0
+      )
+    ).toBeNull();
+  });
+});
