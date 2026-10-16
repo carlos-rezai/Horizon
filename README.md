@@ -278,7 +278,7 @@ The generated installer will be signed with your local certificate and will inst
 | Import Review Repair                      | ✅ Complete |
 | Performance + UX Polish                   | ✅ Complete |
 | Quick Start Guide                         | ✅ Complete |
-| Live-Use Repair — Round 1                 | 📋 Planned  |
+| Live-Use Repair — Round 1                 | ✅ Complete |
 | Balance Anchor                            | 📋 Planned  |
 | Financial History                         | 📋 Planned  |
 | Month Cash Flow                           | 📋 Planned  |
