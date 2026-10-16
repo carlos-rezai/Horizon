@@ -4,9 +4,8 @@ import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import {
-  deriveSTMonths,
   deriveYearSummaries,
-  effectiveSTMonths,
+  stMonthsFor,
 } from "../../../utils/projection/projection";
 import { formatBalance } from "../../../utils/format/format";
 import SectionHead from "../../../components/SectionHead/SectionHead";
@@ -47,19 +46,7 @@ export default function PlanSummary({
     .map((a) => a.id);
   const hasMortgage = mortgageIds.length > 0;
 
-  const stMonths =
-    snapshots.length > 0
-      ? effectiveSTMonths(
-          deriveSTMonths(
-            recurringTransactions,
-            accounts,
-            snapshots[0].month,
-            snapshots.length
-          ),
-          snapshots,
-          mortgageIds
-        )
-      : new Map<string, number>();
+  const stMonths = stMonthsFor(recurringTransactions, accounts, snapshots);
 
   const allRows = deriveYearSummaries(snapshots, mortgageIds, stMonths);
   const rows = maxYears !== undefined ? allRows.slice(0, maxYears) : allRows;
