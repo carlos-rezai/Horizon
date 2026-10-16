@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { deriveHistory } from "./history.js";
 import type { MonthlySnapshot } from "./projection.js";
 import type { AccountKind } from "../../storage/types.js";
+import { computeYearComparison } from "../yearComparison/yearComparison.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -211,6 +212,7 @@ describe("deriveHistory - Unknown months", () => {
       netCashflow: 0,
       restschuldBridge: null,
       monthlySavings: null,
+      monthlySpending: null,
       accounts: { g1: null, t1: null, m1: null, i1: null },
     });
   });
@@ -454,5 +456,160 @@ describe("deriveHistory - monthlySavings", () => {
     );
 
     expect(points[1].monthlySavings).toBe(7000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Monthly Spending (Financial History, issue #244) — the magnitude of the
+// month's Variable Spending outflows on the spending accounts, through the
+// shared Variable Spending lib behind Month Year-Comparison. Null when no
+// spending account is known that month; a real 0 in a known month with none.
+// ---------------------------------------------------------------------------
+
+describe("deriveHistory - monthlySpending", () => {
+  const base = { g1: 100000, t1: 50000, i1: 20000, m1: 30000000 };
+
+  /**
+   * One fixture both rules read: Variable Spending on the Girokonto and the
+   * Tagesgeld across three months, plus movements neither rule may count — a
+   * transfer leg pair, a credit-card auto-settlement, and transactions on the
+   * Mortgage and the Investment account.
+   */
+  const shared = [
+    { accountId: "g1", date: "2025-01-05", amount: -4000, category: "Food" },
+    {
+      accountId: "g1",
+      date: "2025-01-20",
+      amount: -1500,
+      category: "Transport",
+    },
+    { accountId: "t1", date: "2025-01-22", amount: -700, category: "Food" },
+    {
+      accountId: "g1",
+      date: "2025-01-28",
+      amount: -20000,
+      category: "Transfer",
+      transferId: "tr1",
+    },
+    {
+      accountId: "t1",
+      date: "2025-01-28",
+      amount: 20000,
+      category: "Transfer",
+      transferId: "tr1",
+    },
+    {
+      accountId: "g1",
+      date: "2025-02-03",
+      amount: -2500,
+      category: "Entertainment",
+    },
+    {
+      accountId: "g1",
+      date: "2025-02-28",
+      amount: -9000,
+      category: "Settlement",
+      isAutoSettlement: true,
+    },
+    {
+      accountId: "m1",
+      date: "2025-02-15",
+      amount: -80000,
+      category: "Housing",
+    },
+    { accountId: "i1", date: "2025-02-15", amount: -5000, category: "Food" },
+    { accountId: "g1", date: "2025-03-10", amount: -3300, category: "Food" },
+    { accountId: "t1", date: "2025-03-11", amount: -1200, category: "Health" },
+  ];
+
+  const sharedSnapshots = [
+    snapshotWith("2025-01", base),
+    snapshotWith("2025-02", base),
+    snapshotWith("2025-03", base),
+  ];
+
+  it("is the magnitude of the month's Variable Spending outflows on the spending accounts", () => {
+    const points = deriveHistory(sharedSnapshots, shared, accounts);
+
+    // Jan: 4000 + 1500 + 700; the transfer legs are not spending.
+    expect(points[0].monthlySpending).toBe(6200);
+    // Feb: 2500; auto-settlement, Mortgage and Investment are excluded.
+    expect(points[1].monthlySpending).toBe(2500);
+    // Mar: 3300 + 1200
+    expect(points[2].monthlySpending).toBe(4500);
+  });
+
+  it("agrees with the Month Year-Comparison rule on the same fixture", () => {
+    const points = deriveHistory(sharedSnapshots, shared, accounts);
+
+    for (const viewedMonth of ["2025-01", "2025-02", "2025-03"]) {
+      const yearComparisonTotal = computeYearComparison(
+        shared,
+        accounts,
+        viewedMonth
+      ).reduce((sum, row) => sum + row.thisYear, 0);
+      const historyTotal = points
+        .filter((p) => p.month <= viewedMonth)
+        .reduce((sum, p) => sum + (p.monthlySpending ?? 0), 0);
+
+      expect(historyTotal).toBe(yearComparisonTotal);
+    }
+  });
+
+  it("is null before any spending account is known", () => {
+    // Only the Mortgage and the Investment account are known in January.
+    const noSpendingAccounts = { i1: base.i1, m1: base.m1 };
+    const points = deriveHistory(
+      [
+        snapshotWith("2025-01", noSpendingAccounts),
+        snapshotWith("2025-02", base),
+      ],
+      [],
+      accounts
+    );
+
+    expect(points[0].monthlySpending).toBeNull();
+    expect(points[1].monthlySpending).toBe(0);
+  });
+
+  it("is a number once one spending account is known that month", () => {
+    const girokontoOnly = { g1: base.g1, i1: base.i1, m1: base.m1 };
+    const transactions = [
+      { accountId: "g1", date: "2025-01-09", amount: -1800, category: "Food" },
+    ];
+    const points = deriveHistory(
+      [snapshotWith("2025-01", girokontoOnly)],
+      transactions,
+      accounts
+    );
+
+    expect(points[0].monthlySpending).toBe(1800);
+  });
+
+  it("is a real 0 in a known month with no spending", () => {
+    const transactions = [
+      {
+        accountId: "g1",
+        date: "2025-01-28",
+        amount: -20000,
+        category: "Transfer",
+        transferId: "tr1",
+      },
+      {
+        accountId: "t1",
+        date: "2025-01-28",
+        amount: 20000,
+        category: "Transfer",
+        transferId: "tr1",
+      },
+    ];
+    const points = deriveHistory(
+      [snapshotWith("2025-01", base), snapshotWith("2025-02", base)],
+      transactions,
+      accounts
+    );
+
+    expect(points[0].monthlySpending).toBe(0);
+    expect(points[1].monthlySpending).toBe(0);
   });
 });

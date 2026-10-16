@@ -298,3 +298,62 @@ describe("GET /projection/history — Paydown Bridge", () => {
     expect(points[4].restschuldBridge).toBe(points[4].restschuld);
   });
 });
+
+// ---------------------------------------------------------------------------
+// GET /projection/history — Monthly Spending (Financial History, issue #244)
+// ---------------------------------------------------------------------------
+
+describe("GET /projection/history — Monthly Spending", () => {
+  it("agrees with Month Year-Comparison for the same months", async () => {
+    const giro = await createAccount();
+    const tagesgeld = await createAccount({
+      kind: "Tagesgeld",
+      name: "Savings",
+    });
+    const imported = await importStatement(giro.id, [
+      { date: "2026-01-05", amount: -4000, category: "Food" },
+      { date: "2026-01-20", amount: -1500, category: "Transport" },
+      { date: "2026-02-03", amount: -2500, category: "Entertainment" },
+      { date: "2026-03-10", amount: -3300, category: "Food" },
+    ]);
+    expect(imported.status).toBe(201);
+    // A transfer leg is not Variable Spending on either side.
+    const transfer = await request(app).post("/transfers").send({
+      fromAccountId: giro.id,
+      toAccountId: tagesgeld.id,
+      amount: 20000,
+      date: "2026-02-10",
+      description: "Tagesgeld transfer",
+      category: "Transfer",
+    });
+    expect(transfer.status).toBe(201);
+
+    const res = await request(app).get("/projection/history");
+    const points = res.body as {
+      month: string;
+      monthlySpending: number | null;
+    }[];
+    expect(res.status).toBe(200);
+
+    const spendingIn = (month: string) =>
+      points.find((p) => p.month === month)?.monthlySpending;
+    expect(spendingIn("2026-01")).toBe(5500);
+    expect(spendingIn("2026-02")).toBe(2500);
+    expect(spendingIn("2026-03")).toBe(3300);
+
+    for (const month of ["2026-01", "2026-02", "2026-03"]) {
+      const yc = await request(app).get(
+        `/reports/year-comparison?month=${month}`
+      );
+      expect(yc.status).toBe(200);
+      const yearComparisonTotal = (
+        yc.body as { rows: { thisYear: number }[] }
+      ).rows.reduce((sum, row) => sum + row.thisYear, 0);
+      const historyTotal = points
+        .filter((p) => p.month >= "2026-01" && p.month <= month)
+        .reduce((sum, p) => sum + (p.monthlySpending ?? 0), 0);
+
+      expect(historyTotal).toBe(yearComparisonTotal);
+    }
+  });
+});

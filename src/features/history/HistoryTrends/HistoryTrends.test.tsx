@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
@@ -21,6 +21,13 @@ const chart = vi.hoisted(() => ({
   referenceLines: [] as Record<string, unknown>[],
   tooltipContent: null as ((props: unknown) => React.ReactNode) | null,
 }));
+/** Starts a fresh recording for one chart render. */
+function recordChart(data: Record<string, unknown>[]) {
+  chart.data = data;
+  chart.bars = [];
+  chart.cells = [];
+  chart.referenceLines = [];
+}
 vi.mock("recharts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("recharts")>();
   const Chart = ({
@@ -30,10 +37,7 @@ vi.mock("recharts", async (importOriginal) => {
     data: Record<string, unknown>[];
     children: React.ReactNode;
   }) => {
-    chart.data = data;
-    chart.bars = [];
-    chart.cells = [];
-    chart.referenceLines = [];
+    recordChart(data);
     return <>{children}</>;
   };
   return {
@@ -82,7 +86,11 @@ function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
 }
 
-function point(month: string, monthlySavings: number | null): HistoryPoint {
+function point(
+  month: string,
+  monthlySavings: number | null,
+  monthlySpending: number | null = null
+): HistoryPoint {
   return {
     month,
     totalLiquid: 100000,
@@ -90,6 +98,7 @@ function point(month: string, monthlySavings: number | null): HistoryPoint {
     restschuldBridge: null,
     netCashflow: 0,
     monthlySavings,
+    monthlySpending,
     accounts: { g1: 100000 },
   };
 }
@@ -197,5 +206,115 @@ describe("HistoryTrends — not clickable", () => {
     expect(chart.bars.length).toBeGreaterThan(0);
     for (const bar of chart.bars) expect(bar.onClick).toBeUndefined();
     for (const cell of chart.cells) expect(cell.onClick).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spent trend (Financial History, issue #244): a Saved / Spent segmented
+// control; Spent draws each month's Monthly Spending as single-series bars
+// with their own trailing average, and an Unknown month as no bar.
+// ---------------------------------------------------------------------------
+
+// Spending is Unknown in January and February and known from March, so its
+// first known month differs from Monthly Savings' (February).
+const SPENT_POINTS: HistoryPoint[] = [
+  point("2026-01", null, null),
+  point("2026-02", 10000, null),
+  point("2026-03", -2000, 30000),
+  point("2026-04", 4000, 0),
+  point("2026-05", 6000, 60000),
+];
+
+function showSpent() {
+  fireEvent.click(screen.getByRole("button", { name: "Spent" }));
+}
+
+/** The values the (single) bar draws for every row, read through its key. */
+function barValues(): unknown[] {
+  expect(chart.bars).toHaveLength(1);
+  const dataKey = chart.bars[0].dataKey as string;
+  return chart.data.map((row) => row[dataKey]);
+}
+
+describe("HistoryTrends — Saved / Spent switch", () => {
+  it("opens on Saved", () => {
+    renderTrends(SPENT_POINTS);
+
+    expect(screen.getByRole("button", { name: "Saved" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Spent" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(barValues()).toEqual([null, 10000, -2000, 4000, 6000]);
+  });
+
+  it("switches the bars to Monthly Spending when Spent is chosen", () => {
+    renderTrends(SPENT_POINTS);
+    showSpent();
+
+    expect(screen.getByRole("button", { name: "Spent" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Saved" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(barValues()).toEqual([null, null, 30000, 0, 60000]);
+  });
+
+  it("switches back to Monthly Savings when Saved is chosen again", () => {
+    renderTrends(SPENT_POINTS);
+    showSpent();
+    fireEvent.click(screen.getByRole("button", { name: "Saved" }));
+
+    expect(barValues()).toEqual([null, 10000, -2000, 4000, 6000]);
+  });
+});
+
+describe("HistoryTrends — Spent bars", () => {
+  it("draws Spent as a single series: one bar, one fill for every month", () => {
+    renderTrends(SPENT_POINTS);
+    showSpent();
+
+    expect(chart.bars).toHaveLength(1);
+    const fills = new Set(chart.cells.map((c) => c.fill));
+    expect(fills.size).toBeLessThanOrEqual(1);
+    expect(fills.has(theme.colors.error)).toBe(false);
+  });
+
+  it("draws the Spent bars' own trailing-12-month average, not the Saved one", () => {
+    renderTrends(SPENT_POINTS);
+    showSpent();
+
+    // (30000 + 0 + 60000) / 3 known spending months; the real 0 counts.
+    const ys = chart.referenceLines.map((l) => l.y);
+    expect(ys).toContain(30000);
+    // The Saved average (10000 - 2000 + 4000 + 6000) / 4 is not drawn.
+    expect(ys).not.toContain(4500);
+  });
+});
+
+describe("HistoryTrends — Spent Unknown months", () => {
+  it("draws no bar for a null spending month: its value stays null, never 0", () => {
+    renderTrends(SPENT_POINTS);
+    showSpent();
+
+    const values = barValues();
+    expect(values[0]).toBeNull();
+    expect(values[1]).toBeNull();
+    // A known month with no spending is a real 0, not Unknown.
+    expect(values[3]).toBe(0);
+  });
+
+  it('reads "No data before {Mon YYYY}" from the first known spending month', () => {
+    renderTrends(SPENT_POINTS);
+    showSpent();
+    hover(1);
+
+    expect(screen.getByText("No data before Mar 2026")).toBeInTheDocument();
   });
 });
