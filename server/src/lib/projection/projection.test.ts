@@ -1560,3 +1560,105 @@ describe("GET /projection - CreditCard settlement", () => {
     expect((afterRes.body as unknown[]).length).toBe(countBefore);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function: actual from the Balance Anchor
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - actual from the Balance Anchor", () => {
+  // Girokonto anchored mid-June at 1,000 €; imported history reaches back to
+  // 10 March, so Known Since is 2026-03-10 and March is the first known month.
+  const accounts = [
+    {
+      id: "giro",
+      kind: "Girokonto" as const,
+      anchorBalance: 100000,
+      anchorDate: "2026-06-15",
+    },
+  ];
+  const giroTx = [
+    { date: "2026-03-10", amount: -20000 },
+    { date: "2026-04-05", amount: 35000 },
+    { date: "2026-05-20", amount: 50000 },
+    { date: "2026-06-15", amount: -3000 },
+    { date: "2026-06-20", amount: -10000 },
+    { date: "2026-08-01", amount: 40000 },
+  ];
+  const transactions = giroTx.map((t) => ({ accountId: "giro", ...t }));
+
+  // Jan 2026 through Dec 2026, with October as the current month.
+  const snapshots = projectBalances(
+    accounts,
+    transactions,
+    [],
+    "2026-01",
+    "2026-10",
+    12
+  );
+  const byMonth = new Map(snapshots.map((s) => [s.month, s]));
+
+  it("omits actual for months before Known Since", () => {
+    expect(byMonth.get("2026-01")?.accounts["giro"]).not.toHaveProperty(
+      "actual"
+    );
+    expect(byMonth.get("2026-02")?.accounts["giro"]).not.toHaveProperty(
+      "actual"
+    );
+  });
+
+  it("matches balanceAt(end of month) for every past and current month from Known Since on", () => {
+    // balanceAt(anchor, giroTx, end of month), worked by hand: before the
+    // anchor, undo what lies between the month end and the anchor; after it,
+    // add what lies between the anchor and the month end.
+    const expected: Record<string, number> = {
+      "2026-03": 18000,
+      "2026-04": 53000,
+      "2026-05": 103000,
+      "2026-06": 90000,
+      "2026-07": 90000,
+      "2026-08": 130000,
+      "2026-09": 130000,
+      "2026-10": 130000,
+    };
+    for (const [month, balance] of Object.entries(expected)) {
+      expect({
+        month,
+        actual: byMonth.get(month)?.accounts["giro"].actual,
+      }).toEqual({ month, actual: balance });
+    }
+  });
+
+  it("derives pre-anchor months backwards from the anchor, not forwards from it", () => {
+    // March: 100000 - (35000 + 50000 - 3000) = 18000
+    expect(byMonth.get("2026-03")?.accounts["giro"].actual).toBe(18000);
+    // June: the anchor-day -3000 is absorbed; only the -10000 is added
+    expect(byMonth.get("2026-06")?.accounts["giro"].actual).toBe(90000);
+    // October: everything after the anchor
+    expect(byMonth.get("2026-10")?.accounts["giro"].actual).toBe(130000);
+  });
+
+  it("starts actual in the anchor month when the anchor is older than every transaction", () => {
+    const anchoredFirst = [
+      {
+        id: "tg",
+        kind: "Tagesgeld" as const,
+        anchorBalance: 500000,
+        anchorDate: "2026-05-20",
+      },
+    ];
+    const tgTx = [{ date: "2026-05-25", amount: 2500 }];
+    const result = projectBalances(
+      anchoredFirst,
+      tgTx.map((t) => ({ accountId: "tg", ...t })),
+      [],
+      "2026-03",
+      "2026-06",
+      4
+    );
+
+    expect(result[0].accounts["tg"]).not.toHaveProperty("actual");
+    expect(result[1].accounts["tg"]).not.toHaveProperty("actual");
+    expect(result[2].accounts["tg"].actual).toBe(502500);
+    expect(result[3].accounts["tg"].actual).toBe(502500);
+  });
+});

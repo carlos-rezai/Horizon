@@ -377,3 +377,68 @@ describe("migrate (SQLite)", () => {
     });
   });
 });
+
+describe("migration 017 — Balance Anchor rename", () => {
+  const MIGRATIONS_DIR = new URL("./migrations/", import.meta.url);
+
+  /** Apply migrations 001–016 only, leaving the DB as it was before 017. */
+  function migrateTo016(db: Database.Database): void {
+    const files = fs
+      .readdirSync(MIGRATIONS_DIR)
+      .filter((f) => /^\d+_.*\.sql$/.test(f))
+      .filter((f) => Number(f.match(/^(\d+)_/)?.[1]) <= 16)
+      .sort();
+    for (const f of files) {
+      db.exec(fs.readFileSync(new URL(f, MIGRATIONS_DIR), "utf8"));
+    }
+    db.pragma("user_version = 16");
+  }
+
+  it("renames opening_balance / opening_date to anchor_balance / anchor_date", async () => {
+    const db = new Database(":memory:");
+
+    await migrate(db);
+
+    const cols = (
+      db.prepare(`PRAGMA table_info(accounts)`).all() as Array<{
+        name: string;
+      }>
+    ).map((c) => c.name);
+
+    expect(cols).toContain("anchor_balance");
+    expect(cols).toContain("anchor_date");
+    expect(cols).not.toContain("opening_balance");
+    expect(cols).not.toContain("opening_date");
+    expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
+
+    db.close();
+  });
+
+  it("keeps every existing row's stored values on upgrade from 016", async () => {
+    const db = new Database(":memory:");
+    migrateTo016(db);
+
+    const insert = db.prepare(
+      `INSERT INTO accounts (id, kind, name, opening_balance, opening_date)
+       VALUES (?, ?, ?, ?, ?)`
+    );
+    insert.run("giro", "Girokonto", "Main", 537685, "2024-03-01");
+    insert.run("haus", "Mortgage", "Haus", 20000000, "2023-10-16");
+
+    await migrate(db);
+
+    const rows = db
+      .prepare(
+        `SELECT id, anchor_balance, anchor_date FROM accounts ORDER BY id`
+      )
+      .all();
+
+    expect(rows).toEqual([
+      { id: "giro", anchor_balance: 537685, anchor_date: "2024-03-01" },
+      { id: "haus", anchor_balance: 20000000, anchor_date: "2023-10-16" },
+    ]);
+    expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
+
+    db.close();
+  });
+});

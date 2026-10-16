@@ -361,3 +361,24 @@ describe("POST /mortgages — colour", () => {
     expect(stored.body.color).toBeNull();
   });
 });
+
+describe("POST /mortgages — Balance Anchor fields", () => {
+  it("creates the Mortgage from anchorBalance / anchorDate and answers them back", async () => {
+    const res = await request(app).post("/mortgages").send({
+      name: "Haus",
+      anchorBalance: 20000000,
+      anchorDate: "2026-10-16",
+      originalPrincipal: 40000000,
+      startDate: "2020-06-01",
+      termYears: 25,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.kind).toBe("Mortgage");
+    expect(res.body.anchorBalance).toBe(20000000);
+    expect(res.body.anchorDate).toBe("2026-10-16");
+    expect(res.body.balance).toBe(20000000);
+    expect(res.body).not.toHaveProperty("openingBalance");
+    expect(res.body).not.toHaveProperty("openingDate");
+  });
+});

@@ -707,3 +707,26 @@ describe("PATCH /accounts/:id — CreditCard settlement configuration", () => {
     expect(res.body.linkedSince).toBeNull();
   });
 });
+
+describe("POST /accounts — Balance Anchor fields", () => {
+  it("creates an account from anchorBalance / anchorDate and answers them back", async () => {
+    const res = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 254321,
+      anchorDate: "2026-03-01",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.anchorBalance).toBe(254321);
+    expect(res.body.anchorDate).toBe("2026-03-01");
+    expect(res.body).not.toHaveProperty("openingBalance");
+    expect(res.body).not.toHaveProperty("openingDate");
+
+    const stored = await request(app).get(`/accounts/${res.body.id}`);
+    expect(stored.status).toBe(200);
+    expect(stored.body.anchorBalance).toBe(254321);
+    expect(stored.body.anchorDate).toBe("2026-03-01");
+    expect(stored.body.balance).toBe(254321);
+  });
+});
