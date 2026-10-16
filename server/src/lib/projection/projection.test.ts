@@ -1662,3 +1662,225 @@ describe("projectBalances - actual from the Balance Anchor", () => {
     expect(result[3].accounts["tg"].actual).toBe(502500);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Pure function: Anchor Gate
+//
+// A recurring occurrence is dated at its dayOfMonth, clamped to the month's
+// length. Each leg moves its account's balance only when that date is after
+// that leg's account's Anchor Date — in the Replay Loop and in the Forward
+// Projection alike, month 0 included. "Today" is 2026-10-16.
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - Anchor Gate", () => {
+  const monthlyRate = (dayOfMonth: number) => ({
+    accountId: "giro",
+    linkedAccountId: "mortgage",
+    amount: 150000,
+    frequency: "monthly" as const,
+    dayOfMonth,
+    isActive: true,
+  });
+
+  it("a Mortgage anchored later than its funding Girokonto takes no pre-anchor payments in the replay", () => {
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 1000000,
+        anchorDate: "2024-01-15",
+      },
+      {
+        id: "mortgage",
+        kind: "Mortgage" as const,
+        anchorBalance: 20000000,
+        anchorDate: "2026-10-16",
+      },
+    ];
+    // The rate falls on the 20th, so October's rate is after the anchor.
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      [monthlyRate(20)],
+      "2026-10",
+      "2026-10",
+      3
+    );
+
+    // The Restschuld entered today already contains every earlier payment:
+    // only October's rate (20 Oct) reduces it.
+    expect(snapshots[0].accounts["mortgage"].projected).toBe(19850000);
+    expect(snapshots[1].accounts["mortgage"].projected).toBe(19700000);
+    expect(snapshots[2].accounts["mortgage"].projected).toBe(19550000);
+  });
+
+  it.each([
+    ["before", 3],
+    ["on", 16],
+  ])(
+    "a month-0 rate dated %s the anchor day is not counted again",
+    (_label, dayOfMonth) => {
+      const accounts = [
+        {
+          id: "giro",
+          kind: "Girokonto" as const,
+          anchorBalance: 1000000,
+          anchorDate: "2026-10-16",
+        },
+        {
+          id: "mortgage",
+          kind: "Mortgage" as const,
+          anchorBalance: 20000000,
+          anchorDate: "2026-10-16",
+        },
+      ];
+      const snapshots = projectBalances(
+        accounts,
+        [],
+        [monthlyRate(dayOfMonth)],
+        "2026-10",
+        "2026-10",
+        3
+      );
+
+      // October's rate is already inside the anchor; November's is the first.
+      expect(snapshots[0].accounts["mortgage"].projected).toBe(20000000);
+      expect(snapshots[1].accounts["mortgage"].projected).toBe(19850000);
+    }
+  );
+
+  it("a transfer gated on the destination still debits the source", () => {
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 1000000,
+        anchorDate: "2026-01-10",
+      },
+      {
+        id: "savings",
+        kind: "Tagesgeld" as const,
+        anchorBalance: 500000,
+        anchorDate: "2026-10-16",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "giro",
+        linkedAccountId: "savings",
+        amount: 70000,
+        frequency: "monthly" as const,
+        dayOfMonth: 15,
+        isActive: true,
+      },
+    ];
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-10",
+      "2026-10",
+      2
+    );
+
+    // Giro: Jan 15 … Oct 15 are all after its anchor → 10 debits.
+    expect(snapshots[0].accounts["giro"].projected).toBe(300000);
+    // Savings: every one of those credits is on or before its anchor.
+    expect(snapshots[0].accounts["savings"].projected).toBe(500000);
+    // November 15 is after both anchors; savings re-anchors to its actual.
+    expect(snapshots[1].accounts["savings"].projected).toBe(570000);
+  });
+
+  it.each([
+    ["February", "2026-02-28", "2026-02"],
+    ["a 30-day month", "2026-04-30", "2026-04"],
+  ])(
+    "dayOfMonth 31 lands on the last day of %s for the gate check",
+    (_label, anchorDate, fromDate) => {
+      const accounts = [
+        {
+          id: "giro",
+          kind: "Girokonto" as const,
+          anchorBalance: 100000,
+          anchorDate,
+        },
+      ];
+      const recurring = [
+        {
+          accountId: "giro",
+          amount: -10000,
+          frequency: "monthly" as const,
+          dayOfMonth: 31,
+          isActive: true,
+        },
+      ];
+      // currentDate before fromDate: no re-anchoring to actual.
+      const snapshots = projectBalances(
+        accounts,
+        [],
+        recurring,
+        fromDate,
+        "2026-01",
+        2
+      );
+
+      // The occurrence falls on the anchor day itself → gated.
+      expect(snapshots[0].accounts["giro"].projected).toBe(100000);
+      // The next month's occurrence is after the anchor → applied.
+      expect(snapshots[1].accounts["giro"].projected).toBe(90000);
+    }
+  );
+
+  it("the Replay Loop and the Forward Projection follow the same rule", () => {
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 100000,
+        anchorDate: "2026-03-10",
+      },
+    ];
+    const recurring = [
+      {
+        accountId: "giro",
+        amount: -10000,
+        frequency: "monthly" as const,
+        dayOfMonth: 5,
+        isActive: true,
+      },
+      {
+        accountId: "giro",
+        amount: -10000,
+        frequency: "monthly" as const,
+        dayOfMonth: 20,
+        isActive: true,
+      },
+    ];
+    // March: only the 20th is after the anchor. April–June: both fire.
+    // 100000 − 10000 − 3 × 20000 = 30000 at the end of June.
+    // currentDate before both runs: no re-anchoring to actual.
+
+    // The anchor month is month 0 of the Forward Projection.
+    const forward = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-03",
+      "2026-01",
+      4
+    );
+    // The anchor month is inside the Replay Loop.
+    const replayed = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-06",
+      "2026-01",
+      1
+    );
+
+    expect(forward[0].accounts["giro"].projected).toBe(90000);
+    expect(forward[3].accounts["giro"].projected).toBe(30000);
+    expect(replayed[0].accounts["giro"].projected).toBe(30000);
+  });
+});
