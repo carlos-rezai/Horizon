@@ -4,6 +4,7 @@ import { eurosToCents } from "../../../utils/currency/currency";
 import { transferSideFor } from "../../../utils/recurring/recurring";
 import type {
   RecurringTransaction,
+  RecurringTransactionInput,
   RecurringFrequency,
 } from "../../../types/recurring";
 import type { AccountWithBalance } from "../../../types/account";
@@ -21,17 +22,6 @@ import {
   StyledErrorText,
 } from "./RecurringTransactionModal.styles";
 
-export interface RecurringFormPayload {
-  accountId: string;
-  amount: number;
-  description: string;
-  category: string;
-  frequency: RecurringFrequency;
-  dayOfMonth: number;
-  linkedAccountId?: string;
-  monthOfYear?: number;
-}
-
 type TransferDirection = "to" | "from";
 
 const TRANSFER_SIGN_MESSAGE =
@@ -42,7 +32,7 @@ interface Props {
   transaction?: RecurringTransaction;
   otherAccounts: AccountWithBalance[];
   onClose: () => void;
-  onSaved: (data: RecurringFormPayload) => void;
+  onSaved: (data: RecurringTransactionInput) => void;
   onDeleted: () => void;
 }
 
@@ -113,7 +103,7 @@ export default function RecurringTransactionModal({
     }
 
     const isFrom = linkedAccountId !== "" && direction === "from";
-    const payload: RecurringFormPayload = {
+    const payload: RecurringTransactionInput = {
       accountId: isFrom ? linkedAccountId : accountId,
       amount: parsedAmount,
       description,

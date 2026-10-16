@@ -1,38 +1,16 @@
 import { useState, useEffect } from "react";
 import type {
   RecurringTransaction,
-  RecurringFrequency,
+  RecurringTransactionInput,
 } from "../../../types/recurring";
 import { API_BASE } from "../../../utils/api/api";
-
-interface CreatePayload {
-  accountId: string;
-  amount: number;
-  description: string;
-  category: string;
-  frequency: RecurringFrequency;
-  dayOfMonth: number;
-  linkedAccountId?: string;
-  monthOfYear?: number;
-}
-
-interface UpdatePayload {
-  accountId: string;
-  amount: number;
-  description: string;
-  category: string;
-  frequency: RecurringFrequency;
-  dayOfMonth: number;
-  linkedAccountId?: string;
-  monthOfYear?: number;
-}
 
 interface UseRecurringTransactionsResult {
   recurringTransactions: RecurringTransaction[];
   isLoading: boolean;
   error: string | null;
-  create: (payload: CreatePayload) => Promise<void>;
-  update: (id: string, payload: UpdatePayload) => Promise<void>;
+  create: (payload: RecurringTransactionInput) => Promise<void>;
+  update: (id: string, payload: RecurringTransactionInput) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -79,7 +57,7 @@ export function useRecurringTransactions(
     };
   }, [accountId]);
 
-  async function create(payload: CreatePayload): Promise<void> {
+  async function create(payload: RecurringTransactionInput): Promise<void> {
     const res = await fetch(`${API_BASE}/recurring-transactions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -95,7 +73,10 @@ export function useRecurringTransactions(
     setRecurringTransactions((prev) => [...prev, created]);
   }
 
-  async function update(id: string, payload: UpdatePayload): Promise<void> {
+  async function update(
+    id: string,
+    payload: RecurringTransactionInput
+  ): Promise<void> {
     const res = await fetch(`${API_BASE}/recurring-transactions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
