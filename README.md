@@ -2,7 +2,7 @@
 
 > Personal finance tracker for long-term thinkers — built with a structured Claude Code workflow
 
-Horizon tracks income, spending, and mortgage payoff across multiple accounts. It's not a budgeting app — it's a long-game tool. Built around the idea that some financial goals take a decade, and your software should reflect that.
+Horizon shows where your money has been, where it is, and where it is going — past, present and projected, across multiple accounts. It reconstructs real past balances from imported bank statements and a mortgage's origination, anchors the present on the balances you know, and projects income, spending and mortgage payoff years ahead, all on one timeline. It's not a budgeting app — it's a long-game tool. Built around the idea that some financial goals take a decade, and your software should show the whole decade: the paydown already behind you as well as the remainder still ahead.
 
 ---
 
