@@ -1,9 +1,5 @@
 import { z } from "zod";
-
-/** Today as an ISO date, the same idiom the account storage uses for linkedSince. */
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayIso } from "../../lib/date/date.js";
 
 /** An Anchor Date: an ISO date no later than today. */
 const AnchorDate = z
