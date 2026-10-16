@@ -1,14 +1,8 @@
 import { Router, type Request } from "express";
-import { MortgageSetupSchema } from "./mortgage.js";
+import { MortgageSetupSchema, PAID_FROM_KINDS } from "./mortgage.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
-
-/** The account kinds a Mortgage repayment may be paid from. */
-const PAID_FROM_KINDS: ReadonlySet<string> = new Set([
-  "Girokonto",
-  "Tagesgeld",
-]);
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;

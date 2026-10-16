@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+/**
+ * The account kinds a Repayment Transfer may be paid from. Checked by the
+ * route after parsing, since it needs the stored account. Duplicates the
+ * client's `PAID_FROM_KINDS` across the tier boundary, by design.
+ */
+export const PAID_FROM_KINDS: ReadonlySet<string> = new Set([
+  "Girokonto",
+  "Tagesgeld",
+]);
+
 const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const RepaymentSchema = z
