@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { parseYearMonth, todayIso } from "./date.js";
+import { daysInMonth, endOfMonth, parseYearMonth, todayIso } from "./date.js";
 
 describe("parseYearMonth", () => {
   it("parses a plain YYYY-MM value", () => {
@@ -40,5 +40,41 @@ describe("todayIso", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 2, 7, 12, 0));
     expect(todayIso()).toBe("2026-03-07");
+  });
+});
+
+describe("daysInMonth", () => {
+  it("gives 29 for February in a leap year", () => {
+    expect(daysInMonth("2028-02")).toBe(29);
+  });
+
+  it("gives 28 for February in a common year", () => {
+    expect(daysInMonth("2026-02")).toBe(28);
+  });
+
+  it("gives 30 for a 30-day month", () => {
+    expect(daysInMonth("2026-04")).toBe(30);
+  });
+
+  it("gives 31 for a 31-day month", () => {
+    expect(daysInMonth("2026-12")).toBe(31);
+  });
+});
+
+describe("endOfMonth", () => {
+  it("gives the 29th of February in a leap year", () => {
+    expect(endOfMonth("2028-02")).toBe("2028-02-29");
+  });
+
+  it("gives the 28th of February in a common year", () => {
+    expect(endOfMonth("2026-02")).toBe("2026-02-28");
+  });
+
+  it("gives the 30th of a 30-day month", () => {
+    expect(endOfMonth("2026-04")).toBe("2026-04-30");
+  });
+
+  it("gives the 31st of a 31-day month", () => {
+    expect(endOfMonth("2026-12")).toBe("2026-12-31");
   });
 });

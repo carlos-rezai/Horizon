@@ -24,3 +24,14 @@ export function todayIso(): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
 }
+
+/** The number of days in a `YYYY-MM` month, leap years included. */
+export function daysInMonth(yearMonth: string): number {
+  const { year, month } = parseYearMonth(yearMonth);
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/** The last ISO date (`YYYY-MM-DD`) of a `YYYY-MM` month. */
+export function endOfMonth(yearMonth: string): string {
+  return `${yearMonth}-${String(daysInMonth(yearMonth)).padStart(2, "0")}`;
+}
