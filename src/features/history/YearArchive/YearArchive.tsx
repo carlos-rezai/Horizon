@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import Money from "../../../primitives/Money/Money";
-import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
 import { formatMonth } from "../../../utils/format/format";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
 import {
@@ -29,6 +28,32 @@ interface Props {
   statementCounts: Record<number, number>;
 }
 
+/** A balance cell: "—" for an Unknown (null) value, never €0. */
+function BalanceCell({ cents }: { cents: number | null | undefined }) {
+  return cents === null || cents === undefined ? (
+    <span>—</span>
+  ) : (
+    <Money cents={cents} />
+  );
+}
+
+/**
+ * A month before every account's Known Since holds no data at all: its Net
+ * Cashflow is not a real €0, so the cell stays empty rather than read €0.
+ */
+function isAllUnknown(point: HistoryPoint): boolean {
+  return (
+    point.totalLiquid === null &&
+    point.restschuld === null &&
+    Object.values(point.accounts).every((v) => v === null)
+  );
+}
+
+/** A Net Cashflow cell, empty when the period holds no known month. */
+function CashflowCell({ cents, known }: { cents: number; known: boolean }) {
+  return known ? <Money cents={cents} sign /> : <span />;
+}
+
 function monthsOfYear(points: HistoryPoint[], year: number): HistoryPoint[] {
   return points.filter((p) => Number(p.month.slice(0, 4)) === year);
 }
@@ -49,22 +74,6 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
   );
 
   if (orderedYears.length === 0) return null;
-
-  // The accordion aggregator gives us end-of-period Total Liquid / Restschuld
-  // (the year's final available month) and the summed Net Cashflow for free.
-  const summaries = new Map(
-    aggregateYearSummaries(
-      points
-        .filter((p) => years.includes(Number(p.month.slice(0, 4))))
-        .map((p) => ({
-          month: p.month,
-          totalLiquid: p.totalLiquid,
-          restschuld: p.restschuld,
-          netCashflow: p.netCashflow,
-          accounts: {},
-        }))
-    ).map((summary) => [summary.year, summary])
-  );
 
   function toggleYear(year: number) {
     setExpanded((prev) => (prev === year ? null : year));
@@ -87,9 +96,13 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
 
       {orderedYears.map((year) => {
         const isOpen = expanded === year;
-        const summary = summaries.get(year);
         const count = statementCounts[year] ?? 0;
         const months = monthsOfYear(points, year);
+        const lastMonth = months.at(-1);
+        const yearKnown = months.some((p) => !isAllUnknown(p));
+        // Total Liquid / Restschuld snapshot the year's final available month
+        // (possibly Unknown); Net Cashflow is the year's sum.
+        const yearCashflow = months.reduce((sum, p) => sum + p.netCashflow, 0);
 
         return (
           <StyledYearSection key={year}>
@@ -103,9 +116,9 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
                   <ChevronRight size={17} />
                 </StyledChevron>
                 <StyledYearLabel>{year}</StyledYearLabel>
-                <Money cents={summary?.totalLiquid ?? 0} />
-                <Money cents={summary?.restschuld ?? 0} />
-                <Money cents={summary?.netCashflow ?? 0} sign />
+                <BalanceCell cents={lastMonth?.totalLiquid} />
+                <BalanceCell cents={lastMonth?.restschuld} />
+                <CashflowCell cents={yearCashflow} known={yearKnown} />
               </StyledYearHeader>
               <StyledCountBadge to="/import">
                 {count} {count === 1 ? "statement" : "statements"}
@@ -120,13 +133,16 @@ export default function YearArchive({ points, years, statementCounts }: Props) {
                     {formatMonth(point.month).slice(0, 3)}
                   </StyledMonthName>
                   <StyledNum $tone="pos">
-                    <Money cents={point.totalLiquid} />
+                    <BalanceCell cents={point.totalLiquid} />
                   </StyledNum>
                   <StyledNum $tone="debt">
-                    <Money cents={point.restschuld} />
+                    <BalanceCell cents={point.restschuld} />
                   </StyledNum>
                   <StyledNum>
-                    <Money cents={point.netCashflow} sign />
+                    <CashflowCell
+                      cents={point.netCashflow}
+                      known={!isAllUnknown(point)}
+                    />
                   </StyledNum>
                 </StyledMonthRow>
               ))}

@@ -45,9 +45,23 @@ function lastMonth(points: HistoryPoint[]): YearMonth | null {
   return points.length > 0 ? parseMonth(points[points.length - 1].month) : null;
 }
 
-/** A point's balance for an account, treating a missing account as 0. */
-function balanceOf(point: HistoryPoint, id: string): number {
-  return point.accounts[id] ?? 0;
+/**
+ * A point's balance for an account; null when it is Unknown that month (before
+ * its Known Since) or absent from the point — never read as a phantom 0.
+ */
+function balanceOf(point: HistoryPoint, id: string): number | null {
+  const balance = point.accounts[id];
+  return balance === undefined ? null : balance;
+}
+
+/**
+ * An account's balance gain from point `i - 1` to point `i`; null when it is
+ * Unknown in either month, so a jump out of Unknown is never read as a gain.
+ */
+function gainAt(points: HistoryPoint[], i: number, id: string): number | null {
+  const now = balanceOf(points[i], id);
+  const before = balanceOf(points[i - 1], id);
+  return now === null || before === null ? null : now - before;
 }
 
 /**
@@ -101,8 +115,8 @@ export function milestoneSplit(
       i < points.length;
       i++
     ) {
-      const delta = balanceOf(points[i], id) - balanceOf(points[i - 1], id);
-      if (delta > 0) {
+      const delta = gainAt(points, i, id);
+      if (delta !== null && delta > 0) {
         sum += delta;
         n += 1;
       }
@@ -157,9 +171,12 @@ function derivePerAccount(
   return ids.map((id) => {
     const accountTarget = monthly[id] || 0;
     const tracked = accountTarget > 0;
+    const todayBalance = todayIdx >= 0 ? balanceOf(points[todayIdx], id) : null;
+    const startBalance = startIdx >= 0 ? balanceOf(points[startIdx], id) : null;
+    // No gain can be measured from or to an Unknown month.
     const cumulativeActual =
-      tracked && startIdx >= 0 && todayIdx >= 0
-        ? balanceOf(points[todayIdx], id) - balanceOf(points[startIdx], id)
+      tracked && todayBalance !== null && startBalance !== null
+        ? todayBalance - startBalance
         : 0;
     const cumulativeTarget = tracked ? accountTarget * monthsElapsed : 0;
     return {
@@ -172,17 +189,22 @@ function derivePerAccount(
   });
 }
 
-/** One resolved month-transition and whether every tracked account met target. */
+/**
+ * One month-transition: whether every tracked account met target. `onTrack` is
+ * null when the month is neither met nor missed — a tracked account is Unknown
+ * in that month or the month before.
+ */
 interface MonthMet {
   year: number;
   month: number;
-  onTrack: boolean;
+  onTrack: boolean | null;
 }
 
 /**
  * For each month with a prior month to compare against, whether every tracked
  * account's balance gain met its monthly target (the AND rule). A month with no
- * tracked accounts is never on track. Oldest → newest.
+ * tracked accounts is never on track; a month with a tracked account Unknown
+ * (this month or the one before) is unresolved. Oldest → newest.
  */
 function scanMonthlyMet(
   points: HistoryPoint[],
@@ -191,34 +213,35 @@ function scanMonthlyMet(
 ): MonthMet[] {
   const monthlyMet: MonthMet[] = [];
   for (let i = 1; i < points.length; i++) {
-    const allMet =
-      trackedIds.length > 0 &&
-      trackedIds.every(
-        (id) =>
-          balanceOf(points[i], id) - balanceOf(points[i - 1], id) >=
-          (monthly[id] || 0)
-      );
+    const gains = trackedIds.map((id) => ({ id, gain: gainAt(points, i, id) }));
+    const onTrack = gains.some((g) => g.gain === null)
+      ? null
+      : gains.length > 0 &&
+        gains.every((g) => g.gain !== null && g.gain >= (monthly[g.id] || 0));
     const pm = parseMonth(points[i].month);
-    monthlyMet.push({ year: pm.year, month: pm.month, onTrack: allMet });
+    monthlyMet.push({ year: pm.year, month: pm.month, onTrack });
   }
   return monthlyMet;
 }
 
-/** Consecutive most-recent met months. */
+/** Consecutive most-recent met months; unresolved months are skipped. */
 function currentStreak(monthlyMet: MonthMet[]): number {
   let current = 0;
   for (let i = monthlyMet.length - 1; i >= 0; i--) {
-    if (monthlyMet[i].onTrack) current += 1;
+    const onTrack = monthlyMet[i].onTrack;
+    if (onTrack === null) continue;
+    if (onTrack) current += 1;
     else break;
   }
   return current;
 }
 
-/** Longest met run anywhere in history. */
+/** Longest met run anywhere in history; unresolved months are skipped. */
 function bestStreak(monthlyMet: MonthMet[]): number {
   let best = 0;
   let run = 0;
   for (const m of monthlyMet) {
+    if (m.onTrack === null) continue;
     run = m.onTrack ? run + 1 : 0;
     best = Math.max(best, run);
   }
@@ -243,14 +266,15 @@ function buildYearTicks(
       const pm = parseMonth(p.month);
       return pm.year === calYear && pm.month === m;
     });
-    if (idx < 1) {
+    const onTrack = idx < 1 ? null : monthlyMet[idx - 1].onTrack;
+    if (onTrack === null) {
       yearTicks.push({ year: calYear, month: m, status: "upcoming" });
       continue;
     }
     yearTicks.push({
       year: calYear,
       month: m,
-      status: monthlyMet[idx - 1].onTrack ? "met" : "missed",
+      status: onTrack ? "met" : "missed",
     });
   }
   return yearTicks;

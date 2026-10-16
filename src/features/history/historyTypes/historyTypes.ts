@@ -10,12 +10,15 @@
 export interface HistoryPoint {
   /** "YYYY-MM" */
   month: string;
-  /** Σ of liquid accounts' balances. */
-  totalLiquid: number;
-  /** The mortgage's replayed balance (0 when there is no mortgage). */
-  restschuld: number;
+  /** Σ of the liquid accounts known that month; null when none is known. */
+  totalLiquid: number | null;
+  /**
+   * The mortgage's replayed balance (0 when there is no mortgage); null
+   * before the Mortgage's Known Since.
+   */
+  restschuld: number | null;
   /** Σ of that month's real stored transactions. */
   netCashflow: number;
-  /** Per-account balance. */
-  accounts: Record<string, number>;
+  /** Per-account balance; null before that account's Known Since. */
+  accounts: Record<string, number | null>;
 }

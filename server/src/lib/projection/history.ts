@@ -8,14 +8,20 @@ import type { MonthlySnapshot } from "./projection.js";
 export interface HistoryPoint {
   /** "YYYY-MM" */
   month: string;
-  /** Σ of liquid accounts' `actual` balances. */
-  totalLiquid: number;
-  /** The mortgage's replayed `projected` balance (0 when there is no mortgage). */
-  restschuld: number;
+  /**
+   * Σ of the liquid accounts' `actual` balances known that month (a partial
+   * sum when some are Unknown); null when no liquid account is known.
+   */
+  totalLiquid: number | null;
+  /**
+   * The mortgage's replayed `projected` balance (0 when there is no mortgage);
+   * null before the Mortgage's Known Since.
+   */
+  restschuld: number | null;
   /** Σ of that month's real stored transactions (not the recurring figure). */
   netCashflow: number;
-  /** Per-account `actual` balance. */
-  accounts: Record<string, number>;
+  /** Per-account `actual` balance; null before that account's Known Since. */
+  accounts: Record<string, number | null>;
 }
 
 /** The minimal shape `deriveHistory` needs from a stored transaction. */
@@ -50,19 +56,27 @@ export function deriveHistory(
     .map((a) => a.id);
 
   return snapshots.map((snapshot) => {
-    const accountActuals: Record<string, number> = {};
+    const accountActuals: Record<string, number | null> = {};
     for (const a of accounts) {
-      accountActuals[a.id] = snapshot.accounts[a.id]?.actual ?? 0;
+      accountActuals[a.id] = snapshot.accounts[a.id]?.actual ?? null;
     }
 
-    const totalLiquid = liquidIds.reduce(
-      (sum, id) => sum + (accountActuals[id] ?? 0),
-      0
-    );
+    const knownLiquid = liquidIds
+      .map((id) => accountActuals[id])
+      .filter((v): v is number => v !== null && v !== undefined);
+    const totalLiquid =
+      knownLiquid.length > 0
+        ? knownLiquid.reduce((sum, v) => sum + v, 0)
+        : null;
 
-    const restschuld = mortgage
-      ? (snapshot.accounts[mortgage.id]?.projected ?? 0)
-      : 0;
+    const mortgageSnapshot = mortgage
+      ? snapshot.accounts[mortgage.id]
+      : undefined;
+    const restschuld = !mortgage
+      ? 0
+      : mortgageSnapshot?.actual === undefined
+        ? null
+        : mortgageSnapshot.projected;
 
     const netCashflow = transactions
       .filter((tx) => tx.date.slice(0, 7) === snapshot.month)

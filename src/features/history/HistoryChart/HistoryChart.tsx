@@ -44,10 +44,10 @@ const RESTSCHULD_KEY = "restschuld";
 interface HistoryChartDataPoint {
   monthIndex: number;
   label: string;
-  totalLiquid: number;
-  restschuld: number;
+  totalLiquid: number | null;
+  restschuld: number | null;
   netCashflow: number;
-  [accountId: string]: number | string;
+  [accountId: string]: number | string | null;
 }
 
 interface RangeOption {
@@ -70,6 +70,27 @@ interface HistoryChartTooltipProps {
   active?: boolean;
   payload?: readonly HistoryTooltipPayloadItem[];
   series: SeriesDescriptor[];
+  /** Each series' first known month ("YYYY-MM"), keyed by series key. */
+  firstKnown?: Record<string, string>;
+}
+
+/**
+ * The first month ("YYYY-MM") each series carries a known (non-null) value,
+ * keyed by series key — what an Unknown tooltip row names.
+ */
+function firstKnownMonths(points: HistoryPoint[]): Record<string, string> {
+  const first: Record<string, string> = {};
+  const note = (key: string, value: number | null, month: string) => {
+    if (value !== null && first[key] === undefined) first[key] = month;
+  };
+  for (const p of points) {
+    note(TOTAL_LIQUID_KEY, p.totalLiquid, p.month);
+    note(RESTSCHULD_KEY, p.restschuld, p.month);
+    for (const [id, value] of Object.entries(p.accounts)) {
+      note(id, value, p.month);
+    }
+  }
+  return first;
 }
 
 /**
@@ -81,6 +102,7 @@ export function HistoryChartTooltip({
   active,
   payload,
   series,
+  firstKnown = {},
 }: HistoryChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
@@ -90,14 +112,22 @@ export function HistoryChartTooltip({
     <ChartTooltip label={formatMonth(point.label)}>
       {series.map((s) => {
         const value = point[s.key];
-        if (typeof value !== "number") return null;
+        const known = firstKnown[s.key];
+        // Unknown (null) reads "No data before …", never €0.
+        const text =
+          typeof value === "number"
+            ? formatBalance(value)
+            : value === null && known !== undefined
+              ? `No data before ${formatMonth(known)}`
+              : null;
+        if (text === null) return null;
         return (
           <StyledTooltipRow key={s.key}>
             <StyledTooltipRowLabel>
               <StyledTooltipSwatch $color={s.color} />
               {s.name}
             </StyledTooltipRowLabel>
-            <span>{formatBalance(value)}</span>
+            <span>{text}</span>
           </StyledTooltipRow>
         );
       })}
@@ -183,6 +213,8 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
   const rangeMonths =
     RANGE_OPTIONS.find((o) => o.value === range)?.months ?? Infinity;
   const windowed = points.slice(Math.max(0, points.length - rangeMonths));
+
+  const firstKnown = useMemo(() => firstKnownMonths(points), [points]);
 
   const data = useMemo<HistoryChartDataPoint[]>(
     () =>
@@ -274,6 +306,7 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
                   <HistoryChartTooltip
                     {...props}
                     series={series.filter((s) => visibility[s.key] === true)}
+                    firstKnown={firstKnown}
                   />
                 )}
               />
