@@ -3,6 +3,7 @@ import type Database from "better-sqlite3";
 import type { RecurringTransactionsRepo } from "../Storage.js";
 import type { Frequency, RecurringTransaction } from "../types.js";
 import { isValidUuid } from "./uuid.js";
+import { recurringWriters } from "./recurringWriters.js";
 
 interface RecurringTransactionRow {
   id: string;
@@ -45,12 +46,7 @@ export function createSqliteRecurringTransactionsRepo(
   const selectAccountByIdStmt = db.prepare(
     `SELECT id FROM accounts WHERE id = ?`
   );
-  const insertStmt = db.prepare(
-    `INSERT INTO recurring_transactions
-       (id, account_id, amount, description, category, frequency,
-        day_of_month, linked_account_id, month_of_year)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  );
+  const writers = recurringWriters(db);
   const updateStmt = db.prepare(
     `UPDATE recurring_transactions
        SET account_id = COALESCE(?, account_id),
@@ -92,17 +88,7 @@ export function createSqliteRecurringTransactionsRepo(
         if (!selectAccountByIdStmt.get(input.linkedAccountId)) return null;
       }
       const id = randomUUID();
-      insertStmt.run(
-        id,
-        input.accountId,
-        input.amount,
-        input.description,
-        input.category,
-        input.frequency,
-        input.dayOfMonth,
-        input.linkedAccountId ?? null,
-        input.monthOfYear ?? null
-      );
+      writers.insert(id, input);
       const dto: RecurringTransaction = {
         id,
         accountId: input.accountId,
