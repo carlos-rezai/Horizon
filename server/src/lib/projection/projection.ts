@@ -2,6 +2,7 @@ import type { Account, AccountKind } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
 import { daysInMonth, endOfMonth, monthsBetween } from "../date/date.js";
+import { selectLiquidAccounts } from "../accountKinds/accountKinds.js";
 
 export interface ProjectionAccountEntry {
   id: string;
@@ -290,9 +291,10 @@ export function projectBalances(
       }
     }
 
-    const totalLiquid = accounts
-      .filter((a) => a.kind === "Girokonto" || a.kind === "Tagesgeld")
-      .reduce((sum, a) => sum + (runningBalances.get(a.id) ?? 0), 0);
+    const totalLiquid = selectLiquidAccounts(accounts).reduce(
+      (sum, a) => sum + (runningBalances.get(a.id) ?? 0),
+      0
+    );
 
     const accountsSnapshot: Record<string, AccountSnapshot> = {};
     for (const a of accounts) {

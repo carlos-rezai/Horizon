@@ -1,4 +1,5 @@
 import type { AccountKind } from "../../storage/types.js";
+import { selectLiquidAccounts } from "../accountKinds/accountKinds.js";
 
 export interface TxEntry {
   amount: number;
@@ -11,8 +12,6 @@ export interface AccountEntry {
   kind: AccountKind;
   balance: number;
 }
-
-const LIQUID_KINDS: AccountKind[] = ["Girokonto", "Tagesgeld"];
 
 export function calcNetCashflow(transactions: TxEntry[]): number {
   return transactions
@@ -30,7 +29,5 @@ export function calcFreeCashflow(
 }
 
 export function calcTotalLiquid(accounts: AccountEntry[]): number {
-  return accounts
-    .filter((a) => LIQUID_KINDS.includes(a.kind))
-    .reduce((sum, a) => sum + a.balance, 0);
+  return selectLiquidAccounts(accounts).reduce((sum, a) => sum + a.balance, 0);
 }

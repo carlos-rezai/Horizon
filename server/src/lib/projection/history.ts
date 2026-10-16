@@ -2,6 +2,10 @@ import type { AccountKind } from "../../storage/types.js";
 import type { MonthlySnapshot } from "./projection.js";
 import { monthsBetween } from "../date/date.js";
 import {
+  selectLiquidAccounts,
+  selectTrackableAccounts,
+} from "../accountKinds/accountKinds.js";
+import {
   isVariableSpending,
   selectSpendingAccounts,
 } from "../variableSpending/variableSpending.js";
@@ -120,17 +124,8 @@ export function deriveHistory(
   accounts: HistoryAccount[]
 ): HistoryPoint[] {
   const mortgage = accounts.find((a) => a.kind === "Mortgage");
-  const liquidIds = accounts
-    .filter((a) => a.kind === "Girokonto" || a.kind === "Tagesgeld")
-    .map((a) => a.id);
-  const trackableIds = accounts
-    .filter(
-      (a) =>
-        a.kind === "Girokonto" ||
-        a.kind === "Tagesgeld" ||
-        a.kind === "Investment"
-    )
-    .map((a) => a.id);
+  const liquidIds = selectLiquidAccounts(accounts).map((a) => a.id);
+  const trackableIds = selectTrackableAccounts(accounts).map((a) => a.id);
   const spendingIds = new Set(
     selectSpendingAccounts(accounts).map((a) => a.id)
   );
