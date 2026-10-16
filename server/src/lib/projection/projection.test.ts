@@ -592,8 +592,8 @@ describe("GET /projection", () => {
 
     const res = await request(app).get("/projection");
 
-    // Month 0: 500000 - 50000 = 450000 (projected; re-anchors to actual=500000)
-    expect(res.body[0].accounts[accountId].projected).toBe(450000);
+    // Month 0: the rate falls on the anchor day → gated, stays 500000
+    expect(res.body[0].accounts[accountId].projected).toBe(500000);
     // Month 1: re-anchored 500000 - 50000 = 450000
     expect(res.body[1].accounts[accountId].projected).toBe(450000);
   });
@@ -740,9 +740,9 @@ describe("projectBalances - replay loop", () => {
       "2026-04"
     );
 
-    // Starting balance after replay: 1000000 − 3×50000 = 850000
-    // Forward index 0 (April): 850000 − 50000 = 800000 (re-anchors to actual=1000000)
-    expect(snapshots[0].accounts["a1"].projected).toBe(800000);
+    // Jan 1 is the anchor day → gated; Feb and Mar apply: 1000000 − 2×50000 = 900000
+    // Forward index 0 (April): 900000 − 50000 = 850000 (re-anchors to actual=1000000)
+    expect(snapshots[0].accounts["a1"].projected).toBe(850000);
     // Forward index 1 (May): re-anchored 1000000 − 50000 = 950000
     expect(snapshots[1].accounts["a1"].projected).toBe(950000);
   });
@@ -822,8 +822,9 @@ describe("projectBalances - replay loop", () => {
       },
     ];
     // fromDate April 2026
-    // giro replay: Jan, Feb, Mar (3 months) → 500000 − 300000 = 200000
-    // savings replay: Mar only (1 month) → 1000000 + 200000 = 1200000
+    // Each account's anchor-day occurrence is gated.
+    // giro replay: Feb, Mar (Jan 1 gated) → 500000 − 200000 = 300000
+    // savings replay: none (Mar 1 gated) → 1000000
     const snapshots = projectBalances(
       accounts,
       [],
@@ -833,10 +834,10 @@ describe("projectBalances - replay loop", () => {
     );
 
     // Forward index 0 (April):
-    // giro: 200000 − 100000 = 100000
-    expect(snapshots[0].accounts["giro"].projected).toBe(100000);
-    // savings: 1200000 + 200000 = 1400000
-    expect(snapshots[0].accounts["savings"].projected).toBe(1400000);
+    // giro: 300000 − 100000 = 200000
+    expect(snapshots[0].accounts["giro"].projected).toBe(200000);
+    // savings: 1000000 + 200000 = 1200000
+    expect(snapshots[0].accounts["savings"].projected).toBe(1200000);
   });
 
   it("Variable Spending actual transactions before the current month are included alongside replayed recurring history", () => {
@@ -861,10 +862,11 @@ describe("projectBalances - replay loop", () => {
         isActive: true,
       },
     ];
-    // fromDate April 2026 — replay covers Jan, Feb, Mar (3 months of +300000)
+    // fromDate April 2026 — replay covers Jan, Feb, Mar; Jan 1 is the anchor
+    // day → gated, so 2 months of +300000
     // Variable Spending: −50000 (Jan) + −30000 (Feb) = −80000
-    // Starting: 100000 + 900000 − 80000 = 920000
-    // Forward index 0 (April): 920000 + 300000 = 1220000
+    // Starting: 100000 + 600000 − 80000 = 620000
+    // Forward index 0 (April): 620000 + 300000 = 920000
     const snapshots = projectBalances(
       accounts,
       transactions,
@@ -873,7 +875,7 @@ describe("projectBalances - replay loop", () => {
       "2026-04"
     );
 
-    expect(snapshots[0].accounts["a1"].projected).toBe(1220000);
+    expect(snapshots[0].accounts["a1"].projected).toBe(920000);
   });
 
   it("account opened in April 2025 with annual ST (monthOfYear: 10) fires ST in October during 13-month replay, not in April", () => {
@@ -1217,10 +1219,10 @@ describe("projectBalances - accepts DTO shape", () => {
       "2026-04"
     );
 
-    // Month 0: 100000 - 25000 = 75000 — must be addressable by `id` "a1"
-    // (re-anchors to actual=100000 after snapshot)
+    // Month 0: the rate falls on the anchor day → gated, stays 100000 — must
+    // be addressable by `id` "a1"
     expect(snapshots[0].accounts["a1"]).toBeDefined();
-    expect(snapshots[0].accounts["a1"].projected).toBe(75000);
+    expect(snapshots[0].accounts["a1"].projected).toBe(100000);
     // Month 1: re-anchored 100000 - 25000 = 75000
     expect(snapshots[1].accounts["a1"].projected).toBe(75000);
   });

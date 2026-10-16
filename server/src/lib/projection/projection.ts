@@ -81,49 +81,76 @@ function firesInMonth(
   return index % 12 === 0; // annual
 }
 
+// An occurrence's date: the month's dayOfMonth, clamped to the month's length.
+function occurrenceDate(yyyyMM: string, dayOfMonth: number): string {
+  const [year, month] = yyyyMM.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const day = Math.min(dayOfMonth, daysInMonth);
+  return `${yyyyMM}-${String(day).padStart(2, "0")}`;
+}
+
+// Anchor Gate: a leg moves its account's balance only when the occurrence is
+// dated after that account's Anchor Date — the anchor already contains it.
+function passesAnchorGate(
+  accountId: string,
+  date: string,
+  accountMap: Map<string, ProjectionAccountEntry>
+): boolean {
+  const anchorDate = accountMap.get(accountId)?.anchorDate;
+  return !anchorDate || date > anchorDate;
+}
+
 function applyRecurringToBalances(
   r: ProjectionRecurringEntry,
+  month: string,
   accountMap: Map<string, ProjectionAccountEntry>,
   runningBalances: Map<string, number>
 ): void {
+  const date = occurrenceDate(month, r.dayOfMonth);
+  const sourceMoves = passesAnchorGate(r.accountId, date, accountMap);
+
   if (r.linkedAccountId) {
-    runningBalances.set(
-      r.accountId,
-      (runningBalances.get(r.accountId) ?? 0) - r.amount
-    );
+    const destMoves = passesAnchorGate(r.linkedAccountId, date, accountMap);
     const destKind = accountMap.get(r.linkedAccountId)?.kind;
-    if (destKind === "Mortgage") {
+    if (destKind === "Mortgage" && destMoves) {
       const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
       // Operate on the magnitude so the paydown matches every other transfer's
       // sign convention: a transfer stored with the domain's negative outflow
       // sign reduces Restschuld identically to a positive-amount transfer.
       const actualDebit = Math.min(Math.abs(r.amount), remaining);
-      if (actualDebit <= 0) {
-        runningBalances.set(
-          r.accountId,
-          (runningBalances.get(r.accountId) ?? 0) + r.amount
-        );
-      } else {
-        runningBalances.set(
-          r.accountId,
-          (runningBalances.get(r.accountId) ?? 0) + r.amount - actualDebit
-        );
+      if (actualDebit > 0) {
+        if (sourceMoves) {
+          runningBalances.set(
+            r.accountId,
+            (runningBalances.get(r.accountId) ?? 0) - actualDebit
+          );
+        }
         runningBalances.set(r.linkedAccountId, remaining - actualDebit);
       }
-    } else {
+      return;
+    }
+    if (sourceMoves) {
+      // A Mortgage leg behind its anchor still debits the payment's magnitude.
+      const debit = destKind === "Mortgage" ? Math.abs(r.amount) : r.amount;
+      runningBalances.set(
+        r.accountId,
+        (runningBalances.get(r.accountId) ?? 0) - debit
+      );
+    }
+    if (destMoves && destKind !== "Mortgage") {
       runningBalances.set(
         r.linkedAccountId,
         (runningBalances.get(r.linkedAccountId) ?? 0) + r.amount
       );
     }
-  } else {
-    const kind = accountMap.get(r.accountId)?.kind;
-    if (kind !== "Mortgage") {
-      runningBalances.set(
-        r.accountId,
-        (runningBalances.get(r.accountId) ?? 0) + r.amount
-      );
-    }
+    return;
+  }
+  const kind = accountMap.get(r.accountId)?.kind;
+  if (kind !== "Mortgage" && sourceMoves) {
+    runningBalances.set(
+      r.accountId,
+      (runningBalances.get(r.accountId) ?? 0) + r.amount
+    );
   }
 }
 
@@ -176,7 +203,7 @@ export function projectBalances(
       )
         continue;
 
-      applyRecurringToBalances(r, accountMap, runningBalances);
+      applyRecurringToBalances(r, replayMonth, accountMap, runningBalances);
     }
   }
 
@@ -237,7 +264,7 @@ export function projectBalances(
     for (const r of activeRecurring) {
       if (!firesInMonth(r.frequency, i, calendarMonth, r.monthOfYear)) continue;
 
-      applyRecurringToBalances(r, accountMap, runningBalances);
+      applyRecurringToBalances(r, month, accountMap, runningBalances);
 
       // Transfers are excluded from netCashflow; Mortgage accounts are never
       // directly credited by a non-transfer recurring
