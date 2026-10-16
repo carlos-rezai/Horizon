@@ -10,6 +10,7 @@ import {
 import {
   deriveSTMonths,
   effectiveSTMonths,
+  totalRestschuld,
 } from "../../../utils/projection/projection";
 import { formatMonth } from "../../../utils/format/format";
 import {
@@ -37,10 +38,7 @@ export default function OutlookSummary({
   const points: OutlookPoint[] = snapshots.map((s) => ({
     month: s.month,
     totalLiquid: s.totalLiquid,
-    restschuld: mortgageIds.reduce((sum, id) => {
-      const entry = s.accounts[id];
-      return sum + (entry?.projected ?? 0);
-    }, 0),
+    restschuld: totalRestschuld(s, mortgageIds),
   }));
 
   const stMonths =

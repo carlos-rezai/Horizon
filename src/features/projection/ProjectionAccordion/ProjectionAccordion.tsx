@@ -9,6 +9,7 @@ import {
   deriveSTMonths,
   effectiveSTMonths,
   findMortgagePayoffMonth,
+  totalRestschuld,
 } from "../../../utils/projection/projection";
 import { aggregateYearSummaries } from "../../../utils/accordion/accordion";
 import { formatMonth } from "../../../utils/format/format";
@@ -57,21 +58,6 @@ function groupByYear(
   return groups;
 }
 
-// The accordion is a pure projection view (per-account balances / Total
-// Liquid / Restschuld), so it reads the *projected* Restschuld — never the
-// actual. A Mortgage's "actual" is just its un-replayed opening balance (ST is
-// modelled as a recurring transfer, not an actual transaction), so mixing it in
-// would fabricate a phantom step-down at the current-month boundary.
-function restschuldOf(
-  snapshot: MonthlySnapshot,
-  mortgageIds: string[]
-): number {
-  return mortgageIds.reduce((sum, id) => {
-    const entry = snapshot.accounts[id];
-    return sum + (entry?.projected ?? 0);
-  }, 0);
-}
-
 export default function ProjectionAccordion({
   snapshots,
   accounts,
@@ -116,7 +102,7 @@ export default function ProjectionAccordion({
 
   const restschuldByMonth = new Map<string, number>();
   snapshots.forEach((s) =>
-    restschuldByMonth.set(s.month, restschuldOf(s, mortgageIds))
+    restschuldByMonth.set(s.month, totalRestschuld(s, mortgageIds))
   );
 
   // ST Months: annual Repayment Transfers firing while Restschuld remains.
