@@ -10,3 +10,17 @@ export function parseYearMonth(value: string): { year: number; month: number } {
   const [year, month] = value.split("-").map(Number);
   return { year, month };
 }
+
+/**
+ * Today as an ISO date (`YYYY-MM-DD`), in local time.
+ *
+ * Horizon's server runs on the user's own machine, so "today" is that
+ * machine's wall-clock date — not the UTC date `toISOString()` would give.
+ * The client's `todayIso` follows the same rule.
+ */
+export function todayIso(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
