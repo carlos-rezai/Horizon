@@ -10,7 +10,15 @@ import {
 } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import CacheProvider from "./CacheProvider";
-import { ACCOUNTS, CATEGORIES, PROJECTION, type CacheKey } from "./cacheKeys";
+import {
+  ACCOUNTS,
+  CATEGORIES,
+  HISTORY,
+  IMPORT_HISTORY,
+  PROJECTION,
+  RECURRING,
+  type CacheKey,
+} from "./cacheKeys";
 import { useCachedResource } from "./useCachedResource";
 import { useCacheBump } from "./useCacheBump";
 
@@ -290,6 +298,30 @@ describe("useCachedResource — provider contract", () => {
 
     // The late-arriving consumer paints from cache immediately.
     expect(screen.getByTestId("b")).toHaveTextContent("v1");
+  });
+});
+
+describe("cache key registry — history keys", () => {
+  it("registers HISTORY and IMPORT_HISTORY as distinct keys", () => {
+    const registered: CacheKey[] = [
+      ACCOUNTS,
+      PROJECTION,
+      CATEGORIES,
+      RECURRING,
+      HISTORY,
+      IMPORT_HISTORY,
+    ];
+
+    expect(typeof HISTORY).toBe("string");
+    expect(typeof IMPORT_HISTORY).toBe("string");
+    expect(new Set(registered).size).toBe(registered.length);
+  });
+
+  it("rejects a mistyped history key at compile time", () => {
+    // @ts-expect-error — "histroy" is not a registered cache key.
+    const mistyped: CacheKey = "histroy";
+
+    expect(mistyped).not.toBe(HISTORY);
   });
 });
 
