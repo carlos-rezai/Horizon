@@ -275,6 +275,34 @@ describe("the Dashboard topic", () => {
       expect(row()?.body).toMatch(/horizon/i);
     });
   });
+
+  // Financial History (issue #245): the Trajectory Horizon draws up to ten
+  // years of Reconstructed Actuals — the Past Lead-in — on an ACTUALS band
+  // before the projection, and the TODAY Marker sits where today really is.
+  describe("the Past Lead-in on the Trajectory Horizon", () => {
+    const row = () => rowOf("dashboard", /Trajectory Horizon/);
+
+    it("names the ACTUALS band the lead-in is drawn on", () => {
+      expect(row()?.body).toContain("ACTUALS");
+    });
+
+    it("says the lead-in reaches back up to ten years of real past balances", () => {
+      expect(row()?.body).toMatch(/ten years|120 months/i);
+      expect(row()?.body).toMatch(/past/i);
+    });
+
+    it("places the TODAY Marker between the actuals on its left and the projection on its right", () => {
+      expect(row()?.body).toContain("TODAY");
+      expect(row()?.body).toMatch(/left/i);
+      expect(row()?.body).toMatch(/right/i);
+    });
+
+    it("no longer calls the chart only a ten-year projection", () => {
+      expect(row()?.body).not.toMatch(
+        /^A ten-year projection of every account/
+      );
+    });
+  });
 });
 
 const STREAK_SUBJECTS = [
@@ -461,14 +489,113 @@ describe("the History topic", () => {
     expect(detailText("history")).toMatch(/reconstruct|actual/i);
   });
 
-  // YearArchive is import-gated: it renders only years present in `years`, even
-  // when `points` carry others. A missing year is missing data.
-  it("states that the Year Archive lists only years with an imported statement", () => {
-    const row = rowOf("history", /year archive/i);
+  // Financial History (issue #245): the Year Archive is no longer import-gated.
+  // A year is listed when any month in it has recorded data in a series other
+  // than the Paydown Bridge; the statement badge shows only on a year that has
+  // statements.
+  describe("the Year Archive row", () => {
+    const row = () => rowOf("history", /year archive/i);
 
-    expect(row).toBeDefined();
-    expect(row?.body).toMatch(/import/i);
-    expect(row?.body).toMatch(/statement/i);
+    it("says a bridge-only year is left out, not that only imported years appear", () => {
+      expect(row()).toBeDefined();
+      expect(row()?.body).toMatch(/bridge/i);
+      expect(row()?.body).not.toMatch(
+        /only years holding at least one imported statement/i
+      );
+    });
+
+    it("says the statement badge shows only on a year that has statements", () => {
+      expect(row()?.body).toMatch(/statement/i);
+      expect(row()?.body).toMatch(/no badge|without (a )?badge|badge only/i);
+    });
+  });
+
+  // Financial History (issue #245): History starts at the History Span — the
+  // earliest of every account's Known Since month and the Mortgage Start Date —
+  // not at the first import.
+  describe("the History Span", () => {
+    it("says History reaches back to the mortgage's start date", () => {
+      expect(detailText("history")).toMatch(/start date/i);
+    });
+
+    it("no longer calls History built from imported statements only", () => {
+      expect(MANUAL_TOPICS.history.blurb).not.toMatch(/statements only/i);
+    });
+
+    it("quotes the empty state that invites an import or a mortgage origination", () => {
+      expect(detailText("history")).toContain(
+        "Import a bank statement or add your mortgage's origination to see your history"
+      );
+    });
+  });
+
+  // Financial History (issue #245): the Paydown Bridge joins the Origination
+  // Point to the Mortgage's Known Since. It is a connection, never an estimate:
+  // the copy says "No monthly data" and never "estimated" or "interpolated".
+  describe("the Paydown Bridge", () => {
+    const row = () => rowOf("history", /bridge|paydown/i);
+    const body = (): string => row()?.body ?? "";
+
+    it("gives the bridge a row of its own", () => {
+      expect(row()).toBeDefined();
+    });
+
+    it("describes a dotted line from the original principal to the first known Restschuld", () => {
+      expect(body()).toMatch(/dotted/i);
+      expect(body()).toMatch(/original principal/i);
+      expect(body()).toMatch(/Restschuld/);
+    });
+
+    it("quotes the tooltip's No monthly data and the amount paid off", () => {
+      expect(body()).toContain("No monthly data");
+      expect(body()).toMatch(/paid off/i);
+    });
+
+    it("never calls the bridge estimated or interpolated", () => {
+      expect(row()).toBeDefined();
+      expect(topicText("history")).not.toMatch(/estimat|interpolat/i);
+    });
+  });
+
+  // Financial History (issue #245): the History Trends card plots Monthly
+  // Savings or Monthly Spending as bars with a trailing-12-month average, and
+  // the one range governs it and the chart alike.
+  describe("the History Trends card", () => {
+    const row = () => rowOf("history", /trend/i);
+    const body = (): string => row()?.body ?? "";
+
+    it("gives the trends card a row of its own", () => {
+      expect(row()).toBeDefined();
+    });
+
+    it("names the Saved and Spent toggle and the two series it switches", () => {
+      expect(body()).toContain("Saved");
+      expect(body()).toContain("Spent");
+      expect(body()).toContain("Monthly Savings");
+      expect(body()).toContain("Monthly Spending");
+    });
+
+    it("describes the trailing 12-month average line", () => {
+      expect(body()).toMatch(/12-month|twelve-month|12-mo/i);
+      expect(body()).toMatch(/average/i);
+    });
+
+    it("tells Monthly Savings apart from Net Cashflow", () => {
+      expect(body()).toMatch(/balance/i);
+      expect(body()).toContain("Net Cashflow");
+    });
+
+    it("says an unknown month draws no bar and quotes its tooltip", () => {
+      expect(body()).toMatch(/no bar/i);
+      expect(body()).toContain("No data before");
+    });
+
+    it("says the range chips govern the trends as well as the chart", () => {
+      const chips = rowOf("history", /range chips/i);
+
+      expect(chips?.body).not.toMatch(/chart alone/i);
+      expect(chips?.body).toMatch(/trend|Saved|Spent/i);
+    });
   });
 });
 
