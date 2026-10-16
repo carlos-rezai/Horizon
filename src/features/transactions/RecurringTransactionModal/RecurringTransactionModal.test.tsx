@@ -95,7 +95,26 @@ const renderEditModal = (
   return props;
 };
 
-describe("RecurringTransactionModal — linked account field", () => {
+const transferSelect = () =>
+  screen.getByRole("combobox", { name: /^transfer/i });
+
+const TRANSFER_SIGN_MESSAGE =
+  "Enter the transfer amount as a positive number — the direction sets which way it moves.";
+
+const fillTransfer = (amount: string, linked: string) => {
+  fireEvent.change(screen.getByLabelText(/amount/i), {
+    target: { value: amount },
+  });
+  fireEvent.change(screen.getByLabelText(/description/i), {
+    target: { value: "Savings transfer" },
+  });
+  fireEvent.change(transferSelect(), { target: { value: linked } });
+};
+
+const save = () =>
+  fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
+
+describe("RecurringTransactionModal — Transfer select", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -103,37 +122,38 @@ describe("RecurringTransactionModal — linked account field", () => {
     } as Response);
   });
 
-  it("renders the optional Transfer to account dropdown", () => {
+  it("renders a Transfer select in place of Transfer to account", () => {
     renderCreateModal();
 
-    expect(screen.getByLabelText(/transfer to account/i)).toBeInTheDocument();
+    expect(transferSelect()).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/transfer to account/i)
+    ).not.toBeInTheDocument();
   });
 
-  it("includes a blank / none option in the Transfer to account dropdown", () => {
+  it("includes a blank / none option in the Transfer select", () => {
     renderCreateModal();
 
-    const options = screen
-      .getByLabelText(/transfer to account/i)
-      .querySelectorAll("option");
+    const options = transferSelect().querySelectorAll("option");
     const hasNone = Array.from(options).some(
       (o) => o.value === "" || /none|—|-/i.test(o.textContent ?? "")
     );
     expect(hasNone).toBe(true);
   });
 
-  it("lists the other accounts as options in the Transfer to account dropdown", () => {
+  it("lists the other accounts as options in the Transfer select", () => {
     renderCreateModal();
 
-    const options = Array.from(
-      screen.getByLabelText(/transfer to account/i).querySelectorAll("option")
-    ).map((o) => o.textContent ?? "");
+    const options = Array.from(transferSelect().querySelectorAll("option")).map(
+      (o) => o.textContent ?? ""
+    );
 
     expect(options.some((o) => /dkb reserve/i.test(o))).toBe(true);
     expect(options.some((o) => /home loan/i.test(o))).toBe(true);
   });
 });
 
-describe("RecurringTransactionModal — Mortgage link warning", () => {
+describe("RecurringTransactionModal — Transfer Direction", () => {
   beforeEach(() => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
@@ -141,30 +161,212 @@ describe("RecurringTransactionModal — Mortgage link warning", () => {
     } as Response);
   });
 
-  it("does not show the Mortgage warning when no linked account is selected", () => {
+  it("shows no direction chips until a transfer account is selected", () => {
     renderCreateModal();
 
-    expect(screen.queryByText(/ST-only model/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "To" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "From" })
+    ).not.toBeInTheDocument();
   });
 
-  it("does not show the Mortgage warning when a non-Mortgage account is linked", () => {
+  it("shows To / From chips once a transfer account is selected, defaulting to To", () => {
     renderCreateModal();
 
-    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
-      target: { value: "acc-2" },
-    });
+    fireEvent.change(transferSelect(), { target: { value: "acc-2" } });
 
-    expect(screen.queryByText(/ST-only model/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "To" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "From" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
   });
 
-  it("shows the Mortgage warning when a Mortgage account is selected as the linked account", () => {
+  it("hides the direction chips again when the transfer account is cleared", () => {
     renderCreateModal();
 
-    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
-      target: { value: "acc-3" },
-    });
+    fireEvent.change(transferSelect(), { target: { value: "acc-2" } });
+    fireEvent.change(transferSelect(), { target: { value: "" } });
 
-    expect(screen.getByText(/ST-only model/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "To" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("To emits the viewed account as accountId and the chosen account as linkedAccountId", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fillTransfer("500", "acc-2");
+    save();
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "acc-1",
+        linkedAccountId: "acc-2",
+        amount: 50000,
+      })
+    );
+  });
+
+  it("From emits the chosen account as accountId and the viewed account as linkedAccountId", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fillTransfer("500", "acc-2");
+    fireEvent.click(screen.getByRole("button", { name: "From" }));
+    save();
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "acc-2",
+        linkedAccountId: "acc-1",
+        amount: 50000,
+      })
+    );
+  });
+
+  it("a plain recurring row emits the viewed account as accountId", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: "-1200" },
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Rent" },
+    });
+    save();
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: "acc-1", amount: -120000 })
+    );
+  });
+});
+
+describe("RecurringTransactionModal — Mortgage link warning removed", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("shows no ST-only warning when a Mortgage account is selected", () => {
+    renderCreateModal();
+
+    fireEvent.change(transferSelect(), { target: { value: "acc-3" } });
+
+    expect(screen.queryByText(/ST-only model/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/only Sondertilgung payments should link/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("saves a positive transfer into a Mortgage account", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fillTransfer("1500", "acc-3");
+    save();
+
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "acc-1",
+        linkedAccountId: "acc-3",
+        amount: 150000,
+      })
+    );
+  });
+});
+
+describe("RecurringTransactionModal — transfer amount sign", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("shows the positive-amount message for a negative transfer amount", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fillTransfer("-500", "acc-2");
+    save();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(TRANSFER_SIGN_MESSAGE);
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it("shows the positive-amount message for a zero transfer amount", () => {
+    const onSaved = vi.fn();
+    renderCreateModal({ onSaved });
+
+    fillTransfer("0", "acc-2");
+    save();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(TRANSFER_SIGN_MESSAGE);
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+});
+
+const ownedTransfer: RecurringTransaction = {
+  id: "rt-2",
+  accountId: "acc-1",
+  linkedAccountId: "acc-2",
+  amount: 50000,
+  description: "Savings transfer",
+  category: "Transfer",
+  frequency: "monthly",
+  dayOfMonth: 1,
+};
+
+describe("RecurringTransactionModal — editing a transfer", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("seeds the absolute amount of a stored transfer", () => {
+    renderEditModal({ transaction: { ...ownedTransfer, amount: -50000 } });
+
+    const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
+    expect(parseFloat(amountInput.value)).toBeCloseTo(500);
+  });
+
+  it("seeds the direction as To for a transfer owned by the viewed account", () => {
+    renderEditModal({ transaction: ownedTransfer });
+
+    expect(screen.getByRole("button", { name: "To" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("flipping to From saves once with the swapped accountId / linkedAccountId", () => {
+    const onSaved = vi.fn();
+    renderEditModal({ onSaved, transaction: ownedTransfer });
+
+    fireEvent.click(screen.getByRole("button", { name: "From" }));
+    save();
+
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "acc-2",
+        linkedAccountId: "acc-1",
+        amount: 50000,
+      })
+    );
   });
 });
 
@@ -208,41 +410,6 @@ describe("RecurringTransactionModal — validation", () => {
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-  });
-
-  it("shows a validation error when a transfer amount is zero or negative", () => {
-    renderCreateModal();
-
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-6500" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Sondertilgung" },
-    });
-    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
-      target: { value: "acc-3" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
-
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-  });
-
-  it("does not call onSaved when a transfer amount is zero or negative", () => {
-    const onSaved = vi.fn();
-    renderCreateModal({ onSaved });
-
-    fireEvent.change(screen.getByLabelText(/amount/i), {
-      target: { value: "-6500" },
-    });
-    fireEvent.change(screen.getByLabelText(/description/i), {
-      target: { value: "Sondertilgung" },
-    });
-    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
-      target: { value: "acc-3" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));
-
-    expect(onSaved).not.toHaveBeenCalled();
   });
 });
 
@@ -315,7 +482,7 @@ describe("RecurringTransactionModal — successful save", () => {
     fireEvent.change(screen.getByLabelText(/description/i), {
       target: { value: "Sondertilgung" },
     });
-    fireEvent.change(screen.getByLabelText(/transfer to account/i), {
+    fireEvent.change(transferSelect(), {
       target: { value: "acc-3" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save|add|create/i }));

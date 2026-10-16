@@ -489,7 +489,7 @@ const ACCOUNT_SUBJECTS = [
   // The Account Detail card, as its SectionHead titles it.
   "Recurring transactions",
   // The optional link field, as RecurringTransactionModal labels it.
-  "Transfer to account",
+  "“Transfer”",
 ];
 
 describe("the Accounts topic", () => {
@@ -539,15 +539,62 @@ describe("the Accounts topic", () => {
     expect(row?.body).toMatch(/link/i);
   });
 
-  // The Transfer Direction Rule. The form has no direction control at all — it
-  // rejects a linked amount that is not greater than zero — so the sign is the
-  // one thing a reader cannot infer from the fields in front of them. Input
-  // only: the manual stops before Account Detail's recurring-net figure.
+  // The Transfer Direction Rule. The amount is always typed positive and the
+  // To / From chips decide which account the money leaves. Input only: the
+  // manual stops before Account Detail's recurring-net figure.
   it("states the transfer input rule: positive on the account the money leaves", () => {
     const text = detailText("accounts");
 
     expect(text).toMatch(/positive/i);
     expect(text).toMatch(/leaves|leaving/i);
+  });
+
+  // Live-Use Repair #1 (issue #224): the recurring modal's Transfer select,
+  // its To / From Transfer Direction chips, positive-only transfer amounts, the
+  // red/green pair across both accounts, and mirrored rows.
+  describe("the recurring transfers row", () => {
+    const row = () => rowOf("accounts", /transfer/i);
+
+    it("names the Transfer select, not Transfer to account", () => {
+      expect(row()?.body).toContain("“Transfer”");
+      expect(detailText("accounts")).not.toContain("Transfer to account");
+    });
+
+    it("describes the To / From direction", () => {
+      expect(row()?.body).toContain("“To”");
+      expect(row()?.body).toContain("“From”");
+      expect(row()?.body).toMatch(/direction/i);
+    });
+
+    it("says transfer amounts are typed positive, quoting the form's message", () => {
+      expect(row()?.body).toMatch(/positive/i);
+      expect(row()?.body).toContain(
+        "Enter the transfer amount as a positive number"
+      );
+    });
+
+    it("describes the red / green pairing across the two accounts", () => {
+      expect(row()?.body).toMatch(/red/i);
+      expect(row()?.body).toMatch(/green/i);
+    });
+
+    it("describes the mirrored row on the other account", () => {
+      expect(row()?.body).toMatch(/mirror/i);
+    });
+
+    it("describes repayments and Sondertilgung as transfers into a Mortgage", () => {
+      expect(row()?.body).toMatch(/repayment/i);
+      expect(row()?.body).toContain("Sondertilgung");
+      expect(row()?.body).toMatch(/into (a|your|the) Mortgage/i);
+    });
+
+    it("no longer says only Sondertilgung should point at a mortgage", () => {
+      expect(detailText("accounts")).not.toMatch(/only Sondertilgung/i);
+    });
+
+    it("no longer says the form has no in/out control", () => {
+      expect(detailText("accounts")).not.toMatch(/no in\/out control/i);
+    });
   });
 
   /**

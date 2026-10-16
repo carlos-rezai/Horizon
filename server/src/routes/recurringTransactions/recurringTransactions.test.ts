@@ -280,3 +280,183 @@ describe("DELETE /recurring-transactions/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Recurring Transfer rules (issue #224)
+// ---------------------------------------------------------------------------
+
+async function createNamedAccount(name: string): Promise<string> {
+  const res = await request(app).post("/accounts").send({
+    kind: "Girokonto",
+    name,
+    openingBalance: 0,
+    openingDate: "2026-01-01",
+  });
+  return res.body.id as string;
+}
+
+function transferBody(
+  accountId: string,
+  linkedAccountId: string,
+  amount: number
+) {
+  return {
+    accountId,
+    linkedAccountId,
+    amount,
+    description: "Savings transfer",
+    category: "Transfer",
+    frequency: "monthly",
+    dayOfMonth: 1,
+  };
+}
+
+describe("POST /recurring-transactions — transfer rules", () => {
+  it("rejects a negative linked amount with 400 and { issues }", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+
+    const res = await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, b, -50000));
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+    expect(res.body.issues.length).toBeGreaterThan(0);
+  });
+
+  it("rejects a zero linked amount with 400 and { issues }", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+
+    const res = await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, b, 0));
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+  });
+
+  it("rejects a transfer linked to its own account with 400 and { issues }", async () => {
+    const a = await createNamedAccount("A");
+
+    const res = await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, a, 50000));
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+  });
+
+  it("stores nothing when a transfer is rejected", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+
+    await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, b, -50000));
+    await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, a, 50000));
+
+    const all = await request(app).get("/recurring-transactions");
+    expect(all.body).toEqual([]);
+  });
+
+  it("still accepts a negative amount on a plain recurring row", async () => {
+    const a = await createNamedAccount("A");
+
+    const res = await request(app).post("/recurring-transactions").send({
+      accountId: a,
+      amount: -95000,
+      description: "Rent",
+      category: "Housing",
+      frequency: "monthly",
+      dayOfMonth: 1,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.amount).toBe(-95000);
+  });
+});
+
+describe("PATCH /recurring-transactions/:id — merged-row transfer rules", () => {
+  it("rejects a non-positive amount patched onto a stored transfer", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+    const created = await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, b, 50000));
+
+    const res = await request(app)
+      .patch(`/recurring-transactions/${created.body.id}`)
+      .send({ amount: -50000 });
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+
+    const all = await request(app).get("/recurring-transactions");
+    expect(all.body[0].amount).toBe(50000);
+  });
+
+  it("rejects linking a stored negative plain row to an account", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+    const created = await request(app).post("/recurring-transactions").send({
+      accountId: a,
+      amount: -95000,
+      description: "Rent",
+      category: "Housing",
+      frequency: "monthly",
+      dayOfMonth: 1,
+    });
+
+    const res = await request(app)
+      .patch(`/recurring-transactions/${created.body.id}`)
+      .send({ linkedAccountId: b });
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+  });
+
+  it("rejects an accountId flip that would self-link", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+    const created = await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, b, 50000));
+
+    const res = await request(app)
+      .patch(`/recurring-transactions/${created.body.id}`)
+      .send({ accountId: b });
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+
+    const all = await request(app).get("/recurring-transactions");
+    expect(all.body[0].accountId).toBe(a);
+    expect(all.body[0].linkedAccountId).toBe(b);
+  });
+
+  it("moves ownership on a valid direction flip", async () => {
+    const a = await createNamedAccount("A");
+    const b = await createNamedAccount("B");
+    const created = await request(app)
+      .post("/recurring-transactions")
+      .send(transferBody(a, b, 50000));
+
+    const res = await request(app)
+      .patch(`/recurring-transactions/${created.body.id}`)
+      .send({ accountId: b, linkedAccountId: a, amount: 50000 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.accountId).toBe(b);
+    expect(res.body.linkedAccountId).toBe(a);
+
+    const all = await request(app).get("/recurring-transactions");
+    expect(all.body).toHaveLength(1);
+    expect(all.body[0].accountId).toBe(b);
+    expect(all.body[0].linkedAccountId).toBe(a);
+    expect(all.body[0].amount).toBe(50000);
+  });
+});

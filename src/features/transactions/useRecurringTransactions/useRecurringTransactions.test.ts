@@ -132,6 +132,7 @@ describe("useRecurringTransactions — create", () => {
 
     await act(async () => {
       await result.current.create({
+        accountId: ACCOUNT_ID,
         amount: -2000,
         description: "Spotify",
         category: "Entertainment",
@@ -177,6 +178,7 @@ describe("useRecurringTransactions — create", () => {
 
     await act(async () => {
       await result.current.create({
+        accountId: ACCOUNT_ID,
         amount: -2000,
         description: "Spotify",
         category: "Entertainment",
@@ -205,6 +207,7 @@ describe("useRecurringTransactions — create", () => {
     await expect(
       act(async () => {
         await result.current.create({
+          accountId: ACCOUNT_ID,
           amount: 0,
           description: "",
           category: "",
@@ -233,6 +236,7 @@ describe("useRecurringTransactions — update", () => {
 
     await act(async () => {
       await result.current.update("rt-1", {
+        accountId: ACCOUNT_ID,
         amount: -130000,
         description: "Rent (updated)",
         category: "Housing",
@@ -268,6 +272,7 @@ describe("useRecurringTransactions — update", () => {
 
     await act(async () => {
       await result.current.update("rt-1", {
+        accountId: ACCOUNT_ID,
         amount: -130000,
         description: "Rent (updated)",
         category: "Housing",
@@ -351,5 +356,102 @@ describe("useRecurringTransactions — remove", () => {
         await result.current.remove("rt-1");
       })
     ).rejects.toThrow();
+  });
+});
+
+describe("useRecurringTransactions — payload accountId pass-through", () => {
+  function bodyOf(method: string): Record<string, unknown> {
+    const call = vi
+      .mocked(fetch)
+      .mock.calls.find(([, init]) => (init as RequestInit)?.method === method);
+    expect(call).toBeDefined();
+    return JSON.parse((call![1] as RequestInit).body as string) as Record<
+      string,
+      unknown
+    >;
+  }
+
+  it("create sends the payload's accountId, not the viewed account", async () => {
+    const fromTransfer: RecurringTransaction = {
+      id: "rt-from",
+      accountId: "acc-2",
+      linkedAccountId: ACCOUNT_ID,
+      amount: 50000,
+      description: "From reserve",
+      category: "Transfer",
+      frequency: "monthly",
+      dayOfMonth: 1,
+    };
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [rt1, rt2],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => fromTransfer,
+      } as Response);
+
+    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.create({
+        accountId: "acc-2",
+        linkedAccountId: ACCOUNT_ID,
+        amount: 50000,
+        description: "From reserve",
+        category: "Transfer",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+    });
+
+    const body = bodyOf("POST");
+    expect(body.accountId).toBe("acc-2");
+    expect(body.linkedAccountId).toBe(ACCOUNT_ID);
+  });
+
+  it("update sends the payload's accountId so a direction flip is one PATCH", async () => {
+    const flipped: RecurringTransaction = {
+      ...rt1,
+      accountId: "acc-2",
+      linkedAccountId: ACCOUNT_ID,
+      amount: 120000,
+    };
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [rt1, rt2],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => flipped,
+      } as Response);
+
+    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.update("rt-1", {
+        accountId: "acc-2",
+        linkedAccountId: ACCOUNT_ID,
+        amount: 120000,
+        description: "Rent",
+        category: "Housing",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+    });
+
+    const patchCalls = vi
+      .mocked(fetch)
+      .mock.calls.filter(
+        ([, init]) => (init as RequestInit)?.method === "PATCH"
+      );
+    expect(patchCalls).toHaveLength(1);
+    const body = bodyOf("PATCH");
+    expect(body.accountId).toBe("acc-2");
+    expect(body.linkedAccountId).toBe(ACCOUNT_ID);
   });
 });
