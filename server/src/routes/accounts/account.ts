@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+/** Today as an ISO date, the same idiom the account storage uses for linkedSince. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** An Anchor Date: an ISO date no later than today. */
+const AnchorDate = z
+  .string()
+  .min(1)
+  .refine((date) => date <= todayIso(), {
+    message: "anchorDate must not be later than today",
+  });
+
 const AccountKindEnum = z.enum([
   "Girokonto",
   "Tagesgeld",
@@ -13,7 +26,7 @@ export const AccountCreateSchema = z
     kind: AccountKindEnum,
     name: z.string().min(1),
     anchorBalance: z.number().int(),
-    anchorDate: z.string().min(1),
+    anchorDate: AnchorDate,
     sondertilgungAllowance: z.number().int().optional(),
     icon: z.string().nullable().optional(),
     color: z.string().nullable().optional(),
@@ -46,6 +59,7 @@ export const MortgageOriginationSchema = z.object({
 export const AccountUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   anchorBalance: z.number().int().optional(),
+  anchorDate: AnchorDate.optional(),
   sondertilgungAllowance: z.number().int().optional(),
   icon: z.string().nullable().optional(),
   color: z.string().nullable().optional(),

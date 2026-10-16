@@ -83,6 +83,7 @@ export interface AccountCreateInput {
 export interface AccountUpdateInput {
   name?: string;
   anchorBalance?: number;
+  anchorDate?: string;
   sondertilgungAllowance?: number;
   icon?: string | null;
   color?: string | null;

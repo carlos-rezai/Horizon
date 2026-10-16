@@ -79,6 +79,7 @@ export function createSqliteAccountsRepo(
     `UPDATE accounts
        SET name = COALESCE(?, name),
            anchor_balance = COALESCE(?, anchor_balance),
+           anchor_date = COALESCE(?, anchor_date),
            sondertilgung_allowance = COALESCE(?, sondertilgung_allowance),
            icon = ?,
            color = ?,
@@ -215,6 +216,7 @@ export function createSqliteAccountsRepo(
       updateStmt.run(
         input.name ?? null,
         input.anchorBalance ?? null,
+        input.anchorDate ?? null,
         input.sondertilgungAllowance ?? null,
         "icon" in input ? (input.icon ?? null) : existing.icon,
         "color" in input ? (input.color ?? null) : existing.color,

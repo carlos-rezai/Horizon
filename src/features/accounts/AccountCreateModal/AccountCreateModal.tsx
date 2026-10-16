@@ -28,7 +28,20 @@ import {
   StyledToggleText,
   StyledToggleTitle,
   StyledToggleDesc,
+  StyledFieldHint,
 } from "./AccountCreateModal.styles";
+
+/** Help text under the As of field: what the Balance Anchor means. */
+const ANCHOR_HELP_TEXT =
+  "Your balance at the end of this day, including that day's transactions";
+
+/** Today as an ISO date (`YYYY-MM-DD`), in local time — the As of cap. */
+function todayIso(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 
 interface Props {
   onClose: () => void;
@@ -60,10 +73,10 @@ export default function AccountCreateModal({
   const isEditMode = account !== undefined;
   const [kind, setKind] = useState<AccountKind>(account?.kind ?? "Girokonto");
   const [name, setName] = useState(account?.name ?? "");
-  const [anchorBalance, setOpeningBalance] = useState(
+  const [anchorBalance, setAnchorBalance] = useState(
     account ? centsToEuros(account.anchorBalance) : "0.00"
   );
-  const [anchorDate, setOpeningDate] = useState(account?.anchorDate ?? "");
+  const [anchorDate, setAnchorDate] = useState(account?.anchorDate ?? "");
   const [sondertilgungAllowance, setSondertilgungAllowance] = useState(
     account?.sondertilgungAllowance != null
       ? centsToEuros(account.sondertilgungAllowance)
@@ -171,22 +184,24 @@ export default function AccountCreateModal({
           />
         </FormField>
 
-        <FormField label="Opening Balance" htmlFor="opening-balance">
+        <FormField label="Balance" htmlFor="anchor-balance">
           <Input
-            id="opening-balance"
+            id="anchor-balance"
             type="number"
             step="0.01"
             value={anchorBalance}
-            onChange={(e) => setOpeningBalance(e.target.value)}
+            onChange={(e) => setAnchorBalance(e.target.value)}
           />
         </FormField>
 
-        <FormField label="Opening Date" htmlFor="opening-date">
+        <FormField label="As of" htmlFor="anchor-date">
           <DatePicker
-            aria-label="opening date"
+            aria-label="as of"
             value={anchorDate}
-            onChange={setOpeningDate}
+            onChange={setAnchorDate}
+            maxDate={todayIso()}
           />
+          <StyledFieldHint>{ANCHOR_HELP_TEXT}</StyledFieldHint>
         </FormField>
 
         {kind === "Mortgage" && (
