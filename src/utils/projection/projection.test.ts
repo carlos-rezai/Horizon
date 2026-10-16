@@ -7,6 +7,7 @@ import {
   deriveYearSummaries,
   buildTrajectoryData,
   effectiveSTMonths,
+  totalRestschuld,
 } from "./projection";
 import { chartColors } from "../../tokens/colors";
 import type { MonthlySnapshot } from "../../types/projection";
@@ -798,5 +799,30 @@ describe("effectiveSTMonths", () => {
 
   it("returns an empty map when there is no ST month", () => {
     expect(effectiveSTMonths(new Map(), snapshots, [M]).size).toBe(0);
+  });
+});
+
+describe("totalRestschuld", () => {
+  const month: MonthlySnapshot = {
+    month: "2031-09",
+    accounts: {
+      "mortgage-1": { projected: 500000, actual: 900000 },
+      "mortgage-2": { projected: 300000 },
+      "giro-1": { projected: 120000 },
+    },
+    netCashflow: 0,
+    totalLiquid: 120000,
+  };
+
+  it("is 0 with no mortgages", () => {
+    expect(totalRestschuld(month, [])).toBe(0);
+  });
+
+  it("sums every mortgage's projected balance, never the actual", () => {
+    expect(totalRestschuld(month, ["mortgage-1", "mortgage-2"])).toBe(800000);
+  });
+
+  it("counts a mortgage missing from the month as 0", () => {
+    expect(totalRestschuld(month, ["mortgage-1", "mortgage-9"])).toBe(500000);
   });
 });

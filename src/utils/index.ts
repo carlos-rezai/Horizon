@@ -17,6 +17,7 @@ export {
   deriveYearSummaries,
   buildTrajectoryData,
   findMortgagePayoffMonth,
+  totalRestschuld,
 } from "./projection/projection";
 export type { AccountColumn } from "./projection/projection";
 export { API_BASE } from "./api/api";

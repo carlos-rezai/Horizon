@@ -101,6 +101,24 @@ export function deriveSTMonths(
   return result;
 }
 
+/**
+ * The combined Restschuld in one month: the sum of every Mortgage's
+ * *projected* balance, 0 with no mortgages. Always the projected balance,
+ * never the actual: a Mortgage's "actual" is just its un-replayed opening
+ * balance (ST is modelled as a recurring transfer, not an actual
+ * transaction), so mixing it in would fabricate a phantom step-down at the
+ * current-month boundary.
+ */
+export function totalRestschuld(
+  snapshot: MonthlySnapshot,
+  mortgageIds: string[]
+): number {
+  return mortgageIds.reduce(
+    (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
+    0
+  );
+}
+
 function restschuldIn(
   snapshot: MonthlySnapshot,
   mortgageIds: string[]
