@@ -119,16 +119,6 @@ export function totalRestschuld(
   );
 }
 
-function restschuldIn(
-  snapshot: MonthlySnapshot,
-  mortgageIds: string[]
-): number {
-  return mortgageIds.reduce(
-    (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
-    0
-  );
-}
-
 /**
  * The ST Months that actually reduce the Restschuld: every `deriveSTMonths`
  * entry up to and including the Payoff Month, its amount capped at the
@@ -147,7 +137,7 @@ export function effectiveSTMonths(
   let payoffMonth: string | null = null;
   let prior: number | undefined;
   for (const snapshot of snapshots) {
-    const restschuld = restschuldIn(snapshot, mortgageIds);
+    const restschuld = totalRestschuld(snapshot, mortgageIds);
     if (prior !== undefined) previousRestschuld.set(snapshot.month, prior);
     if (payoffMonth === null && restschuld <= 0) payoffMonth = snapshot.month;
     prior = restschuld;
@@ -187,9 +177,7 @@ export function deriveYearSummaries(
     const restschuld =
       mortgageAccountIds.length === 0
         ? null
-        : mortgageAccountIds.reduce((sum, id) => {
-            return sum + (yearEnd.accounts[id]?.projected ?? 0);
-          }, 0);
+        : totalRestschuld(yearEnd, mortgageAccountIds);
 
     let stAmount: number | null = null;
     for (const [month, amount] of stMonths) {
@@ -228,10 +216,7 @@ export function buildTrajectoryData(
   let payoffReached = false;
 
   return snapshots.map((snapshot, index) => {
-    const restschuldRaw = mortgageAccountIds.reduce(
-      (sum, id) => sum + (snapshot.accounts[id]?.projected ?? 0),
-      0
-    );
+    const restschuldRaw = totalRestschuld(snapshot, mortgageAccountIds);
     if (mortgageAccountIds.length > 0 && restschuldRaw <= 0) {
       payoffReached = true;
     }
