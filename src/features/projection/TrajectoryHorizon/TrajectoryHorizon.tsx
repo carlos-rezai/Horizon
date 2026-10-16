@@ -41,6 +41,7 @@ import ChartFrame from "../../../components/ChartFrame/ChartFrame";
 import ChartTooltip from "../../../components/ChartTooltip/ChartTooltip";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
+import { currentMonth } from "../../../utils/monthMath/monthMath";
 import { Clock, ArrowRight } from "lucide-react";
 import {
   StyledHeaderControls,
@@ -285,8 +286,8 @@ export default function TrajectoryHorizon({
     freedomLiquid: payoffIndex >= 0 && i >= payoffIndex ? p.totalLiquid : null,
   }));
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const todayIndex = data.findIndex((p) => p.label === currentMonth);
+  const current = currentMonth();
+  const todayIndex = data.findIndex((p) => p.label === current);
 
   return (
     <ChartFrame

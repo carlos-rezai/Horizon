@@ -7,6 +7,7 @@ import type { HistoryPoint } from "../../features/history/historyTypes/historyTy
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
 import { resolveAccountColor } from "../color/color";
+import { currentMonth } from "../monthMath/monthMath";
 
 export interface AccountColumn {
   id: string;
@@ -207,13 +208,13 @@ export function buildPastLeadIn(
   points: HistoryPoint[],
   accounts: AccountWithBalance[]
 ): PastLeadInRow[] {
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const current = currentMonth();
   const nonMortgageAccountIds = accounts
     .filter((a) => a.kind !== "Mortgage")
     .map((a) => a.id);
 
   return points
-    .filter((p) => p.month < currentMonth)
+    .filter((p) => p.month < current)
     .slice(-LEAD_IN_MONTHS)
     .map((p, index) => ({
       monthIndex: index,
