@@ -196,6 +196,22 @@ describe("the Dashboard topic", () => {
     expect(row).toBeDefined();
     expect(row?.body).toContain("Mortgage account");
   });
+
+  // Live-Use Repair #2 (issue #225): a mortgage nothing pays off gets an
+  // honest footer instead of "Not paid off within …". The manual quotes it and
+  // keeps the beyond-the-horizon note distinct from it.
+  describe("the Mortgage Countdown footer", () => {
+    const row = () => rowOf("dashboard", /Mortgage Countdown/);
+
+    it("quotes the no-repayment footer", () => {
+      expect(row()?.body).toContain("No repayment set up");
+      expect(row()?.body).toMatch(/recurring transfer into/i);
+    });
+
+    it("still describes the not-paid-off-within-the-horizon note", () => {
+      expect(row()?.body).toMatch(/horizon/i);
+    });
+  });
 });
 
 const STREAK_SUBJECTS = [

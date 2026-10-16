@@ -10,6 +10,7 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
+import type { RecurringTransaction } from "../../../types/recurring";
 
 afterEach(() => {
   cleanup();
@@ -33,6 +34,21 @@ const assetAccount: AccountWithBalance = {
   balance: 150000,
 };
 
+// A monthly repayment transfer from the Girokonto into the mortgage.
+const repayment: RecurringTransaction = {
+  id: "rec-repay",
+  accountId: "giro-1",
+  amount: 150000,
+  description: "Darlehensrate",
+  category: "Housing",
+  frequency: "monthly",
+  dayOfMonth: 1,
+  linkedAccountId: "mortgage-1",
+};
+
+const NO_REPAYMENT_FOOTER =
+  "No repayment set up — add a recurring transfer into this mortgage to see the payoff date.";
+
 function makeSnapshots(
   accountId: string,
   finalProjected: number
@@ -53,7 +69,11 @@ function makeSnapshots(
 describe("MortgageCountdown", () => {
   it("renders nothing when no Mortgage accounts exist", () => {
     const { container } = renderWithTheme(
-      <MortgageCountdown accounts={[assetAccount]} snapshots={[]} />
+      <MortgageCountdown
+        accounts={[assetAccount]}
+        snapshots={[]}
+        recurringTransactions={[]}
+      />
     );
     expect(container.firstChild).toBeNull();
   });
@@ -70,6 +90,7 @@ describe("MortgageCountdown", () => {
       <MortgageCountdown
         accounts={[mortgageAccount, secondMortgage]}
         snapshots={snapshots}
+        recurringTransactions={[repayment]}
       />
     );
 
@@ -81,18 +102,26 @@ describe("MortgageCountdown", () => {
     const snapshots = makeSnapshots("mortgage-1", 100000);
 
     renderWithTheme(
-      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[repayment]}
+      />
     );
 
     // balance 3800000 cents = 38,000.00 € — some formatted form containing 38.000 or 38,000
     expect(screen.getByText(/38[.,]000/)).toBeInTheDocument();
   });
 
-  it('shows "Not paid off within 10-year horizon." when payoff month is null', () => {
+  it('shows "Not paid off within 10-year horizon." when a repayment exists but payoff falls beyond the horizon', () => {
     const snapshots = makeSnapshots("mortgage-1", 100000); // never reaches 0
 
     renderWithTheme(
-      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[repayment]}
+      />
     );
 
     expect(
@@ -104,7 +133,11 @@ describe("MortgageCountdown", () => {
     const snapshots = makeSnapshots("mortgage-1", 100000);
 
     renderWithTheme(
-      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[repayment]}
+      />
     );
 
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
@@ -114,7 +147,11 @@ describe("MortgageCountdown", () => {
     const snapshots = makeSnapshots("mortgage-1", 100000);
 
     renderWithTheme(
-      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[repayment]}
+      />
     );
 
     const bar = screen.getByRole("progressbar");
@@ -138,7 +175,11 @@ describe("MortgageCountdown", () => {
     });
 
     renderWithTheme(
-      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[repayment]}
+      />
     );
 
     expect(screen.getByText("To Payoff")).toBeInTheDocument();
@@ -151,12 +192,56 @@ describe("MortgageCountdown", () => {
     const snapshots = makeSnapshots("mortgage-1", 100000);
 
     renderWithTheme(
-      <MortgageCountdown accounts={[mortgageAccount]} snapshots={snapshots} />
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[repayment]}
+      />
     );
 
     expect(screen.getByText("Paid off")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Edit mortgage details" })
     ).toBeInTheDocument();
+  });
+
+  it("shows the no-repayment footer when no recurring transfer pays the mortgage", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
+
+    renderWithTheme(
+      <MortgageCountdown
+        accounts={[mortgageAccount, assetAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[]}
+      />
+    );
+
+    expect(screen.getByText(NO_REPAYMENT_FOOTER)).toBeInTheDocument();
+    expect(
+      screen.queryByText("Not paid off within 10-year horizon.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the no-repayment footer when recurrings exist but none is linked to the mortgage", () => {
+    const snapshots = makeSnapshots("mortgage-1", 100000);
+    const salary: RecurringTransaction = {
+      id: "rec-salary",
+      accountId: "giro-1",
+      amount: 300000,
+      description: "Gehalt",
+      category: "Income",
+      frequency: "monthly",
+      dayOfMonth: 25,
+    };
+
+    renderWithTheme(
+      <MortgageCountdown
+        accounts={[mortgageAccount, assetAccount]}
+        snapshots={snapshots}
+        recurringTransactions={[salary]}
+      />
+    );
+
+    expect(screen.getByText(NO_REPAYMENT_FOOTER)).toBeInTheDocument();
   });
 });
