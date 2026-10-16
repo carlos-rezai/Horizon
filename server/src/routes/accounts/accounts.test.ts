@@ -770,6 +770,19 @@ describe("POST /accounts — Anchor Date not later than today", () => {
   });
 });
 
+describe("POST /accounts — Anchor Date is an ISO date", () => {
+  it("answers 400 for an anchorDate that is not an ISO date", async () => {
+    const res = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 100000,
+      anchorDate: "16.10.2026",
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
 describe("PATCH /accounts/:id — re-anchoring", () => {
   async function createGirokonto(): Promise<string> {
     const created = await request(app).post("/accounts").send({

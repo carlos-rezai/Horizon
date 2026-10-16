@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
@@ -380,5 +388,48 @@ describe("POST /mortgages — Balance Anchor fields", () => {
     expect(res.body.balance).toBe(20000000);
     expect(res.body).not.toHaveProperty("opening" + "Balance");
     expect(res.body).not.toHaveProperty("opening" + "Date");
+  });
+});
+
+describe("POST /mortgages — Anchor Date not later than today", () => {
+  // Midday on 16 Oct 2026, local time. Only `Date` is faked: supertest needs
+  // real timers for its socket.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function freezeToday(): void {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 16, 12, 0));
+  }
+
+  it("answers 400 for an anchorDate later than today and stores nothing", async () => {
+    freezeToday();
+    const giro = await createAccount("Girokonto", "Giro");
+
+    const res = await request(app)
+      .post("/mortgages")
+      .send({
+        ...validSetup,
+        anchorDate: "2026-10-17",
+        repayment: repaymentFrom(giro),
+      });
+
+    expect(res.status).toBe(400);
+    expect(Array.isArray(res.body.issues)).toBe(true);
+    expect(res.body.issues.length).toBeGreaterThan(0);
+    expect(await mortgageCount()).toBe(0);
+    expect(await allRecurring()).toHaveLength(0);
+  });
+
+  it("accepts an anchorDate of today", async () => {
+    freezeToday();
+
+    const res = await request(app)
+      .post("/mortgages")
+      .send({ ...validSetup, anchorDate: "2026-10-16" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.anchorDate).toBe("2026-10-16");
   });
 });
