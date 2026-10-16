@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Clock, TriangleAlert } from "lucide-react";
 import PageHeader from "../../../components/PageHeader/PageHeader";
 import EmptyState from "../../../components/EmptyState/EmptyState";
@@ -5,10 +6,14 @@ import Spinner from "../../../primitives/Spinner/Spinner";
 import { useAccounts } from "../../accounts/useAccounts/useAccounts";
 import { useHistory } from "../useHistory/useHistory";
 import HistoryChart from "../HistoryChart/HistoryChart";
+import HistoryTrends from "../HistoryTrends/HistoryTrends";
+import type { HistoryRange } from "../historyTypes/historyTypes";
 import YearArchive from "../YearArchive/YearArchive";
 import { StyledPage, StyledCta } from "./HistoryPage.styles";
 
 export default function HistoryPage() {
+  // One range for the page: the chart's chips drive the trends card too.
+  const [range, setRange] = useState<HistoryRange>("all");
   const {
     points,
     statementCounts,
@@ -51,7 +56,14 @@ export default function HistoryPage() {
         />
       ) : (
         <>
-          <HistoryChart points={points} accounts={accounts} isLoading={false} />
+          <HistoryChart
+            points={points}
+            accounts={accounts}
+            isLoading={false}
+            range={range}
+            onRangeChange={setRange}
+          />
+          <HistoryTrends points={points} range={range} isLoading={false} />
           <YearArchive points={points} statementCounts={statementCounts} />
         </>
       )}

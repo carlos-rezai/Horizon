@@ -26,6 +26,12 @@ export interface HistoryPoint {
   restschuldBridge: number | null;
   /** Σ of that month's real stored transactions (not the recurring figure). */
   netCashflow: number;
+  /**
+   * Monthly Savings: Σ of the month-over-month gains of the Trackable Accounts
+   * (Girokonto, Tagesgeld, Investment). Null in the span's first month and when
+   * any Trackable Account is Unknown that month or the month before.
+   */
+  monthlySavings: number | null;
   /** Per-account `actual` balance; null before that account's Known Since. */
   accounts: Record<string, number | null>;
 }
@@ -110,9 +116,31 @@ export function deriveHistory(
   const liquidIds = accounts
     .filter((a) => a.kind === "Girokonto" || a.kind === "Tagesgeld")
     .map((a) => a.id);
+  const trackableIds = accounts
+    .filter(
+      (a) =>
+        a.kind === "Girokonto" ||
+        a.kind === "Tagesgeld" ||
+        a.kind === "Investment"
+    )
+    .map((a) => a.id);
   const bridge = paydownBridge(snapshots, mortgage);
 
-  return snapshots.map((snapshot) => {
+  const monthlySavingsAt = (index: number): number | null => {
+    if (index === 0 || trackableIds.length === 0) return null;
+    const current = snapshots[index];
+    const previous = snapshots[index - 1];
+    let sum = 0;
+    for (const id of trackableIds) {
+      const now = current.accounts[id]?.actual;
+      const before = previous.accounts[id]?.actual;
+      if (now === undefined || before === undefined) return null;
+      sum += now - before;
+    }
+    return sum;
+  };
+
+  return snapshots.map((snapshot, index) => {
     const accountActuals: Record<string, number | null> = {};
     for (const a of accounts) {
       accountActuals[a.id] = snapshot.accounts[a.id]?.actual ?? null;
@@ -145,6 +173,7 @@ export function deriveHistory(
       restschuld,
       restschuldBridge: bridge.get(snapshot.month) ?? null,
       netCashflow,
+      monthlySavings: monthlySavingsAt(index),
       accounts: accountActuals,
     };
   });

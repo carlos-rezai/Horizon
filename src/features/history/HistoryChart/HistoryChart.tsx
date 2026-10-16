@@ -11,7 +11,11 @@ import {
   YAxis,
 } from "recharts";
 import type { AccountWithBalance } from "../../../types/account";
-import type { HistoryPoint } from "../historyTypes/historyTypes";
+import {
+  HISTORY_RANGE_OPTIONS,
+  type HistoryPoint,
+  type HistoryRange,
+} from "../historyTypes/historyTypes";
 import { firstKnownMonths } from "../knownSince/knownSince";
 import {
   buildSeriesDescriptors,
@@ -77,18 +81,6 @@ interface HistoryChartDataPoint {
   netCashflow: number;
   [accountId: string]: number | string | null;
 }
-
-interface RangeOption {
-  value: string;
-  label: string;
-  months: number;
-}
-
-const RANGE_OPTIONS: RangeOption[] = [
-  { value: "1y", label: "1 Year", months: 12 },
-  { value: "3y", label: "3 Years", months: 36 },
-  { value: "all", label: "All history", months: Infinity },
-];
 
 interface HistoryTooltipPayloadItem {
   payload?: HistoryChartDataPoint;
@@ -202,12 +194,27 @@ interface Props {
   points: HistoryPoint[];
   accounts: AccountWithBalance[];
   isLoading: boolean;
+  /** The selected range when the page owns it; the chart keeps its own otherwise. */
+  range?: HistoryRange;
+  /** Called with the chosen range when the page owns it. */
+  onRangeChange?: (range: HistoryRange) => void;
 }
 
-export default function HistoryChart({ points, accounts, isLoading }: Props) {
+export default function HistoryChart({
+  points,
+  accounts,
+  isLoading,
+  range: controlledRange,
+  onRangeChange,
+}: Props) {
   const theme = useTheme();
 
-  const [range, setRange] = useState("all");
+  const [ownRange, setOwnRange] = useState<HistoryRange>("all");
+  const range = controlledRange ?? ownRange;
+  const setRange = (next: HistoryRange) => {
+    setOwnRange(next);
+    onRangeChange?.(next);
+  };
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
   const hasMortgage = accounts.some((a) => a.kind === "Mortgage");
@@ -239,7 +246,7 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
   // Range narrows from the right edge (TODAY), so a shorter window always keeps
   // the most recent months rather than the earliest.
   const rangeMonths =
-    RANGE_OPTIONS.find((o) => o.value === range)?.months ?? Infinity;
+    HISTORY_RANGE_OPTIONS.find((o) => o.value === range)?.months ?? Infinity;
   const windowed = points.slice(Math.max(0, points.length - rangeMonths));
 
   const firstKnown = useMemo(() => firstKnownMonths(points), [points]);
@@ -280,7 +287,7 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
       controls={
         !isLoading && (
           <StyledRangeChips role="group" aria-label="History range">
-            {RANGE_OPTIONS.map((o) => {
+            {HISTORY_RANGE_OPTIONS.map((o) => {
               const active = range === o.value;
               return (
                 <StyledRangeChip
