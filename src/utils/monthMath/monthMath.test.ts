@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { currentMonth, monthsBetween } from "./monthMath";
+import { currentMonth, monthsBetween, todayIso } from "./monthMath";
 
 describe("currentMonth", () => {
   afterEach(() => {
@@ -37,5 +37,18 @@ describe("monthsBetween", () => {
 
   it("is negative when the target is earlier", () => {
     expect(monthsBetween("2027-02", "2026-11")).toBe(-3);
+  });
+});
+
+describe("todayIso", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("is today's local date as YYYY-MM-DD", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 2, 7, 12));
+
+    expect(todayIso()).toBe("2026-03-07");
   });
 });

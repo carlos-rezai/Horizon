@@ -23,7 +23,7 @@ export {
 export type { AccountColumn } from "./projection/projection";
 export { API_BASE } from "./api/api";
 export { apiErrorMessage } from "./apiError/apiError";
-export { currentMonth, monthsBetween } from "./monthMath/monthMath";
+export { currentMonth, monthsBetween, todayIso } from "./monthMath/monthMath";
 export { resolveAccountColor } from "./color/color";
 export {
   recurringAmountFor,

@@ -1,6 +1,5 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  todayIso,
   toCents,
   validate,
   validateRepayment,
@@ -33,19 +32,6 @@ describe("toCents", () => {
 
   it("is NaN for an empty field", () => {
     expect(toCents("  ")).toBeNaN();
-  });
-});
-
-describe("todayIso", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("is today's local date as YYYY-MM-DD", () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(2026, 2, 7, 12));
-
-    expect(todayIso()).toBe("2026-03-07");
   });
 });
 

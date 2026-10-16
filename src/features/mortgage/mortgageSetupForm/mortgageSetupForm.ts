@@ -38,14 +38,6 @@ export interface FormValues {
   stMonth: string;
 }
 
-/** Today as an ISO date (`YYYY-MM-DD`), in local time. */
-export function todayIso(): string {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
 /** Cents from a typed euro amount; NaN when the field is empty or not a number. */
 export function toCents(euros: string): number {
   return euros.trim() === "" ? NaN : eurosToCents(euros);

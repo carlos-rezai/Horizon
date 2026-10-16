@@ -5,8 +5,8 @@ import { apiErrorMessage } from "../../../utils/apiError/apiError";
 import { percentPaidOff } from "../../../utils/mortgage/mortgage";
 import { MONTHS_LONG } from "../../../utils/format/format";
 import { theme as meridianTheme } from "../../../tokens";
+import { todayIso } from "../../../utils/monthMath/monthMath";
 import {
-  todayIso,
   toCents,
   validate,
   type FormValues,
