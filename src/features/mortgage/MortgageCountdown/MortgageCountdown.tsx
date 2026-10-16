@@ -9,7 +9,11 @@ import {
   percentPaidOff,
   hasRepaymentTransfer,
 } from "../../../utils/mortgage/mortgage";
-import { formatBalance } from "../../../utils/format/format";
+import { formatBalance, MONTHS } from "../../../utils/format/format";
+import {
+  currentMonth,
+  monthsBetween,
+} from "../../../utils/monthMath/monthMath";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import EmptyState from "../../../components/EmptyState/EmptyState";
@@ -35,33 +39,6 @@ import {
   StyledFlagDate,
   StyledNotPaidOff,
 } from "./MortgageCountdown.styles";
-
-const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-/** Whole months from one ISO `YYYY-MM` to another (may be negative). */
-function monthsBetween(fromMonth: string, toMonth: string): number {
-  const [fy, fm] = fromMonth.split("-").map(Number);
-  const [ty, tm] = toMonth.split("-").map(Number);
-  return (ty - fy) * 12 + (tm - fm);
-}
 
 interface Props {
   accounts: AccountWithBalance[];
@@ -145,7 +122,7 @@ export default function MortgageCountdown({
           years = Math.floor(total / 12);
           months = total % 12;
           const [py, pm] = payoffMonth.split("-").map(Number);
-          payoffLabel = `${MONTHS_SHORT[pm - 1]} ${py}`;
+          payoffLabel = `${MONTHS[pm - 1]} ${py}`;
         }
 
         return (
@@ -176,7 +153,7 @@ export default function MortgageCountdown({
             <ProgressBar value={pct} color={theme.colors.primary} />
             <StyledOriginLine>
               of <StyledMono>{formatBalance(start)}</StyledMono> · started{" "}
-              {MONTHS_SHORT[sd.getMonth()]} {sd.getFullYear()}
+              {MONTHS[sd.getMonth()]} {sd.getFullYear()}
               {account.termYears != null && (
                 <>
                   {" "}
