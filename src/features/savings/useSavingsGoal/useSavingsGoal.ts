@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../utils/api/api";
 import type { AccountKind } from "../../../types/account";
 import { useAccounts } from "../../accounts/useAccounts/useAccounts";
-import { useHistory } from "../../history/useHistory/useHistory";
+import { fetchHistoryPoints } from "../../history/useHistory/useHistory";
+import { HISTORY } from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
 import { computeSavingsGoal } from "../../../utils/savingsGoal/savingsGoal";
 import type {
   SavingsGoal,
@@ -27,6 +29,8 @@ const TRACKABLE_KINDS: readonly AccountKind[] = [
   "Tagesgeld",
   "Investment",
 ];
+
+const NO_POINTS: HistoryPoint[] = [];
 
 /** The config the hook computes against before the goal fetch resolves. */
 const DEFAULT_CONFIG: SavingsGoalConfig = {
@@ -54,7 +58,9 @@ function isSavingsGoalConfig(value: unknown): value is SavingsGoalConfig {
  * `computeSavingsGoal`. The save path arrives in Phase 3.
  */
 export function useSavingsGoal(): UseSavingsGoalResult {
-  const { points, isLoading: historyLoading } = useHistory();
+  const history = useCachedResource(HISTORY, fetchHistoryPoints);
+  const points = useMemo(() => history.data ?? NO_POINTS, [history.data]);
+  const historyLoading = history.isLoading;
   const { accounts, isLoading: accountsLoading } = useAccounts();
   const [config, setConfig] = useState<SavingsGoalConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(true);

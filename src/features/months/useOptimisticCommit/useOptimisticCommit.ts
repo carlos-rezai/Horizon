@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import {
   ACCOUNTS,
   PROJECTION,
+  HISTORY,
 } from "../../../components/CacheProvider/cacheKeys";
 import { useCacheBump } from "../../../components/CacheProvider/useCacheBump";
 import { useOptionalNotify } from "../../../components/SnackbarProvider/useSnackbar";
@@ -74,8 +75,9 @@ export function useOptimisticCommit(
       if (stored) setList(edit.settle(stored));
 
       // Every mutation here moves money, so the account balances and the whole
-      // projection built on top of them are stale the moment it lands.
-      bump(ACCOUNTS, PROJECTION);
+      // projection built on top of them are stale the moment it lands — and
+      // the reconstructed history derived from the same transactions.
+      bump(ACCOUNTS, PROJECTION, HISTORY);
       return true;
     },
     [setList, bump, notify]

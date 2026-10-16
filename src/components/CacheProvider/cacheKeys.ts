@@ -20,13 +20,19 @@ export const PROJECTION = "projection";
 export const CATEGORIES = "categories";
 /** Every recurring transaction across all accounts. */
 export const RECURRING = "recurring";
+/** The reconstructed monthly History points from `GET /projection/history`. */
+export const HISTORY = "history";
+/** The imports list behind the Year Archive badges. */
+export const IMPORT_HISTORY = "importHistory";
 
-/** The four fixed, whole-app resource keys. */
+/** The fixed, whole-app resource keys. */
 type GlobalResourceKey =
   | typeof ACCOUNTS
   | typeof PROJECTION
   | typeof CATEGORIES
-  | typeof RECURRING;
+  | typeof RECURRING
+  | typeof HISTORY
+  | typeof IMPORT_HISTORY;
 
 /**
  * Brands the dynamic per-month transaction keys so they satisfy `CacheKey`

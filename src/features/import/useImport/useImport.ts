@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import { API_BASE } from "../../../utils/api/api";
+import { IMPORT_HISTORY } from "../../../components/CacheProvider/cacheKeys";
+import { useCacheBump } from "../../../components/CacheProvider/useCacheBump";
 import { formatFileSizeKB } from "../../../utils/format/format";
 import {
   ImportCommitError,
@@ -65,6 +67,7 @@ export function useImport(accounts: AccountWithBalance[]): UseImportResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const bump = useCacheBump();
 
   const importAccounts = useMemo(
     () => accounts.filter((a) => IMPORTABLE_KINDS.has(a.kind)),
@@ -99,7 +102,12 @@ export function useImport(accounts: AccountWithBalance[]): UseImportResult {
 
   const history = useMemo(() => records.map(toStatement), [records]);
 
-  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+  // A commit or delete changes the imports list, so the Year Archive badges
+  // read from the `IMPORT_HISTORY` cache are stale too.
+  const refresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+    bump(IMPORT_HISTORY);
+  }, [bump]);
 
   const preview = useCallback(
     async (

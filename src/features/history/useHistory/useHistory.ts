@@ -1,5 +1,10 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { API_BASE } from "../../../utils/api/api";
+import {
+  HISTORY,
+  IMPORT_HISTORY,
+} from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
 import type { ImportRecord } from "../../import/importTypes/importTypes";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
 
@@ -15,67 +20,75 @@ interface UseHistoryResult {
 }
 
 /**
+ * Fetches the reconstructed History points. Every reader of the `HISTORY`
+ * cache key passes this fetcher, so they all share one request.
+ */
+export async function fetchHistoryPoints(): Promise<HistoryPoint[]> {
+  const res = await fetch(`${API_BASE}/projection/history`);
+  if (!res.ok) throw new Error("Failed to fetch history");
+  return (await res.json()) as HistoryPoint[];
+}
+
+async function fetchImportRecords(): Promise<ImportRecord[]> {
+  const res = await fetch(`${API_BASE}/imports`);
+  if (!res.ok) throw new Error("Failed to fetch history");
+  return (await res.json()) as ImportRecord[];
+}
+
+const NO_POINTS: HistoryPoint[] = [];
+const NO_YEARS: number[] = [];
+const NO_COUNTS: Record<number, number> = {};
+
+/**
  * Loads the reconstructed History points and derives the set of years that
- * have imported statements. The years drive which periods the History view may
- * browse; a failed request degrades to empty data with a surfaced error.
+ * have imported statements. Both reads go through the app cache (`HISTORY`
+ * and `IMPORT_HISTORY`), so they refresh whenever a mutation bumps either
+ * key. The years drive which periods the History view may browse; a failed
+ * request degrades to empty data with a surfaced error.
  */
 export function useHistory(): UseHistoryResult {
-  const [points, setPoints] = useState<HistoryPoint[]>([]);
-  const [years, setYears] = useState<number[]>([]);
-  const [statementCounts, setStatementCounts] = useState<
-    Record<number, number>
-  >({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const history = useCachedResource(HISTORY, fetchHistoryPoints);
+  const imports = useCachedResource(IMPORT_HISTORY, fetchImportRecords);
 
-  useEffect(() => {
-    let cancelled = false;
+  const errorMessage = history.error ?? imports.error;
+  const error = useMemo(
+    () => (errorMessage === null ? null : new Error(errorMessage)),
+    [errorMessage]
+  );
 
-    async function load() {
-      try {
-        const [historyRes, importsRes] = await Promise.all([
-          fetch(`${API_BASE}/projection/history`),
-          fetch(`${API_BASE}/imports`),
-        ]);
-        if (!historyRes.ok || !importsRes.ok) {
-          throw new Error("Failed to fetch history");
-        }
-        const fetchedPoints = (await historyRes.json()) as HistoryPoint[];
-        const imports = (await importsRes.json()) as ImportRecord[];
-        const derivedYears = Array.from(
-          new Set(imports.map((record) => Number(record.startDate.slice(0, 4))))
-        ).sort((a, b) => a - b);
-        const derivedCounts = imports.reduce<Record<number, number>>(
-          (counts, record) => {
-            const year = Number(record.startDate.slice(0, 4));
-            counts[year] = (counts[year] ?? 0) + 1;
-            return counts;
-          },
-          {}
-        );
-        if (!cancelled) {
-          setPoints(fetchedPoints);
-          setYears(derivedYears);
-          setStatementCounts(derivedCounts);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setPoints([]);
-          setYears([]);
-          setStatementCounts({});
-          setError(err instanceof Error ? err : new Error(String(err)));
-          setIsLoading(false);
-        }
-      }
-    }
-
-    load();
-
-    return () => {
-      cancelled = true;
+  const records = imports.data;
+  const { years, statementCounts } = useMemo(() => {
+    if (!records) return { years: NO_YEARS, statementCounts: NO_COUNTS };
+    const startYears = records.map((record) =>
+      Number(record.startDate.slice(0, 4))
+    );
+    return {
+      years: Array.from(new Set(startYears)).sort((a, b) => a - b),
+      statementCounts: startYears.reduce<Record<number, number>>(
+        (counts, year) => {
+          counts[year] = (counts[year] ?? 0) + 1;
+          return counts;
+        },
+        {}
+      ),
     };
-  }, []);
+  }, [records]);
 
-  return { points, years, statementCounts, isLoading, error };
+  if (error) {
+    return {
+      points: NO_POINTS,
+      years: NO_YEARS,
+      statementCounts: NO_COUNTS,
+      isLoading: false,
+      error,
+    };
+  }
+
+  return {
+    points: history.data ?? NO_POINTS,
+    years,
+    statementCounts,
+    isLoading: history.isLoading || imports.isLoading,
+    error: null,
+  };
 }
