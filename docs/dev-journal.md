@@ -1331,3 +1331,61 @@ five patches; this pass makes each fact have a single home.
 different question from the projection-only `totalRestschuld`, and the
 KPI strip is outside this plan. A candidate for the next refactor, not drift
 to paper over here.
+
+## 2026-10-16 — #237 Balance Anchor refactor: one rule per fact
+
+Refactor plan 32, worked commit by commit. The epic's seven phases each
+solved their own corner; this pass gives each date and Known Since rule one
+home per tier.
+
+- **Dates.** The server date lib now owns `todayIso` (local time),
+  `daysInMonth` and `endOfMonth`; the engine's occurrence clamp, its
+  end-of-month lookup (the `"-31"` string trick is gone) and settlement's
+  closing balance read them. The client's two `todayIso` copies are one, in
+  the month-math util beside `currentMonth`.
+- **The midnight defect.** Found by reading the code for the plan, not in
+  live use. The account route's "today" was `toISOString()` — the UTC date —
+  while the account form capped its DatePicker at the local date. From
+  midnight to 01:00/02:00 in Germany the form offered today and the server
+  rejected it as "later than today". Both tiers now use the local calendar
+  date, pinned by a frozen-clock test at 00:30.
+- **One Anchor Date schema.** `AnchorDate` (an ISO date no later than today)
+  is exported from the account schema and used by both account routes and
+  `POST /mortgages`, which until now accepted a future `anchorDate`.
+  Mortgage Setup's "As of" DatePicker is capped at today like the account
+  form's.
+- **Import.** `detectRecurring` takes the Anchor Date itself, so the rule
+  lives in the module Recurring Detection belongs to; `buildPreview` lost its
+  post-pass.
+- **Smaller moves.** `toProjectionAccountEntry` replaces three copies of the
+  engine's account-entry literal; the history feature's `knownSince` module
+  owns `firstKnownMonths` and `isUnknownMonth`; the year aggregator is generic
+  over its balance type so YearArchive uses it again; FormField has a `hint`;
+  the Current Balance parity cases run in `runStorageSpec`.
+
+### Where the plan met the code
+
+- **`IsoDate` moved with `AnchorDate`.** The plan had Mortgage Setup keep its
+  private `IsoDate`. Building `AnchorDate` on it in the account schema would
+  have copied the regex, so `IsoDate` moved beside `AnchorDate` and Mortgage
+  Setup imports both — one regex.
+- **FormField's hint drops StatBlock's `margin-top`.** FormField already
+  spaces its children with a flex gap; the margin would have pushed the
+  account form's "As of" help text further down than it sat before.
+
+### Follow-ups
+
+- **The other UTC "today" call sites** — `linkedSince` in the accounts repo
+  and the settlement service's `asOf` — have the same midnight skew. Moving
+  them to the shared `todayIso` shifts a link date or a settlement by a day
+  around midnight, a behaviour change for features this epic did not own.
+  First candidates for the next pass.
+- **A latent midnight flake in the accounts route tests.** The #231 cases'
+  `isoDaysFromToday` helper still builds "tomorrow" from the UTC date. Run
+  between local midnight and 02:00 CEST, its "tomorrow" is the local today,
+  which the server now accepts, so the "answers 400 for a later date" cases
+  would fail. The plan forbade editing those tests here; the fix is the same
+  local-date helper.
+- Still open from the plan's Out of Scope: requiring
+  `ProjectionAccountEntry.anchorDate`, reshaping `applyRecurringToBalances`,
+  and KpiStrip's private `restschuldOf`.
