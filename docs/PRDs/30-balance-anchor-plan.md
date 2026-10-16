@@ -69,6 +69,8 @@ month)`. It is omitted before Known Since (the field is already
 
 ## Phase 1: Anchored Current Balance everywhere
 
+**Issue**: #230
+
 **User stories**: 1, 7, 8, 9, 10, 11, 16, 17, 18, 19, 41, 42
 
 ### What to build
@@ -108,6 +110,8 @@ the balance is unchanged on every surface.
 
 ## Phase 2: Re-anchoring in the account form
 
+**Issue**: #231
+
 **User stories**: 2, 3, 4, 5, 6, 12, 13, 14
 
 ### What to build
@@ -136,6 +140,8 @@ Saldo and end date, and the stat strip and Current Balance follow.
 ---
 
 ## Phase 3: Anchor Gate in the projection
+
+**Issue**: #232
 
 **User stories**: 29, 30, 31, 32, 33, 34, 39, 40
 
@@ -168,6 +174,8 @@ entered, and its payoff date does not move earlier.
 
 ## Phase 4: Settlement from the anchor
 
+**Issue**: #233
+
 **User stories**: 37, 38
 
 ### What to build
@@ -192,6 +200,8 @@ right amount.
 
 ## Phase 5: Import — no recurring flag on or before the anchor
 
+**Issue**: #234
+
 **User stories**: 35, 36
 
 ### What to build
@@ -213,6 +223,8 @@ and land in the derived history.
 ---
 
 ## Phase 6: Unknown, not €0
+
+**Issue**: #235
 
 **User stories**: 20, 21, 22, 23, 24, 25, 26, 27, 28
 
@@ -249,6 +261,8 @@ before it, and no surface shows €0 for a month without data.
 ---
 
 ## Phase 7: Docs
+
+**Issue**: #236
 
 **User stories**: 15, 43
 
