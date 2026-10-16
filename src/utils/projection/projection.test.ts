@@ -8,6 +8,7 @@ import {
   buildTrajectoryData,
   effectiveSTMonths,
   totalRestschuld,
+  findDebtFreeMonth,
 } from "./projection";
 import { chartColors } from "../../tokens/colors";
 import type { MonthlySnapshot } from "../../types/projection";
@@ -824,5 +825,49 @@ describe("totalRestschuld", () => {
 
   it("counts a mortgage missing from the month as 0", () => {
     expect(totalRestschuld(month, ["mortgage-1", "mortgage-9"])).toBe(500000);
+  });
+});
+
+describe("findDebtFreeMonth", () => {
+  const twoMortgages = (
+    month: string,
+    m1: number,
+    m2: number
+  ): MonthlySnapshot => ({
+    month,
+    accounts: { m1: { projected: m1 }, m2: { projected: m2 } },
+    netCashflow: 0,
+    totalLiquid: 0,
+  });
+
+  const snapshots = [
+    twoMortgages("2026-11", 300000, 600000),
+    twoMortgages("2026-12", 0, 400000),
+    twoMortgages("2027-01", 0, 200000),
+    twoMortgages("2027-02", 0, 0),
+    twoMortgages("2027-03", 0, 0),
+  ];
+
+  it("returns the first month the combined Restschuld reaches zero", () => {
+    expect(findDebtFreeMonth(snapshots, ["m1", "m2"])).toBe("2027-02");
+  });
+
+  it("is null with no mortgages", () => {
+    expect(findDebtFreeMonth(snapshots, [])).toBeNull();
+  });
+
+  it("is null when the combined Restschuld never reaches zero", () => {
+    expect(findDebtFreeMonth(snapshots.slice(0, 3), ["m1", "m2"])).toBeNull();
+  });
+
+  it("equals the Payoff Month with one mortgage", () => {
+    for (const id of ["m1", "m2"]) {
+      expect(findDebtFreeMonth(snapshots, [id])).toBe(
+        findMortgagePayoffMonth(snapshots, id)
+      );
+    }
+    expect(findDebtFreeMonth(snapshots.slice(0, 1), ["m1"])).toBe(
+      findMortgagePayoffMonth(snapshots.slice(0, 1), "m1")
+    );
   });
 });

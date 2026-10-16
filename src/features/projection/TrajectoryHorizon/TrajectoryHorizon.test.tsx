@@ -7,12 +7,13 @@ import TrajectoryHorizon from "./TrajectoryHorizon";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
+import { formatMonth } from "../../../utils/format/format";
 
 // The chart itself cannot lay out in jsdom, so the recharts boundary is
 // stubbed: ResponsiveContainer passes its children through and ComposedChart
 // records the data points it was handed, which carry the ST marks.
 const chart = vi.hoisted(() => ({
-  data: [] as { label: string; isSTMonth: boolean }[],
+  data: [] as { label: string; isSTMonth: boolean; isPayoffMonth: boolean }[],
 }));
 vi.mock("recharts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("recharts")>();
@@ -24,7 +25,7 @@ vi.mock("recharts", async (importOriginal) => {
     ComposedChart: ({
       data,
     }: {
-      data: { label: string; isSTMonth: boolean }[];
+      data: { label: string; isSTMonth: boolean; isPayoffMonth: boolean }[];
     }) => {
       chart.data = data;
       return null;
@@ -500,5 +501,71 @@ describe("TrajectoryHorizon — ST marks", () => {
     );
 
     expect(stMarked()).toEqual(["2026-11", "2027-11"]);
+  });
+});
+
+describe("TrajectoryHorizon — two mortgages", () => {
+  // m1 is paid off in June 2026, m2 only in September 2026: the plan is
+  // debt-free in September. An annual transfer into m2 each August still
+  // reduces a Restschuld, so it is an ST Month.
+  const secondMortgage: AccountWithBalance = {
+    ...mortgageAccount,
+    id: "m2",
+    name: "KfW Mortgage",
+  };
+  const months = ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08"]
+    .concat(["2026-09", "2026-10", "2026-11", "2026-12", "2027-01"])
+    .concat(["2027-02", "2027-03", "2027-04", "2027-05", "2027-06"])
+    .concat(["2027-07", "2027-08", "2027-09"]);
+  const twoMortgageSnapshots: MonthlySnapshot[] = months.map((month) => ({
+    month,
+    accounts: {
+      g1: { projected: 100000 },
+      m1: { projected: month < "2026-06" ? 30000 : 0 },
+      m2: { projected: month < "2026-09" ? 60000 : 0 },
+    },
+    netCashflow: 0,
+    totalLiquid: 100000,
+  }));
+  const augustST: RecurringTransaction = {
+    id: "rt-aug",
+    accountId: "g1",
+    linkedAccountId: "m2",
+    amount: 10000,
+    description: "Sondertilgung",
+    category: "Housing",
+    frequency: "annual",
+    dayOfMonth: 1,
+    monthOfYear: 8,
+  };
+
+  function renderTwoMortgages() {
+    return renderWithTheme(
+      <TrajectoryHorizon
+        snapshots={twoMortgageSnapshots}
+        accounts={[giroAccount, mortgageAccount, secondMortgage]}
+        recurringTransactions={[augustST]}
+        isLoading={false}
+      />
+    );
+  }
+
+  it("places the payoff marker on the month the combined Restschuld reaches zero", () => {
+    renderTwoMortgages();
+
+    expect(screen.getByTestId("payoff-marker").textContent).toContain(
+      formatMonth("2026-09")
+    );
+    expect(
+      chart.data.filter((p) => p.isPayoffMonth).map((p) => p.label)
+    ).toEqual(["2026-09"]);
+  });
+
+  it("counts a Sondertilgung up to the combined payoff, never after", () => {
+    renderTwoMortgages();
+
+    expect(chart.data.filter((p) => p.isSTMonth).map((p) => p.label)).toEqual([
+      "2026-08",
+    ]);
   });
 });

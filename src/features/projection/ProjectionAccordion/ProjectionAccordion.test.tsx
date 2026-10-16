@@ -478,3 +478,69 @@ describe("ProjectionAccordion — Sondertilgung months", () => {
     expect(screen.queryAllByText(hasText(euro(300000)))).toHaveLength(0);
   });
 });
+
+describe("ProjectionAccordion — two mortgages", () => {
+  // m1 is paid off in December 2026, m2 only in March 2027: the plan is
+  // debt-free in March 2027. An annual transfer into m2 each February still
+  // reduces a Restschuld in 2027, so it is an ST Month.
+  const secondMortgage: AccountWithBalance = {
+    ...mortgageAccount,
+    id: "m2",
+    name: "KfW Mortgage",
+  };
+  const twoMortgageSnapshots: MonthlySnapshot[] = monthsFrom2026To2028().map(
+    (month) => ({
+      month,
+      accounts: {
+        g1: { projected: 1000000 },
+        m1: { projected: month < "2026-12" ? 300000 : 0 },
+        m2: { projected: month < "2027-03" ? 600000 : 0 },
+      },
+      netCashflow: 0,
+      totalLiquid: 1000000,
+    })
+  );
+  const februaryST: RecurringTransaction = {
+    ...annualST,
+    id: "rt-feb",
+    accountId: "g1",
+    linkedAccountId: "m2",
+    amount: 100000,
+    monthOfYear: 2,
+  };
+
+  function renderTwoMortgages(initialYear: number) {
+    return renderWithTheme(
+      <ProjectionAccordion
+        snapshots={twoMortgageSnapshots}
+        accounts={[giroAccount, mortgageAccount, secondMortgage]}
+        recurringTransactions={[februaryST]}
+        initialYear={initialYear}
+      />
+    );
+  }
+
+  it("flags the month the combined Restschuld reaches zero, not the first mortgage's payoff", () => {
+    renderTwoMortgages(2027);
+
+    const row = screen.getByTestId("payoff-month-row");
+    expect(row.textContent).toContain("Mar");
+  });
+
+  it("does not flag the first mortgage's payoff year", () => {
+    renderTwoMortgages(2026);
+
+    expect(screen.queryByTestId("payoff-month-row")).not.toBeInTheDocument();
+  });
+
+  it("counts a Sondertilgung after the first mortgage is paid off but before the plan is debt-free", () => {
+    renderTwoMortgages(2027);
+
+    const highlighted = stRowMonths();
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0]).toContain("Feb");
+
+    openYear(2028);
+    expect(stRowMonths()).toHaveLength(0);
+  });
+});
