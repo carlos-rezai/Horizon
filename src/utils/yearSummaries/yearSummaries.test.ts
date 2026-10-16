@@ -14,6 +14,33 @@ const pt = (
   accounts: Record<string, number> = {}
 ): YearAggPoint => ({ month, totalLiquid, restschuld, netCashflow, accounts });
 
+describe("aggregateYearSummaries — Unknown balances", () => {
+  it("carries a null final-month balance as null, not 0", () => {
+    const points: YearAggPoint<number | null>[] = [
+      {
+        month: "2026-11",
+        totalLiquid: 100,
+        restschuld: null,
+        netCashflow: 40,
+        accounts: { g1: 100, haus: null },
+      },
+      {
+        month: "2026-12",
+        totalLiquid: null,
+        restschuld: null,
+        netCashflow: 0,
+        accounts: { g1: null, haus: null },
+      },
+    ];
+
+    const [y2026] = aggregateYearSummaries(points);
+    expect(y2026.totalLiquid).toBeNull();
+    expect(y2026.restschuld).toBeNull();
+    expect(y2026.accounts).toEqual({ g1: null, haus: null });
+    expect(y2026.netCashflow).toBe(40);
+  });
+});
+
 describe("aggregateYearSummaries", () => {
   const points: YearAggPoint[] = [
     pt("2026-01", 100, 900, 50, { g1: 60, t1: 40 }),

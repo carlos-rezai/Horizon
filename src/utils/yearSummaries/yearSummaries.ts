@@ -2,35 +2,42 @@
  * One projected month reduced to the figures a year accordion's collapsed
  * year row needs. `restschuld` is the total Mortgage balance; `accounts` is
  * the projected balance of each non-Mortgage account, keyed by account id.
+ *
+ * `Balance` is the type of the balance figures: `number` for a projection,
+ * `number | null` for history, where a month before Known Since is Unknown.
+ * Net Cashflow is always a number.
  */
-export interface YearAggPoint {
+export interface YearAggPoint<Balance = number> {
   month: string;
-  totalLiquid: number;
-  restschuld: number;
+  totalLiquid: Balance;
+  restschuld: Balance;
   netCashflow: number;
-  accounts: Record<string, number>;
+  accounts: Record<string, Balance>;
 }
 
-export interface YearSummary {
+export interface YearSummary<Balance = number> {
   year: number;
   /** End-of-year Total Liquid (the year's final month). */
-  totalLiquid: number;
+  totalLiquid: Balance;
   /** End-of-year Restschuld (the year's final month). */
-  restschuld: number;
+  restschuld: Balance;
   /** Sum of the year's monthly Net Cashflow. */
   netCashflow: number;
   /** End-of-year projected balance per account (the year's final month). */
-  accounts: Record<string, number>;
+  accounts: Record<string, Balance>;
 }
 
 /**
  * Collapse a month-by-month projection into one summary per year. Net Cashflow
  * is summed; Total Liquid, Restschuld and the per-account balances are taken
- * from the year's final available month.
+ * from the year's final available month, carried as they are (a `null` stays
+ * `null`).
  */
-export function aggregateYearSummaries(points: YearAggPoint[]): YearSummary[] {
+export function aggregateYearSummaries<Balance = number>(
+  points: YearAggPoint<Balance>[]
+): YearSummary<Balance>[] {
   const order: number[] = [];
-  const byYear = new Map<number, YearSummary>();
+  const byYear = new Map<number, YearSummary<Balance>>();
 
   for (const point of points) {
     const year = parseInt(point.month.slice(0, 4), 10);
@@ -38,8 +45,8 @@ export function aggregateYearSummaries(points: YearAggPoint[]): YearSummary[] {
     if (!summary) {
       summary = {
         year,
-        totalLiquid: 0,
-        restschuld: 0,
+        totalLiquid: point.totalLiquid,
+        restschuld: point.restschuld,
         netCashflow: 0,
         accounts: {},
       };
