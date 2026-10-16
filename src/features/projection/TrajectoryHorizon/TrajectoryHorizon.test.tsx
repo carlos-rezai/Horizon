@@ -702,6 +702,15 @@ describe("TrajectoryHorizon — Past Lead-in", () => {
     expect(todayLine()?.props.x).toBe(3);
   });
 
+  it("keeps the TODAY Marker just after midnight on the 1st, in local time", () => {
+    // 00:30 local on 1 April: east of UTC it is still 31 March in UTC, but
+    // the projected snapshots start at the local month, April.
+    vi.setSystemTime(new Date(2026, 3, 1, 0, 30));
+    renderChart({ history });
+
+    expect(todayLine()?.props.x).toBe(3);
+  });
+
   it("draws an ACTUALS band over the lead-in", () => {
     renderChart({ history });
 

@@ -846,6 +846,19 @@ describe("buildPastLeadIn", () => {
     expect(rows.map((r) => r.label)).toEqual(["2026-07", "2026-08", "2026-09"]);
   });
 
+  it("takes the current month in local time just after midnight on the 1st", () => {
+    // 00:30 local on 1 November: east of UTC it is still 31 October in UTC,
+    // but the projection starts at the local month, November.
+    vi.setSystemTime(new Date(2026, 10, 1, 0, 30));
+    const points = ["2026-08", "2026-09", "2026-10", "2026-11"].map((m) =>
+      point(m)
+    );
+
+    const rows = buildPastLeadIn(points, [giro, mortgage]);
+
+    expect(rows.map((r) => r.label)).toEqual(["2026-08", "2026-09", "2026-10"]);
+  });
+
   it("caps the lead-in at the 120 most recent past months", () => {
     const rows = buildPastLeadIn(historyThroughToday(140), [giro, mortgage]);
 
