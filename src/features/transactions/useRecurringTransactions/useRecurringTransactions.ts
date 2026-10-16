@@ -4,6 +4,7 @@ import type {
   RecurringTransactionInput,
 } from "../../../types/recurring";
 import { API_BASE } from "../../../utils/api/api";
+import { apiErrorMessage } from "../../../utils/apiError/apiError";
 
 interface UseRecurringTransactionsResult {
   recurringTransactions: RecurringTransaction[];
@@ -65,8 +66,12 @@ export function useRecurringTransactions(
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to create recurring transaction");
+      throw new Error(
+        apiErrorMessage(
+          await res.json(),
+          "Failed to create recurring transaction"
+        )
+      );
     }
 
     const created = (await res.json()) as RecurringTransaction;
@@ -84,8 +89,12 @@ export function useRecurringTransactions(
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to update recurring transaction");
+      throw new Error(
+        apiErrorMessage(
+          await res.json(),
+          "Failed to update recurring transaction"
+        )
+      );
     }
 
     const updated = (await res.json()) as RecurringTransaction;
@@ -100,8 +109,12 @@ export function useRecurringTransactions(
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as { error?: string };
-      throw new Error(data.error ?? "Failed to delete recurring transaction");
+      throw new Error(
+        apiErrorMessage(
+          await res.json(),
+          "Failed to delete recurring transaction"
+        )
+      );
     }
 
     setRecurringTransactions((prev) => prev.filter((rt) => rt.id !== id));

@@ -128,10 +128,7 @@ export default function AccountDetailPage() {
           accountId={account.id}
           otherAccounts={accounts.filter((a) => a.id !== account.id)}
           onClose={() => setShowAddRecurring(false)}
-          onSaved={(formData) => {
-            void createRecurring(formData);
-            setShowAddRecurring(false);
-          }}
+          onSaved={createRecurring}
           onDeleted={() => setShowAddRecurring(false)}
         />
       )}
@@ -142,14 +139,8 @@ export default function AccountDetailPage() {
           transaction={editingRecurring}
           otherAccounts={accounts.filter((a) => a.id !== account.id)}
           onClose={() => setEditingRecurring(null)}
-          onSaved={(formData) => {
-            void updateRecurring(editingRecurring.id, formData);
-            setEditingRecurring(null);
-          }}
-          onDeleted={() => {
-            void removeRecurring(editingRecurring.id);
-            setEditingRecurring(null);
-          }}
+          onSaved={(formData) => updateRecurring(editingRecurring.id, formData)}
+          onDeleted={() => removeRecurring(editingRecurring.id)}
         />
       )}
     </StyledPage>

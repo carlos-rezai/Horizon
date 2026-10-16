@@ -35,8 +35,8 @@ interface Props {
   transaction?: RecurringTransaction;
   otherAccounts: AccountWithBalance[];
   onClose: () => void;
-  onSaved: (data: RecurringTransactionInput) => void;
-  onDeleted: () => void;
+  onSaved: (data: RecurringTransactionInput) => void | Promise<void>;
+  onDeleted: () => void | Promise<void>;
 }
 
 export default function RecurringTransactionModal({
@@ -73,6 +73,18 @@ export default function RecurringTransactionModal({
   const [category, setCategory] = useState(transaction?.category ?? "");
   const [error, setError] = useState<string | null>(null);
 
+  // The save and delete callbacks may return a promise: the dialog closes
+  // once it resolves, and on rejection stays open with the server's reason.
+  const settle = (result: void | Promise<void>) => {
+    if (!(result instanceof Promise)) {
+      onClose();
+      return;
+    }
+    result.then(onClose, (err: unknown) => {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    });
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -107,8 +119,7 @@ export default function RecurringTransactionModal({
       accountId
     );
 
-    onSaved(payload);
-    onClose();
+    settle(onSaved(payload));
   };
 
   const handleDelete = () => {
@@ -120,8 +131,7 @@ export default function RecurringTransactionModal({
       return;
     }
 
-    onDeleted();
-    onClose();
+    settle(onDeleted());
   };
 
   return (
