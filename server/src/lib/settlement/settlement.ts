@@ -4,6 +4,7 @@ import type {
   TransferCreateInput,
 } from "../../storage/types.js";
 import { balanceAt } from "../balanceAnchor/balanceAnchor.js";
+import { endOfMonth } from "../date/date.js";
 import type { MonthlySnapshot } from "../projection/projection.js";
 
 export type SettlementTransferInput = TransferCreateInput & {
@@ -46,11 +47,6 @@ function firstDayOfNextMonth(year: number, month: number): string {
   return `${ny}-${String(nm).padStart(2, "0")}-01`;
 }
 
-function lastDayOfMonth(year: number, month: number): string {
-  const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return formatDate(year, month, day);
-}
-
 function formatDate(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -87,7 +83,7 @@ export function computeMissingSettlements(
         const closingBalance = balanceAt(
           cc,
           [...ccTxs, ...virtualSettlements.filter((v) => v.date < cutoff)],
-          lastDayOfMonth(year, month)
+          endOfMonth(formatDate(year, month, 1).slice(0, 7))
         );
 
         if (closingBalance < 0) {
