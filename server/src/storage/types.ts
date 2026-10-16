@@ -45,6 +45,8 @@ export interface MortgageSetup {
   originalPrincipal: number;
   startDate: string;
   termYears: number;
+  /** The account colour the client chose; none when absent. */
+  color?: string;
   repayment?: MortgageRepayment;
 }
 

@@ -31,6 +31,7 @@ export const MortgageSetupSchema = z
     originalPrincipal: z.number().int().positive(),
     startDate: IsoDate,
     termYears: z.number().int().min(1).max(40),
+    color: z.string().optional(),
     repayment: RepaymentSchema.optional(),
   })
   .superRefine((data, ctx) => {

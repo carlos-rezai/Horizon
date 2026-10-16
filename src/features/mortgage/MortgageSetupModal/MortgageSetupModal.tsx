@@ -4,6 +4,7 @@ import { API_BASE } from "../../../utils/api/api";
 import { apiErrorMessage } from "../../../utils/apiError/apiError";
 import { percentPaidOff } from "../../../utils/mortgage/mortgage";
 import { MONTHS_LONG } from "../../../utils/format/format";
+import { theme as meridianTheme } from "../../../tokens";
 import {
   todayIso,
   toCents,
@@ -41,6 +42,9 @@ const PAID_FROM_KINDS: ReadonlySet<string> = new Set([
   "Tagesgeld",
 ]);
 
+/** The account palette account creation picks a new account's colour from. */
+const COLOR_PALETTE = meridianTheme.colors.accountColorPalette;
+
 /** The Sondertilgung month a new setup starts at: November. */
 const DEFAULT_ST_MONTH = "11";
 
@@ -63,6 +67,10 @@ export default function MortgageSetupModal({
     stMonth: DEFAULT_ST_MONTH,
   }));
   const [dayOfMonth, setDayOfMonth] = useState(1);
+  // Picked once per open, as account creation does.
+  const [color] = useState(
+    () => COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]
+  );
   const [error, setError] = useState<string | null>(null);
 
   const set = (field: keyof FormValues) => (value: string) =>
@@ -88,7 +96,7 @@ export default function MortgageSetupModal({
     const res = await fetch(`${API_BASE}/mortgages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(result.payload),
+      body: JSON.stringify({ ...result.payload, color }),
     });
 
     if (!res.ok) {

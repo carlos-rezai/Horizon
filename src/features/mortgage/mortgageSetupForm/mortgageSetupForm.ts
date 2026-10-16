@@ -20,6 +20,7 @@ export interface MortgageSetupPayload {
   originalPrincipal: number;
   startDate: string;
   termYears: number;
+  color?: string;
   repayment?: RepaymentPayload;
 }
 

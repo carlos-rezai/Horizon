@@ -2,15 +2,8 @@ import { randomUUID } from "crypto";
 import type Database from "better-sqlite3";
 import type { AccountsRepo, MortgagesRepo } from "../Storage.js";
 import type { MortgageSetup } from "../types.js";
-import { categoryColorPalette } from "../categoryColors.js";
 import { accountWriters } from "./accountWriters.js";
 import { recurringWriters } from "./recurringWriters.js";
-
-function randomPaletteColor(): string {
-  return categoryColorPalette[
-    Math.floor(Math.random() * categoryColorPalette.length)
-  ];
-}
 
 export function createSqliteMortgagesRepo(
   db: Database.Database,
@@ -26,7 +19,7 @@ export function createSqliteMortgagesRepo(
         name: setup.name,
         openingBalance: setup.openingBalance,
         openingDate: setup.openingDate,
-        color: randomPaletteColor(),
+        color: setup.color,
       });
       accountWriter.setOrigination(id, {
         originalPrincipal: setup.originalPrincipal,
