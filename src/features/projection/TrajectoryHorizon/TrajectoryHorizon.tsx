@@ -22,9 +22,8 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import {
   buildTrajectoryData,
-  deriveSTMonths,
-  effectiveSTMonths,
   findDebtFreeMonth,
+  stMonthsFor,
 } from "../../../utils/projection/projection";
 import {
   buildSeriesDescriptors,
@@ -190,19 +189,11 @@ export default function TrajectoryHorizon({
     .filter((a) => a.kind === "Mortgage")
     .map((a) => a.id);
 
-  const stMonths =
-    horizonSnapshots.length > 0
-      ? effectiveSTMonths(
-          deriveSTMonths(
-            recurringTransactions,
-            accounts,
-            horizonSnapshots[0].month,
-            horizonSnapshots.length
-          ),
-          horizonSnapshots,
-          mortgageIds
-        )
-      : new Map<string, number>();
+  const stMonths = stMonthsFor(
+    recurringTransactions,
+    accounts,
+    horizonSnapshots
+  );
 
   const payoffMonth = findDebtFreeMonth(horizonSnapshots, mortgageIds);
 
