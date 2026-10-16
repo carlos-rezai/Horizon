@@ -52,12 +52,21 @@ export function detectDuplicates(
  * Flag each row that matches an existing recurring transaction: same sign,
  * absolute amount within tolerance, and description containment in either
  * direction (case-insensitive).
+ *
+ * A row dated on or before the target account's `anchorDate` is never
+ * flagged: the Anchor Balance already contains it, and the Anchor Gate means
+ * no RecurringTransaction replays it. `anchorDate` is absent when the target
+ * account is unknown — every row is then checked.
  */
 export function detectRecurring(
   rows: MappedRow[],
-  recurring: RecurringTransaction[]
+  recurring: RecurringTransaction[],
+  anchorDate?: string
 ): boolean[] {
   return rows.map((row) => {
+    if (anchorDate !== undefined && row.date <= anchorDate) {
+      return false;
+    }
     const rowDescription = normalizeDescription(row.description);
     return recurring.some((rule) => {
       if (Math.sign(row.amount) !== Math.sign(rule.amount)) {
