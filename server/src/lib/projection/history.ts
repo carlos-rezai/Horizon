@@ -18,6 +18,12 @@ export interface HistoryPoint {
    * null before the Mortgage's Known Since.
    */
   restschuld: number | null;
+  /**
+   * The Paydown Bridge: a straight line in cents from the Original Principal in
+   * the Mortgage Start month to the Restschuld in the Mortgage's first known
+   * month (inclusive). Null everywhere else; never written into `restschuld`.
+   */
+  restschuldBridge: number | null;
   /** Σ of that month's real stored transactions (not the recurring figure). */
   netCashflow: number;
   /** Per-account `actual` balance; null before that account's Known Since. */
@@ -35,6 +41,56 @@ export interface HistoryTx {
 export interface HistoryAccount {
   id: string;
   kind: AccountKind;
+  /** The Mortgage's Original Principal in cents, when originated. */
+  originalPrincipal?: number;
+  /** The Mortgage Start date (ISO), when originated. */
+  startDate?: string;
+}
+
+function monthsBetween(from: string, to: string): number {
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  return (ty - fy) * 12 + (tm - fm);
+}
+
+/**
+ * The Paydown Bridge value per month ("YYYY-MM" to cents), or an empty map
+ * when there is no Mortgage, no origination, no known month, or the Mortgage
+ * Start month is not earlier than the Mortgage's first known month.
+ */
+function paydownBridge(
+  snapshots: MonthlySnapshot[],
+  mortgage: HistoryAccount | undefined
+): Map<string, number> {
+  const bridge = new Map<string, number>();
+  if (
+    !mortgage ||
+    mortgage.originalPrincipal === undefined ||
+    mortgage.startDate === undefined
+  ) {
+    return bridge;
+  }
+
+  const firstKnown = snapshots.find(
+    (s) => s.accounts[mortgage.id]?.actual !== undefined
+  );
+  const startMonth = mortgage.startDate.slice(0, 7);
+  if (!firstKnown || startMonth >= firstKnown.month) return bridge;
+
+  const principal = mortgage.originalPrincipal;
+  const end = firstKnown.accounts[mortgage.id].projected;
+  const steps = monthsBetween(startMonth, firstKnown.month);
+  for (const snapshot of snapshots) {
+    if (snapshot.month < startMonth || snapshot.month > firstKnown.month) {
+      continue;
+    }
+    const step = monthsBetween(startMonth, snapshot.month);
+    bridge.set(
+      snapshot.month,
+      Math.round(principal + ((end - principal) * step) / steps)
+    );
+  }
+  return bridge;
 }
 
 /**
@@ -54,6 +110,7 @@ export function deriveHistory(
   const liquidIds = accounts
     .filter((a) => a.kind === "Girokonto" || a.kind === "Tagesgeld")
     .map((a) => a.id);
+  const bridge = paydownBridge(snapshots, mortgage);
 
   return snapshots.map((snapshot) => {
     const accountActuals: Record<string, number | null> = {};
@@ -86,6 +143,7 @@ export function deriveHistory(
       month: snapshot.month,
       totalLiquid,
       restschuld,
+      restschuldBridge: bridge.get(snapshot.month) ?? null,
       netCashflow,
       accounts: accountActuals,
     };

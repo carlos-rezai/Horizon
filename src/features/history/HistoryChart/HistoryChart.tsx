@@ -40,6 +40,33 @@ const VISIBILITY_KEY = "horizon.history.visibility.v1";
 
 const TOTAL_LIQUID_KEY = "totalLiquid";
 const RESTSCHULD_KEY = "restschuld";
+const RESTSCHULD_BRIDGE_KEY = "restschuldBridge";
+
+/** The Paydown Bridge's extent: its first and last month and what it spans. */
+interface PaydownBridgeSpan {
+  /** "YYYY-MM" — the Mortgage Start month. */
+  from: string;
+  /** "YYYY-MM" — the Mortgage's first known month. */
+  to: string;
+  /** Original Principal minus the Restschuld where the bridge ends, in cents. */
+  paidOff: number;
+}
+
+/** The bridge's extent across the full History, or null when there is none. */
+function paydownBridgeSpan(points: HistoryPoint[]): PaydownBridgeSpan | null {
+  const bridged = points.filter(
+    (p): p is HistoryPoint & { restschuldBridge: number } =>
+      p.restschuldBridge !== null && p.restschuldBridge !== undefined
+  );
+  if (bridged.length === 0) return null;
+  const first = bridged[0];
+  const last = bridged[bridged.length - 1];
+  return {
+    from: first.month,
+    to: last.month,
+    paidOff: first.restschuldBridge - last.restschuldBridge,
+  };
+}
 
 /** A single reconstructed month projected onto the chart's flat data shape. */
 interface HistoryChartDataPoint {
@@ -73,6 +100,8 @@ interface HistoryChartTooltipProps {
   series: SeriesDescriptor[];
   /** Each series' first known month ("YYYY-MM"), keyed by series key. */
   firstKnown?: Record<string, string>;
+  /** The Paydown Bridge's extent, read in a bridge month's Restschuld row. */
+  bridge?: PaydownBridgeSpan | null;
 }
 
 /**
@@ -85,6 +114,7 @@ export function HistoryChartTooltip({
   payload,
   series,
   firstKnown = {},
+  bridge = null,
 }: HistoryChartTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
@@ -100,13 +130,22 @@ export function HistoryChartTooltip({
       {series.map((s) => {
         const value = point[s.key];
         const known = firstKnown[s.key];
+        // A bridge month has no monthly Restschuld: it reads the paydown over
+        // the whole bridge, never the interpolated value.
+        const inBridge =
+          s.key === RESTSCHULD_KEY &&
+          value === null &&
+          bridge !== null &&
+          typeof point.restschuldBridge === "number";
         // Unknown (null) reads "No data before …", never €0.
         const text =
           typeof value === "number"
             ? formatBalance(value)
-            : value === null && known !== undefined
-              ? `No data before ${formatMonth(known)}`
-              : null;
+            : inBridge && bridge
+              ? `No monthly data · ${formatBalance(bridge.paidOff)} paid off ${formatMonth(bridge.from)}–${formatMonth(bridge.to)}`
+              : value === null && known !== undefined
+                ? `No data before ${formatMonth(known)}`
+                : null;
         if (text === null) return null;
         return (
           <StyledTooltipRow key={s.key}>
@@ -204,6 +243,7 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
   const windowed = points.slice(Math.max(0, points.length - rangeMonths));
 
   const firstKnown = useMemo(() => firstKnownMonths(points), [points]);
+  const bridge = useMemo(() => paydownBridgeSpan(points), [points]);
 
   const data = useMemo<HistoryChartDataPoint[]>(
     () =>
@@ -212,13 +252,20 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
         label: p.month,
         totalLiquid: p.totalLiquid,
         restschuld: p.restschuld,
+        restschuldBridge: p.restschuldBridge ?? null,
         netCashflow: p.netCashflow,
         ...p.accounts,
       })),
     [windowed]
   );
 
-  const [, yMax] = computeVisibleYDomain(data, visibility);
+  const restschuldVisible = visibility[RESTSCHULD_KEY] === true;
+  // The bridge follows the Restschuld toggle, so it counts toward the domain
+  // whenever the Restschuld does.
+  const [, yMax] = computeVisibleYDomain(data, {
+    ...visibility,
+    [RESTSCHULD_BRIDGE_KEY]: restschuldVisible,
+  });
 
   const liquidVisible = visibility[TOTAL_LIQUID_KEY] === true;
   const todayIndex = data.length - 1;
@@ -296,6 +343,7 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
                     {...props}
                     series={series.filter((s) => visibility[s.key] === true)}
                     firstKnown={firstKnown}
+                    bridge={bridge}
                   />
                 )}
               />
@@ -338,7 +386,23 @@ export default function HistoryChart({ points, accounts, isLoading }: Props) {
                 strokeDasharray="6 3"
                 strokeWidth={2}
                 connectNulls={false}
-                hide={visibility[RESTSCHULD_KEY] !== true}
+                hide={!restschuldVisible}
+              />
+              <Line
+                yAxisId="left"
+                type="linear"
+                dataKey={RESTSCHULD_BRIDGE_KEY}
+                name="Restschuld (no monthly data)"
+                dot={false}
+                stroke={theme.colors.restschuldStrokeColor}
+                strokeDasharray="1 4"
+                strokeLinecap="round"
+                strokeWidth={2}
+                strokeOpacity={0.45}
+                connectNulls={false}
+                activeDot={false}
+                legendType="none"
+                hide={!restschuldVisible}
               />
               <Line
                 yAxisId="left"

@@ -17,6 +17,12 @@ export interface HistoryPoint {
    * before the Mortgage's Known Since.
    */
   restschuld: number | null;
+  /**
+   * The Paydown Bridge: a straight line from the Original Principal in the
+   * Mortgage Start month to the Restschuld in the Mortgage's first known month
+   * (inclusive). Null elsewhere. Not monthly data: never shown as an amount.
+   */
+  restschuldBridge?: number | null;
   /** Σ of that month's real stored transactions. */
   netCashflow: number;
   /** Per-account balance; null before that account's Known Since. */

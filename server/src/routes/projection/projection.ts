@@ -116,7 +116,7 @@ router.get("/history", async (req, res) => {
     months
   );
 
-  const points = deriveHistory(snapshots, transactionEntries, accountEntries);
+  const points = deriveHistory(snapshots, transactionEntries, accounts);
 
   res.json(points);
 });
