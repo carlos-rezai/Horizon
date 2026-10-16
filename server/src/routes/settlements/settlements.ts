@@ -8,6 +8,8 @@ import {
 import {
   projectBalances,
   toProjectionAccountEntry,
+  toProjectionRecurringEntry,
+  toProjectionTxEntry,
 } from "../../lib/projection/projection.js";
 import { currentMonth } from "../../lib/date/date.js";
 
@@ -32,22 +34,11 @@ router.get("/warnings", async (req, res) => {
 
   const accountEntries = accounts.map(toProjectionAccountEntry);
 
-  const transactionEntries = transactions.map((tx) => ({
-    accountId: tx.accountId,
-    date: tx.date,
-    amount: tx.amount,
-  }));
+  const transactionEntries = transactions.map(toProjectionTxEntry);
 
-  const recurringEntries = recurringTransactions.map((r) => ({
-    accountId: r.accountId,
-    amount: r.amount,
-    frequency: r.frequency,
-    dayOfMonth: r.dayOfMonth,
-    ...(r.linkedAccountId !== undefined && {
-      linkedAccountId: r.linkedAccountId,
-    }),
-    ...(r.monthOfYear !== undefined && { monthOfYear: r.monthOfYear }),
-  }));
+  const recurringEntries = recurringTransactions.map(
+    toProjectionRecurringEntry
+  );
 
   const from = currentMonth();
   const projection = projectBalances(

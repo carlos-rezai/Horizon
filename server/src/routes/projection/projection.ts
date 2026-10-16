@@ -2,6 +2,8 @@ import { Router, type Request } from "express";
 import {
   projectBalances,
   toProjectionAccountEntry,
+  toProjectionRecurringEntry,
+  toProjectionTxEntry,
 } from "../../lib/projection/projection.js";
 import { deriveHistory } from "../../lib/projection/history.js";
 import { historySpanStart } from "../../lib/historySpan/historySpan.js";
@@ -24,26 +26,11 @@ router.get("/", async (req, res) => {
 
   const accountEntries = accounts.map(toProjectionAccountEntry);
 
-  const transactionEntries = transactions.map((tx) => ({
-    accountId: tx.accountId,
-    date: tx.date,
-    amount: tx.amount,
-    ...(tx.transferId !== undefined && { transferId: tx.transferId }),
-    ...(tx.isAutoSettlement !== undefined && {
-      isAutoSettlement: tx.isAutoSettlement,
-    }),
-  }));
+  const transactionEntries = transactions.map(toProjectionTxEntry);
 
-  const recurringEntries = recurringTransactions.map((r) => ({
-    accountId: r.accountId,
-    amount: r.amount,
-    frequency: r.frequency,
-    dayOfMonth: r.dayOfMonth,
-    ...(r.linkedAccountId !== undefined && {
-      linkedAccountId: r.linkedAccountId,
-    }),
-    ...(r.monthOfYear !== undefined && { monthOfYear: r.monthOfYear }),
-  }));
+  const recurringEntries = recurringTransactions.map(
+    toProjectionRecurringEntry
+  );
 
   const from = currentMonth();
   const monthsParam = req.query.months;
@@ -84,26 +71,11 @@ router.get("/history", async (req, res) => {
 
   const accountEntries = accounts.map(toProjectionAccountEntry);
 
-  const transactionEntries = transactions.map((tx) => ({
-    accountId: tx.accountId,
-    date: tx.date,
-    amount: tx.amount,
-    ...(tx.transferId !== undefined && { transferId: tx.transferId }),
-    ...(tx.isAutoSettlement !== undefined && {
-      isAutoSettlement: tx.isAutoSettlement,
-    }),
-  }));
+  const transactionEntries = transactions.map(toProjectionTxEntry);
 
-  const recurringEntries = recurringTransactions.map((r) => ({
-    accountId: r.accountId,
-    amount: r.amount,
-    frequency: r.frequency,
-    dayOfMonth: r.dayOfMonth,
-    ...(r.linkedAccountId !== undefined && {
-      linkedAccountId: r.linkedAccountId,
-    }),
-    ...(r.monthOfYear !== undefined && { monthOfYear: r.monthOfYear }),
-  }));
+  const recurringEntries = recurringTransactions.map(
+    toProjectionRecurringEntry
+  );
 
   const snapshots = projectBalances(
     accountEntries,
@@ -114,7 +86,7 @@ router.get("/history", async (req, res) => {
     months
   );
 
-  const points = deriveHistory(snapshots, transactionEntries, accounts);
+  const points = deriveHistory(snapshots, transactions, accounts);
 
   res.json(points);
 });
