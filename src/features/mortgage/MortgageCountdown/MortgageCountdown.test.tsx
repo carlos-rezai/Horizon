@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
@@ -67,15 +67,51 @@ function makeSnapshots(
 }
 
 describe("MortgageCountdown", () => {
-  it("renders nothing when no Mortgage accounts exist", () => {
-    const { container } = renderWithTheme(
-      <MortgageCountdown
-        accounts={[assetAccount]}
-        snapshots={[]}
-        recurringTransactions={[]}
-      />
-    );
-    expect(container.firstChild).toBeNull();
+  // Live-Use Repair #2 (issue #226): a fresh install no longer hides the card —
+  // it shows the shared EmptyState with a way into Mortgage Setup.
+  describe("with zero Mortgage accounts", () => {
+    function renderEmpty() {
+      return renderWithTheme(
+        <MortgageCountdown
+          accounts={[assetAccount]}
+          snapshots={[]}
+          recurringTransactions={[]}
+        />
+      );
+    }
+
+    it("renders the card with its usual section head", () => {
+      renderEmpty();
+      expect(screen.getByText("Mortgage Countdown")).toBeInTheDocument();
+    });
+
+    it("renders the empty state's title and hint", () => {
+      renderEmpty();
+      expect(screen.getByText("No mortgage yet")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Add your mortgage to see what's paid off and when it's done."
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("offers a Set up mortgage button", () => {
+      renderEmpty();
+      expect(
+        screen.getByRole("button", { name: "Set up mortgage" })
+      ).toBeInTheDocument();
+    });
+
+    it("opens the Mortgage Setup modal when the button is clicked", () => {
+      renderEmpty();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Set up mortgage" }));
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByLabelText(/restschuld today/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/original principal/i)).toBeInTheDocument();
+    });
   });
 
   it("renders one card per Mortgage account labelled by account name", () => {

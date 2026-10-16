@@ -456,3 +456,71 @@ describe("DashboardPage — empty states", () => {
     expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
   });
 });
+
+// Live-Use Repair #2 (issue #226): a fresh install reaches a working mortgage
+// from the Dashboard itself, and the new mortgage shows without a reload.
+describe("DashboardPage — Mortgage Setup", () => {
+  const mortgage: AccountWithBalance = {
+    id: "m-new",
+    kind: "Mortgage",
+    name: "Haus",
+    openingBalance: 20000000,
+    openingDate: "2026-10-16",
+    balance: 20000000,
+    originalPrincipal: 40000000,
+    startDate: "2020-06-01",
+    termYears: 25,
+  };
+
+  let serverAccounts: AccountWithBalance[];
+
+  beforeEach(() => {
+    serverAccounts = [...accounts];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (method === "POST" && url.endsWith("/mortgages")) {
+        serverAccounts = [...serverAccounts, mortgage];
+        return {
+          ok: true,
+          status: 201,
+          json: async () => mortgage,
+        } as Response;
+      }
+      if (method === "GET" && url.endsWith("/accounts")) {
+        const snapshot = serverAccounts;
+        return { ok: true, json: async () => snapshot } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+  });
+
+  it("shows the new mortgage in the countdown after a successful save, without a reload", async () => {
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Set up mortgage" })
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText(/^name$/i), {
+      target: { value: "Haus" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/restschuld today/i), {
+      target: { value: "200000" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/original principal/i), {
+      target: { value: "400000" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/^start date$/i), {
+      target: { value: "01.06.2020" },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/term/i), {
+      target: { value: "25" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText("remaining Restschuld")).toBeInTheDocument();
+    expect(screen.queryByText("No mortgage yet")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});

@@ -143,6 +143,30 @@ describe("the Getting Started topic", () => {
       expect(entry.definition.trim()).not.toBe("");
     });
   });
+
+  // Live-Use Repair #2 (issue #226): the origination step no longer starts
+  // from an existing Mortgage account and the pencil — it sends the reader to
+  // the Mortgage Countdown empty state and the one-form setup.
+  describe("the origination step", () => {
+    const step = () => rowOf("start", /mortgage/i);
+
+    it("sends the reader to the Set up mortgage button on the empty Mortgage Countdown", () => {
+      expect(step()).toBeDefined();
+      expect(step()?.body).toContain("Set up mortgage");
+      expect(step()?.body).toContain("Mortgage Countdown");
+    });
+
+    it("describes the one form: the Restschuld today and the origination together", () => {
+      expect(step()?.body).toContain("Restschuld today");
+      expect(step()?.body).toMatch(/one form/i);
+      expect(step()?.body).toMatch(/original principal/i);
+      expect(step()?.body).toMatch(/term/i);
+    });
+
+    it("no longer assumes the Mortgage account was added beforehand", () => {
+      expect(step()?.body).not.toMatch(/If you added a Mortgage account/);
+    });
+  });
 });
 
 describe.each(WRITTEN_TOPIC_IDS)("the %s topic's rows", (id) => {
@@ -185,16 +209,27 @@ describe("the Dashboard topic", () => {
     });
   });
 
-  // The card is an Empty-Hidden Surface: MortgageCountdown renders nothing
-  // until an account of kind Mortgage exists. A reader who has not added one
-  // needs to know the card's absence is by design, not a fault.
-  it("names the precondition the Mortgage Countdown card waits on", () => {
-    const row = MANUAL_TOPICS.dashboard.details.find((detail) =>
-      detail.heading.includes("Mortgage Countdown")
-    );
+  // Live-Use Repair #2 (issue #226): the card is no longer an Empty-Hidden
+  // Surface. With no Mortgage account it shows an empty state whose button
+  // opens the one-form Mortgage Setup, and the manual says so.
+  describe("the Mortgage Countdown empty state and setup", () => {
+    const row = () => rowOf("dashboard", /Mortgage Countdown/);
 
-    expect(row).toBeDefined();
-    expect(row?.body).toContain("Mortgage account");
+    it("quotes the empty state and its button", () => {
+      expect(row()).toBeDefined();
+      expect(row()?.body).toContain("No mortgage yet");
+      expect(row()?.body).toContain("Set up mortgage");
+    });
+
+    it("describes the setup as one form for the mortgage and its origination", () => {
+      expect(row()?.body).toContain("Restschuld today");
+      expect(row()?.body).toMatch(/one form/i);
+      expect(row()?.body).toMatch(/original principal/i);
+    });
+
+    it("no longer says the card is absent until a Mortgage account exists", () => {
+      expect(row()?.body).not.toMatch(/not on the Dashboard until/i);
+    });
   });
 
   // Live-Use Repair #2 (issue #225): a mortgage nothing pays off gets an
