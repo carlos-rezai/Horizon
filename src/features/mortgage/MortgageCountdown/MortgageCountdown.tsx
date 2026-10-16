@@ -3,8 +3,12 @@ import { useTheme } from "styled-components";
 import { Pencil, Flag } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
+import type { RecurringTransaction } from "../../../types/recurring";
 import { findMortgagePayoffMonth } from "../../../utils/projection/projection";
-import { percentPaidOff } from "../../../utils/mortgage/mortgage";
+import {
+  percentPaidOff,
+  hasRepaymentTransfer,
+} from "../../../utils/mortgage/mortgage";
 import { formatBalance } from "../../../utils/format/format";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
@@ -59,6 +63,8 @@ function monthsBetween(fromMonth: string, toMonth: string): number {
 interface Props {
   accounts: AccountWithBalance[];
   snapshots: MonthlySnapshot[];
+  /** All recurring transactions — decides whether anything repays a mortgage. */
+  recurringTransactions: RecurringTransaction[];
   /** Called after a mortgage's origination details are edited, to refetch data. */
   onUpdated?: () => void;
 }
@@ -66,6 +72,7 @@ interface Props {
 export default function MortgageCountdown({
   accounts,
   snapshots,
+  recurringTransactions,
   onUpdated,
 }: Props) {
   const theme = useTheme();
@@ -82,6 +89,10 @@ export default function MortgageCountdown({
     <StyledSection>
       {mortgageAccounts.map((account) => {
         const payoffMonth = findMortgagePayoffMonth(snapshots, account.id);
+        const hasRepayment = hasRepaymentTransfer(
+          recurringTransactions,
+          account.id
+        );
         const start = account.originalPrincipal ?? account.openingBalance;
         const pct = percentPaidOff(start, account.balance);
         const sd = new Date(account.startDate ?? account.openingDate);
@@ -140,7 +151,12 @@ export default function MortgageCountdown({
             </StyledOriginLine>
 
             <StyledFooter>
-              {payoffMonth ? (
+              {!hasRepayment ? (
+                <StyledNotPaidOff>
+                  No repayment set up — add a recurring transfer into this
+                  mortgage to see the payoff date.
+                </StyledNotPaidOff>
+              ) : payoffMonth ? (
                 <>
                   <div>
                     <StyledToPayoffLabel>To Payoff</StyledToPayoffLabel>

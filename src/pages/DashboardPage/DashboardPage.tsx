@@ -168,6 +168,7 @@ export default function DashboardPage() {
           <MortgageCountdown
             accounts={accounts}
             snapshots={snapshots}
+            recurringTransactions={recurringTransactions}
             onUpdated={() => {
               refreshAccounts();
               refetchProjection();
