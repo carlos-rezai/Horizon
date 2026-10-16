@@ -341,3 +341,23 @@ describe("POST /mortgages — invalid repayment", () => {
     expect(await mortgageCount()).toBe(0);
   });
 });
+
+describe("POST /mortgages — colour", () => {
+  it("stores the colour the client chose", async () => {
+    const res = await request(app)
+      .post("/mortgages")
+      .send({ ...validSetup, color: "#123456" });
+
+    expect(res.status).toBe(201);
+    const stored = await request(app).get(`/accounts/${res.body.id}`);
+    expect(stored.body.color).toBe("#123456");
+  });
+
+  it("stores no colour when the client sends none", async () => {
+    const res = await request(app).post("/mortgages").send(validSetup);
+
+    expect(res.status).toBe(201);
+    const stored = await request(app).get(`/accounts/${res.body.id}`);
+    expect(stored.body.color).toBeNull();
+  });
+});

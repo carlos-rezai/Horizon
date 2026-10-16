@@ -11,6 +11,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import type { AccountWithBalance } from "../../../types/account";
 import MortgageSetupModal from "./MortgageSetupModal";
+import { accountColorPalette } from "../../../tokens/colors";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -508,5 +509,18 @@ describe("MortgageSetupModal — Repayment", () => {
         sondertilgungMonth: 3,
       });
     });
+  });
+});
+
+describe("MortgageSetupModal — colour", () => {
+  it("sends a colour drawn from the account palette, as account creation does", async () => {
+    renderModal();
+    fillValid();
+    save();
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const [, init] = vi.mocked(globalThis.fetch).mock.calls[0];
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(accountColorPalette).toContain(body.color);
   });
 });
