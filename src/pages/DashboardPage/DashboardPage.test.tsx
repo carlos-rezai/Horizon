@@ -626,8 +626,14 @@ describe("DashboardPage — Mortgage Setup with a repayment", () => {
     });
     fireEvent.click(within(dialog).getByRole("button", { name: /save/i }));
 
-    expect(await screen.findByText(/Mar 2037/)).toBeInTheDocument();
-    expect(screen.getByText("To Payoff")).toBeInTheDocument();
+    // The Trajectory Horizon's payoff marker also reads "Mar 2037" and the KPI
+    // strip also has a "To Payoff" tile; the countdown's are the ones outside.
+    const trajectory = screen.getByTestId("dashboard-section-trajectory");
+    const kpis = screen.getByTestId("dashboard-section-kpis");
+    const outside = (el: HTMLElement) =>
+      !trajectory.contains(el) && !kpis.contains(el);
+    expect((await screen.findAllByText(/Mar 2037/)).some(outside)).toBe(true);
+    expect(screen.getAllByText("To Payoff").some(outside)).toBe(true);
     expect(screen.queryByText(/No repayment set up/)).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
