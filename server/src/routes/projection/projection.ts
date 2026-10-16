@@ -38,6 +38,10 @@ router.get("/", async (req, res) => {
     accountId: tx.accountId,
     date: tx.date,
     amount: tx.amount,
+    ...(tx.transferId !== undefined && { transferId: tx.transferId }),
+    ...(tx.isAutoSettlement !== undefined && {
+      isAutoSettlement: tx.isAutoSettlement,
+    }),
   }));
 
   const recurringEntries = recurringTransactions.map((r) => ({
@@ -94,6 +98,10 @@ router.get("/history", async (req, res) => {
     accountId: tx.accountId,
     date: tx.date,
     amount: tx.amount,
+    ...(tx.transferId !== undefined && { transferId: tx.transferId }),
+    ...(tx.isAutoSettlement !== undefined && {
+      isAutoSettlement: tx.isAutoSettlement,
+    }),
   }));
 
   const recurringEntries = recurringTransactions.map((r) => ({

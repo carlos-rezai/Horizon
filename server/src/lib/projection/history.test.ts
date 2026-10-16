@@ -413,7 +413,7 @@ describe("deriveHistory - monthlySavings", () => {
   });
 
   it("is null when a Trackable Account is Unknown that month", () => {
-    const { t1: _t1, ...withoutTagesgeld } = base;
+    const withoutTagesgeld = { g1: base.g1, i1: base.i1, m1: base.m1 };
     const points = deriveHistory(
       [
         snapshotWith("2025-01", base),
@@ -427,7 +427,7 @@ describe("deriveHistory - monthlySavings", () => {
   });
 
   it("is null when a Trackable Account is Unknown the month before", () => {
-    const { i1: _i1, ...withoutInvestment } = base;
+    const withoutInvestment = { g1: base.g1, t1: base.t1, m1: base.m1 };
     const points = deriveHistory(
       [
         snapshotWith("2025-01", withoutInvestment),

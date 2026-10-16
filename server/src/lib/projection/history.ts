@@ -1,5 +1,9 @@
 import type { AccountKind } from "../../storage/types.js";
 import type { MonthlySnapshot } from "./projection.js";
+import {
+  isVariableSpending,
+  selectSpendingAccounts,
+} from "../variableSpending/variableSpending.js";
 
 /**
  * A single reconstructed month on the History view. All monetary values are
@@ -32,6 +36,12 @@ export interface HistoryPoint {
    * any Trackable Account is Unknown that month or the month before.
    */
   monthlySavings: number | null;
+  /**
+   * Monthly Spending: the magnitude of the month's Variable Spending outflows
+   * on the spending accounts (the Month Year-Comparison rule). Null when no
+   * spending account is known that month; a real 0 in a known month with none.
+   */
+  monthlySpending: number | null;
   /** Per-account `actual` balance; null before that account's Known Since. */
   accounts: Record<string, number | null>;
 }
@@ -41,6 +51,8 @@ export interface HistoryTx {
   accountId: string;
   date: string;
   amount: number;
+  transferId?: string;
+  isAutoSettlement?: boolean;
 }
 
 /** The minimal shape `deriveHistory` needs from an account. */
@@ -124,7 +136,25 @@ export function deriveHistory(
         a.kind === "Investment"
     )
     .map((a) => a.id);
+  const spendingIds = new Set(
+    selectSpendingAccounts(accounts).map((a) => a.id)
+  );
   const bridge = paydownBridge(snapshots, mortgage);
+
+  const monthlySpendingAt = (snapshot: MonthlySnapshot): number | null => {
+    const known = [...spendingIds].some(
+      (id) => snapshot.accounts[id]?.actual !== undefined
+    );
+    if (!known) return null;
+    return transactions
+      .filter(
+        (tx) =>
+          tx.date.slice(0, 7) === snapshot.month &&
+          spendingIds.has(tx.accountId) &&
+          isVariableSpending(tx)
+      )
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  };
 
   const monthlySavingsAt = (index: number): number | null => {
     if (index === 0 || trackableIds.length === 0) return null;
@@ -174,6 +204,7 @@ export function deriveHistory(
       restschuldBridge: bridge.get(snapshot.month) ?? null,
       netCashflow,
       monthlySavings: monthlySavingsAt(index),
+      monthlySpending: monthlySpendingAt(snapshot),
       accounts: accountActuals,
     };
   });

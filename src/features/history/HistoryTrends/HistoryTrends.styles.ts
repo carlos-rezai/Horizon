@@ -19,3 +19,8 @@ export const StyledTooltipRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing.space1}px;
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
 `;
+
+export const StyledMetricToggle = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.space2}px;
+`;

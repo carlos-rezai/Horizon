@@ -31,6 +31,12 @@ export interface HistoryPoint {
    * month or the month before.
    */
   monthlySavings?: number | null;
+  /**
+   * Monthly Spending: the magnitude of the month's Variable Spending outflows
+   * on the spending accounts; null when no spending account is known that
+   * month, a real 0 in a known month with none.
+   */
+  monthlySpending?: number | null;
   /** Per-account balance; null before that account's Known Since. */
   accounts: Record<string, number | null>;
 }
