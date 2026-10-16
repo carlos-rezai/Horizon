@@ -39,7 +39,7 @@ export default function HistoryPage() {
       <PageHeader
         overline="Long-term view"
         title="History"
-        subtitle="Browse reconstructed balances from your imported statements."
+        subtitle="Reconstructed balances from your statements, account balances and mortgage origination."
       />
       {hasError ? (
         <EmptyState
