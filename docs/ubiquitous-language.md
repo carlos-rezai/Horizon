@@ -2,18 +2,18 @@
 
 ## Accounts
 
-| Term                | Definition                                                                                                                                         | Aliases to avoid                    |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| **Account**         | A named financial account instance tracked in Horizon                                                                                              | —                                   |
-| **AccountKind**     | The classification of an account that determines its behaviour and fields                                                                          | AccountType, account category       |
-| **Girokonto**       | A current/checking account kind — used for income and day-to-day spending                                                                          | Checking account, current account   |
-| **Tagesgeld**       | An overnight savings account kind — used as a Sondertilgung reserve                                                                                | Savings account, high-yield account |
-| **Mortgage**        | A loan account kind that tracks outstanding Restschuld                                                                                             | Home loan, Darlehen account         |
-| **CreditCard**      | A credit card account kind — tracks debt owed, paid in full monthly                                                                                | Card account                        |
-| **Investment**      | An investment account kind — tracks ETF cost basis only, not market value                                                                          | Brokerage, portfolio                |
-| **Opening Balance** | The user-entered balance at the moment an account is created in Horizon — corresponds to its Opening Date — no backtracking (updated)              | Starting balance, initial balance   |
-| **Opening Date**    | The calendar date the user set up the account in Horizon — the engine replays recurring history from this date to derive the current balance (new) | Account start date, creation date   |
-| **Current Balance** | The derived balance of an account: Opening Balance + replayed Recurring History + Variable Spending actuals (updated)                              | Live balance                        |
+| Term                               | Definition                                                                                                                                                   | Aliases to avoid                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| **Account**                        | A named financial account instance tracked in Horizon                                                                                                        | —                                   |
+| **AccountKind**                    | The classification of an account that determines its behaviour and fields                                                                                    | AccountType, account category       |
+| **Girokonto**                      | A current/checking account kind — used for income and day-to-day spending                                                                                    | Checking account, current account   |
+| **Tagesgeld**                      | An overnight savings account kind — used as a Sondertilgung reserve                                                                                          | Savings account, high-yield account |
+| **Mortgage**                       | A loan account kind that tracks outstanding Restschuld                                                                                                       | Home loan, Darlehen account         |
+| **CreditCard**                     | A credit card account kind — tracks debt owed, paid in full monthly                                                                                          | Card account                        |
+| **Investment**                     | An investment account kind — tracks ETF cost basis only, not market value                                                                                    | Brokerage, portfolio                |
+| ~~**Opening Balance**~~ (replaced) | ~~The user-entered balance at the moment an account is created.~~ Replaced by **Anchor Balance** (Balance Anchor, design log 30): same column, reinterpreted | —                                   |
+| ~~**Opening Date**~~ (replaced)    | ~~The calendar date the user set up the account.~~ Replaced by **Anchor Date** (Balance Anchor, design log 30)                                               | —                                   |
+| **Current Balance** (updated)      | The derived balance of an account today: **Anchor Balance** + every Transaction dated after the **Anchor Date**; see the Balance Anchor section              | Live balance                        |
 
 ## Transactions
 
@@ -47,8 +47,8 @@
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | **Projection Engine**               | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months)                                                                                                    | Forecast engine, planner             |
 | **Recurring-Only Projection Model** | The design constraint that recurring transactions own all regular financial flows; actual transactions exist only for variable one-off spending (new)                                                                                             | —                                    |
-| **Recurring History**               | The set of recurring transactions that have already fired between an account's Opening Date and today — replayed by the engine to derive the correct starting balance (new)                                                                       | Past recurring, historical recurring |
-| **Replay Loop**                     | The engine phase that simulates Recurring History from each account's Opening Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)                                                       | Historical replay, backfill          |
+| **Recurring History**               | The set of recurring transactions that have already fired after an account's Anchor Date up to today (behind the **Anchor Gate**) — replayed by the engine to derive the correct starting balance (new)                                           | Past recurring, historical recurring |
+| **Replay Loop**                     | The engine phase that simulates Recurring History from each account's Anchor Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)                                                        | Historical replay, backfill          |
 | **Forward Projection**              | The engine phase that applies recurring transactions from the current month into the future — runs after the Replay Loop has established the correct starting balance (new)                                                                       | Projection loop, forecast            |
 | **monthOfYear**                     | The calendar month number (1–12) stored on a RecurringTransaction that anchors when annual or quarterly transactions fire — e.g. `monthOfYear: 10` fires in October every year (new)                                                              | Month anchor, firing month           |
 | **Variable Spending**               | Irregular, one-off actual transactions that record real expenditure (food, dental, shopping, cat food) — the only category of actual transaction in the Recurring-Only Projection Model; entered exclusively via the **Month Overview** (updated) | One-off spending, irregular expenses |
@@ -95,15 +95,15 @@
 - When **Account Color** is `null`, all surfaces fall back to the **Per-kind Color Map** entry for that account's **AccountKind**
 - A **Chip** in the **Balance Summary Bar** is always paired with the account name directly to its right — it is never used as a standalone element without a label nearby
 - **Chip** is a domain-agnostic primitive — it knows nothing about accounts or AccountKind; callers supply the resolved hex color including any fallback logic
-- An **Account** has exactly one **Opening Date** — the date its **Opening Balance** was captured in Horizon
-- A **Current Balance** is always derived, never stored: **Opening Balance** + **Recurring History** replayed from **Opening Date** + **Variable Spending** actuals — never stored directly (updated)
+- An **Account** has exactly one **Balance Anchor**: one **Anchor Balance** at one **Anchor Date** (updated)
+- A **Current Balance** is always derived, never stored: **Anchor Balance** + Transactions dated after the **Anchor Date** (updated)
 - A **Transfer** is always composed of exactly two **Transactions** sharing a **TransferId**
 - A **RecurringTransaction** may produce a **Transaction** on each occurrence date
 - All **RecurringTransactions** are applied by the **Projection Engine** — there is no inactive/paused state; delete to stop one
 - A **Recurring Transfer** is a **RecurringTransaction** with a `linkedAccountId` — the Projection Engine credits the linked account and (if it is a Mortgage) reduces **Restschuld**
 - A **One-off Transfer** is always composed of exactly two **Transactions** sharing a **TransferId** — it has no schedule
 - A **Sondertilgung** is a **Transfer** from a **Tagesgeld** account to a **Mortgage** account — it reduces the **Restschuld**
-- The **Projection Engine** runs in two phases: the **Replay Loop** (Opening Date → today) followed by the **Forward Projection** (today → 20 years out)
+- The **Projection Engine** runs in two phases: the **Replay Loop** (Anchor Date → today, behind the **Anchor Gate**) followed by the **Forward Projection** (today → 20 years out)
 - The **Replay Loop** uses the same `monthOfYear` firing logic as the **Forward Projection** — they are never out of sync
 - A **RecurringTransaction** with `monthOfYear` set fires only when the current calendar month matches the anchor — annual fires once per year, quarterly fires every three months from that anchor
 - **Variable Spending** is the only category of actual transaction — salary, transfers, and regular expenses are never entered as actual transactions in the **Recurring-Only Projection Model**
@@ -270,7 +270,7 @@
 | **Storage Driver**     | A concrete implementation of Storage targeting a specific backend — Horizon ships two: the **Mongo Driver** and the **SQLite Driver**                                                                                  | Backend, adapter, provider              |
 | **Mongo Driver**       | The Storage Driver backed by MongoDB via Mongoose — used by the Cloud Build                                                                                                                                            | Mongo backend, mongo storage            |
 | **SQLite Driver**      | The Storage Driver backed by local SQLite via `better-sqlite3` — used by the Desktop Build                                                                                                                             | Local DB, sqlite backend                |
-| **AccountWithBalance** | A DTO returned by `accounts.findAllWithBalance` and `accounts.findByIdWithBalance` — an Account plus its derived `balance` (Opening Balance + sum of Transactions)                                                     | Account-with-totals, enriched account   |
+| **AccountWithBalance** | A DTO returned by `accounts.findAllWithBalance` and `accounts.findByIdWithBalance` — an Account plus its derived `balance` (Anchor Balance + Transactions dated after the Anchor Date)                                 | Account-with-totals, enriched account   |
 | **Parity Spec**        | The shared test suite (`storage.parity.ts`) that every Storage Driver must satisfy — guarantees behavioural equivalence between the Mongo and SQLite drivers                                                           | Conformance suite, contract test        |
 | **Use-case Method**    | A repo method that hides multi-step or atomic logic behind a single call (e.g. `transfers.create`) — each Storage Driver implements atomicity with its own primitive                                                   | Service method, domain method           |
 | **Migration**          | A numbered SQL file in `storage/sqlite/migrations/` applied in order against the SQLite database — versioned via `PRAGMA user_version`                                                                                 | Schema change, DB upgrade               |
@@ -516,7 +516,7 @@
 - The **Month Card** on the dashboard always shows the current calendar month and navigates to the **Month Overview** on click
 - The month label cell in the **Projection Accordion** navigates to the **Month Overview** for that `YYYY-MM` on click
 - The **Month Overview** supports prev/next month navigation via arrows in the page header — `navigate(-1)` for back
-- The **DatePicker** primitive is used for every date input across the app — `openingDate` in **AccountCreateModal**, transaction date in **TransactionCreateModal** and **TransactionEditModal**, and the transaction date in **Month Overview**
+- The **DatePicker** primitive is used for every date input across the app — `anchorDate` in **AccountCreateModal**, transaction date in **TransactionCreateModal** and **TransactionEditModal**, and the transaction date in **Month Overview**
 - **Account Edit Mode** replaces the two separate inline edit flows (name, opening balance) in `AccountDetailHeader` — icon and color become editable for the first time via the shared modal
 - The **Ordinal Day** is produced by a `toOrdinal(n)` utility in `src/utils/format/` — used by `RecurringTransactionList` for display
 
@@ -557,7 +557,7 @@
 - A **Settlement Transfer** is a standard Transfer pair sharing a `transferId` — it is distinguished by a reserved description prefix and rendered read-only in the **Monthly Ledger**
 - The **Replay Loop** generates **Settlement Transfers** for all months from **Linked Since** forward, using the same month-by-month pass as all other RecurringTransactions
 - The **Forward Projection** applies the same settlement logic as the **Replay Loop** — no separate code path
-- **Linked Since** is set automatically: to `openingDate` when a new CreditCard is created with a Funding Account configured; to today when an existing CreditCard is linked or its settlement config is changed
+- **Linked Since** is set automatically: to `anchorDate` when a new CreditCard is created with a Funding Account configured; to today when an existing CreditCard is linked or its settlement config is changed
 - Removing the **Funding Account** link stops future **Settlement Transfers** but leaves all existing ones intact as permanent history
 - Changing the **Settlement Day** or **Funding Account** resets **Linked Since** to today — past settlements are preserved as-is
 - The **Insufficient Funds Warning** compares the **Funding Account**'s projected balance on the **Settlement Day** of next month against the CreditCard's projected closing balance for the current month
@@ -610,7 +610,7 @@
 | **TODAY Marker**              | The vertical dashed reference line on the **Trajectory Horizon** at the current month, labelled "TODAY"                                                                                   | Now line, current marker          |
 | **Mortgage Origination**      | The originating facts of a Mortgage captured for accuracy: **Original Principal**, **Mortgage Start Date**, and **Term** — edited via the **Mortgage Modal**                              | Loan setup, origination details   |
 | **Original Principal**        | The Mortgage's loan amount at origination (`originalPrincipal`, ≥ current Restschuld) — the denominator "% paid off" is measured against, so pre-Horizon payments count                   | Loan amount, starting debt        |
-| **Mortgage Start Date**       | The calendar date the Mortgage originated (`startDate`) — distinct from the Account's Opening Date in Horizon                                                                             | Loan start, origination date      |
+| **Mortgage Start Date**       | The calendar date the Mortgage originated (`startDate`) — distinct from the Account's Anchor Date in Horizon                                                                              | Loan start, origination date      |
 | **Term**                      | The Mortgage's full duration in years (`termYears`) — used to show "year X of N" in the Mortgage Countdown                                                                                | Laufzeit, duration                |
 | **Mortgage Modal**            | The edit modal on the Mortgage Countdown card for **Mortgage Origination** — shows a live "% paid off" preview                                                                            | Mortgage edit, origination modal  |
 | **Account Sort Order**        | The user-arranged display order of accounts (`sortOrder`), set by drag-to-reorder on the dashboard Accounts card and persisted in the DB                                                  | Account order, ranking            |
@@ -846,8 +846,8 @@
   introduce them as token keys in `src/tokens/`. Translate via the documented
   ink↔MD3 mapping table. The token names are semantic (role), not hue — a
   `primary` token holding **Horizon Gold** is correct, not a mismatch.
-- **"balance"** is overloaded — always qualify: **Opening Balance**,
-  **Current Balance**, or **Restschuld**. Never use "balance" alone in code or docs.
+- **"balance"** is overloaded — always qualify: **Anchor Balance**,
+  **Current Balance**, or **Restschuld**. Never use "balance" alone in code or docs. (updated)
 - **"plan"** was used informally during design to mean both the user's
   financial intentions and the Projection Engine output. In Horizon,
   **Plan** always means the set of MonthlySnapshots produced by the
@@ -867,9 +867,11 @@
   In the **Recurring-Only Projection Model** it means specifically **Variable Spending**:
   the irregular one-off entries for food, dental, shopping. Never use "actual transaction"
   to describe salary or transfers — those are **RecurringTransactions** only.
-- **"current balance"** — never compute as Opening Balance + Transactions alone. In the
-  Recurring-Only Projection Model the correct derivation is Opening Balance + Recurring
-  History + Variable Spending. Using Transactions alone silently omits all recurring flows.
+- **"current balance"** (updated) — this entry used to say Opening Balance + Recurring
+  History + Variable Spending, but the storage layer never computed that. Since Balance
+  Anchor the definition is **Anchor Balance** + Transactions dated after the **Anchor
+  Date**. Recurring flows after the anchor are counted only when they are recorded as
+  Transactions. That gap is open and handed to Month Cash Flow (design log 30, Q8).
 - **"driver"** (new) — overloaded in software (DB driver, framework driver, hardware driver).
   Always qualify as **Storage Driver** when referring to a Mongo or SQLite implementation
   of the Storage facade.
@@ -932,16 +934,16 @@
 
 ## Historical Month Navigation (new)
 
-| Term                      | Definition                                                                                                                                                                                                               | Aliases to avoid                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| **History** (page/nav)    | The `/history` route and its sidebar nav item (Clock icon, between Month and Import) — the multi-year backward-looking view of Reconstructed Actuals                                                                     | Past view, archive page                   |
-| **Historical Trajectory** | The title and concept of the History page's chart — the actuals-only counterpart to the forward-looking **Trajectory Horizon**; right edge is always today, no Payoff Marker, no Freedom Phase                           | Past trajectory, history graph            |
-| **Reconstructed Actuals** | The per-month historical balance series derived by replaying the ledger (Opening Balance + reconciled Transactions per month) — cash lines use the account `actual`, Restschuld uses the mortgage `projected` (replayed) | Historical balances, past actuals         |
-| **HistoryPoint**          | The purpose-built per-month DTO returned by `GET /projection/history` — `{ month, totalLiquid, restschuld, netCashflow, accounts: Record<id, balance> }`, all cents                                                      | History row, history snapshot             |
-| **HistoryChart**          | The actuals-only Recharts chart on the History page — reuses the Trajectory Horizon's visual language (per-account lines, dashed Restschuld, toggle-chip legend) with its own independent visibility state               | History graph, actuals chart              |
-| **Year Archive**          | The import-gated, expandable year list on the History page — one row per year with ≥1 imported Statement, showing that year's end-of-data Total Liquid / Restschuld / Net Cashflow + a statement badge                   | Year list, history accordion              |
-| **MonthYearPicker**       | The jump-to popover on Month Overview (label + chevron between the unchanged prev/next arrows) — `◀ year ▶` + 3×4 month grid, portaled to `document.body`, out-of-**Browsable Range** months disabled                    | Jump-to picker, month picker, date picker |
-| **Browsable Range**       | The window of navigable months: from the **earliest imported Transaction month** through the current month — bounds the Historical Trajectory span and the MonthYearPicker's enabled months                              | Data range, history range                 |
+| Term                      | Definition                                                                                                                                                                                                                                                | Aliases to avoid                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| **History** (page/nav)    | The `/history` route and its sidebar nav item (Clock icon, between Month and Import) — the multi-year backward-looking view of Reconstructed Actuals                                                                                                      | Past view, archive page                   |
+| **Historical Trajectory** | The title and concept of the History page's chart — the actuals-only counterpart to the forward-looking **Trajectory Horizon**; right edge is always today, no Payoff Marker, no Freedom Phase                                                            | Past trajectory, history graph            |
+| **Reconstructed Actuals** | The per-month historical balance series derived by replaying the ledger (`balanceAt` the end of each month from the Balance Anchor; `null` before Known Since) — cash lines use the account `actual`, Restschuld uses the mortgage `projected` (replayed) | Historical balances, past actuals         |
+| **HistoryPoint**          | The purpose-built per-month DTO returned by `GET /projection/history` — `{ month, totalLiquid, restschuld, netCashflow, accounts: Record<id, balance> }`, all cents                                                                                       | History row, history snapshot             |
+| **HistoryChart**          | The actuals-only Recharts chart on the History page — reuses the Trajectory Horizon's visual language (per-account lines, dashed Restschuld, toggle-chip legend) with its own independent visibility state                                                | History graph, actuals chart              |
+| **Year Archive**          | The import-gated, expandable year list on the History page — one row per year with ≥1 imported Statement, showing that year's end-of-data Total Liquid / Restschuld / Net Cashflow + a statement badge                                                    | Year list, history accordion              |
+| **MonthYearPicker**       | The jump-to popover on Month Overview (label + chevron between the unchanged prev/next arrows) — `◀ year ▶` + 3×4 month grid, portaled to `document.body`, out-of-**Browsable Range** months disabled                                                     | Jump-to picker, month picker, date picker |
+| **Browsable Range**       | The window of navigable months: from the **earliest imported Transaction month** through the current month — bounds the Historical Trajectory span and the MonthYearPicker's enabled months                                                               | Data range, history range                 |
 
 ## Relationships (Historical Month Navigation additions)
 
@@ -1220,3 +1222,50 @@
 - **"Sondertilgung" for every Restschuld reduction** (new) — the **ST-only Model** made every step-down a Sondertilgung; with monthly **Repayment Transfers** that is false. Say **Repayment Transfer** for any transfer into a Mortgage, **Sondertilgung** only for the annual extra one. `outlook.ts` conflated them until Live-Use defect #5, fixed in Round 1.
 - **"linked account"** (new) — in code `linkedAccountId` means both a CreditCard's funding account and a Recurring Transfer's destination. In prose about transfers say **Destination Account**; in prose about settlement say **funding account**.
 - **"direction"** (new) — on one-off transactions "Direction" is Outflow/Inflow (a sign); on recurring transfers it is To/From (which account is the source). Both chip pairs share the `FormField label="Direction"` pattern; qualify as **Transfer Direction** when writing about recurring transfers.
+
+## Balance Anchor (new)
+
+| Term                  | Definition                                                                                                                                                                             | Aliases to avoid                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Balance Anchor**    | An account's one known point in time, an **Anchor Balance** at an **Anchor Date**, from which every past and present balance of that account is derived                                | Opening balance, starting point, baseline      |
+| **Anchor Balance**    | The balance the user knows the account had at the **end of** the **Anchor Date**, including that day's transactions (`anchorBalance`, column `anchor_balance`)                         | Opening Balance, initial balance, start amount |
+| **Anchor Date**       | The ISO date of the **Anchor Balance**, never later than today (`anchorDate`, column `anchor_date`); UI label "As of"                                                                  | Opening Date, creation date, open date         |
+| **Re-anchor**         | Replacing an account's **Balance Anchor** with a newer known balance and date in **Account Edit Mode**; the old anchor is not kept                                                     | Reconcile, reset balance, correct balance      |
+| **Known Since**       | The earlier of an account's **Anchor Date** and its oldest Transaction date; its month is the first month with a known balance (`knownSince`)                                          | Start of history, data start                   |
+| **Unknown** (balance) | The state of an account's balance in any month before its **Known Since**: carried as `null` and rendered as a gap or "No data before {Mon YYYY}", never €0                            | Zero, empty, missing balance                   |
+| **Anchor Gate**       | The rule that a recurring occurrence moves an account's balance only if its date is after that account's **Anchor Date**, checked for each leg of a **Recurring Transfer** separately  | Replay cutoff, opening gate                    |
+| **balanceAt**         | The pure derivation in `server/src/lib/balanceAnchor/` that gives an account's balance at the end of any date: forward from the anchor by later transactions, backward by earlier ones | Balance calculator, history math               |
+
+## Relationships (Balance Anchor additions)
+
+- An **Account** has exactly one **Balance Anchor**; **Re-anchor** replaces it, and Horizon never holds two
+- After the **Anchor Date**: balance = **Anchor Balance** + Transactions dated after the anchor. Before it: balance = **Anchor Balance** − Transactions dated between that day and the anchor
+- An account's balance is **Unknown** in every month before its **Known Since**; importing an older Statement moves **Known Since** earlier and never moves the **Balance Anchor**
+- The **Anchor Gate** applies in both the **Replay Loop** and the **Forward Projection**; nothing recurring is ever replayed on or before an **Anchor Date**
+- **Recurring Detection** never flags an imported row dated on or before the target account's **Anchor Date**; the anchor already contains its effect
+- **Total Liquid** for a past month sums only the liquid accounts known that month, and is `null` when none is known
+- The **Savings Streak** neither meets nor misses a month in which any **Tracked Account** is **Unknown**, in that month or the month before
+
+## Example dialogue (Balance Anchor)
+
+> **Dev:** "The user creates their Girokonto today with €2,400 and then imports twelve months of statements. What is the balance?"
+>
+> **Domain expert:** "€2,400. Today is the **Anchor Date** and €2,400 the **Anchor Balance**. Every imported row is dated on or before the anchor, so it changes the past, not the present."
+>
+> **Dev:** "And last March?"
+>
+> **Domain expert:** "€2,400 minus everything that happened between the end of March and today. That's **balanceAt**. Before the oldest imported row the balance is **Unknown**, because we don't know what happened before the statement began. The chart shows a gap there, not €0."
+>
+> **Dev:** "The salary is a RecurringTransaction. Do we replay it to fill the gap?"
+>
+> **Domain expert:** "Never before the anchor. That's the **Anchor Gate**. The imported salary rows are the history, which is why **Recurring Detection** leaves them checked when they fall on or before the anchor."
+>
+> **Dev:** "Next month their bank app shows €2,610 and Horizon shows €2,580."
+>
+> **Domain expert:** "They **Re-anchor**: €2,610 as of that day. The old anchor is gone, and everything before and after is derived from the new one."
+
+## Flagged ambiguities (Balance Anchor)
+
+- **"opening balance"** (new) — retired. It meant "the balance before all transactions", and live use showed users actually enter the balance they know today. Say **Anchor Balance** / **Anchor Date**; the old columns were renamed in migration 017, not duplicated.
+- **"anchor"** (new) — also means `monthOfYear` anchoring (the month an annual or quarterly RecurringTransaction fires) and the projection engine's "re-anchor to actual" step. Qualify: **Balance Anchor** for the account's known point, `monthOfYear` for recurring firing, and **Re-anchor** only for the user replacing a Balance Anchor. In engine comments, say the running balance is "reset to actual".
+- **"€0" vs Unknown** (new) — a balance of €0 is a real, known value. An **Unknown** balance is `null`. Never coalesce one into the other (`?? 0`) on any history surface.
