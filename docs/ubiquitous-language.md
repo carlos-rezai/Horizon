@@ -1272,16 +1272,16 @@
 
 ## Financial History (new)
 
-| Term                  | Definition                                                                                                                                                                                                 | Aliases to avoid                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| **Financial History** | Horizon's past-facing view: real past balances, the Mortgage's paydown since origination, and savings and spending trends, shown alongside the projection so the product reads past, present and projected | History feature, backfill, past data           |
-| **Origination Point** | The Mortgage's one known Restschuld before its Known Since: the **Original Principal** at the **Mortgage Start Date**                                                                                      | Loan start balance, initial Restschuld         |
-| **Paydown Bridge**    | The straight, dotted, faded segment from the **Origination Point** to the Mortgage's **Known Since** (`restschuldBridge`); a visual connection between two known points, never a monthly value             | Estimated Restschuld, interpolated history     |
-| **History Span**      | The months `GET /projection/history` returns: from the earliest of every account's **Known Since** month and the **Mortgage Start Date** month, through the current month                                  | History range, Browsable Range                 |
-| **Past Lead-in**      | The stretch of **Reconstructed Actuals** before the current month that the **Trajectory Horizon** draws behind its projection, capped at 120 months back, on an "ACTUALS" band                             | History overlay, past segment                  |
-| **Monthly Savings**   | The sum of a month's balance gains across the **Tracked Accounts** (liquid + Investment) (`monthlySavings`); `null` when any is **Unknown** that month or the month before                                 | Net Cashflow, savings rate, income minus spend |
-| **Monthly Spending**  | The magnitude of a month's **Variable Spending** outflows on the spending accounts, under the shared `lib/variableSpending` rule (`monthlySpending`)                                                       | Expenses, outflow, burn                        |
-| **History Trends**    | The History page card between the **HistoryChart** and the **Year Archive** that plots **Monthly Savings** or **Monthly Spending** as monthly bars with a trailing-12-month average                        | Trends chart, savings chart, spending chart    |
+| Term                  | Definition                                                                                                                                                                                                      | Aliases to avoid                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Financial History** | Horizon's past-facing view: real past balances, the Mortgage's paydown since origination, and savings and spending trends, shown alongside the projection so the product reads past, present and projected      | History feature, backfill, past data           |
+| **Origination Point** | The Mortgage's one known Restschuld before its Known Since: the **Original Principal** at the **Mortgage Start Date**                                                                                           | Loan start balance, initial Restschuld         |
+| **Paydown Bridge**    | The straight, dotted, faded segment from the **Origination Point** to the Mortgage's **Known Since** (`restschuldBridge`); a visual connection between two known points, never a monthly value                  | Estimated Restschuld, interpolated history     |
+| **History Span**      | The months `GET /projection/history` returns: from the earliest of every account's **Known Since** month and the **Mortgage Start Date** month, through the current month                                       | History range, Browsable Range                 |
+| **Past Lead-in**      | The stretch of **Reconstructed Actuals** before the current month that the **Trajectory Horizon** draws behind its projection, capped at 120 months back, on an "ACTUALS" band                                  | History overlay, past segment                  |
+| **Monthly Savings**   | The sum of a month's balance gains across the **Trackable Accounts** (liquid + Investment, whether or not they have a target) (`monthlySavings`); `null` when any is **Unknown** that month or the month before | Net Cashflow, savings rate, income minus spend |
+| **Monthly Spending**  | The magnitude of a month's **Variable Spending** outflows on the spending accounts, under the shared `lib/variableSpending` rule (`monthlySpending`); `null` when no spending account is known that month       | Expenses, outflow, burn                        |
+| **History Trends**    | The History page card between the **HistoryChart** and the **Year Archive** that plots **Monthly Savings** or **Monthly Spending** as monthly bars with a trailing-12-month average                             | Trends chart, savings chart, spending chart    |
 
 ## Relationships (Financial History additions)
 
@@ -1291,7 +1291,7 @@
 - History is `[]` when the **History Span** holds only the current month, which replaces "no imported Statements"
 - The **Past Lead-in** and the projection join at the current month, which comes from the projection; Payoff Marker, Freedom Phase and ST months stay forward-only
 - **History**, **Savings Streak** and the **Past Lead-in** read one cached resource (`HISTORY`); every bump of `PROJECTION` bumps `HISTORY`
-- **Monthly Savings** is a balance delta of **Tracked Accounts**; **Net Cashflow** is a sum of stored Transactions. They differ by design
+- **Monthly Savings** is a balance delta of **Trackable Accounts**; **Net Cashflow** is a sum of stored Transactions. They differ by design
 - One range (1 Year / 3 Years / All history) governs both the **HistoryChart** and **History Trends**
 
 ## Example dialogue (Financial History)
@@ -1310,7 +1310,7 @@
 >
 > **Dev:** "Is **Monthly Savings** just Net Cashflow?"
 >
-> **Domain expert:** "No. **Monthly Savings** is how much the **Tracked Accounts**' balances grew. Net Cashflow sums the stored transactions. A Sondertilgung leaves savings but never shows up in Net Cashflow."
+> **Domain expert:** "No. **Monthly Savings** is how much the **Trackable Accounts**' balances grew. Net Cashflow sums the stored transactions. A Sondertilgung leaves savings but never shows up in Net Cashflow."
 
 ## Flagged ambiguities (Financial History)
 

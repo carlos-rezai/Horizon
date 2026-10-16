@@ -135,14 +135,14 @@ Through the app cache:
 - The imports list `useHistory` derives years from becomes its own
   `IMPORT_HISTORY` key, bumped by import commit and delete.
 - The lead-in is built by a pure `buildPastLeadIn(points, accounts)` in
-  `src/utils/trajectory/`, beside `buildTrajectoryData`, and has a test.
+  `src/utils/projection/`, beside `buildTrajectoryData`, and has a test.
 
 **Q8. What is the savings trend?**
 **Monthly Savings** is the sum of month-over-month balance gains across the
-Tracked Accounts. These are the liquid and Investment accounts, the same set the
-Savings Streak uses. It is `null` when any Tracked Account is Unknown in that
+Trackable Accounts. These are the liquid and Investment accounts, the same kinds the
+Savings Streak uses. It is `null` when any Trackable Account is Unknown in that
 month or the month before, the same rule as the Savings Streak. It is a balance
-delta, not a transaction sum, so a Recurring Transfer between two Tracked
+delta, not a transaction sum, so a Recurring Transfer between two Trackable
 Accounts nets to zero. A Sondertilgung paid out of them counts as money that
 left savings.
 
@@ -153,8 +153,8 @@ the same one Month Year-Comparison uses, so the two can never disagree.
 
 **Q10. Server or client for the trends?**
 Server. `deriveHistory` adds `monthlySavings: number | null` and
-`monthlySpending: number` to `HistoryPoint`, which keeps log 23's rule that the
-server owns all history derivation. The Tracked Account kinds are a domain rule
+`monthlySpending: number | null` (Q15) to `HistoryPoint`, which keeps log 23's rule that the
+server owns all history derivation. The Trackable Account kinds are a domain rule
 the server can own. The client's Savings Streak keeps its own `gainAt` for
 per-account progress, which is a different question (per account, not summed).
 
@@ -178,7 +178,7 @@ and `ui-meridian` refines it later.
 **Q12. Does Net Cashflow stay?**
 Yes, unchanged. It is the sum of a month's stored transactions and is still the
 "what happened" tooltip row and Year Archive column. Monthly Savings is the
-balance delta of the Tracked Accounts. The two differ by design (transfers to a
+balance delta of the Trackable Accounts. The two differ by design (transfers to a
 Mortgage, Investment gains), and the glossary flags the distinction.
 
 **Q13. What about months after the Anchor Date that skip recurring flows?**
@@ -197,6 +197,19 @@ Flow, as log 30 already recorded. The trend copy does not hide it.
   mortgage's origination to see your history".
 - Mortgage Countdown is unchanged. It already shows % paid off against the
   Original Principal.
+
+**Q15. Can Monthly Spending be Unknown?** _(settled at write-a-prd)_
+Yes. Q4 widens the History Span back to the Mortgage Start month, which can be
+years before any transaction. A plain `number` would draw €0 Spent bars across
+those months, and that breaks the rule that Unknown is never €0. So
+`monthlySpending` is `number | null`. It is `null` when no spending account is
+known that month, and a sum (possibly a real €0) when at least one is.
+
+**Q16. What does the HistoryChart tooltip show in a month where nothing is
+known?** _(settled at write-a-prd)_
+Only the Paydown Bridge row. Net Cashflow stays a `number`, as Q12 says, but the
+tooltip leaves its row out in a month where every account is Unknown. Otherwise
+a bridge month would read "Net Cashflow €0".
 
 ## Design
 
@@ -221,7 +234,7 @@ export interface HistoryPoint {
   restschuldBridge: number | null; // new
   netCashflow: number;
   monthlySavings: number | null; // new
-  monthlySpending: number; // new
+  monthlySpending: number | null; // new (Q15)
   accounts: Record<string, number | null>;
 }
 export interface HistoryAccount {
@@ -254,7 +267,7 @@ Files touched:
 - `src/features/history/{historyTypes,HistoryChart,HistoryPage,YearArchive,useHistory}`, new `src/features/history/HistoryTrends/`
 - `src/features/savings/useSavingsGoal/useSavingsGoal.ts`
 - `src/components/CacheProvider/cacheKeys.ts` and every `bump(…PROJECTION)` call site, plus the import commit/delete
-- `src/utils/trajectory/` (`buildPastLeadIn` + test), `src/features/projection/TrajectoryHorizon/`, `src/pages/DashboardPage/DashboardPage.tsx`
+- `src/utils/projection/` (`buildPastLeadIn` + test), `src/features/projection/TrajectoryHorizon/`, `src/pages/DashboardPage/DashboardPage.tsx`
 - `src/features/manual/manualContent/manualContent.ts`, `README.md`, `.claude/CLAUDE.md`
 
 ## Implementation Plan
