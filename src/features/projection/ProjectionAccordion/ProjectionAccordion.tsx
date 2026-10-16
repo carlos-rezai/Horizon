@@ -10,7 +10,7 @@ import {
   stMonthsFor,
   totalRestschuld,
 } from "../../../utils/projection/projection";
-import { aggregateYearSummaries } from "../../../utils/accordion/accordion";
+import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
 import { formatMonth } from "../../../utils/format/format";
 import Money from "../../../primitives/Money/Money";
 import Chip from "../../../primitives/Chip/Chip";

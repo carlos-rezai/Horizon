@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { aggregateYearSummaries, type YearAggPoint } from "./accordion";
+import { aggregateYearSummaries, type YearAggPoint } from "./yearSummaries";
 
 const pt = (
   month: string,

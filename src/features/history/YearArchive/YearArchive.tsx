@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import Money from "../../../primitives/Money/Money";
-import { aggregateYearSummaries } from "../../../utils/accordion/accordion";
+import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
 import { formatMonth } from "../../../utils/format/format";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
 import {
