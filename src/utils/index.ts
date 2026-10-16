@@ -15,7 +15,6 @@ export {
   deriveSTMonths,
   effectiveSTMonths,
   stMonthsFor,
-  deriveYearSummaries,
   buildTrajectoryData,
   findMortgagePayoffMonth,
   findDebtFreeMonth,

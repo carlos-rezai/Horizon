@@ -1,7 +1,6 @@
 import type {
   MonthlySnapshot,
   TrajectoryDataPoint,
-  YearSummaryRow,
 } from "../../types/projection";
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
@@ -150,52 +149,6 @@ export function effectiveSTMonths(
     result.set(month, before === undefined ? amount : Math.min(amount, before));
   }
   return result;
-}
-
-export function deriveYearSummaries(
-  snapshots: MonthlySnapshot[],
-  mortgageAccountIds: string[],
-  stMonths: Map<string, number>
-): YearSummaryRow[] {
-  if (snapshots.length === 0) return [];
-
-  const byYear = new Map<number, MonthlySnapshot[]>();
-  for (const s of snapshots) {
-    const year = parseInt(s.month.slice(0, 4), 10);
-    if (!byYear.has(year)) byYear.set(year, []);
-    byYear.get(year)!.push(s);
-  }
-
-  const rows: YearSummaryRow[] = [];
-
-  for (const [year, yearSnaps] of byYear) {
-    const dec = yearSnaps.find((s) => s.month.endsWith("-12"));
-    const yearEnd = dec ?? yearSnaps[yearSnaps.length - 1];
-
-    const restschuld =
-      mortgageAccountIds.length === 0
-        ? null
-        : totalRestschuld(yearEnd, mortgageAccountIds);
-
-    let stAmount: number | null = null;
-    for (const [month, amount] of stMonths) {
-      if (month.startsWith(`${year}-`)) {
-        stAmount = (stAmount ?? 0) + amount;
-      }
-    }
-
-    const netCashflow = yearSnaps.reduce((sum, s) => sum + s.netCashflow, 0);
-
-    rows.push({
-      year,
-      totalLiquid: yearEnd.totalLiquid,
-      restschuld,
-      stAmount,
-      netCashflow,
-    });
-  }
-
-  return rows;
 }
 
 export function buildTrajectoryData(
