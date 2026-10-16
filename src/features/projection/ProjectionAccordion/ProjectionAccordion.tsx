@@ -10,7 +10,10 @@ import {
   stMonthsFor,
   totalRestschuld,
 } from "../../../utils/projection/projection";
-import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
+import {
+  aggregateYearSummaries,
+  groupByYear,
+} from "../../../utils/yearSummaries/yearSummaries";
 import { formatMonth } from "../../../utils/format/format";
 import Money from "../../../primitives/Money/Money";
 import Chip from "../../../primitives/Chip/Chip";
@@ -41,18 +44,6 @@ interface Props {
   /** Feeds the ST Month highlight: annual Repayment Transfers before payoff. */
   recurringTransactions: RecurringTransaction[];
   initialYear?: number;
-}
-
-function groupByYear(
-  snapshots: MonthlySnapshot[]
-): Map<number, MonthlySnapshot[]> {
-  const groups = new Map<number, MonthlySnapshot[]>();
-  for (const snapshot of snapshots) {
-    const year = parseInt(snapshot.month.slice(0, 4), 10);
-    if (!groups.has(year)) groups.set(year, []);
-    groups.get(year)!.push(snapshot);
-  }
-  return groups;
 }
 
 export default function ProjectionAccordion({

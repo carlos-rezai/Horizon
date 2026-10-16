@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { aggregateYearSummaries, type YearAggPoint } from "./yearSummaries";
+import {
+  aggregateYearSummaries,
+  groupByYear,
+  type YearAggPoint,
+} from "./yearSummaries";
 
 const pt = (
   month: string,
@@ -55,5 +59,23 @@ describe("aggregateYearSummaries", () => {
 
   it("returns an empty array for no points", () => {
     expect(aggregateYearSummaries([])).toEqual([]);
+  });
+});
+
+describe("groupByYear", () => {
+  it("groups entries by calendar year, keeping each year's months in order", () => {
+    const groups = groupByYear([
+      { month: "2026-11", n: 1 },
+      { month: "2026-12", n: 2 },
+      { month: "2027-01", n: 3 },
+    ]);
+
+    expect([...groups.keys()]).toEqual([2026, 2027]);
+    expect(groups.get(2026)!.map((e) => e.n)).toEqual([1, 2]);
+    expect(groups.get(2027)!.map((e) => e.n)).toEqual([3]);
+  });
+
+  it("is empty for no entries", () => {
+    expect(groupByYear([]).size).toBe(0);
   });
 });

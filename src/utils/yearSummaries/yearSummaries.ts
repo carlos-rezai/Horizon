@@ -56,3 +56,20 @@ export function aggregateYearSummaries(points: YearAggPoint[]): YearSummary[] {
 
   return order.map((year) => byYear.get(year)!);
 }
+
+/**
+ * Group month-by-month entries by calendar year, keeping each year's months in
+ * input order. Years iterate in the order they first appear.
+ */
+export function groupByYear<T extends { month: string }>(
+  entries: T[]
+): Map<number, T[]> {
+  const groups = new Map<number, T[]>();
+  for (const entry of entries) {
+    const year = parseInt(entry.month.slice(0, 4), 10);
+    const group = groups.get(year);
+    if (group) group.push(entry);
+    else groups.set(year, [entry]);
+  }
+  return groups;
+}
