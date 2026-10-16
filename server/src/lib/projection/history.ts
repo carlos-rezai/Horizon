@@ -1,5 +1,6 @@
 import type { AccountKind } from "../../storage/types.js";
 import type { MonthlySnapshot } from "./projection.js";
+import { monthsBetween } from "../date/date.js";
 import {
   isVariableSpending,
   selectSpendingAccounts,
@@ -63,12 +64,6 @@ export interface HistoryAccount {
   originalPrincipal?: number;
   /** The Mortgage Start date (ISO), when originated. */
   startDate?: string;
-}
-
-function monthsBetween(from: string, to: string): number {
-  const [fy, fm] = from.split("-").map(Number);
-  const [ty, tm] = to.split("-").map(Number);
-  return (ty - fy) * 12 + (tm - fm);
 }
 
 /**

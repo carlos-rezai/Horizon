@@ -1,7 +1,7 @@
 import type { Account, AccountKind } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
-import { daysInMonth, endOfMonth } from "../date/date.js";
+import { daysInMonth, endOfMonth, monthsBetween } from "../date/date.js";
 
 export interface ProjectionAccountEntry {
   id: string;
@@ -72,12 +72,6 @@ function addMonths(yyyyMM: string, n: number): string {
   const year = Math.floor(totalMonths / 12);
   const month = (totalMonths % 12) + 1;
   return `${year}-${String(month).padStart(2, "0")}`;
-}
-
-function monthsBetween(from: string, to: string): number {
-  const [fy, fm] = from.split("-").map(Number);
-  const [ty, tm] = to.split("-").map(Number);
-  return (ty - fy) * 12 + (tm - fm);
 }
 
 function firesInMonth(
