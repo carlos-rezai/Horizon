@@ -125,10 +125,3 @@ export const StyledColorSwatch = styled.button<StyledColorSwatchProps>`
     outline-offset: 2px;
   }
 `;
-
-export const StyledFieldHint = styled.div`
-  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
-  font-size: 12.5px;
-  line-height: ${({ theme }) => theme.typography.scale.body.lineHeight};
-  color: ${({ theme }) => theme.colors.onSurfaceDim};
-`;

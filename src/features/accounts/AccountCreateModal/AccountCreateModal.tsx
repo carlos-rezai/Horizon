@@ -29,7 +29,6 @@ import {
   StyledToggleText,
   StyledToggleTitle,
   StyledToggleDesc,
-  StyledFieldHint,
 } from "./AccountCreateModal.styles";
 
 /** Help text under the As of field: what the Balance Anchor means. */
@@ -187,14 +186,13 @@ export default function AccountCreateModal({
           />
         </FormField>
 
-        <FormField label="As of" htmlFor="anchor-date">
+        <FormField label="As of" htmlFor="anchor-date" hint={ANCHOR_HELP_TEXT}>
           <DatePicker
             aria-label="as of"
             value={anchorDate}
             onChange={setAnchorDate}
             maxDate={todayIso()}
           />
-          <StyledFieldHint>{ANCHOR_HELP_TEXT}</StyledFieldHint>
         </FormField>
 
         {kind === "Mortgage" && (
