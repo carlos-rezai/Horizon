@@ -5,6 +5,7 @@ import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import { accountIconSet, theme as meridianTheme } from "../../../tokens";
 import { API_BASE } from "../../../utils/api/api";
 import { eurosToCents, centsToEuros } from "../../../utils/currency/currency";
+import { todayIso } from "../../../utils/monthMath/monthMath";
 import Modal from "../../../components/Modal/Modal";
 import FormField from "../../../components/FormField/FormField";
 import Input from "../../../primitives/Input/Input";
@@ -34,14 +35,6 @@ import {
 /** Help text under the As of field: what the Balance Anchor means. */
 const ANCHOR_HELP_TEXT =
   "Your balance at the end of this day, including that day's transactions";
-
-/** Today as an ISO date (`YYYY-MM-DD`), in local time — the As of cap. */
-function todayIso(): string {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
 
 interface Props {
   onClose: () => void;
