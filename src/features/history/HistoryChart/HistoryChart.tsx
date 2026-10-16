@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { AccountWithBalance } from "../../../types/account";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
+import { firstKnownMonths } from "../knownSince/knownSince";
 import {
   buildSeriesDescriptors,
   computeVisibleYDomain,
@@ -72,25 +73,6 @@ interface HistoryChartTooltipProps {
   series: SeriesDescriptor[];
   /** Each series' first known month ("YYYY-MM"), keyed by series key. */
   firstKnown?: Record<string, string>;
-}
-
-/**
- * The first month ("YYYY-MM") each series carries a known (non-null) value,
- * keyed by series key — what an Unknown tooltip row names.
- */
-function firstKnownMonths(points: HistoryPoint[]): Record<string, string> {
-  const first: Record<string, string> = {};
-  const note = (key: string, value: number | null, month: string) => {
-    if (value !== null && first[key] === undefined) first[key] = month;
-  };
-  for (const p of points) {
-    note(TOTAL_LIQUID_KEY, p.totalLiquid, p.month);
-    note(RESTSCHULD_KEY, p.restschuld, p.month);
-    for (const [id, value] of Object.entries(p.accounts)) {
-      note(id, value, p.month);
-    }
-  }
-  return first;
 }
 
 /**
