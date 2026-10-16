@@ -3,6 +3,7 @@ import type {
   Transaction,
   TransferCreateInput,
 } from "../../storage/types.js";
+import { balanceAt } from "../balanceAnchor/balanceAnchor.js";
 import type { MonthlySnapshot } from "../projection/projection.js";
 
 export type SettlementTransferInput = TransferCreateInput & {
@@ -45,6 +46,11 @@ function firstDayOfNextMonth(year: number, month: number): string {
   return `${ny}-${String(nm).padStart(2, "0")}-01`;
 }
 
+function lastDayOfMonth(year: number, month: number): string {
+  const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return formatDate(year, month, day);
+}
+
 function formatDate(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -78,13 +84,11 @@ export function computeMissingSettlements(
         virtualSettlements.some((v) => v.date === settlementDate);
 
       if (!alreadyExists) {
-        const realBalance = ccTxs
-          .filter((tx) => tx.date < cutoff)
-          .reduce((sum, tx) => sum + tx.amount, 0);
-        const virtualBalance = virtualSettlements
-          .filter((v) => v.date < cutoff)
-          .reduce((sum, v) => sum + v.amount, 0);
-        const closingBalance = cc.anchorBalance + realBalance + virtualBalance;
+        const closingBalance = balanceAt(
+          cc,
+          [...ccTxs, ...virtualSettlements.filter((v) => v.date < cutoff)],
+          lastDayOfMonth(year, month)
+        );
 
         if (closingBalance < 0) {
           const amount = -closingBalance;
