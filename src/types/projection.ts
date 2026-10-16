@@ -18,14 +18,6 @@ export interface YearSummaryRow {
   netCashflow: number;
 }
 
-export interface OutlookSummary {
-  finalTotalLiquid: number;
-  finalYear: number;
-  payoffMonth: string | null;
-  totalSondertilgung: number;
-  sondertilgungCount: number;
-}
-
 export interface TrajectoryDataPoint {
   monthIndex: number;
   label: string;

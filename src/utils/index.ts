@@ -15,7 +15,6 @@ export {
   deriveSTMonths,
   effectiveSTMonths,
   deriveYearSummaries,
-  deriveOutlookSummary,
   buildTrajectoryData,
   findMortgagePayoffMonth,
 } from "./projection/projection";
