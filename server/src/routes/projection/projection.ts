@@ -1,5 +1,8 @@
 import { Router, type Request } from "express";
-import { projectBalances } from "../../lib/projection/projection.js";
+import {
+  projectBalances,
+  toProjectionAccountEntry,
+} from "../../lib/projection/projection.js";
 import { deriveHistory } from "../../lib/projection/history.js";
 import type { Storage } from "../../storage/Storage.js";
 
@@ -28,15 +31,7 @@ router.get("/", async (req, res) => {
     storage.recurringTransactions.findActive(),
   ]);
 
-  const accountEntries = accounts.map((a) => ({
-    id: a.id,
-    kind: a.kind,
-    anchorBalance: a.anchorBalance,
-    anchorDate: a.anchorDate,
-    ...(a.linkedAccountId != null && { linkedAccountId: a.linkedAccountId }),
-    ...(a.settlementDay != null && { settlementDay: a.settlementDay }),
-    ...(a.linkedSince != null && { linkedSince: a.linkedSince }),
-  }));
+  const accountEntries = accounts.map(toProjectionAccountEntry);
 
   const transactionEntries = transactions.map((tx) => ({
     accountId: tx.accountId,
@@ -103,15 +98,7 @@ router.get("/history", async (req, res) => {
   const current = currentMonth();
   const months = monthsBetween(from, current) + 1;
 
-  const accountEntries = accounts.map((a) => ({
-    id: a.id,
-    kind: a.kind,
-    anchorBalance: a.anchorBalance,
-    anchorDate: a.anchorDate,
-    ...(a.linkedAccountId != null && { linkedAccountId: a.linkedAccountId }),
-    ...(a.settlementDay != null && { settlementDay: a.settlementDay }),
-    ...(a.linkedSince != null && { linkedSince: a.linkedSince }),
-  }));
+  const accountEntries = accounts.map(toProjectionAccountEntry);
 
   const transactionEntries = transactions.map((tx) => ({
     accountId: tx.accountId,

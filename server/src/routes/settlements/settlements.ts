@@ -5,7 +5,10 @@ import {
   detectInsufficientFunds,
   type InsufficientFundsWarning,
 } from "../../lib/settlement/settlement.js";
-import { projectBalances } from "../../lib/projection/projection.js";
+import {
+  projectBalances,
+  toProjectionAccountEntry,
+} from "../../lib/projection/projection.js";
 
 const router = Router();
 
@@ -31,15 +34,7 @@ router.get("/warnings", async (req, res) => {
     storage.recurringTransactions.findActive(),
   ]);
 
-  const accountEntries = accounts.map((a) => ({
-    id: a.id,
-    kind: a.kind,
-    anchorBalance: a.anchorBalance,
-    anchorDate: a.anchorDate,
-    ...(a.linkedAccountId != null && { linkedAccountId: a.linkedAccountId }),
-    ...(a.settlementDay != null && { settlementDay: a.settlementDay }),
-    ...(a.linkedSince != null && { linkedSince: a.linkedSince }),
-  }));
+  const accountEntries = accounts.map(toProjectionAccountEntry);
 
   const transactionEntries = transactions.map((tx) => ({
     accountId: tx.accountId,
