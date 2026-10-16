@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency/currency";
+import { transferSideFor } from "../../../utils/recurring/recurring";
 import type {
   RecurringTransaction,
   RecurringFrequency,
@@ -57,7 +58,9 @@ export default function RecurringTransactionModal({
   // A row linked *to* the viewed account is a "From" transfer whose
   // counterpart is the owning account.
   const isTransfer = transaction?.linkedAccountId !== undefined;
-  const isIncoming = isTransfer && transaction?.linkedAccountId === accountId;
+  const isIncoming =
+    transaction !== undefined &&
+    transferSideFor(transaction, accountId) === "destination";
   const [amount, setAmount] = useState(
     transaction
       ? String(

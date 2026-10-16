@@ -4,7 +4,10 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import { toOrdinal } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { recurringAmountFor } from "../../../utils/recurring/recurring";
+import {
+  recurringAmountFor,
+  transferSideFor,
+} from "../../../utils/recurring/recurring";
 import DataRow from "../../../components/DataRow/DataRow";
 import Badge from "../../../primitives/Badge/Badge";
 import Money from "../../../primitives/Money/Money";
@@ -51,8 +54,7 @@ export default function RecurringTransactionList({
       </StyledHeaderRow>
       {recurringTransactions.map((rt, i) => {
         // A Mirrored Transfer Row: a transfer viewed from its destination.
-        const mirrored =
-          rt.linkedAccountId === accountId && rt.accountId !== accountId;
+        const mirrored = transferSideFor(rt, accountId) === "destination";
         const counterpartId = mirrored ? rt.accountId : rt.linkedAccountId;
         const counterpart = counterpartId
           ? accounts.find((a) => a.id === counterpartId)
