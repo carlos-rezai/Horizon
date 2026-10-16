@@ -4,10 +4,7 @@ import type { RecurringTransaction } from "../../../types/recurring";
 import StatBlock from "../../../components/StatBlock/StatBlock";
 import Money from "../../../primitives/Money/Money";
 import { deriveOutlookSummary } from "../../../utils/outlook/outlook";
-import {
-  deriveSTMonths,
-  effectiveSTMonths,
-} from "../../../utils/projection/projection";
+import { stMonthsFor } from "../../../utils/projection/projection";
 import { formatMonth } from "../../../utils/format/format";
 import {
   StyledStrip,
@@ -31,19 +28,7 @@ export default function OutlookSummary({
     .filter((a) => a.kind === "Mortgage")
     .map((a) => a.id);
 
-  const stMonths =
-    snapshots.length > 0
-      ? effectiveSTMonths(
-          deriveSTMonths(
-            recurringTransactions,
-            accounts,
-            snapshots[0].month,
-            snapshots.length
-          ),
-          snapshots,
-          mortgageIds
-        )
-      : new Map<string, number>();
+  const stMonths = stMonthsFor(recurringTransactions, accounts, snapshots);
 
   const summary = deriveOutlookSummary(snapshots, mortgageIds, stMonths);
 
