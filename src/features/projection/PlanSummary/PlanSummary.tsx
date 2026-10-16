@@ -4,9 +4,13 @@ import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import {
-  deriveYearSummaries,
   stMonthsFor,
+  totalRestschuld,
 } from "../../../utils/projection/projection";
+import {
+  aggregateYearSummaries,
+  stTotalsByYear,
+} from "../../../utils/yearSummaries/yearSummaries";
 import { formatBalance } from "../../../utils/format/format";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import Button from "../../../primitives/Button/Button";
@@ -48,7 +52,22 @@ export default function PlanSummary({
 
   const stMonths = stMonthsFor(recurringTransactions, accounts, snapshots);
 
-  const allRows = deriveYearSummaries(snapshots, mortgageIds, stMonths);
+  const stByYear = stTotalsByYear(stMonths);
+
+  const allRows = aggregateYearSummaries(
+    snapshots.map((s) => ({
+      month: s.month,
+      totalLiquid: s.totalLiquid,
+      restschuld: totalRestschuld(s, mortgageIds),
+      netCashflow: s.netCashflow,
+      accounts: {},
+    }))
+  ).map((summary) => ({
+    year: summary.year,
+    totalLiquid: summary.totalLiquid,
+    restschuld: hasMortgage ? summary.restschuld : null,
+    stAmount: stByYear.get(summary.year) ?? null,
+  }));
   const rows = maxYears !== undefined ? allRows.slice(0, maxYears) : allRows;
 
   const payoffYear = rows.find((r) => r.restschuld === 0)?.year ?? null;

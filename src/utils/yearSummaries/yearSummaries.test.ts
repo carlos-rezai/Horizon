@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   aggregateYearSummaries,
   groupByYear,
+  stTotalsByYear,
   type YearAggPoint,
 } from "./yearSummaries";
 
@@ -77,5 +78,28 @@ describe("groupByYear", () => {
 
   it("is empty for no entries", () => {
     expect(groupByYear([]).size).toBe(0);
+  });
+});
+
+describe("stTotalsByYear", () => {
+  it("totals the ST map per calendar year", () => {
+    const totals = stTotalsByYear(
+      new Map([
+        ["2026-05", 100000],
+        ["2026-11", 250000],
+        ["2027-11", 250000],
+      ])
+    );
+
+    expect([...totals.entries()]).toEqual([
+      [2026, 350000],
+      [2027, 250000],
+    ]);
+  });
+
+  it("has no entry for a year without a Sondertilgung", () => {
+    const totals = stTotalsByYear(new Map([["2027-11", 250000]]));
+
+    expect(totals.has(2026)).toBe(false);
   });
 });

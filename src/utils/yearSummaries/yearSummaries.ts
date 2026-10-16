@@ -73,3 +73,18 @@ export function groupByYear<T extends { month: string }>(
   }
   return groups;
 }
+
+/**
+ * Total an ST map (`YYYY-MM` → amount) per calendar year. A year without a
+ * Sondertilgung has no entry.
+ */
+export function stTotalsByYear(
+  stMonths: Map<string, number>
+): Map<number, number> {
+  const totals = new Map<number, number>();
+  for (const [month, amount] of stMonths) {
+    const year = parseInt(month.slice(0, 4), 10);
+    totals.set(year, (totals.get(year) ?? 0) + amount);
+  }
+  return totals;
+}
