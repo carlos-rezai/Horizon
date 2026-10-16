@@ -16,6 +16,14 @@ export const StyledLabel = styled.label`
   color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;
 
+/** StatBlock's hint, less its margin: the field's gap already spaces it. */
+export const StyledHint = styled.div`
+  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
+  font-size: 12.5px;
+  line-height: ${({ theme }) => theme.typography.scale.body.lineHeight};
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+`;
+
 export const StyledErrorMessage = styled.span`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   color: ${({ theme }) => theme.colors.error};
