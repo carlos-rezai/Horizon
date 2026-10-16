@@ -1,6 +1,7 @@
 import type { AccountKind } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
+import { daysInMonth, endOfMonth } from "../date/date.js";
 
 export interface ProjectionAccountEntry {
   id: string;
@@ -83,9 +84,7 @@ function firesInMonth(
 
 // An occurrence's date: the month's dayOfMonth, clamped to the month's length.
 function occurrenceDate(yyyyMM: string, dayOfMonth: number): string {
-  const [year, month] = yyyyMM.split("-").map(Number);
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const day = Math.min(dayOfMonth, daysInMonth);
+  const day = Math.min(dayOfMonth, daysInMonth(yyyyMM));
   return `${yyyyMM}-${String(day).padStart(2, "0")}`;
 }
 
@@ -232,8 +231,7 @@ export function projectBalances(
       anchorDate: a.anchorDate ?? "",
     };
     anchored.set(a.id, {
-      // "-31" is the end of any month for ISO string comparison.
-      endOf: (month) => balanceAt(anchor, accountTx, `${month}-31`),
+      endOf: (month) => balanceAt(anchor, accountTx, endOfMonth(month)),
       knownMonth: a.anchorDate ? knownSince(anchor, accountTx).slice(0, 7) : "",
     });
   }
