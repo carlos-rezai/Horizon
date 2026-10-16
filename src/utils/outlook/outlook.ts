@@ -1,19 +1,15 @@
-/**
- * One projected month, reduced to the figures the Outlook summary needs.
- * `restschuld` is the total Mortgage balance for the month (0 once paid off).
- */
-export interface OutlookPoint {
-  month: string;
-  totalLiquid: number;
-  restschuld: number;
-}
+import type { MonthlySnapshot } from "../../types/projection";
+import { findDebtFreeMonth, totalRestschuld } from "../projection/projection";
 
 export interface OutlookSummary {
   /** Total Liquid at the end of the projection. */
   finalTotalLiquid: number;
   /** Calendar year of the final projected month. */
   finalYear: number;
-  /** First month the Restschuld reaches zero, or null if it never does. */
+  /**
+   * The Debt-free Month, or null if it never comes — and null when the
+   * projection starts with no debt at all.
+   */
   debtFreeMonth: string | null;
   /** Sum of every effective Sondertilgung payment in the ST map. */
   totalSondertilgung: number;
@@ -29,10 +25,11 @@ export interface OutlookSummary {
  * the monthly repayment.
  */
 export function deriveOutlookSummary(
-  points: OutlookPoint[],
+  snapshots: MonthlySnapshot[],
+  mortgageIds: string[],
   stMonths: Map<string, number>
 ): OutlookSummary {
-  if (points.length === 0) {
+  if (snapshots.length === 0) {
     return {
       finalTotalLiquid: 0,
       finalYear: 0,
@@ -42,15 +39,15 @@ export function deriveOutlookSummary(
     };
   }
 
-  const last = points[points.length - 1];
+  const last = snapshots[snapshots.length - 1];
   const finalYear = parseInt(last.month.slice(0, 4), 10);
 
-  const hasDebt = points[0].restschuld > 0;
-  let debtFreeMonth: string | null = null;
-  if (hasDebt) {
-    const paidOff = points.find((p) => p.restschuld <= 0);
-    debtFreeMonth = paidOff ? paidOff.month : null;
-  }
+  // A projection that starts debt-free has nothing to count down to: the
+  // tile reads "—" rather than flagging its first month.
+  const hasDebt = totalRestschuld(snapshots[0], mortgageIds) > 0;
+  const debtFreeMonth = hasDebt
+    ? findDebtFreeMonth(snapshots, mortgageIds)
+    : null;
 
   let totalSondertilgung = 0;
   let sondertilgungCount = 0;

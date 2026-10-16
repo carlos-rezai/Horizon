@@ -121,7 +121,7 @@ export function totalRestschuld(
 
 /**
  * The ST Months that actually reduce the Restschuld: every `deriveSTMonths`
- * entry up to and including the Payoff Month, its amount capped at the
+ * entry up to and including the Debt-free Month, its amount capped at the
  * Restschuld left at the end of the previous month. Transfers after payoff
  * are dropped — the engine refunds them to their source.
  */
@@ -133,14 +133,12 @@ export function effectiveSTMonths(
   const result = new Map<string, number>();
   if (mortgageIds.length === 0 || stMonths.size === 0) return result;
 
+  const payoffMonth = findDebtFreeMonth(snapshots, mortgageIds);
   const previousRestschuld = new Map<string, number>();
-  let payoffMonth: string | null = null;
   let prior: number | undefined;
   for (const snapshot of snapshots) {
-    const restschuld = totalRestschuld(snapshot, mortgageIds);
     if (prior !== undefined) previousRestschuld.set(snapshot.month, prior);
-    if (payoffMonth === null && restschuld <= 0) payoffMonth = snapshot.month;
-    prior = restschuld;
+    prior = totalRestschuld(snapshot, mortgageIds);
   }
 
   const ordered = [...stMonths.entries()].sort(([a], [b]) =>
@@ -213,19 +211,14 @@ export function buildTrajectoryData(
     .filter((a) => a.kind !== "Mortgage")
     .map((a) => a.id);
 
-  let payoffReached = false;
-
   return snapshots.map((snapshot, index) => {
-    const restschuldRaw = totalRestschuld(snapshot, mortgageAccountIds);
-    if (mortgageAccountIds.length > 0 && restschuldRaw <= 0) {
-      payoffReached = true;
-    }
+    const payoffReached = payoffMonth !== null && snapshot.month >= payoffMonth;
     const restschuld =
       mortgageAccountIds.length === 0
         ? 0
         : payoffReached
           ? null
-          : restschuldRaw;
+          : totalRestschuld(snapshot, mortgageAccountIds);
 
     const accountBalances = Object.fromEntries(
       nonMortgageAccountIds.map((id) => [
@@ -257,4 +250,21 @@ export function findMortgagePayoffMonth(
     }
   }
   return null;
+}
+
+/**
+ * The Debt-free Month: the first month the *combined* Restschuld of every
+ * Mortgage reaches zero, or null with no mortgages or when it never does.
+ * Every plan-level surface flags this month; with one mortgage it equals that
+ * mortgage's Payoff Month (`findMortgagePayoffMonth`).
+ */
+export function findDebtFreeMonth(
+  snapshots: MonthlySnapshot[],
+  mortgageIds: string[]
+): string | null {
+  if (mortgageIds.length === 0) return null;
+  const paidOff = snapshots.find(
+    (snapshot) => totalRestschuld(snapshot, mortgageIds) <= 0
+  );
+  return paidOff ? paidOff.month : null;
 }

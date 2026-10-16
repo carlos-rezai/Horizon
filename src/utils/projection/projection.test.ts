@@ -662,7 +662,8 @@ describe("buildTrajectoryData", () => {
       trajSnap("2026-07", 100000, 0, { "mortgage-1": 0 }),
     ];
 
-    const result = buildTrajectoryData(snapshots, new Map(), null, [
+    const payoffMonth = findDebtFreeMonth(snapshots, ["mortgage-1"]);
+    const result = buildTrajectoryData(snapshots, new Map(), payoffMonth, [
       account("mortgage-1", "Mortgage"),
     ]);
 

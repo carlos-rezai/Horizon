@@ -8,7 +8,7 @@ import {
   buildAccountColumns,
   deriveSTMonths,
   effectiveSTMonths,
-  findMortgagePayoffMonth,
+  findDebtFreeMonth,
   totalRestschuld,
 } from "../../../utils/projection/projection";
 import { aggregateYearSummaries } from "../../../utils/accordion/accordion";
@@ -92,9 +92,7 @@ export default function ProjectionAccordion({
     .map((a) => a.id);
   const hasMortgage = mortgageIds.length > 0;
 
-  const payoffMonth = hasMortgage
-    ? findMortgagePayoffMonth(snapshots, mortgageIds[0])
-    : null;
+  const payoffMonth = findDebtFreeMonth(snapshots, mortgageIds);
   const payoffYear = payoffMonth ? parseInt(payoffMonth.slice(0, 4), 10) : null;
 
   const columns = buildAccountColumns(accounts);

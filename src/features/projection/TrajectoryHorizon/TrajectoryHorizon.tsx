@@ -24,7 +24,7 @@ import {
   buildTrajectoryData,
   deriveSTMonths,
   effectiveSTMonths,
-  findMortgagePayoffMonth,
+  findDebtFreeMonth,
 } from "../../../utils/projection/projection";
 import {
   buildSeriesDescriptors,
@@ -204,10 +204,7 @@ export default function TrajectoryHorizon({
         )
       : new Map<string, number>();
 
-  const payoffMonth =
-    mortgageIds.length > 0 && horizonSnapshots.length > 0
-      ? findMortgagePayoffMonth(horizonSnapshots, mortgageIds[0])
-      : null;
+  const payoffMonth = findDebtFreeMonth(horizonSnapshots, mortgageIds);
 
   const data = buildTrajectoryData(
     horizonSnapshots,

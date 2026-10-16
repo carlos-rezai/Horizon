@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveOutlookSummary, type OutlookPoint } from "./outlook";
+import { deriveOutlookSummary } from "./outlook";
 import { deriveSTMonths, effectiveSTMonths } from "../projection/projection";
 import type { MonthlySnapshot } from "../../types/projection";
 import type { RecurringTransaction } from "../../types/recurring";
@@ -8,7 +8,12 @@ const p = (
   month: string,
   totalLiquid: number,
   restschuld: number
-): OutlookPoint => ({ month, totalLiquid, restschuld });
+): MonthlySnapshot => ({
+  month,
+  accounts: { m1: { projected: restschuld } },
+  netCashflow: 0,
+  totalLiquid,
+});
 
 const noST = new Map<string, number>();
 
@@ -20,7 +25,7 @@ describe("deriveOutlookSummary", () => {
       p("2028-12", 500000, 0),
     ];
 
-    const s = deriveOutlookSummary(points, noST);
+    const s = deriveOutlookSummary(points, ["m1"], noST);
 
     expect(s.finalTotalLiquid).toBe(500000);
     expect(s.finalYear).toBe(2028);
@@ -34,17 +39,19 @@ describe("deriveOutlookSummary", () => {
       p("2028-10", 0, 0),
     ];
 
-    expect(deriveOutlookSummary(points, noST).debtFreeMonth).toBe("2027-10");
+    expect(deriveOutlookSummary(points, ["m1"], noST).debtFreeMonth).toBe(
+      "2027-10"
+    );
   });
 
   it("returns a null debt-free month when the mortgage never pays off", () => {
     const points = [p("2026-01", 0, 900000), p("2027-01", 0, 850000)];
-    expect(deriveOutlookSummary(points, noST).debtFreeMonth).toBeNull();
+    expect(deriveOutlookSummary(points, ["m1"], noST).debtFreeMonth).toBeNull();
   });
 
   it("returns a null debt-free month when there is no debt at all", () => {
     const points = [p("2026-01", 0, 0), p("2027-01", 0, 0)];
-    expect(deriveOutlookSummary(points, noST).debtFreeMonth).toBeNull();
+    expect(deriveOutlookSummary(points, ["m1"], noST).debtFreeMonth).toBeNull();
   });
 
   it("totals and counts Sondertilgung from the ST map, not from Restschuld step-downs", () => {
@@ -62,7 +69,7 @@ describe("deriveOutlookSummary", () => {
       ["2027-11", 250000],
     ]);
 
-    const s = deriveOutlookSummary(points, stMonths);
+    const s = deriveOutlookSummary(points, ["m1"], stMonths);
 
     expect(s.totalSondertilgung).toBe(500000);
     expect(s.sondertilgungCount).toBe(2);
@@ -78,14 +85,14 @@ describe("deriveOutlookSummary", () => {
       p("2026-04", 0, 200000),
     ];
 
-    const s = deriveOutlookSummary(points, noST);
+    const s = deriveOutlookSummary(points, ["m1"], noST);
 
     expect(s.totalSondertilgung).toBe(0);
     expect(s.sondertilgungCount).toBe(0);
   });
 
   it("handles an empty projection without throwing", () => {
-    const s = deriveOutlookSummary([], noST);
+    const s = deriveOutlookSummary([], ["m1"], noST);
     expect(s.finalTotalLiquid).toBe(0);
     expect(s.totalSondertilgung).toBe(0);
     expect(s.sondertilgungCount).toBe(0);
@@ -149,12 +156,6 @@ describe("deriveOutlookSummary — the real-world reference case", () => {
     });
   }
 
-  const points: OutlookPoint[] = snapshots.map((s) => ({
-    month: s.month,
-    totalLiquid: s.totalLiquid,
-    restschuld: s.accounts.m1.projected,
-  }));
-
   const stMonths = effectiveSTMonths(
     deriveSTMonths(recurring, accounts, snapshots[0].month, MONTH_COUNT),
     snapshots,
@@ -162,7 +163,7 @@ describe("deriveOutlookSummary — the real-world reference case", () => {
   );
 
   it("pays off in October 2031 and totals €32,500 over 5 payments", () => {
-    const s = deriveOutlookSummary(points, stMonths);
+    const s = deriveOutlookSummary(snapshots, ["m1"], stMonths);
 
     expect(s.debtFreeMonth).toBe("2031-10");
 
