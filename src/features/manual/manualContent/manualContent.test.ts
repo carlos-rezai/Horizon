@@ -574,8 +574,8 @@ describe("the Accounts topic", () => {
     });
 
     it("describes the red / green pairing across the two accounts", () => {
-      expect(row()?.body).toMatch(/red/i);
-      expect(row()?.body).toMatch(/green/i);
+      expect(row()?.body).toMatch(/\bred\b/i);
+      expect(row()?.body).toMatch(/\bgreen\b/i);
     });
 
     it("describes the mirrored row on the other account", () => {
