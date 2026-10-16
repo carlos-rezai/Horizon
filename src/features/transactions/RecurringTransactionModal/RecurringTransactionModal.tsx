@@ -1,7 +1,11 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency/currency";
-import { transferSideFor } from "../../../utils/recurring/recurring";
+import {
+  buildRecurringInput,
+  seedTransferForm,
+  type TransferDirection,
+} from "../transferForm/transferForm";
 import type {
   RecurringTransaction,
   RecurringTransactionInput,
@@ -21,8 +25,6 @@ import {
   StyledChipRow,
   StyledErrorText,
 } from "./RecurringTransactionModal.styles";
-
-type TransferDirection = "to" | "from";
 
 const TRANSFER_SIGN_MESSAGE =
   "Enter the transfer amount as a positive number — the direction sets which way it moves.";
@@ -44,20 +46,8 @@ export default function RecurringTransactionModal({
   onSaved,
   onDeleted,
 }: Props) {
-  // A transfer is typed positive; its direction is which account owns it.
-  // A row linked *to* the viewed account is a "From" transfer whose
-  // counterpart is the owning account.
-  const isTransfer = transaction?.linkedAccountId !== undefined;
-  const isIncoming =
-    transaction !== undefined &&
-    transferSideFor(transaction, accountId) === "destination";
-  const [amount, setAmount] = useState(
-    transaction
-      ? String(
-          (isTransfer ? Math.abs(transaction.amount) : transaction.amount) / 100
-        )
-      : ""
-  );
+  const seed = transaction ? seedTransferForm(transaction, accountId) : null;
+  const [amount, setAmount] = useState(seed ? String(seed.amount / 100) : "");
   const [description, setDescription] = useState(
     transaction?.description ?? ""
   );
@@ -68,10 +58,10 @@ export default function RecurringTransactionModal({
     transaction ? transaction.dayOfMonth : 1
   );
   const [linkedAccountId, setLinkedAccountId] = useState(
-    (isIncoming ? transaction?.accountId : transaction?.linkedAccountId) ?? ""
+    seed?.counterpartId ?? ""
   );
   const [direction, setDirection] = useState<TransferDirection>(
-    isIncoming ? "from" : "to"
+    seed?.direction ?? "to"
   );
   const [monthOfYear, setMonthOfYear] = useState<number>(
     transaction?.monthOfYear ?? new Date().getMonth() + 1
@@ -102,19 +92,19 @@ export default function RecurringTransactionModal({
       return;
     }
 
-    const isFrom = linkedAccountId !== "" && direction === "from";
-    const payload: RecurringTransactionInput = {
-      accountId: isFrom ? linkedAccountId : accountId,
-      amount: parsedAmount,
-      description,
-      category,
-      frequency,
-      dayOfMonth,
-      ...(linkedAccountId
-        ? { linkedAccountId: isFrom ? accountId : linkedAccountId }
-        : {}),
-      ...(frequency === "annual" ? { monthOfYear } : {}),
-    };
+    const payload = buildRecurringInput(
+      {
+        amount: parsedAmount,
+        description,
+        category,
+        frequency,
+        dayOfMonth,
+        counterpartId: linkedAccountId,
+        direction,
+        monthOfYear,
+      },
+      accountId
+    );
 
     onSaved(payload);
     onClose();
