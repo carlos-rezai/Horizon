@@ -16,6 +16,7 @@ import MortgageCountdown from "../../features/mortgage/MortgageCountdown/Mortgag
 import SavingsStreakCard from "../../features/savings/SavingsStreakCard/SavingsStreakCard";
 import SavingsStreakCardSkeleton from "../../features/savings/SavingsStreakCard/SavingsStreakCardSkeleton";
 import { useSavingsGoal } from "../../features/savings/useSavingsGoal/useSavingsGoal";
+import { useHistoryPoints } from "../../features/history/useHistoryPoints/useHistoryPoints";
 import Card from "../../components/Card/Card";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import SectionHead from "../../components/SectionHead/SectionHead";
@@ -57,6 +58,7 @@ export default function DashboardPage() {
   } = useProjection();
   const { recurringTransactions, refresh: refreshRecurring } =
     useAllRecurringTransactions();
+  const { points: historyPoints, refresh: refreshHistory } = useHistoryPoints();
   const {
     goal: savingsGoal,
     points: savingsPoints,
@@ -116,7 +118,7 @@ export default function DashboardPage() {
           recurringTransactions={recurringTransactions}
           isLoading={false}
           onViewHistory={() => navigate("/history")}
-          history={savingsPoints}
+          history={historyPoints}
         />
       </SectionState>
       <SectionState
@@ -176,6 +178,7 @@ export default function DashboardPage() {
                 refreshAccounts();
                 refetchProjection();
                 refreshRecurring();
+                refreshHistory();
               }}
             />
           )}
