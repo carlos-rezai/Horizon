@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AnchorDate, IsoDate } from "../accounts/account.js";
 
 /**
  * The account kinds a Repayment Transfer may be paid from. Checked by the
@@ -9,8 +10,6 @@ export const PAID_FROM_KINDS: ReadonlySet<string> = new Set([
   "Girokonto",
   "Tagesgeld",
 ]);
-
-const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const RepaymentSchema = z
   .object({
@@ -37,7 +36,7 @@ export const MortgageSetupSchema = z
   .object({
     name: z.string().min(1),
     anchorBalance: z.number().int().positive(),
-    anchorDate: IsoDate,
+    anchorDate: AnchorDate,
     originalPrincipal: z.number().int().positive(),
     startDate: IsoDate,
     termYears: z.number().int().min(1).max(40),

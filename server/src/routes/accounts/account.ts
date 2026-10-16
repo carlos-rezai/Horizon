@@ -1,13 +1,17 @@
 import { z } from "zod";
 import { todayIso } from "../../lib/date/date.js";
 
-/** An Anchor Date: an ISO date no later than today. */
-const AnchorDate = z
-  .string()
-  .min(1)
-  .refine((date) => date <= todayIso(), {
-    message: "anchorDate must not be later than today",
-  });
+/** An ISO date, `YYYY-MM-DD`. */
+export const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/**
+ * An Anchor Date: an ISO date no later than today (the local calendar date).
+ * The one rule for every place an Anchor Date is entered — an account's
+ * anchor and a Mortgage's Restschuld "as of".
+ */
+export const AnchorDate = IsoDate.refine((date) => date <= todayIso(), {
+  message: "anchorDate must not be later than today",
+});
 
 const AccountKindEnum = z.enum([
   "Girokonto",
