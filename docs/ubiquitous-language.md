@@ -607,7 +607,7 @@
 | **Show in Trajectory**        | The per-Account boolean (`showInTrajectory`, default true, not applicable to Mortgage) that sets a line's **default** visibility on the **Trajectory Horizon**                            | Chart visibility, plot toggle     |
 | **Freedom Phase Area**        | The shaded gold region + gradient under the **Total Liquid Line** spanning the **Freedom Phase** (Payoff Month → horizon end) — the visual of post-payoff acceleration                    | Shaded region, freedom fill       |
 | **Post-Payoff**               | The code-level name for the **Freedom Phase** condition on a data point (renamed from the prototype's internal `freedom`/`freedomNow`)                                                    | freedom, freedomNow               |
-| **TODAY Marker**              | The vertical dashed reference line on the **Trajectory Horizon** at the current month, labelled "TODAY"                                                                                   | Now line, current marker          |
+| **TODAY Marker** (updated)    | The vertical dashed reference line on the **Trajectory Horizon** at the current month, labelled "TODAY" — at its real index once a **Past Lead-in** precedes it, no longer the left edge  | Now line, current marker          |
 | **Mortgage Origination**      | The originating facts of a Mortgage captured for accuracy: **Original Principal**, **Mortgage Start Date**, and **Term** — edited via the **Mortgage Modal**                              | Loan setup, origination details   |
 | **Original Principal**        | The Mortgage's loan amount at origination (`originalPrincipal`, ≥ current Restschuld) — the denominator "% paid off" is measured against, so pre-Horizon payments count                   | Loan amount, starting debt        |
 | **Mortgage Start Date**       | The calendar date the Mortgage originated (`startDate`) — distinct from the Account's Anchor Date in Horizon                                                                              | Loan start, origination date      |
@@ -934,16 +934,16 @@
 
 ## Historical Month Navigation (new)
 
-| Term                      | Definition                                                                                                                                                                                                                                                | Aliases to avoid                          |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **History** (page/nav)    | The `/history` route and its sidebar nav item (Clock icon, between Month and Import) — the multi-year backward-looking view of Reconstructed Actuals                                                                                                      | Past view, archive page                   |
-| **Historical Trajectory** | The title and concept of the History page's chart — the actuals-only counterpart to the forward-looking **Trajectory Horizon**; right edge is always today, no Payoff Marker, no Freedom Phase                                                            | Past trajectory, history graph            |
-| **Reconstructed Actuals** | The per-month historical balance series derived by replaying the ledger (`balanceAt` the end of each month from the Balance Anchor; `null` before Known Since) — cash lines use the account `actual`, Restschuld uses the mortgage `projected` (replayed) | Historical balances, past actuals         |
-| **HistoryPoint**          | The purpose-built per-month DTO returned by `GET /projection/history` — `{ month, totalLiquid, restschuld, netCashflow, accounts: Record<id, balance> }`, all cents                                                                                       | History row, history snapshot             |
-| **HistoryChart**          | The actuals-only Recharts chart on the History page — reuses the Trajectory Horizon's visual language (per-account lines, dashed Restschuld, toggle-chip legend) with its own independent visibility state                                                | History graph, actuals chart              |
-| **Year Archive**          | The import-gated, expandable year list on the History page — one row per year with ≥1 imported Statement, showing that year's end-of-data Total Liquid / Restschuld / Net Cashflow + a statement badge                                                    | Year list, history accordion              |
-| **MonthYearPicker**       | The jump-to popover on Month Overview (label + chevron between the unchanged prev/next arrows) — `◀ year ▶` + 3×4 month grid, portaled to `document.body`, out-of-**Browsable Range** months disabled                                                     | Jump-to picker, month picker, date picker |
-| **Browsable Range**       | The window of navigable months: from the **earliest imported Transaction month** through the current month — bounds the Historical Trajectory span and the MonthYearPicker's enabled months                                                               | Data range, history range                 |
+| Term                          | Definition                                                                                                                                                                                                                                                | Aliases to avoid                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| **History** (page/nav)        | The `/history` route and its sidebar nav item (Clock icon, between Month and Import) — the multi-year backward-looking view of Reconstructed Actuals                                                                                                      | Past view, archive page                   |
+| **Historical Trajectory**     | The title and concept of the History page's chart — the actuals-only counterpart to the forward-looking **Trajectory Horizon**; right edge is always today, no Payoff Marker, no Freedom Phase                                                            | Past trajectory, history graph            |
+| **Reconstructed Actuals**     | The per-month historical balance series derived by replaying the ledger (`balanceAt` the end of each month from the Balance Anchor; `null` before Known Since) — cash lines use the account `actual`, Restschuld uses the mortgage `projected` (replayed) | Historical balances, past actuals         |
+| **HistoryPoint** (updated)    | The purpose-built per-month DTO returned by `GET /projection/history` — `{ month, totalLiquid, restschuld, restschuldBridge, netCashflow, monthlySavings, monthlySpending, accounts: Record<id, balance> }`, all cents                                    | History row, history snapshot             |
+| **HistoryChart**              | The actuals-only Recharts chart on the History page — reuses the Trajectory Horizon's visual language (per-account lines, dashed Restschuld, toggle-chip legend) with its own independent visibility state                                                | History graph, actuals chart              |
+| **Year Archive** (updated)    | The expandable year list on the History page — one row per year with ≥1 month where a series other than the **Paydown Bridge** is known, showing that year's end-of-data Total Liquid / Restschuld / Net Cashflow + a statement badge (none at zero)      | Year list, history accordion              |
+| **MonthYearPicker**           | The jump-to popover on Month Overview (label + chevron between the unchanged prev/next arrows) — `◀ year ▶` + 3×4 month grid, portaled to `document.body`, out-of-**Browsable Range** months disabled                                                     | Jump-to picker, month picker, date picker |
+| **Browsable Range** (updated) | The window of navigable months: from the **earliest imported Transaction month** through the current month — bounds the MonthYearPicker's enabled months only; the History page spans the wider **History Span**                                          | Data range, history range                 |
 
 ## Relationships (Historical Month Navigation additions)
 
@@ -1269,3 +1269,52 @@
 - **"opening balance"** (new) — retired. It meant "the balance before all transactions", and live use showed users actually enter the balance they know today. Say **Anchor Balance** / **Anchor Date**; the old columns were renamed in migration 017, not duplicated.
 - **"anchor"** (new) — also means `monthOfYear` anchoring (the month an annual or quarterly RecurringTransaction fires) and the projection engine's "re-anchor to actual" step. Qualify: **Balance Anchor** for the account's known point, `monthOfYear` for recurring firing, and **Re-anchor** only for the user replacing a Balance Anchor. In engine comments, say the running balance is "reset to actual".
 - **"€0" vs Unknown** (new) — a balance of €0 is a real, known value. An **Unknown** balance is `null`. Never coalesce one into the other (`?? 0`) on any history surface.
+
+## Financial History (new)
+
+| Term                  | Definition                                                                                                                                                                                                 | Aliases to avoid                               |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Financial History** | Horizon's past-facing view: real past balances, the Mortgage's paydown since origination, and savings and spending trends, shown alongside the projection so the product reads past, present and projected | History feature, backfill, past data           |
+| **Origination Point** | The Mortgage's one known Restschuld before its Known Since: the **Original Principal** at the **Mortgage Start Date**                                                                                      | Loan start balance, initial Restschuld         |
+| **Paydown Bridge**    | The straight, dotted, faded segment from the **Origination Point** to the Mortgage's **Known Since** (`restschuldBridge`); a visual connection between two known points, never a monthly value             | Estimated Restschuld, interpolated history     |
+| **History Span**      | The months `GET /projection/history` returns: from the earliest of every account's **Known Since** month and the **Mortgage Start Date** month, through the current month                                  | History range, Browsable Range                 |
+| **Past Lead-in**      | The stretch of **Reconstructed Actuals** before the current month that the **Trajectory Horizon** draws behind its projection, capped at 120 months back, on an "ACTUALS" band                             | History overlay, past segment                  |
+| **Monthly Savings**   | The sum of a month's balance gains across the **Tracked Accounts** (liquid + Investment) (`monthlySavings`); `null` when any is **Unknown** that month or the month before                                 | Net Cashflow, savings rate, income minus spend |
+| **Monthly Spending**  | The magnitude of a month's **Variable Spending** outflows on the spending accounts, under the shared `lib/variableSpending` rule (`monthlySpending`)                                                       | Expenses, outflow, burn                        |
+| **History Trends**    | The History page card between the **HistoryChart** and the **Year Archive** that plots **Monthly Savings** or **Monthly Spending** as monthly bars with a trailing-12-month average                        | Trends chart, savings chart, spending chart    |
+
+## Relationships (Financial History additions)
+
+- A **Mortgage** with a **Mortgage Origination** has exactly one **Origination Point**; a **Paydown Bridge** exists only when its start month is earlier than the Mortgage's **Known Since** month, and meets `restschuld` at that month
+- The **Paydown Bridge** never sets `restschuld`: the Restschuld stays **Unknown** (`null`) under the bridge, and the tooltip reads "No monthly data · €X paid off {Mon YYYY}–{Mon YYYY}"
+- The **History Span** supersedes the earliest-import lower bound of `GET /projection/history` (Historical Month Navigation); the **Browsable Range** keeps it, for the MonthYearPicker only
+- History is `[]` when the **History Span** holds only the current month, which replaces "no imported Statements"
+- The **Past Lead-in** and the projection join at the current month, which comes from the projection; Payoff Marker, Freedom Phase and ST months stay forward-only
+- **History**, **Savings Streak** and the **Past Lead-in** read one cached resource (`HISTORY`); every bump of `PROJECTION` bumps `HISTORY`
+- **Monthly Savings** is a balance delta of **Tracked Accounts**; **Net Cashflow** is a sum of stored Transactions. They differ by design
+- One range (1 Year / 3 Years / All history) governs both the **HistoryChart** and **History Trends**
+
+## Example dialogue (Financial History)
+
+> **Dev:** "The mortgage started in 2022 and its Anchor Date is today. What does History draw before today?"
+>
+> **Domain expert:** "The **Origination Point**: Original Principal at the Mortgage Start Date. From there to the Mortgage's **Known Since** it draws the **Paydown Bridge**, a dotted line between the two facts we know."
+>
+> **Dev:** "Can the tooltip show the Restschuld for, say, March 2024?"
+>
+> **Domain expert:** "No. The bridge isn't data. We don't model interest, so the monthly path is unknown. The tooltip says 'No monthly data' and gives the total paid off across the bridge. `restschuld` itself stays `null` there."
+>
+> **Dev:** "And the Dashboard?"
+>
+> **Domain expert:** "The **Trajectory Horizon** gets a **Past Lead-in**: up to ten years of actuals behind the projection, with the TODAY Marker where today really is. History, the Savings Streak and the lead-in all read the same cached history."
+>
+> **Dev:** "Is **Monthly Savings** just Net Cashflow?"
+>
+> **Domain expert:** "No. **Monthly Savings** is how much the **Tracked Accounts**' balances grew. Net Cashflow sums the stored transactions. A Sondertilgung leaves savings but never shows up in Net Cashflow."
+
+## Flagged ambiguities (Financial History)
+
+- **"history"** (new): now means three things. **History** is the page, **Financial History** the feature, and the **History Span** the data window. The **Browsable Range** is a fourth window, the picker's, and the two are no longer the same. Say which one.
+- **"estimated" / "interpolated"** (new): do not use either in UI copy for the **Paydown Bridge**. It is a connection, not an estimate Horizon stands behind. Say "No monthly data".
+- **"savings"** (new): **Monthly Savings** (a balance delta) versus **Net Cashflow** (a transaction sum) versus the Savings Streak's per-account targets. Never use "savings" for Net Cashflow.
+- Historical Month Navigation's relationships that bound history to "the earliest imported Transaction month" and gate the Year Archive on Statements are superseded by the **History Span** and the updated **Year Archive** entry above.
