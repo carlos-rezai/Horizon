@@ -11,11 +11,11 @@ import {
   YAxis,
 } from "recharts";
 import type { AccountWithBalance } from "../../../types/account";
+import type { HistoryPoint } from "../historyTypes/historyTypes";
 import {
   HISTORY_RANGE_OPTIONS,
-  type HistoryPoint,
   type HistoryRange,
-} from "../historyTypes/historyTypes";
+} from "../historyRange/historyRange";
 import { firstKnownMonths } from "../knownSince/knownSince";
 import {
   paydownBridgeSpan,

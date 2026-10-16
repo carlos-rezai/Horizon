@@ -40,18 +40,3 @@ export interface HistoryPoint {
   /** Per-account balance; null before that account's Known Since. */
   accounts: Record<string, number | null>;
 }
-
-/** The History page's range chips, shared by the chart and the trends card. */
-export type HistoryRange = "1y" | "3y" | "all";
-
-export interface HistoryRangeOption {
-  value: HistoryRange;
-  label: string;
-  months: number;
-}
-
-export const HISTORY_RANGE_OPTIONS: HistoryRangeOption[] = [
-  { value: "1y", label: "1 Year", months: 12 },
-  { value: "3y", label: "3 Years", months: 36 },
-  { value: "all", label: "All history", months: Infinity },
-];

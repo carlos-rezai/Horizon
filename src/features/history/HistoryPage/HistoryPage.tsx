@@ -7,7 +7,7 @@ import { useAccounts } from "../../accounts/useAccounts/useAccounts";
 import { useHistory } from "../useHistory/useHistory";
 import HistoryChart from "../HistoryChart/HistoryChart";
 import HistoryTrends from "../HistoryTrends/HistoryTrends";
-import type { HistoryRange } from "../historyTypes/historyTypes";
+import type { HistoryRange } from "../historyRange/historyRange";
 import YearArchive from "../YearArchive/YearArchive";
 import { StyledPage, StyledCta } from "./HistoryPage.styles";
 
