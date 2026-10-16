@@ -1389,3 +1389,92 @@ home per tier.
 - Still open from the plan's Out of Scope: requiring
   `ProjectionAccountEntry.anchorDate`, reshaping `applyRecurringToBalances`,
   and KpiStrip's private `restschuldOf`.
+
+## 2026-10-16 — #246 Financial History refactor: one home per rule, again
+
+Refactor plan 33, worked commit by commit. The epic's seven phases brought
+back the same drift refactor 32 had just removed from Balance Anchor; this
+pass gives each rule one home per tier again, and closes the epic.
+
+- **Dates.** The server date lib now owns `currentMonth` and
+  `monthsBetween`. The projection and settlements routes lost their private
+  `currentMonth`, and the route, the engine and the history lib their three
+  copies of `monthsBetween`. On the client, `buildPastLeadIn` and the
+  Trajectory Horizon read the month-math util's `currentMonth`.
+- **Kinds and origination.** A new `accountKinds` lib owns
+  `selectLiquidAccounts` and `selectTrackableAccounts`, read by
+  `deriveHistory`, the engine's Total Liquid and the cashflow lib.
+  `mortgageStartMonth` in the history span lib answers "is this Mortgage
+  originated?" for both the span and the Paydown Bridge.
+- **Engine entries.** `toProjectionTxEntry` and `toProjectionRecurringEntry`
+  join `toProjectionAccountEntry`; all three routes map with them.
+  `deriveHistory` is handed the stored transactions, so the dead
+  `transferId` / `isAutoSettlement` spreads in `GET /projection` are gone.
+- **One history resource.** `useHistoryPoints` owns the `HISTORY` key and
+  its fetcher, the way `useProjection` owns `PROJECTION`. `useHistory`,
+  `useSavingsGoal` and the Dashboard read it; every history read goes
+  through `fetchJson`; `useHistory` no longer returns the unread `years`.
+- **History rules out of components.** `paydownBridgeSpan` (new
+  `paydownBridge` module), `firstKnownMonthOf` and `knownYears` (in
+  `knownSince`), and `pointsInRange` with the range options (new
+  `historyRange` module). The trajectory util exports the series keys, and
+  its Y domain counts the bridge whenever the Restschuld is visible.
+- **Types.** `HistoryPoint` lives in `src/types/history.ts`; `historyTypes`
+  is gone, and `src/utils/` no longer reads `HistoryPoint` from a feature.
+
+### Two defects, found in review
+
+Both were found by reading the code for the plan, not in live use.
+
+- **Midnight on the 1st.** `buildPastLeadIn` and the TODAY Marker took the
+  current month from `toISOString()` (UTC), while the server projects from
+  the local month. From midnight to 01:00/02:00 in Germany on the 1st, the
+  Past Lead-in left out last month and the TODAY Marker found no row and
+  disappeared. Pinned by frozen-clock tests at 00:30 on the 1st.
+- **Stale Dashboard history.** The Mortgage Countdown's `onUpdated`
+  refreshed accounts, the projection and recurring, but not history — the
+  Dashboard had no `refresh` for it, because it borrowed the Savings
+  Streak's points. After a mortgage setup or origination edit, the Past
+  Lead-in, the Paydown Bridge and the Savings Streak stayed stale until the
+  page was revisited.
+- A third behaviour change came with them: the History tooltip's Net
+  Cashflow now follows `isUnknownMonth`, so hiding the only known account in
+  a month no longer drops that month's Net Cashflow.
+
+### Where the plan met the code
+
+- **`isUnknown` rides the chart row's index signature.** E8 asked each
+  HistoryChart row to carry `isUnknown`. Declaring it as an optional
+  property clashes with the row's index signature, which must stay
+  assignable to the trajectory util's `ChartRow`; declaring it required
+  would have forced edits to the direct tooltip tests. It is documented on
+  the index signature instead, and a row without it reads as known.
+- **The bridge's Original Principal is re-read for its type.**
+  `mortgageStartMonth` returns the month, not a narrowed account, so
+  `paydownBridge` still reads `originalPrincipal` itself — a type narrowing,
+  not a second predicate.
+- **D3 deleted one whole case.** The "derives distinct years" test asserted
+  nothing but `years`, so it went with its assertion; one case title and a
+  fixture comment that named the years were reworded.
+
+### Follow-ups
+
+- **Monthly Spending counts positive rows.** It sums the magnitude of every
+  Variable-Spending row (refunds, imported income left checked), exactly as
+  the Year Comparison does, and #244's parity test pins the two together.
+  Counting only outflows changes both features at once; the glossary now
+  says what the rule does rather than what it intends.
+- **`src/utils/savingsGoal` still imports `savingsTypes` from the savings
+  feature** — the same util-reads-a-feature shape F3 fixed for
+  `HistoryPoint`, outside this plan.
+- Still open from the plan's Out of Scope: requiring the client
+  `HistoryPoint`'s `restschuldBridge`, `monthlySavings` and
+  `monthlySpending`; making HistoryChart's `range` controlled-only; the
+  shared chart chrome and one look for the two chip groups (`ui-meridian`);
+  `useImport` reading `IMPORT_HISTORY`; the per-month transaction scan in
+  `deriveHistory`.
+- Still open from refactor 32: the other UTC "today" call sites
+  (`linkedSince`, the settlement service's `asOf`), the `isoDaysFromToday`
+  midnight flake in the accounts route tests, requiring
+  `ProjectionAccountEntry.anchorDate`, reshaping `applyRecurringToBalances`,
+  and KpiStrip's private `restschuldOf`.
