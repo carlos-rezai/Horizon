@@ -1,4 +1,9 @@
-import type { Account, AccountKind } from "../../storage/types.js";
+import type {
+  Account,
+  AccountKind,
+  RecurringTransaction,
+  Transaction,
+} from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
 import { daysInMonth, endOfMonth, monthsBetween } from "../date/date.js";
@@ -50,6 +55,34 @@ export interface ProjectionRecurringEntry {
   linkedAccountId?: string;
   monthOfYear?: number;
   isActive?: boolean;
+}
+
+/**
+ * A stored Transaction as the engine's transaction entry: the account, date
+ * and amount — nothing the engine does not read.
+ */
+export function toProjectionTxEntry(tx: Transaction): ProjectionTxEntry {
+  return { accountId: tx.accountId, date: tx.date, amount: tx.amount };
+}
+
+/**
+ * A stored Recurring Transaction as the engine's recurring entry: the
+ * account, amount and schedule, plus the transfer link and the annual month
+ * only when they are set.
+ */
+export function toProjectionRecurringEntry(
+  r: RecurringTransaction
+): ProjectionRecurringEntry {
+  return {
+    accountId: r.accountId,
+    amount: r.amount,
+    frequency: r.frequency,
+    dayOfMonth: r.dayOfMonth,
+    ...(r.linkedAccountId !== undefined && {
+      linkedAccountId: r.linkedAccountId,
+    }),
+    ...(r.monthOfYear !== undefined && { monthOfYear: r.monthOfYear }),
+  };
 }
 
 interface AccountSnapshot {

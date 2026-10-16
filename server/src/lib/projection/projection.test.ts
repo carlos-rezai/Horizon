@@ -1,8 +1,17 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import type { Express } from "express";
-import { projectBalances, toProjectionAccountEntry } from "./projection.js";
-import type { Account } from "../../storage/types.js";
+import {
+  projectBalances,
+  toProjectionAccountEntry,
+  toProjectionRecurringEntry,
+  toProjectionTxEntry,
+} from "./projection.js";
+import type {
+  Account,
+  RecurringTransaction,
+  Transaction,
+} from "../../storage/types.js";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
 
 let app: Express;
@@ -70,6 +79,86 @@ describe("toProjectionAccountEntry", () => {
       linkedAccountId: "giro",
       settlementDay: 15,
       linkedSince: "2026-01-01",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toProjectionTxEntry
+// ---------------------------------------------------------------------------
+
+describe("toProjectionTxEntry", () => {
+  const tx: Transaction = {
+    id: "tx-1",
+    accountId: "giro",
+    date: "2026-10-03",
+    amount: -2500,
+    description: "Groceries",
+    category: "Food",
+  };
+
+  it("carries the account, date and amount", () => {
+    expect(toProjectionTxEntry(tx)).toEqual({
+      accountId: "giro",
+      date: "2026-10-03",
+      amount: -2500,
+    });
+  });
+
+  it("leaves out the fields the engine does not read, even when set", () => {
+    const transferLeg: Transaction = {
+      ...tx,
+      transferId: "transfer-1",
+      isAutoSettlement: true,
+      recurringTransactionId: "rec-1",
+      importId: "import-1",
+    };
+    expect(toProjectionTxEntry(transferLeg)).toEqual({
+      accountId: "giro",
+      date: "2026-10-03",
+      amount: -2500,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toProjectionRecurringEntry
+// ---------------------------------------------------------------------------
+
+describe("toProjectionRecurringEntry", () => {
+  const salary: RecurringTransaction = {
+    id: "rec-1",
+    accountId: "giro",
+    amount: 300000,
+    description: "Salary",
+    category: "Income",
+    frequency: "monthly",
+    dayOfMonth: 1,
+  };
+
+  it("carries the account, amount and schedule, and omits unset optional fields", () => {
+    expect(toProjectionRecurringEntry(salary)).toEqual({
+      accountId: "giro",
+      amount: 300000,
+      frequency: "monthly",
+      dayOfMonth: 1,
+    });
+  });
+
+  it("carries the transfer link and the annual month when they are set", () => {
+    const sondertilgung: RecurringTransaction = {
+      ...salary,
+      frequency: "annual",
+      linkedAccountId: "mortgage",
+      monthOfYear: 11,
+    };
+    expect(toProjectionRecurringEntry(sondertilgung)).toEqual({
+      accountId: "giro",
+      amount: 300000,
+      frequency: "annual",
+      dayOfMonth: 1,
+      linkedAccountId: "mortgage",
+      monthOfYear: 11,
     });
   });
 });
