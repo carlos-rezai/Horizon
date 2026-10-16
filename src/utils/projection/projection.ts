@@ -1,7 +1,9 @@
 import type {
   MonthlySnapshot,
+  PastLeadInRow,
   TrajectoryDataPoint,
 } from "../../types/projection";
+import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
 import type { AccountKind, AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
 import { resolveAccountColor } from "../color/color";
@@ -190,6 +192,41 @@ export function buildTrajectoryData(
       ...accountBalances,
     };
   });
+}
+
+/** The Past Lead-in never reaches further back than the projection reaches forward. */
+const LEAD_IN_MONTHS = 120;
+
+/**
+ * The Past Lead-in: the history points before the current month — which comes
+ * only from the projection — as chart rows keyed like `buildTrajectoryData`'s,
+ * plus the Paydown Bridge. At most the 120 most recent past months; Unknown
+ * values stay null, never 0.
+ */
+export function buildPastLeadIn(
+  points: HistoryPoint[],
+  accounts: AccountWithBalance[]
+): PastLeadInRow[] {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const nonMortgageAccountIds = accounts
+    .filter((a) => a.kind !== "Mortgage")
+    .map((a) => a.id);
+
+  return points
+    .filter((p) => p.month < currentMonth)
+    .slice(-LEAD_IN_MONTHS)
+    .map((p, index) => ({
+      monthIndex: index,
+      label: p.month,
+      totalLiquid: p.totalLiquid,
+      restschuld: p.restschuld,
+      restschuldBridge: p.restschuldBridge ?? null,
+      isSTMonth: false,
+      isPayoffMonth: false,
+      ...Object.fromEntries(
+        nonMortgageAccountIds.map((id) => [id, p.accounts[id] ?? null])
+      ),
+    }));
 }
 
 export function findMortgagePayoffMonth(

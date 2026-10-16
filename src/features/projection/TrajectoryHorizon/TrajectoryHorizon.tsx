@@ -16,11 +16,14 @@ import {
 } from "recharts";
 import type {
   MonthlySnapshot,
+  PastLeadInRow,
   TrajectoryDataPoint,
 } from "../../../types/projection";
+import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import {
+  buildPastLeadIn,
   buildTrajectoryData,
   findDebtFreeMonth,
   stMonthsFor,
@@ -55,6 +58,10 @@ const VISIBILITY_KEY = "horizon.trajectory.visibility.v2";
 
 const TOTAL_LIQUID_KEY = "totalLiquid";
 const RESTSCHULD_KEY = "restschuld";
+const RESTSCHULD_BRIDGE_KEY = "restschuldBridge";
+
+/** A chart row: a Past Lead-in month or a projected month. */
+type ChartPoint = TrajectoryDataPoint | PastLeadInRow;
 
 interface Props {
   snapshots: MonthlySnapshot[];
@@ -62,13 +69,15 @@ interface Props {
   recurringTransactions: RecurringTransaction[];
   isLoading: boolean;
   onViewHistory?: () => void;
+  /** Cached History points; the months before today draw as a Past Lead-in. */
+  history?: HistoryPoint[];
 }
 
 const HORIZON_MONTHS = 120;
 
 interface TrajectoryTooltipProps {
   active?: boolean;
-  payload?: readonly { payload?: TrajectoryDataPoint }[];
+  payload?: readonly { payload?: ChartPoint }[];
   nonMortgageAccounts: AccountWithBalance[];
   getColor: (account: AccountWithBalance) => string;
 }
@@ -81,13 +90,15 @@ function TrajectoryTooltip({
 }: TrajectoryTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
-  const point = payload[0].payload as TrajectoryDataPoint;
+  const point = payload[0].payload as ChartPoint;
 
   return (
     <ChartTooltip label={point.label}>
-      <StyledTooltipRowPositive>
-        Liquid: {formatBalance(point.totalLiquid)}
-      </StyledTooltipRowPositive>
+      {point.totalLiquid !== null && (
+        <StyledTooltipRowPositive>
+          Liquid: {formatBalance(point.totalLiquid)}
+        </StyledTooltipRowPositive>
+      )}
       {nonMortgageAccounts.map((a) => {
         const value = point[a.id];
         if (typeof value !== "number") return null;
@@ -110,7 +121,7 @@ interface YearTickProps {
   x?: number;
   y?: number;
   payload?: { value: number };
-  data: TrajectoryDataPoint[];
+  data: ChartPoint[];
   mutedColor: string;
 }
 
@@ -174,12 +185,15 @@ function PayoffMarkerLabel({
   );
 }
 
+const NO_HISTORY: HistoryPoint[] = [];
+
 export default function TrajectoryHorizon({
   snapshots,
   accounts,
   recurringTransactions,
   isLoading,
   onViewHistory,
+  history = NO_HISTORY,
 }: Props) {
   const theme = useTheme();
 
@@ -197,12 +211,26 @@ export default function TrajectoryHorizon({
 
   const payoffMonth = findDebtFreeMonth(horizonSnapshots, mortgageIds);
 
-  const data = buildTrajectoryData(
+  const projectedData = buildTrajectoryData(
     horizonSnapshots,
     stMonths,
     payoffMonth,
     accounts
   );
+
+  // The Past Lead-in sits before the projected rows; the projected rows'
+  // marks (payoff, ST months, freedom phase) are computed from them alone.
+  const leadIn = buildPastLeadIn(history, accounts);
+  const data: ChartPoint[] =
+    leadIn.length === 0
+      ? projectedData
+      : [
+          ...leadIn,
+          ...projectedData.map((p) => ({
+            ...p,
+            monthIndex: p.monthIndex + leadIn.length,
+          })),
+        ];
 
   const nonMortgageAccounts = accounts.filter((a) => a.kind !== "Mortgage");
   const hasMortgage = mortgageIds.length > 0;
@@ -234,7 +262,13 @@ export default function TrajectoryHorizon({
     showAll: handleShowAll,
   } = useSeriesVisibility(visibilityAccounts, seriesKeys, VISIBILITY_KEY);
 
-  const [, yMax] = computeVisibleYDomain(data, visibility);
+  const restschuldVisible = visibility[RESTSCHULD_KEY] === true;
+  // The bridge follows the Restschuld toggle, so it counts toward the domain
+  // whenever the Restschuld does.
+  const [, yMax] = computeVisibleYDomain(data, {
+    ...visibility,
+    [RESTSCHULD_BRIDGE_KEY]: restschuldVisible,
+  });
 
   const payoffIndex = payoffMonth
     ? data.findIndex((p) => p.label === payoffMonth)
@@ -246,7 +280,7 @@ export default function TrajectoryHorizon({
 
   // Post-payoff portion of the Total Liquid line, used to shade the freedom
   // gradient only after the mortgage is gone.
-  const freedomData: TrajectoryDataPoint[] = data.map((p, i) => ({
+  const freedomData: ChartPoint[] = data.map((p, i) => ({
     ...p,
     freedomLiquid: payoffIndex >= 0 && i >= payoffIndex ? p.totalLiquid : null,
   }));
@@ -396,6 +430,21 @@ export default function TrajectoryHorizon({
                     strokeWidth={2}
                   />
                 )}
+                {leadIn.length > 0 && (
+                  <ReferenceArea
+                    yAxisId="left"
+                    x1={0}
+                    x2={leadIn.length}
+                    fill={theme.colors.onSurfaceVariant}
+                    fillOpacity={0.05}
+                    label={{
+                      value: "ACTUALS",
+                      position: "insideTopLeft",
+                      fill: theme.colors.onSurfaceVariant,
+                      fontSize: 10,
+                    }}
+                  />
+                )}
                 {todayIndex >= 0 && (
                   <ReferenceLine
                     yAxisId="left"
@@ -446,8 +495,26 @@ export default function TrajectoryHorizon({
                   strokeDasharray="6 3"
                   strokeWidth={1.5}
                   connectNulls={false}
-                  hide={visibility[RESTSCHULD_KEY] !== true}
+                  hide={!restschuldVisible}
                 />
+                {leadIn.length > 0 && (
+                  <Line
+                    yAxisId="left"
+                    type="linear"
+                    dataKey={RESTSCHULD_BRIDGE_KEY}
+                    name="Restschuld (no monthly data)"
+                    dot={false}
+                    stroke={theme.colors.restschuldStrokeColor}
+                    strokeDasharray="1 4"
+                    strokeLinecap="round"
+                    strokeWidth={2}
+                    strokeOpacity={0.45}
+                    connectNulls={false}
+                    activeDot={false}
+                    legendType="none"
+                    hide={!restschuldVisible}
+                  />
+                )}
                 <Line
                   yAxisId="left"
                   type="monotone"

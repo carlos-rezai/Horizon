@@ -116,6 +116,7 @@ export default function DashboardPage() {
           recurringTransactions={recurringTransactions}
           isLoading={false}
           onViewHistory={() => navigate("/history")}
+          history={savingsPoints}
         />
       </SectionState>
       <SectionState
