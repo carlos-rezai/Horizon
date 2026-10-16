@@ -633,6 +633,41 @@ describe("HistoryChart — Unknown months", () => {
 
     expect(screen.getByText(/Net Cashflow/i)).toBeInTheDocument();
   });
+
+  // Visibility is a view choice: hiding the only known account in a month
+  // never makes that month Unknown, so its Net Cashflow stays.
+  it("keeps the Net Cashflow row when the month's only known account is hidden", () => {
+    const etf: AccountWithBalance = {
+      id: "etf",
+      kind: "Investment",
+      name: "ETF Depot",
+      anchorBalance: 0,
+      anchorDate: "2026-01-01",
+      balance: 0,
+      color: "#22AA66",
+      showInTrajectory: true,
+    };
+    renderWithTheme(
+      <HistoryChart
+        points={[
+          {
+            month: "2026-01",
+            totalLiquid: null,
+            restschuld: null,
+            netCashflow: -2500,
+            accounts: { g1: null, etf: 500000 },
+          },
+        ]}
+        accounts={[giro, etf]}
+        isLoading={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /ETF Depot/i }));
+    hover(0);
+
+    expect(screen.getByText(/Net Cashflow/i)).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
