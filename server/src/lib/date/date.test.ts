@@ -1,5 +1,12 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { daysInMonth, endOfMonth, parseYearMonth, todayIso } from "./date.js";
+import {
+  currentMonth,
+  daysInMonth,
+  endOfMonth,
+  monthsBetween,
+  parseYearMonth,
+  todayIso,
+} from "./date.js";
 
 describe("parseYearMonth", () => {
   it("parses a plain YYYY-MM value", () => {
@@ -40,6 +47,38 @@ describe("todayIso", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 2, 7, 12, 0));
     expect(todayIso()).toBe("2026-03-07");
+  });
+});
+
+describe("currentMonth", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("gives the local month just after midnight on the 1st", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 1, 0, 30));
+    expect(currentMonth()).toBe("2026-11");
+  });
+
+  it("gives the local month just before midnight on the last day", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 31, 23, 30));
+    expect(currentMonth()).toBe("2026-10");
+  });
+});
+
+describe("monthsBetween", () => {
+  it("counts the months within a year", () => {
+    expect(monthsBetween("2026-03", "2026-10")).toBe(7);
+  });
+
+  it("counts the months across a year boundary", () => {
+    expect(monthsBetween("2025-11", "2026-02")).toBe(3);
+  });
+
+  it("gives 0 for equal months", () => {
+    expect(monthsBetween("2026-10", "2026-10")).toBe(0);
   });
 });
 

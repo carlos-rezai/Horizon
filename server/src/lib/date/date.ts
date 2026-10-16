@@ -25,6 +25,21 @@ export function todayIso(): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+/**
+ * The current month as `YYYY-MM`, in local time — the month of `todayIso`.
+ * The client's `currentMonth` follows the same rule.
+ */
+export function currentMonth(): string {
+  return todayIso().slice(0, 7);
+}
+
+/** The number of whole months from one `YYYY-MM` month to another. */
+export function monthsBetween(from: string, to: string): number {
+  const a = parseYearMonth(from);
+  const b = parseYearMonth(to);
+  return (b.year - a.year) * 12 + (b.month - a.month);
+}
+
 /** The number of days in a `YYYY-MM` month, leap years included. */
 export function daysInMonth(yearMonth: string): number {
   const { year, month } = parseYearMonth(yearMonth);
