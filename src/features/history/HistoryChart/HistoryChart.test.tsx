@@ -617,4 +617,20 @@ describe("HistoryChart — Unknown months", () => {
 
     expect(screen.getByText("No data before Feb 2026")).toBeInTheDocument();
   });
+
+  // History Span (issue #239): a month where every account is Unknown has no
+  // real Net Cashflow, so the tooltip leaves the row out rather than read €0.
+  it("leaves the Net Cashflow row out of the tooltip in an all-Unknown month", () => {
+    renderUnknown();
+    hover(0);
+
+    expect(screen.queryByText(/Net Cashflow/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the Net Cashflow row in a month where an account is known", () => {
+    renderUnknown();
+    hover(2);
+
+    expect(screen.getByText(/Net Cashflow/i)).toBeInTheDocument();
+  });
 });

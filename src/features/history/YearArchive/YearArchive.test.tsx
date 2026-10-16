@@ -26,8 +26,8 @@ const euro = (cents: number) => eur.format(cents / 100);
 const euroSigned = (cents: number) =>
   cents > 0 ? `+${euro(cents)}` : euro(cents);
 
-// Points span 2021, 2022, and a partial 2023 (Jan–Mar only). 2022 is present in
-// the data but deliberately absent from `years` — it must never render.
+// Points span 2021, 2022, and a partial 2023 (Jan–Mar only). 2022 holds known
+// data but no imported statement, so it is listed without a badge.
 const POINTS: HistoryPoint[] = [
   {
     month: "2021-11",
@@ -73,7 +73,6 @@ const POINTS: HistoryPoint[] = [
   },
 ];
 
-const YEARS = [2021, 2023];
 const COUNTS: Record<number, number> = { 2021: 1, 2023: 2 };
 
 function renderArchive(
@@ -82,35 +81,54 @@ function renderArchive(
   return render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <YearArchive
-          points={POINTS}
-          years={YEARS}
-          statementCounts={COUNTS}
-          {...props}
-        />
+        <YearArchive points={POINTS} statementCounts={COUNTS} {...props} />
       </MemoryRouter>
     </ThemeProvider>
   );
 }
 
-describe("YearArchive — import-gated years", () => {
-  it("renders a section for each year in `years`", () => {
+// History Span (issue #239): a year is listed when at least one of its months
+// is known, whether or not it holds an imported statement. The badge still
+// comes from the imports list.
+describe("YearArchive — years with known data", () => {
+  it("lists every year that has a known month", () => {
     renderArchive();
 
     expect(screen.getByRole("button", { name: /2021/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /2022/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /2023/ })).toBeInTheDocument();
   });
 
-  it("never renders a year that has points but no imports", () => {
+  it("lists a year with known data but no imports, with no statement badge", () => {
     renderArchive();
 
-    expect(
-      screen.queryByRole("button", { name: /2022/ })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /2022/ })).toBeInTheDocument();
+    // Only the two imported years carry a badge; 2022 carries none, not "0".
+    expect(screen.getAllByRole("link", { name: /statement/i })).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: /0 statements/i })).toBeNull();
   });
 
-  it("renders nothing meaningful when there are no imported years", () => {
-    renderArchive({ years: [], statementCounts: {} });
+  it("lists a year with known data even when there are no imports at all", () => {
+    renderArchive({ statementCounts: {} });
+
+    expect(screen.getByRole("button", { name: /2023/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /statement/i })).toBeNull();
+  });
+
+  it("still lists imported years with their badge", () => {
+    renderArchive();
+
+    expect(screen.getByRole("button", { name: /2021/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "1 statement" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "2 statements" })
+    ).toBeInTheDocument();
+  });
+
+  it("renders nothing when there are no points", () => {
+    renderArchive({ points: [], statementCounts: {} });
 
     expect(screen.queryByRole("button", { name: /20\d\d/ })).toBeNull();
   });
@@ -307,7 +325,6 @@ describe("YearArchive — Unknown months", () => {
   function renderUnknown() {
     return renderArchive({
       points: UNKNOWN_POINTS,
-      years: [2023, 2024],
       statementCounts: { 2023: 1, 2024: 1 },
     });
   }
@@ -324,15 +341,10 @@ describe("YearArchive — Unknown months", () => {
     ).toBeNull();
   });
 
-  it("renders — in the year row of a year with no known month, never €0", () => {
+  it("does not list a year in which every month is Unknown, even with a statement", () => {
     renderUnknown();
 
-    const yearRow = screen.getByRole("button", { name: /2023/ });
-    expect(within(yearRow).getAllByText("—")).toHaveLength(2);
-    expect(
-      within(yearRow).queryByText(
-        (_, el) => el?.textContent === euro(0) && el.children.length === 0
-      )
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /2023/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /2024/ })).toBeInTheDocument();
   });
 });

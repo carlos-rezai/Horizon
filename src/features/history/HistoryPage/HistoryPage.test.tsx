@@ -103,6 +103,34 @@ describe("HistoryPage — empty state", () => {
     const cta = await screen.findByRole("link", { name: /import/i });
     expect(cta).toHaveAttribute("href", "/import");
   });
+
+  it("hints at importing a statement or adding the mortgage's origination", async () => {
+    renderPage();
+    expect(
+      await screen.findByText(
+        "Import a bank statement or add your mortgage's origination to see your history"
+      )
+    ).toBeInTheDocument();
+  });
+});
+
+// History Span (issue #239): an account anchored months ago has a History even
+// when nothing has been imported, and its year is listed in the archive.
+describe("HistoryPage — history without imports", () => {
+  beforeEach(() => mockFetch(POINTS, [], ACCOUNTS));
+
+  it("renders the history chart, not the empty state", async () => {
+    renderPage();
+    expect(await screen.findByTestId("history-chart")).toBeInTheDocument();
+    expect(screen.queryByText(/no history yet/i)).not.toBeInTheDocument();
+  });
+
+  it("lists the known year in the Year Archive with no statement badge", async () => {
+    renderPage();
+    expect(await screen.findByText("Year Archive")).toBeInTheDocument();
+    expect(screen.getByText("2023")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /statement/i })).toBeNull();
+  });
 });
 
 describe("HistoryPage — loaded state", () => {

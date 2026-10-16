@@ -118,8 +118,18 @@ interface HistoryPoint {
 // ---------------------------------------------------------------------------
 
 describe("GET /projection/history", () => {
-  it("returns [] when there are no imported statements", async () => {
-    await createAccount();
+  it("returns [] on a fresh install", async () => {
+    const res = await request(app).get("/projection/history");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns [] when only the current month is known", async () => {
+    // Anchored this month, with an import this month: the History Span holds
+    // the current month alone.
+    const giro = await createAccount({ anchorDate: "2026-07-05" });
+    await importStatement(giro.id, [{ date: "2026-07-10", amount: -1000 }]);
 
     const res = await request(app).get("/projection/history");
 
@@ -127,20 +137,42 @@ describe("GET /projection/history", () => {
     expect(res.body).toEqual([]);
   });
 
-  it("spans the earliest imported transaction month through the current month", async () => {
-    const giro = await createAccount();
-    await importStatement(giro.id, [{ date: "2026-03-15", amount: -1000 }]);
+  it("spans an account anchored months ago through the current month, without imports", async () => {
+    const giro = await createAccount({ anchorDate: "2026-02-10" });
 
     const res = await request(app).get("/projection/history");
     const points = res.body as HistoryPoint[];
 
     expect(res.status).toBe(200);
+    expect(points.map((p) => p.month)).toEqual([
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      CURRENT_MONTH,
+    ]);
+    expect(points[0].accounts[giro.id]).toBe(100000);
+  });
+
+  it("starts at the earliest Known Since across all accounts", async () => {
+    await createAccount({ anchorDate: "2026-05-01" });
+    await createAccount({
+      kind: "Tagesgeld",
+      name: "Savings",
+      anchorBalance: 500000,
+      anchorDate: "2026-03-20",
+    });
+
+    const res = await request(app).get("/projection/history");
+    const points = res.body as HistoryPoint[];
+
     expect(points[0].month).toBe("2026-03");
     expect(points[points.length - 1].month).toBe(CURRENT_MONTH);
   });
 
-  it("sets the lower bound to the earliest imported transaction month", async () => {
-    const giro = await createAccount();
+  it("starts at the earliest imported transaction when it predates every anchor", async () => {
+    const giro = await createAccount({ anchorDate: "2026-06-30" });
     await importStatement(giro.id, [
       { date: "2026-05-01", amount: -1000 },
       { date: "2026-02-10", amount: -2000 },
@@ -150,6 +182,18 @@ describe("GET /projection/history", () => {
     const points = res.body as HistoryPoint[];
 
     expect(points[0].month).toBe("2026-02");
+    expect(points[points.length - 1].month).toBe(CURRENT_MONTH);
+  });
+
+  it("starts at an anchor that predates every imported transaction", async () => {
+    const giro = await createAccount({ anchorDate: "2025-11-15" });
+    await importStatement(giro.id, [{ date: "2026-03-15", amount: -1000 }]);
+
+    const res = await request(app).get("/projection/history");
+    const points = res.body as HistoryPoint[];
+
+    expect(points[0].month).toBe("2025-11");
+    expect(points[points.length - 1].month).toBe(CURRENT_MONTH);
   });
 
   it("reports totalLiquid from the account's actual balance", async () => {
