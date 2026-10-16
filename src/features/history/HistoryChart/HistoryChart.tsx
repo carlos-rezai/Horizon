@@ -18,6 +18,10 @@ import {
 } from "../historyTypes/historyTypes";
 import { firstKnownMonths } from "../knownSince/knownSince";
 import {
+  paydownBridgeSpan,
+  type PaydownBridgeSpan,
+} from "../paydownBridge/paydownBridge";
+import {
   buildSeriesDescriptors,
   computeVisibleYDomain,
   type SeriesDescriptor,
@@ -45,32 +49,6 @@ const VISIBILITY_KEY = "horizon.history.visibility.v1";
 const TOTAL_LIQUID_KEY = "totalLiquid";
 const RESTSCHULD_KEY = "restschuld";
 const RESTSCHULD_BRIDGE_KEY = "restschuldBridge";
-
-/** The Paydown Bridge's extent: its first and last month and what it spans. */
-interface PaydownBridgeSpan {
-  /** "YYYY-MM" — the Mortgage Start month. */
-  from: string;
-  /** "YYYY-MM" — the Mortgage's first known month. */
-  to: string;
-  /** Original Principal minus the Restschuld where the bridge ends, in cents. */
-  paidOff: number;
-}
-
-/** The bridge's extent across the full History, or null when there is none. */
-function paydownBridgeSpan(points: HistoryPoint[]): PaydownBridgeSpan | null {
-  const bridged = points.filter(
-    (p): p is HistoryPoint & { restschuldBridge: number } =>
-      p.restschuldBridge !== null && p.restschuldBridge !== undefined
-  );
-  if (bridged.length === 0) return null;
-  const first = bridged[0];
-  const last = bridged[bridged.length - 1];
-  return {
-    from: first.month,
-    to: last.month,
-    paidOff: first.restschuldBridge - last.restschuldBridge,
-  };
-}
 
 /** A single reconstructed month projected onto the chart's flat data shape. */
 interface HistoryChartDataPoint {
