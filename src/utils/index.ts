@@ -22,6 +22,7 @@ export {
 } from "./projection/projection";
 export type { AccountColumn } from "./projection/projection";
 export { API_BASE } from "./api/api";
+export { apiErrorMessage } from "./apiError/apiError";
 export { resolveAccountColor } from "./color/color";
 export {
   recurringAmountFor,

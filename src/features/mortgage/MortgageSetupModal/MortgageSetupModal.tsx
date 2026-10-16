@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AccountWithBalance } from "../../../types/account";
 import { API_BASE } from "../../../utils/api/api";
+import { apiErrorMessage } from "../../../utils/apiError/apiError";
 import { eurosToCents } from "../../../utils/currency/currency";
 import { percentPaidOff } from "../../../utils/mortgage/mortgage";
 import { MONTHS_LONG } from "../../../utils/format/format";
@@ -226,13 +227,7 @@ export default function MortgageSetupModal({
     });
 
     if (!res.ok) {
-      const data = (await res.json()) as {
-        issues?: { message: string }[];
-        error?: string;
-      };
-      setError(
-        data.issues?.[0]?.message ?? data.error ?? "Failed to set up mortgage"
-      );
+      setError(apiErrorMessage(await res.json(), "Failed to set up mortgage"));
       return;
     }
 
