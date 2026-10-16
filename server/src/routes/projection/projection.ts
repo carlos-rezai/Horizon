@@ -5,23 +5,13 @@ import {
 } from "../../lib/projection/projection.js";
 import { deriveHistory } from "../../lib/projection/history.js";
 import { historySpanStart } from "../../lib/historySpan/historySpan.js";
+import { currentMonth, monthsBetween } from "../../lib/date/date.js";
 import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
-}
-
-function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function monthsBetween(from: string, to: string): number {
-  const [fy, fm] = from.split("-").map(Number);
-  const [ty, tm] = to.split("-").map(Number);
-  return (ty - fy) * 12 + (tm - fm);
 }
 
 router.get("/", async (req, res) => {

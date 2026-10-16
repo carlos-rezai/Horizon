@@ -9,16 +9,12 @@ import {
   projectBalances,
   toProjectionAccountEntry,
 } from "../../lib/projection/projection.js";
+import { currentMonth } from "../../lib/date/date.js";
 
 const router = Router();
 
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
-}
-
-function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
 router.post("/generate", async (req, res) => {
