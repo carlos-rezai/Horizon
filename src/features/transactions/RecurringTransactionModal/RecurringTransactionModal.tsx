@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CategorySelect from "../../categories/CategorySelect/CategorySelect";
 import { eurosToCents } from "../../../utils/currency/currency";
+import { MONTHS_LONG } from "../../../utils/format/format";
 import {
   buildRecurringInput,
   seedTransferForm,
@@ -176,20 +177,7 @@ export default function RecurringTransactionModal({
               value={monthOfYear}
               onChange={(e) => setMonthOfYear(parseInt(e.target.value, 10))}
             >
-              {[
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-              ].map((name, i) => (
+              {MONTHS_LONG.map((name, i) => (
                 <option key={i + 1} value={i + 1}>
                   {name}
                 </option>
