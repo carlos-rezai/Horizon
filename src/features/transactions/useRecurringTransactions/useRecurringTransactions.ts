@@ -6,6 +6,7 @@ import type {
 import { API_BASE } from "../../../utils/api/api";
 
 interface CreatePayload {
+  accountId: string;
   amount: number;
   description: string;
   category: string;
@@ -16,6 +17,7 @@ interface CreatePayload {
 }
 
 interface UpdatePayload {
+  accountId: string;
   amount: number;
   description: string;
   category: string;
@@ -81,7 +83,7 @@ export function useRecurringTransactions(
     const res = await fetch(`${API_BASE}/recurring-transactions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, accountId }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {

@@ -119,6 +119,7 @@ export interface RecurringTransactionCreateInput {
 }
 
 export interface RecurringTransactionUpdateInput {
+  accountId?: string;
   amount?: number;
   description?: string;
   category?: string;

@@ -12,14 +12,16 @@ import Input from "../../../primitives/Input/Input";
 import Select from "../../../primitives/Select/Select";
 import Stepper from "../../../primitives/Stepper/Stepper";
 import Button from "../../../primitives/Button/Button";
+import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import {
   StyledForm,
   StyledActions,
+  StyledChipRow,
   StyledErrorText,
-  StyledWarningText,
 } from "./RecurringTransactionModal.styles";
 
 export interface RecurringFormPayload {
+  accountId: string;
   amount: number;
   description: string;
   category: string;
@@ -28,6 +30,11 @@ export interface RecurringFormPayload {
   linkedAccountId?: string;
   monthOfYear?: number;
 }
+
+type TransferDirection = "to" | "from";
+
+const TRANSFER_SIGN_MESSAGE =
+  "Enter the transfer amount as a positive number — the direction sets which way it moves.";
 
 interface Props {
   accountId: string;
@@ -39,14 +46,24 @@ interface Props {
 }
 
 export default function RecurringTransactionModal({
+  accountId,
   transaction,
   otherAccounts,
   onClose,
   onSaved,
   onDeleted,
 }: Props) {
+  // A transfer is typed positive; its direction is which account owns it.
+  // A row linked *to* the viewed account is a "From" transfer whose
+  // counterpart is the owning account.
+  const isTransfer = transaction?.linkedAccountId !== undefined;
+  const isIncoming = isTransfer && transaction?.linkedAccountId === accountId;
   const [amount, setAmount] = useState(
-    transaction ? String(transaction.amount / 100) : ""
+    transaction
+      ? String(
+          (isTransfer ? Math.abs(transaction.amount) : transaction.amount) / 100
+        )
+      : ""
   );
   const [description, setDescription] = useState(
     transaction?.description ?? ""
@@ -58,7 +75,10 @@ export default function RecurringTransactionModal({
     transaction ? transaction.dayOfMonth : 1
   );
   const [linkedAccountId, setLinkedAccountId] = useState(
-    transaction?.linkedAccountId ?? ""
+    (isIncoming ? transaction?.accountId : transaction?.linkedAccountId) ?? ""
+  );
+  const [direction, setDirection] = useState<TransferDirection>(
+    isIncoming ? "from" : "to"
   );
   const [monthOfYear, setMonthOfYear] = useState<number>(
     transaction?.monthOfYear ?? new Date().getMonth() + 1
@@ -85,17 +105,21 @@ export default function RecurringTransactionModal({
     }
 
     if (linkedAccountId && parsedAmount <= 0) {
-      setError("Transfer amount must be greater than zero.");
+      setError(TRANSFER_SIGN_MESSAGE);
       return;
     }
 
+    const isFrom = linkedAccountId !== "" && direction === "from";
     const payload: RecurringFormPayload = {
+      accountId: isFrom ? linkedAccountId : accountId,
       amount: parsedAmount,
       description,
       category,
       frequency,
       dayOfMonth,
-      ...(linkedAccountId ? { linkedAccountId } : {}),
+      ...(linkedAccountId
+        ? { linkedAccountId: isFrom ? accountId : linkedAccountId }
+        : {}),
       ...(frequency === "annual" ? { monthOfYear } : {}),
     };
 
@@ -196,13 +220,10 @@ export default function RecurringTransactionModal({
           initialCategory={transaction?.category}
         />
 
-        <FormField
-          label="Transfer to account (optional)"
-          htmlFor="rt-linked-account"
-        >
+        <FormField label="Transfer (optional)" htmlFor="rt-linked-account">
           <Select
             id="rt-linked-account"
-            aria-label="Transfer to account (optional)"
+            aria-label="Transfer (optional)"
             value={linkedAccountId}
             onChange={(e) => setLinkedAccountId(e.target.value)}
           >
@@ -215,13 +236,21 @@ export default function RecurringTransactionModal({
           </Select>
         </FormField>
 
-        {otherAccounts.find((a) => a.id === linkedAccountId)?.kind ===
-          "Mortgage" && (
-          <StyledWarningText role="status">
-            Linking to a Mortgage account models a Recurring Transfer that
-            reduces the Restschuld each time it fires. Per the ST-only model,
-            only Sondertilgung payments should link to a Mortgage account.
-          </StyledWarningText>
+        {linkedAccountId && (
+          <FormField label="Direction">
+            <StyledChipRow>
+              <ChoiceChip
+                label="To"
+                active={direction === "to"}
+                onClick={() => setDirection("to")}
+              />
+              <ChoiceChip
+                label="From"
+                active={direction === "from"}
+                onClick={() => setDirection("from")}
+              />
+            </StyledChipRow>
+          </FormField>
         )}
 
         {error && <StyledErrorText role="alert">{error}</StyledErrorText>}

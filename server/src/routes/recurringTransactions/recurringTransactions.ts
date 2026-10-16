@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import {
   RecurringTransactionCreateSchema,
   RecurringTransactionUpdateSchema,
+  transferRuleIssues,
 } from "./recurringTransaction.js";
 import type { Storage } from "../../storage/Storage.js";
 
@@ -40,10 +41,19 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  const updated = await getStorage(req).recurringTransactions.update(
-    req.params.id,
-    parsed.data
-  );
+  const repo = getStorage(req).recurringTransactions;
+  const stored = (await repo.findAll()).find((r) => r.id === req.params.id);
+  if (!stored) {
+    res.status(404).json({ error: "Recurring transaction not found" });
+    return;
+  }
+  const issues = transferRuleIssues({ ...stored, ...parsed.data });
+  if (issues.length > 0) {
+    res.status(400).json({ issues });
+    return;
+  }
+
+  const updated = await repo.update(req.params.id, parsed.data);
   if (!updated) {
     res.status(404).json({ error: "Recurring transaction not found" });
     return;

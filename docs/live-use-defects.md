@@ -74,6 +74,19 @@ Fix it at the edges:
 
 Goal: recurring transfers read exactly like one-off transfers.
 
+**Fixed** 2026-10-16 in two issues. Display — issue #223 (RED `6ceb8d3`,
+build `9461d81`): `recurringAmountFor` signs a transfer per viewed account, so
+the source reads −amount in red and the destination shows a mirrored row,
++amount in green, labelled "from …" and linking to the source to edit. Entry —
+issue #224 (RED `f5eab36`, build in the `feat:` commit closing #224): the
+modal's "Transfer" select gains a To / From Direction chip pair; amounts are
+typed positive, and "From B" is stored as B's transfer to this account. The
+hook passes the payload's `accountId` through, the update schema takes an
+optional `accountId` so a direction flip is one `PATCH`, and the route rejects
+non-positive linked amounts and self-links on create and on the merged
+`PATCH` row with `{ issues }`. The Mortgage-link warning is gone and the
+manual's transfers copy is rewritten.
+
 ---
 
 ## 2. Mortgage Countdown card absent on the Dashboard after a fresh start

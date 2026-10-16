@@ -53,7 +53,8 @@ export function createSqliteRecurringTransactionsRepo(
   );
   const updateStmt = db.prepare(
     `UPDATE recurring_transactions
-       SET amount = COALESCE(?, amount),
+       SET account_id = COALESCE(?, account_id),
+           amount = COALESCE(?, amount),
            description = COALESCE(?, description),
            category = COALESCE(?, category),
            frequency = COALESCE(?, frequency),
@@ -120,7 +121,16 @@ export function createSqliteRecurringTransactionsRepo(
         | RecurringTransactionRow
         | undefined;
       if (!existing) return null;
+      if (input.accountId !== undefined) {
+        if (!isValidUuid(input.accountId)) return null;
+        if (!selectAccountByIdStmt.get(input.accountId)) return null;
+      }
+      if (input.linkedAccountId !== undefined) {
+        if (!isValidUuid(input.linkedAccountId)) return null;
+        if (!selectAccountByIdStmt.get(input.linkedAccountId)) return null;
+      }
       updateStmt.run(
+        input.accountId ?? null,
         input.amount ?? null,
         input.description ?? null,
         input.category ?? null,

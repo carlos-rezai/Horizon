@@ -20,8 +20,8 @@ export const StyledErrorText = styled.p`
   margin: 0;
 `;
 
-export const StyledWarningText = styled.p`
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  color: ${({ theme }) => theme.colors.tertiary};
-  margin: 0;
+export const StyledChipRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.space2}px;
 `;
