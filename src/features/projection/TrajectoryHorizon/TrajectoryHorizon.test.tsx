@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
+import { Children, isValidElement, type ReactElement } from "react";
+import { Line, ReferenceArea, ReferenceLine } from "recharts";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import TrajectoryHorizon from "./TrajectoryHorizon";
@@ -8,12 +10,20 @@ import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
 import { formatMonth } from "../../../utils/format/format";
+import type { HistoryPoint } from "../../history/historyTypes/historyTypes";
 
 // The chart itself cannot lay out in jsdom, so the recharts boundary is
 // stubbed: ResponsiveContainer passes its children through and ComposedChart
 // records the data points it was handed, which carry the ST marks.
+type ChartRow = {
+  label: string;
+  isSTMonth: boolean;
+  isPayoffMonth: boolean;
+  [key: string]: unknown;
+};
 const chart = vi.hoisted(() => ({
-  data: [] as { label: string; isSTMonth: boolean; isPayoffMonth: boolean }[],
+  data: [] as ChartRow[],
+  children: null as React.ReactNode,
 }));
 vi.mock("recharts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("recharts")>();
@@ -24,10 +34,13 @@ vi.mock("recharts", async (importOriginal) => {
     ),
     ComposedChart: ({
       data,
+      children,
     }: {
-      data: { label: string; isSTMonth: boolean; isPayoffMonth: boolean }[];
+      data: ChartRow[];
+      children?: React.ReactNode;
     }) => {
       chart.data = data;
+      chart.children = children;
       return null;
     },
   };
@@ -36,6 +49,7 @@ vi.mock("recharts", async (importOriginal) => {
 afterEach(() => {
   cleanup();
   chart.data = [];
+  chart.children = null;
 });
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -567,5 +581,210 @@ describe("TrajectoryHorizon — two mortgages", () => {
     expect(chart.data.filter((p) => p.isSTMonth).map((p) => p.label)).toEqual([
       "2026-08",
     ]);
+  });
+});
+
+describe("TrajectoryHorizon — Past Lead-in", () => {
+  // Today is April 2026: the projection starts at 2026-04 and the history runs
+  // January through April, so the lead-in is January to March — three rows.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-04-15T12:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function historyPoint(
+    month: string,
+    overrides: Partial<HistoryPoint> = {}
+  ): HistoryPoint {
+    return {
+      month,
+      totalLiquid: 90000,
+      restschuld: 60000,
+      restschuldBridge: null,
+      netCashflow: 0,
+      accounts: { g1: 90000, m1: 60000 },
+      ...overrides,
+    };
+  }
+
+  // January is bridged (Unknown Restschuld), February is the bridge's join,
+  // March is known, April is the current month and belongs to the projection.
+  const history: HistoryPoint[] = [
+    historyPoint("2026-01", {
+      restschuld: null,
+      restschuldBridge: 80000,
+      totalLiquid: null,
+      accounts: { g1: null, m1: null },
+    }),
+    historyPoint("2026-02", { restschuld: 70000, restschuldBridge: 70000 }),
+    historyPoint("2026-03"),
+    historyPoint("2026-04", { totalLiquid: 999999 }),
+  ];
+
+  type ElementProps = Record<string, unknown>;
+
+  function chartElements(): ReactElement<ElementProps>[] {
+    return Children.toArray(chart.children).filter(
+      (child): child is ReactElement<ElementProps> => isValidElement(child)
+    );
+  }
+
+  function labelText(label: unknown): string | undefined {
+    if (typeof label === "string") return label;
+    if (isValidElement<ElementProps>(label)) {
+      const { value, children } = label.props;
+      if (typeof value === "string") return value;
+      if (typeof children === "string") return children;
+      return undefined;
+    }
+    if (label !== null && typeof label === "object" && "value" in label) {
+      const { value } = label as { value: unknown };
+      return typeof value === "string" ? value : undefined;
+    }
+    return undefined;
+  }
+
+  function todayLine() {
+    return chartElements().find(
+      (el) => el.type === ReferenceLine && labelText(el.props.label) === "TODAY"
+    );
+  }
+
+  function actualsBand() {
+    return chartElements().find(
+      (el) =>
+        el.type === ReferenceArea && labelText(el.props.label) === "ACTUALS"
+    );
+  }
+
+  function lineFor(dataKey: string) {
+    return chartElements().find(
+      (el) => el.type === Line && el.props.dataKey === dataKey
+    );
+  }
+
+  function renderChart(props: {
+    history?: HistoryPoint[];
+    recurringTransactions?: RecurringTransaction[];
+  }) {
+    return renderWithTheme(
+      <TrajectoryHorizon
+        snapshots={snapshotsWithPayoff}
+        accounts={[giroAccount, mortgageAccount]}
+        recurringTransactions={props.recurringTransactions ?? []}
+        isLoading={false}
+        history={props.history}
+      />
+    );
+  }
+
+  it("puts the lead-in rows before the projected rows, the current month only from the projection", () => {
+    renderChart({ history });
+
+    expect(chart.data.map((p) => p.label)).toEqual([
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+    ]);
+    expect(chart.data[3].totalLiquid).toBe(100000);
+    expect(chart.data[0].totalLiquid).toBeNull();
+  });
+
+  it("places the TODAY Marker at the lead-in's length", () => {
+    renderChart({ history });
+
+    expect(todayLine()?.props.x).toBe(3);
+  });
+
+  it("draws an ACTUALS band over the lead-in", () => {
+    renderChart({ history });
+
+    const band = actualsBand();
+    expect(band).toBeDefined();
+    expect(band?.props.x1).toBe(0);
+  });
+
+  it("draws no ACTUALS band when the history holds only the current month", () => {
+    renderChart({ history: [historyPoint("2026-04")] });
+
+    expect(actualsBand()).toBeUndefined();
+    expect(todayLine()?.props.x).toBe(0);
+  });
+
+  it("draws the Paydown Bridge in the lead-in, governed by the Restschuld toggle", () => {
+    renderChart({ history });
+
+    const bridge = lineFor("restschuldBridge");
+    expect(bridge).toBeDefined();
+    expect(bridge?.props.hide).toBe(lineFor("restschuld")?.props.hide);
+    expect(chart.data[0].restschuldBridge).toBe(80000);
+    expect(chart.data[0].restschuld).toBeNull();
+    expect(chart.data[1].restschuldBridge).toBe(70000);
+  });
+
+  it("renders exactly as before when there is no history", () => {
+    renderChart({});
+    const before = chart.data;
+    cleanup();
+
+    renderChart({ history: [] });
+
+    expect(chart.data).toEqual(before);
+    expect(chart.data.map((p) => p.label)).toEqual([
+      "2026-04",
+      "2026-05",
+      "2026-06",
+    ]);
+    expect(actualsBand()).toBeUndefined();
+    expect(todayLine()?.props.x).toBe(0);
+  });
+
+  it("keeps the Payoff Marker, the Freedom Phase and the ST months on the same months", () => {
+    const st: RecurringTransaction = {
+      id: "rt-st",
+      accountId: "g1",
+      linkedAccountId: "m1",
+      amount: 10000,
+      description: "Sondertilgung",
+      category: "Housing",
+      frequency: "annual",
+      dayOfMonth: 1,
+      monthOfYear: 5,
+    };
+    const marks = () => ({
+      payoff: chart.data.filter((p) => p.isPayoffMonth).map((p) => p.label),
+      st: chart.data.filter((p) => p.isSTMonth).map((p) => p.label),
+      freedom: chart.data
+        .filter(
+          (p) => p.freedomLiquid !== null && p.freedomLiquid !== undefined
+        )
+        .map((p) => p.label),
+    });
+
+    renderChart({ recurringTransactions: [st] });
+    const without = marks();
+    const markerText = screen.getByTestId("payoff-marker").textContent;
+    cleanup();
+
+    renderChart({ history, recurringTransactions: [st] });
+
+    expect(without).toEqual({
+      payoff: ["2026-05"],
+      st: ["2026-05"],
+      freedom: ["2026-05", "2026-06"],
+    });
+    expect(marks()).toEqual(without);
+    expect(screen.getByTestId("payoff-marker").textContent).toBe(markerText);
+    // The payoff line follows its month to index 4, past the three lead-in rows.
+    const payoffLine = chartElements().find(
+      (el) => el.type === ReferenceLine && el.props.x === 4
+    );
+    expect(payoffLine).toBeDefined();
   });
 });

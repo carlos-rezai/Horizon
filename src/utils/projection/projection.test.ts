@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   findMortgagePayoffMonth,
   findMilestoneMonth,
@@ -9,11 +9,13 @@ import {
   totalRestschuld,
   findDebtFreeMonth,
   stMonthsFor,
+  buildPastLeadIn,
 } from "./projection";
 import { chartColors } from "../../tokens/colors";
 import type { MonthlySnapshot } from "../../types/projection";
 import type { AccountWithBalance } from "../../types/account";
 import type { RecurringTransaction } from "../../types/recurring";
+import type { HistoryPoint } from "../../features/history/historyTypes/historyTypes";
 
 const snapshot = (
   month: string,
@@ -778,5 +780,144 @@ describe("stMonthsFor — the real-world reference case", () => {
 
   it("is empty with no snapshots", () => {
     expect(stMonthsFor(recurring, accounts, []).size).toBe(0);
+  });
+});
+
+describe("buildPastLeadIn", () => {
+  // Today is October 2026: the history runs through 2026-10, and the lead-in
+  // is every month before it.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-16T12:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const giro: AccountWithBalance = {
+    id: "g1",
+    kind: "Girokonto",
+    name: "Main",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+  };
+  const mortgage: AccountWithBalance = {
+    id: "m1",
+    kind: "Mortgage",
+    name: "DSL Mortgage",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+  };
+
+  function monthBefore(month: string, n: number): string {
+    const [y, m] = month.split("-").map((part) => parseInt(part, 10));
+    const total = y * 12 + (m - 1) - n;
+    return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+  }
+
+  function point(month: string, overrides: Partial<HistoryPoint> = {}) {
+    return {
+      month,
+      totalLiquid: 100000,
+      restschuld: 5000000,
+      restschuldBridge: null,
+      netCashflow: 0,
+      accounts: { g1: 100000, m1: 5000000 },
+      ...overrides,
+    } satisfies HistoryPoint;
+  }
+
+  /** `count` consecutive points ending with the current month, oldest first. */
+  function historyThroughToday(count: number): HistoryPoint[] {
+    return Array.from({ length: count }, (_, i) =>
+      point(monthBefore("2026-10", count - 1 - i))
+    );
+  }
+
+  it("returns no rows for no points", () => {
+    expect(buildPastLeadIn([], [giro, mortgage])).toEqual([]);
+  });
+
+  it("leaves out the current month, which comes from the projection", () => {
+    const rows = buildPastLeadIn(historyThroughToday(4), [giro, mortgage]);
+
+    expect(rows.map((r) => r.label)).toEqual(["2026-07", "2026-08", "2026-09"]);
+  });
+
+  it("caps the lead-in at the 120 most recent past months", () => {
+    const rows = buildPastLeadIn(historyThroughToday(140), [giro, mortgage]);
+
+    expect(rows).toHaveLength(120);
+    expect(rows[0].label).toBe(monthBefore("2026-10", 120));
+    expect(rows[rows.length - 1].label).toBe("2026-09");
+  });
+
+  it("keys each row with the projection rows' series keys plus the bridge", () => {
+    const projectionRow = buildTrajectoryData(
+      [
+        {
+          month: "2026-10",
+          accounts: { g1: { projected: 100000 }, m1: { projected: 5000000 } },
+          netCashflow: 0,
+          totalLiquid: 100000,
+        },
+      ],
+      new Map(),
+      null,
+      [giro, mortgage]
+    )[0];
+    const seriesKeys = ["totalLiquid", "restschuld", "g1"];
+    for (const key of seriesKeys) expect(projectionRow).toHaveProperty(key);
+
+    const [row] = buildPastLeadIn(
+      [
+        point("2026-09", {
+          totalLiquid: 80000,
+          restschuld: 5100000,
+          accounts: { g1: 80000, m1: 5100000 },
+        }),
+        point("2026-10"),
+      ],
+      [giro, mortgage]
+    );
+
+    expect(row).toMatchObject({
+      label: "2026-09",
+      totalLiquid: 80000,
+      restschuld: 5100000,
+      g1: 80000,
+    });
+    expect(row).toHaveProperty("restschuldBridge");
+    expect(row).not.toHaveProperty("m1");
+  });
+
+  it("keeps Unknown values as null, never 0", () => {
+    const [unknown, bridged] = buildPastLeadIn(
+      [
+        point("2026-07", {
+          totalLiquid: null,
+          restschuld: null,
+          restschuldBridge: null,
+          accounts: { g1: null, m1: null },
+        }),
+        point("2026-08", {
+          totalLiquid: null,
+          restschuld: null,
+          restschuldBridge: 5200000,
+          accounts: { g1: null, m1: null },
+        }),
+        point("2026-10"),
+      ],
+      [giro, mortgage]
+    );
+
+    expect(unknown.totalLiquid).toBeNull();
+    expect(unknown.restschuld).toBeNull();
+    expect(unknown.restschuldBridge).toBeNull();
+    expect(unknown.g1).toBeNull();
+    expect(bridged.restschuld).toBeNull();
+    expect(bridged.restschuldBridge).toBe(5200000);
   });
 });

@@ -16,6 +16,28 @@ vi.mock("react-router-dom", async (importActual) => {
   const actual = await importActual<typeof import("react-router-dom")>();
   return { ...actual, useNavigate: () => mockNavigate };
 });
+// The Trajectory Horizon renders for real; the wrapper only records the props
+// the Dashboard hands it, so a test can see which history reached the chart.
+const { trajectoryProps } = vi.hoisted(() => ({
+  trajectoryProps: [] as Record<string, unknown>[],
+}));
+vi.mock(
+  "../../features/projection/TrajectoryHorizon/TrajectoryHorizon",
+  async (importActual) => {
+    const actual =
+      await importActual<
+        typeof import("../../features/projection/TrajectoryHorizon/TrajectoryHorizon")
+      >();
+    const Actual = actual.default;
+    return {
+      ...actual,
+      default: (props: Parameters<typeof Actual>[0]) => {
+        trajectoryProps.push(props as unknown as Record<string, unknown>);
+        return <Actual {...props} />;
+      },
+    };
+  }
+);
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import DashboardPage from "./DashboardPage";
@@ -636,5 +658,53 @@ describe("DashboardPage — Mortgage Setup with a repayment", () => {
     expect(screen.getAllByText("To Payoff").some(outside)).toBe(true);
     expect(screen.queryByText(/No repayment set up/)).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("DashboardPage — Past Lead-in", () => {
+  let deferred: ReturnType<typeof installDeferredFetch>;
+
+  beforeEach(() => {
+    trajectoryProps.length = 0;
+    deferred = installDeferredFetch();
+  });
+
+  const history = [
+    {
+      month: "2025-12",
+      totalLiquid: 120000,
+      restschuld: 0,
+      restschuldBridge: null,
+      netCashflow: 0,
+      accounts: { "acc-1": 120000 },
+    },
+    {
+      month: "2026-01",
+      totalLiquid: 150000,
+      restschuld: 0,
+      restschuldBridge: null,
+      netCashflow: 30000,
+      accounts: { "acc-1": 150000 },
+    },
+  ];
+
+  it("hands the Trajectory Horizon the cached history, fetched once", async () => {
+    renderPage();
+    await deferred.resolve("accounts", accounts);
+    await deferred.resolve("projection", snapshots);
+    await deferred.resolve("recurring", []);
+    await deferred.resolve("history", history);
+    await deferred.resolve("imports", []);
+    await deferred.resolve("savingsGoal", savingsGoalConfig);
+
+    await waitFor(() => {
+      expect(trajectoryProps.at(-1)?.history).toEqual(history);
+    });
+    const historyFetches = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter(([input]) =>
+        String(input).includes("/projection/history")
+      );
+    expect(historyFetches).toHaveLength(1);
   });
 });
