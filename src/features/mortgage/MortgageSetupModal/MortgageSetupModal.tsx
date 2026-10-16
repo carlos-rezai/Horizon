@@ -31,7 +31,7 @@ interface Props {
 }
 
 interface RepaymentPayload {
-  fundingAccountId: string;
+  paidFromAccountId: string;
   monthlyAmount: number;
   dayOfMonth: number;
   sondertilgungAmount?: number;
@@ -62,7 +62,10 @@ interface FormValues {
 }
 
 /** The account kinds a repayment may be paid from. */
-const FUNDING_KINDS: ReadonlySet<string> = new Set(["Girokonto", "Tagesgeld"]);
+const PAID_FROM_KINDS: ReadonlySet<string> = new Set([
+  "Girokonto",
+  "Tagesgeld",
+]);
 
 /** The Sondertilgung month a new setup starts at: November. */
 const DEFAULT_ST_MONTH = "11";
@@ -102,7 +105,7 @@ function validateRepayment(
     return { ok: false, error: "Monthly rate must be above 0." };
   }
   const repayment: RepaymentPayload = {
-    fundingAccountId: values.paidFrom,
+    paidFromAccountId: values.paidFrom,
     monthlyAmount,
     dayOfMonth,
   };
@@ -184,7 +187,7 @@ export default function MortgageSetupModal({
   onClose,
   onSuccess,
 }: Props) {
-  const fundingAccounts = accounts.filter((a) => FUNDING_KINDS.has(a.kind));
+  const paidFromAccounts = accounts.filter((a) => PAID_FROM_KINDS.has(a.kind));
   const [values, setValues] = useState<FormValues>(() => ({
     name: "Mortgage",
     restschuld: "",
@@ -192,7 +195,7 @@ export default function MortgageSetupModal({
     principal: "",
     startDate: "",
     term: "",
-    paidFrom: fundingAccounts[0]?.id ?? "",
+    paidFrom: paidFromAccounts[0]?.id ?? "",
     rate: "",
     stAmount: "",
     stMonth: DEFAULT_ST_MONTH,
@@ -303,7 +306,7 @@ export default function MortgageSetupModal({
 
         <StyledGroup>
           <StyledGroupTitle>Repayment</StyledGroupTitle>
-          {fundingAccounts.length === 0 ? (
+          {paidFromAccounts.length === 0 ? (
             <StyledNote>
               Add a Girokonto to set up the monthly repayment.
             </StyledNote>
@@ -315,7 +318,7 @@ export default function MortgageSetupModal({
                   value={values.paidFrom}
                   onChange={(e) => set("paidFrom")(e.target.value)}
                 >
-                  {fundingAccounts.map((a) => (
+                  {paidFromAccounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
                     </option>

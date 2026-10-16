@@ -4,7 +4,7 @@ const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const RepaymentSchema = z
   .object({
-    fundingAccountId: z.string().min(1),
+    paidFromAccountId: z.string().min(1),
     monthlyAmount: z.number().int().positive(),
     dayOfMonth: z.number().int().min(1).max(31),
     sondertilgungAmount: z.number().int().positive().optional(),

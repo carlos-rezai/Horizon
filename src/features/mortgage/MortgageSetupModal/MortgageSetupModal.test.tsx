@@ -377,7 +377,7 @@ describe("MortgageSetupModal — Repayment", () => {
     });
   });
 
-  describe("no funding account", () => {
+  describe("no paid-from account", () => {
     it("keeps the add-a-Girokonto note when no account can fund the repayment", () => {
       renderModal({ accounts: [card, depot] });
 
@@ -487,7 +487,7 @@ describe("MortgageSetupModal — Repayment", () => {
         termYears: 25,
       });
       expect(body.repayment).toEqual({
-        fundingAccountId: "tg-1",
+        paidFromAccountId: "tg-1",
         monthlyAmount: 150000,
         dayOfMonth: 3,
       });
@@ -501,7 +501,7 @@ describe("MortgageSetupModal — Repayment", () => {
 
       const body = await postedBody();
       expect(body.repayment).toEqual({
-        fundingAccountId: "giro-1",
+        paidFromAccountId: "giro-1",
         monthlyAmount: 150000,
         dayOfMonth: 1,
         sondertilgungAmount: 500000,

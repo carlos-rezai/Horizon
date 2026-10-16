@@ -103,7 +103,7 @@ function failRecurringInserts(): void {
 }
 
 describe("SQLite mortgages.create — repayment", () => {
-  it("writes the monthly repayment and the Sondertilgung from the funding account into the Mortgage", async () => {
+  it("writes the monthly repayment and the Sondertilgung from the paid-from account into the Mortgage", async () => {
     const giro = await storage.accounts.create({
       kind: "Girokonto",
       name: "Giro",
@@ -114,7 +114,7 @@ describe("SQLite mortgages.create — repayment", () => {
     const created = await storage.mortgages.create({
       ...setup,
       repayment: {
-        fundingAccountId: giro.id,
+        paidFromAccountId: giro.id,
         monthlyAmount: 150000,
         dayOfMonth: 3,
         sondertilgungAmount: 500000,
@@ -152,7 +152,7 @@ describe("SQLite mortgages.create — repayment", () => {
       mortgages.create({
         ...setup,
         repayment: {
-          fundingAccountId: giro.id,
+          paidFromAccountId: giro.id,
           monthlyAmount: 150000,
           dayOfMonth: 3,
           sondertilgungAmount: POISONED_ST_AMOUNT,

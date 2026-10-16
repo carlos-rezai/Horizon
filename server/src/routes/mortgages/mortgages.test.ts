@@ -126,7 +126,7 @@ describe("POST /mortgages — invalid setup", () => {
 
 // Live-Use Repair #2 (issue #227): Mortgage Setup also writes the repayment —
 // a monthly Recurring Transfer and an optional annual Sondertilgung, each from
-// the funding account into the new Mortgage.
+// the paid-from account into the new Mortgage.
 
 interface StoredRecurring {
   id: string;
@@ -161,9 +161,9 @@ async function allRecurring(): Promise<StoredRecurring[]> {
 }
 
 /** 1,500 € a month on the 3rd, plus 5,000 € Sondertilgung every November. */
-function repaymentFrom(fundingAccountId: string) {
+function repaymentFrom(paidFromAccountId: string) {
   return {
-    fundingAccountId,
+    paidFromAccountId,
     monthlyAmount: 150000,
     dayOfMonth: 3,
     sondertilgungAmount: 500000,
@@ -179,14 +179,14 @@ describe("POST /mortgages — with a repayment", () => {
     expect(await allRecurring()).toHaveLength(0);
   });
 
-  it("writes one monthly Recurring Transfer from the funding account into the Mortgage when no Sondertilgung is given", async () => {
+  it("writes one monthly Recurring Transfer from the paid-from account into the Mortgage when no Sondertilgung is given", async () => {
     const giro = await createAccount("Girokonto", "Giro");
     const res = await request(app)
       .post("/mortgages")
       .send({
         ...validSetup,
         repayment: {
-          fundingAccountId: giro,
+          paidFromAccountId: giro,
           monthlyAmount: 150000,
           dayOfMonth: 3,
         },
@@ -237,7 +237,7 @@ describe("POST /mortgages — with a repayment", () => {
     });
   });
 
-  it("accepts a Tagesgeld as the funding account", async () => {
+  it("accepts a Tagesgeld as the paid-from account", async () => {
     const tagesgeld = await createAccount("Tagesgeld", "Reserve");
     const res = await request(app)
       .post("/mortgages")
@@ -249,7 +249,7 @@ describe("POST /mortgages — with a repayment", () => {
     expect(recurring.every((r) => r.accountId === tagesgeld)).toBe(true);
   });
 
-  it("projects the Mortgage to payoff and lists the transfers on the funding account", async () => {
+  it("projects the Mortgage to payoff and lists the transfers on the paid-from account", async () => {
     const giro = await createAccount("Girokonto", "Giro", 100000000);
     const res = await request(app)
       .post("/mortgages")
@@ -267,10 +267,10 @@ describe("POST /mortgages — with a repayment", () => {
       snapshots.some((s) => (s.accounts[mortgageId]?.projected ?? 1) <= 0)
     ).toBe(true);
 
-    const onFunding = (await allRecurring()).filter(
+    const onPaidFrom = (await allRecurring()).filter(
       (r) => r.accountId === giro || r.linkedAccountId === giro
     );
-    expect(onFunding.map((r) => r.description).sort()).toEqual([
+    expect(onPaidFrom.map((r) => r.description).sort()).toEqual([
       "Mortgage repayment",
       "Sondertilgung",
     ]);
@@ -311,9 +311,9 @@ describe("POST /mortgages — invalid repayment", () => {
     ["an Investment account", "Investment"],
     ["another Mortgage", "Mortgage"],
   ])(
-    "answers 400 with issues when the funding account is %s",
+    "answers 400 with issues when the paid-from account is %s",
     async (_label, kind) => {
-      const ineligible = await createAccount(kind, "Not a funding account");
+      const ineligible = await createAccount(kind, "Not a paid-from account");
       const res = await request(app)
         .post("/mortgages")
         .send({ ...validSetup, repayment: repaymentFrom(ineligible) });
@@ -330,7 +330,7 @@ describe("POST /mortgages — invalid repayment", () => {
     }
   );
 
-  it("answers 400 with issues when the funding account does not exist", async () => {
+  it("answers 400 with issues when the paid-from account does not exist", async () => {
     const res = await request(app)
       .post("/mortgages")
       .send({ ...validSetup, repayment: repaymentFrom("no-such-account") });

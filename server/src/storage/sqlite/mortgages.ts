@@ -57,7 +57,7 @@ export function createSqliteMortgagesRepo(
       if (repayment) {
         insertRecurringStmt.run(
           randomUUID(),
-          repayment.fundingAccountId,
+          repayment.paidFromAccountId,
           repayment.monthlyAmount,
           "Mortgage repayment",
           "monthly",
@@ -71,7 +71,7 @@ export function createSqliteMortgagesRepo(
         ) {
           insertRecurringStmt.run(
             randomUUID(),
-            repayment.fundingAccountId,
+            repayment.paidFromAccountId,
             repayment.sondertilgungAmount,
             "Sondertilgung",
             "annual",
