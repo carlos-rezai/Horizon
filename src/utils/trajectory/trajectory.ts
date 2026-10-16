@@ -31,8 +31,15 @@ export interface VisibilityStore {
 /** Y-axis ticks step in cents (€25,000) — the chart rounds its domain to this. */
 const TICK_STEP = 2_500_000;
 
-const RESTSCHULD_KEY = "restschuld";
-const TOTAL_LIQUID_KEY = "totalLiquid";
+/** The chart-row key of the Restschuld series. */
+export const RESTSCHULD_KEY = "restschuld";
+/** The chart-row key of the Total Liquid series. */
+export const TOTAL_LIQUID_KEY = "totalLiquid";
+/**
+ * The chart-row key of the Paydown Bridge. Not a series of its own: it has no
+ * legend chip and follows the Restschuld toggle.
+ */
+export const RESTSCHULD_BRIDGE_KEY = "restschuldBridge";
 
 /**
  * A single legend/line entry: the Total Liquid (SUM) series, a per-account
@@ -162,16 +169,22 @@ export function showAllSeries(keys: string[]): SeriesVisibility {
 
 /**
  * Compute the Y-axis domain from the visible series only, so hidden lines drop
- * out and the remaining lines rescale. The domain rounds up to the next tick
- * step, falling back to a single step when nothing visible has a value.
+ * out and the remaining lines rescale. The Paydown Bridge follows the
+ * Restschuld toggle, so it counts whenever the Restschuld is visible. The
+ * domain rounds up to the next tick step, falling back to a single step when
+ * nothing visible has a value.
  */
 export function computeVisibleYDomain(
   data: ChartRow[],
   visibility: SeriesVisibility
 ): [number, number] {
+  const counted: SeriesVisibility = {
+    ...visibility,
+    [RESTSCHULD_BRIDGE_KEY]: visibility[RESTSCHULD_KEY] === true,
+  };
   let max = 0;
   for (const point of data) {
-    for (const [key, visible] of Object.entries(visibility)) {
+    for (const [key, visible] of Object.entries(counted)) {
       if (!visible) continue;
       const value = point[key];
       if (typeof value === "number" && value > max) {

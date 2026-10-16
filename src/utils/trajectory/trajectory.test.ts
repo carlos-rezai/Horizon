@@ -188,6 +188,30 @@ describe("computeVisibleYDomain", () => {
     };
     expect(computeVisibleYDomain(DATA, allHidden)).toEqual([0, 2500000]);
   });
+
+  describe("the Paydown Bridge", () => {
+    // The bridge starts at the Original Principal, above every other value.
+    const bridged = [
+      { label: "2023-01", restschuldBridge: 9000000, restschuld: null },
+      { label: "2023-02", restschuldBridge: 4000000, restschuld: 4000000 },
+    ];
+
+    it("raises the domain while the Restschuld is visible", () => {
+      // bridge max 9,000,000 → ceil to 10,000,000
+      expect(computeVisibleYDomain(bridged, { restschuld: true })).toEqual([
+        0, 10000000,
+      ]);
+    });
+
+    it("drops out of the domain with the Restschuld when it is hidden", () => {
+      expect(
+        computeVisibleYDomain(bridged, {
+          restschuld: false,
+          restschuldBridge: true,
+        })
+      ).toEqual([0, 2500000]);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
