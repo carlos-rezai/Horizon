@@ -280,7 +280,7 @@ The generated installer will be signed with your local certificate and will inst
 | Quick Start Guide                         | ✅ Complete |
 | Live-Use Repair — Round 1                 | ✅ Complete |
 | Balance Anchor                            | ✅ Complete |
-| Financial History                         | 📋 Planned  |
+| Financial History                         | ✅ Complete |
 | Month Cash Flow                           | 📋 Planned  |
 | Import Category Learning                  | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
