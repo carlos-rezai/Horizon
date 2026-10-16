@@ -339,4 +339,34 @@ describe("detectRecurring", () => {
 
     expect(detectRecurring(rows, recurring)).toEqual([false]);
   });
+
+  describe("against the Anchor Date", () => {
+    const recurring: RecurringTransaction[] = [
+      makeRecurring({ id: "r1", description: "Miete", amount: -85000 }),
+    ];
+    const rent = (date: string): MappedRow =>
+      mapped({ date, description: "Miete", amount: -85000 });
+
+    it("does not flag a matching row dated before the anchor", () => {
+      expect(
+        detectRecurring([rent("2026-09-01")], recurring, "2026-10-16")
+      ).toEqual([false]);
+    });
+
+    it("does not flag a matching row dated on the anchor", () => {
+      expect(
+        detectRecurring([rent("2026-10-16")], recurring, "2026-10-16")
+      ).toEqual([false]);
+    });
+
+    it("flags a matching row dated after the anchor", () => {
+      expect(
+        detectRecurring([rent("2026-10-17")], recurring, "2026-10-16")
+      ).toEqual([true]);
+    });
+
+    it("flags a matching row as today when no anchor date is given", () => {
+      expect(detectRecurring([rent("2026-09-01")], recurring)).toEqual([true]);
+    });
+  });
 });
