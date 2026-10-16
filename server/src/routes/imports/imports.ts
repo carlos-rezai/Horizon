@@ -107,10 +107,12 @@ router.post("/preview", (req, res) => {
       const recurring = (await storage.recurringTransactions.findAll()).filter(
         (rule) => rule.accountId === accountId
       );
+      const account = await storage.accounts.findById(accountId);
       const preview = await buildPreview({
         bytes: req.file.buffer,
         existingTxns: await storage.transactions.findByAccount(accountId),
         recurring,
+        anchorDate: account?.anchorDate,
         getRememberedPreset: (bank) => storage.importPresets.get(bank),
         mappingOverride,
       });

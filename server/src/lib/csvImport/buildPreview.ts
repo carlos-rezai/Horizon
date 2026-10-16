@@ -56,6 +56,13 @@ export interface BuildPreviewInput {
   /** The target account's recurring transactions — for recurring detection. */
   recurring: RecurringTransaction[];
   /**
+   * The target account's Anchor Date (ISO). A row dated on or before it is
+   * already contained in the Anchor Balance and never replayed by a
+   * RecurringTransaction, so it is not flagged recurring. Absent when the
+   * target account is unknown — every row is then checked as before.
+   */
+  anchorDate?: string;
+  /**
    * Look up a bank's remembered preset (or null if none saved). A remembered
    * mapping and format are preferred over the freshly-detected defaults so a
    * past correction is re-applied. Injected so this module stays free of
@@ -101,7 +108,11 @@ export async function buildPreview(
   );
 
   const duplicateFlags = detectDuplicates(mappedRows, input.existingTxns);
-  const recurringFlags = detectRecurring(mappedRows, input.recurring);
+  const { anchorDate } = input;
+  const recurringFlags = detectRecurring(mappedRows, input.recurring).map(
+    (flag, index) =>
+      flag && (anchorDate === undefined || mappedRows[index].date > anchorDate)
+  );
 
   const generateId = input.generateId ?? randomUUID;
   const rows: PreviewRow[] = mappedRows.map((row, index) => ({
