@@ -4,7 +4,7 @@ import Money from "../../../primitives/Money/Money";
 import { formatMonth } from "../../../utils/format/format";
 import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
 import type { HistoryPoint } from "../historyTypes/historyTypes";
-import { isUnknownMonth } from "../knownSince/knownSince";
+import { isUnknownMonth, knownYears } from "../knownSince/knownSince";
 import {
   StyledArchive,
   StyledSectionHead,
@@ -47,15 +47,6 @@ function CashflowCell({ cents, known }: { cents: number; known: boolean }) {
 
 function monthsOfYear(points: HistoryPoint[], year: number): HistoryPoint[] {
   return points.filter((p) => Number(p.month.slice(0, 4)) === year);
-}
-
-/** Years holding at least one known month, newest first. */
-function knownYears(points: HistoryPoint[]): number[] {
-  const years = new Set<number>();
-  for (const p of points) {
-    if (!isUnknownMonth(p)) years.add(Number(p.month.slice(0, 4)));
-  }
-  return [...years].sort((a, b) => b - a);
 }
 
 /**

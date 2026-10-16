@@ -22,6 +22,7 @@ import {
   type HistoryRange,
 } from "../historyTypes/historyTypes";
 import { trailingAverage } from "../trailingAverage/trailingAverage";
+import { firstKnownMonthOf } from "../knownSince/knownSince";
 import {
   StyledChartWrapper,
   StyledMetricToggle,
@@ -131,7 +132,7 @@ export default function HistoryTrends({ points, range, isLoading }: Props) {
   );
 
   const firstKnown = useMemo(
-    () => points.find((p) => typeof p[field] === "number")?.month ?? null,
+    () => firstKnownMonthOf(points, field),
     [points, field]
   );
   const average = trailingAverage(data.map((d) => d.value));
