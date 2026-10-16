@@ -272,3 +272,48 @@ describe("AccountDetailPage — recurring stat strip counts transfers by the sig
     expect(within(strip).getByText("2")).toBeInTheDocument();
   });
 });
+
+describe("AccountDetailPage — a recurring transfer the server refuses", () => {
+  function mockRefusingPost() {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes("/recurring-transactions") && init?.method === "POST") {
+        return {
+          ok: false,
+          status: 400,
+          json: async () => ({
+            issues: [
+              { message: "A transfer cannot link an account to itself" },
+            ],
+          }),
+        } as Response;
+      }
+      const body = /\/accounts$/.test(url) ? accounts : [];
+      return { ok: true, json: async () => body } as Response;
+    });
+  }
+
+  it("shows the server's message and keeps the dialog open", async () => {
+    mockRefusingPost();
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /add recurring/i })
+    );
+    fireEvent.change(screen.getByLabelText(/amount/i), {
+      target: { value: "955" },
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Self transfer" },
+    });
+    fireEvent.change(screen.getByLabelText("Transfer (optional)"), {
+      target: { value: "acc-2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "A transfer cannot link an account to itself"
+    );
+    expect(screen.getByLabelText(/description/i)).toHaveValue("Self transfer");
+  });
+});

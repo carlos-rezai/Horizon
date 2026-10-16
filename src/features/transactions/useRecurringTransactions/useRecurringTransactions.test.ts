@@ -455,3 +455,59 @@ describe("useRecurringTransactions — payload accountId pass-through", () => {
     expect(body.linkedAccountId).toBe(ACCOUNT_ID);
   });
 });
+
+describe("useRecurringTransactions — the server's validation message", () => {
+  const refused = {
+    ok: false,
+    status: 400,
+    json: async () => ({
+      issues: [{ message: "A transfer cannot link an account to itself" }],
+    }),
+  } as Response;
+
+  const payload = {
+    accountId: ACCOUNT_ID,
+    amount: 95500,
+    description: "Self transfer",
+    category: "Transfer",
+    frequency: "monthly" as const,
+    dayOfMonth: 1,
+    linkedAccountId: ACCOUNT_ID,
+  };
+
+  it("a refused create throws the first issue's message", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [rt1, rt2],
+      } as Response)
+      .mockResolvedValueOnce(refused);
+
+    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
+    await act(async () => {});
+
+    await expect(
+      act(async () => {
+        await result.current.create(payload);
+      })
+    ).rejects.toThrow("A transfer cannot link an account to itself");
+  });
+
+  it("a refused update throws the first issue's message", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [rt1, rt2],
+      } as Response)
+      .mockResolvedValueOnce(refused);
+
+    const { result } = renderHook(() => useRecurringTransactions(ACCOUNT_ID));
+    await act(async () => {});
+
+    await expect(
+      act(async () => {
+        await result.current.update("rt-1", payload);
+      })
+    ).rejects.toThrow("A transfer cannot link an account to itself");
+  });
+});

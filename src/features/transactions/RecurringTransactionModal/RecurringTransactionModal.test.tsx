@@ -664,3 +664,57 @@ describe("RecurringTransactionModal — dayOfMonth Stepper", () => {
     );
   });
 });
+
+describe("RecurringTransactionModal — a save the server refuses", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => categories,
+    } as Response);
+  });
+
+  it("stays open and shows the server's message when the save rejects", async () => {
+    const onClose = vi.fn();
+    const onSaved = vi
+      .fn()
+      .mockRejectedValue(
+        new Error("A transfer cannot link an account to itself")
+      );
+    renderCreateModal({ onClose, onSaved });
+
+    fillTransfer("955", "acc-2");
+    save();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "A transfer cannot link an account to itself"
+    );
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the form's values after a rejected save", async () => {
+    const onSaved = vi.fn().mockRejectedValue(new Error("Refused"));
+    renderCreateModal({ onSaved });
+
+    fillTransfer("955", "acc-2");
+    save();
+
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText(/amount/i)).toHaveValue("955");
+    expect(screen.getByLabelText(/description/i)).toHaveValue(
+      "Savings transfer"
+    );
+    expect(transferSelect()).toHaveValue("acc-2");
+  });
+
+  it("closes once the save resolves", async () => {
+    const onClose = vi.fn();
+    const onSaved = vi.fn().mockResolvedValue(undefined);
+    renderCreateModal({ onClose, onSaved });
+
+    fillTransfer("955", "acc-2");
+    save();
+
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
