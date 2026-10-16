@@ -17,7 +17,7 @@ import {
   pointsInRange,
   type HistoryRange,
 } from "../historyRange/historyRange";
-import { firstKnownMonths } from "../knownSince/knownSince";
+import { firstKnownMonths, isUnknownMonth } from "../knownSince/knownSince";
 import {
   paydownBridgeSpan,
   type PaydownBridgeSpan,
@@ -58,7 +58,12 @@ interface HistoryChartDataPoint {
   totalLiquid: number | null;
   restschuld: number | null;
   netCashflow: number;
-  [accountId: string]: number | string | null;
+  /**
+   * Account balances by id, plus `restschuldBridge` and `isUnknown` — true
+   * when the source month is entirely Unknown (`isUnknownMonth`). A row
+   * without `isUnknown` reads as known.
+   */
+  [key: string]: number | string | boolean | null;
 }
 
 interface HistoryTooltipPayloadItem {
@@ -77,7 +82,7 @@ interface HistoryChartTooltipProps {
 
 /**
  * Hover card for the History chart. Mirrors the Dashboard tooltip but ends
- * with the month's Net Cashflow (left out when every series is Unknown) — the "what happened" number that the
+ * with the month's Net Cashflow (left out in an Unknown month) — the "what happened" number that the
  * forward-looking Trajectory tooltip doesn't carry.
  */
 export function HistoryChartTooltip({
@@ -90,11 +95,6 @@ export function HistoryChartTooltip({
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
   if (!point) return null;
-  // A month where every series is Unknown has no real Net Cashflow.
-  const allUnknown =
-    point.totalLiquid === null &&
-    point.restschuld === null &&
-    series.every((s) => point[s.key] === null);
 
   return (
     <ChartTooltip label={formatMonth(point.label)}>
@@ -128,7 +128,8 @@ export function HistoryChartTooltip({
           </StyledTooltipRow>
         );
       })}
-      {!allUnknown && (
+      {/* An Unknown month has no real Net Cashflow, whatever is visible. */}
+      {point.isUnknown !== true && (
         <StyledTooltipNetRow>
           <span>Net Cashflow</span>
           <span>{formatBalance(point.netCashflow)}</span>
@@ -236,6 +237,7 @@ export default function HistoryChart({
         restschuld: p.restschuld,
         restschuldBridge: p.restschuldBridge ?? null,
         netCashflow: p.netCashflow,
+        isUnknown: isUnknownMonth(p),
         ...p.accounts,
       })),
     [windowed]
