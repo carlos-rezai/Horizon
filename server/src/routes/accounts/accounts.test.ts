@@ -730,3 +730,121 @@ describe("POST /accounts — Balance Anchor fields", () => {
     expect(stored.body.balance).toBe(254321);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Re-anchoring — anchorDate ≤ today on create and update (#231)
+// ---------------------------------------------------------------------------
+
+/** Today as an ISO date, the same idiom the routes use for linkedSince. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** An ISO date `days` after today. */
+function isoDaysFromToday(days: number): string {
+  const d = new Date(`${todayIso()}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+describe("POST /accounts — Anchor Date not later than today", () => {
+  it("answers 400 for an anchorDate later than today", async () => {
+    const res = await request(app)
+      .post("/accounts")
+      .send({
+        kind: "Girokonto",
+        name: "Main",
+        anchorBalance: 100000,
+        anchorDate: isoDaysFromToday(1),
+      });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("PATCH /accounts/:id — re-anchoring", () => {
+  async function createGirokonto(): Promise<string> {
+    const created = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 100000,
+      anchorDate: "2026-01-01",
+    });
+    expect(created.status).toBe(201);
+    return created.body.id as string;
+  }
+
+  it("answers 400 for an anchorDate later than today and keeps the old anchor", async () => {
+    const id = await createGirokonto();
+
+    const res = await request(app)
+      .patch(`/accounts/${id}`)
+      .send({ anchorDate: isoDaysFromToday(1) });
+
+    expect(res.status).toBe(400);
+    const stored = await request(app).get(`/accounts/${id}`);
+    expect(stored.body.anchorDate).toBe("2026-01-01");
+  });
+
+  it("persists a past anchorDate (a statement's end date) with its anchorBalance", async () => {
+    const id = await createGirokonto();
+
+    const res = await request(app)
+      .patch(`/accounts/${id}`)
+      .send({ anchorBalance: 254321, anchorDate: "2026-03-31" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.anchorBalance).toBe(254321);
+    expect(res.body.anchorDate).toBe("2026-03-31");
+
+    const stored = await request(app).get(`/accounts/${id}`);
+    expect(stored.body.anchorBalance).toBe(254321);
+    expect(stored.body.anchorDate).toBe("2026-03-31");
+  });
+
+  it("persists a changed anchorDate sent on its own", async () => {
+    const id = await createGirokonto();
+
+    const res = await request(app)
+      .patch(`/accounts/${id}`)
+      .send({ anchorDate: "2026-02-15" });
+
+    expect(res.status).toBe(200);
+    const stored = await request(app).get(`/accounts/${id}`);
+    expect(stored.body.anchorDate).toBe("2026-02-15");
+    expect(stored.body.anchorBalance).toBe(100000);
+  });
+
+  it("replaces the anchor: the Current Balance follows the new anchor, not the old one", async () => {
+    const id = await createGirokonto();
+
+    const before = await request(app)
+      .post(`/accounts/${id}/transactions`)
+      .send({
+        date: "2026-02-10",
+        amount: -20000,
+        description: "Rent share",
+        category: "Food",
+      });
+    expect(before.status).toBe(201);
+    const after = await request(app).post(`/accounts/${id}/transactions`).send({
+      date: "2026-04-10",
+      amount: -5000,
+      description: "Groceries",
+      category: "Food",
+    });
+    expect(after.status).toBe(201);
+
+    // Re-anchor to a statement's closing Saldo on 2026-03-31: the February
+    // transaction is absorbed into the new anchor, the April one still counts.
+    const res = await request(app)
+      .patch(`/accounts/${id}`)
+      .send({ anchorBalance: 500000, anchorDate: "2026-03-31" });
+    expect(res.status).toBe(200);
+
+    const stored = await request(app).get(`/accounts/${id}`);
+    expect(stored.body.anchorBalance).toBe(500000);
+    expect(stored.body.anchorDate).toBe("2026-03-31");
+    expect(stored.body.balance).toBe(495000);
+  });
+});

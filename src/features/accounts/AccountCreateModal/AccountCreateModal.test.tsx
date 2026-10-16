@@ -84,7 +84,7 @@ describe("AccountCreateModal — validation", () => {
       <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
     );
 
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -92,7 +92,7 @@ describe("AccountCreateModal — validation", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("does not call the API when opening date is empty", () => {
+  it("does not call the API when the as-of date is empty", () => {
     renderWithTheme(
       <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
     );
@@ -116,10 +116,10 @@ describe("AccountCreateModal — submission", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main Girokonto" },
     });
-    fireEvent.change(screen.getByLabelText(/opening balance/i), {
+    fireEvent.change(screen.getByLabelText(/^balance$/i), {
       target: { value: "1000.00" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -143,7 +143,7 @@ describe("AccountCreateModal — submission", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main Girokonto" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -200,7 +200,7 @@ describe("AccountCreateModal — icon picker", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -222,7 +222,7 @@ describe("AccountCreateModal — icon picker", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -256,7 +256,7 @@ describe("AccountCreateModal — color picker", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -280,7 +280,7 @@ describe("AccountCreateModal — color picker", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -305,7 +305,7 @@ describe("AccountCreateModal — edit mode", () => {
     balance: 120000,
   };
 
-  it("pre-populates name, opening balance, opening date, and kind from the account prop", () => {
+  it("pre-populates name, balance, as-of date, and kind from the account prop", () => {
     renderWithTheme(
       <AccountCreateModal
         onClose={vi.fn()}
@@ -315,8 +315,8 @@ describe("AccountCreateModal — edit mode", () => {
     );
 
     expect(screen.getByLabelText(/name/i)).toHaveValue("Main Account");
-    expect(screen.getByLabelText(/opening balance/i)).toHaveValue(1000);
-    expect(screen.getByLabelText(/opening date/i)).toHaveValue("15.03.2024");
+    expect(screen.getByLabelText(/^balance$/i)).toHaveValue(1000);
+    expect(screen.getByLabelText(/as of/i)).toHaveValue("15.03.2024");
     expect(screen.getByLabelText(/kind/i)).toHaveValue("Girokonto");
   });
 
@@ -532,7 +532,7 @@ describe("AccountCreateModal — CreditCard settlement generation", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Visa" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create account/i }));
@@ -655,7 +655,7 @@ describe("AccountCreateModal — Display in Trajectory Horizon toggle", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -678,7 +678,7 @@ describe("AccountCreateModal — Display in Trajectory Horizon toggle", () => {
     fireEvent.change(screen.getByLabelText(/name/i), {
       target: { value: "Main" },
     });
-    fireEvent.change(screen.getByLabelText(/opening date/i), {
+    fireEvent.change(screen.getByLabelText(/as of/i), {
       target: { value: "2026-01-01" },
     });
     fireEvent.click(screen.getByRole("button", { name: /create|add|save/i }));
@@ -712,5 +712,118 @@ describe("AccountCreateModal — Display in Trajectory Horizon toggle", () => {
     );
 
     expect(screen.getByLabelText(/display in trajectory/i)).not.toBeChecked();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Balance Anchor — re-anchoring in the account form (#231)
+// ---------------------------------------------------------------------------
+
+const ANCHOR_HELP_TEXT =
+  "Your balance at the end of this day, including that day's transactions";
+
+/** A local date `days` from today, as the DD.MM.YYYY the DatePicker displays. */
+function displayDateDaysFromToday(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}.${mm}.${d.getFullYear()}`;
+}
+
+function lastRequestBody(): Record<string, unknown> {
+  const calls = vi.mocked(globalThis.fetch).mock.calls;
+  const [, init] = calls[calls.length - 1];
+  return JSON.parse(String((init as RequestInit).body)) as Record<
+    string,
+    unknown
+  >;
+}
+
+describe("AccountCreateModal — Balance Anchor fields", () => {
+  const anchoredAccount: AccountWithBalance = {
+    id: "acc-1",
+    kind: "Girokonto",
+    name: "Main Account",
+    anchorBalance: 100000,
+    anchorDate: "2024-03-15",
+    balance: 120000,
+  };
+
+  it("labels the anchor fields Balance and As of, with the help text, on create", () => {
+    renderWithTheme(
+      <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+
+    expect(screen.getByText(/^balance$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^as of$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^balance$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/as of/i)).toBeInTheDocument();
+    expect(screen.getByText(ANCHOR_HELP_TEXT)).toBeInTheDocument();
+    expect(screen.queryByText(/opening balance/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/opening date/i)).not.toBeInTheDocument();
+  });
+
+  it("labels the anchor fields Balance and As of, with the help text, in edit mode", () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={anchoredAccount}
+      />
+    );
+
+    expect(screen.getByLabelText(/^balance$/i)).toHaveValue(1000);
+    expect(screen.getByLabelText(/as of/i)).toHaveValue("15.03.2024");
+    expect(screen.getByText(ANCHOR_HELP_TEXT)).toBeInTheDocument();
+  });
+
+  it("caps the As of date at today: a later date is not taken", async () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={anchoredAccount}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/as of/i), {
+      target: { value: displayDateDaysFromToday(3) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+    expect(lastRequestBody().anchorDate).toBe("2024-03-15");
+  });
+
+  it("submits a changed anchorDate and anchorBalance in edit mode", async () => {
+    renderWithTheme(
+      <AccountCreateModal
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        account={anchoredAccount}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/^balance$/i), {
+      target: { value: "2543.21" },
+    });
+    fireEvent.change(screen.getByLabelText(/as of/i), {
+      target: { value: "31.03.2026" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(String(url)).toMatch(/\/accounts\/acc-1$/);
+    expect((init as RequestInit).method).toBe("PATCH");
+    expect(lastRequestBody()).toMatchObject({
+      anchorBalance: 254321,
+      anchorDate: "2026-03-31",
+    });
   });
 });
