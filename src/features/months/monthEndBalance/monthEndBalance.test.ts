@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
-// jsdom because the barrel re-exports the API base, which reads `window`.
+// jsdom because the history barrel pulls in its hooks and pages, which reach
+// the API base and the DOM.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { monthEndBalance } from "./monthEndBalance";
-import { monthEndBalance as fromBarrel } from "../index";
-import { buildPastLeadIn, buildTrajectoryData } from "../projection/projection";
-import type { MonthlySnapshot } from "../../types/projection";
-import type { HistoryPoint } from "../../types/history";
-import type { AccountWithBalance } from "../../types/account";
+import {
+  buildPastLeadIn,
+  buildTrajectoryData,
+} from "../../../utils/projection/projection";
+import type { MonthlySnapshot } from "../../../types/projection";
+import type { HistoryPoint } from "../../../types/history";
+import type { AccountWithBalance } from "../../../types/account";
 
 // Today is October 2026. History is reconstructed from 2026-06 (Main is known
 // from 2026-07) through the current month; the projection starts at the
@@ -200,11 +203,5 @@ describe("monthEndBalance — one figure across surfaces", () => {
     expect(august?.main).toBe(
       points.find((p) => p.month === "2026-08")?.accounts.main
     );
-  });
-});
-
-describe("monthEndBalance — utils barrel", () => {
-  it("is exported from the utils barrel", () => {
-    expect(fromBarrel).toBe(monthEndBalance);
   });
 });

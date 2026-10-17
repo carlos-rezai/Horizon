@@ -31,5 +31,3 @@ export {
   transferSideFor,
 } from "./recurring/recurring";
 export { computeSavingsGoal, milestoneSplit } from "./savingsGoal/savingsGoal";
-export { monthEndBalance } from "./monthEndBalance/monthEndBalance";
-export type { MonthEndBalance } from "./monthEndBalance/monthEndBalance";

@@ -9,7 +9,7 @@ import type {
   MonthCashFlowReport,
   RecurringFixedFlow,
 } from "../../../types/monthCashFlow";
-import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
+import type { MonthEndBalance } from "../monthEndBalance/monthEndBalance";
 import MonthCashFlow from "./MonthCashFlow";
 
 // Accounts in their sortOrder: every kind, the Mortgage included.

@@ -9,7 +9,7 @@ import { currentMonth } from "../../../utils/monthMath/monthMath";
 import {
   monthEndBalance,
   type MonthEndBalance,
-} from "../../../utils/monthEndBalance/monthEndBalance";
+} from "../monthEndBalance/monthEndBalance";
 import type { TransactionChanges } from "../../../utils/optimisticTransactions/optimisticTransactions";
 import {
   deriveMonthStats,

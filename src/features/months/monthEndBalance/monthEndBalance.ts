@@ -1,5 +1,6 @@
-import type { MonthlySnapshot } from "../../types/projection";
-import type { HistoryPoint } from "../../types/history";
+import type { MonthlySnapshot } from "../../../types/projection";
+import type { HistoryPoint } from "../../../types/history";
+import { firstKnownMonths } from "../../history";
 
 /**
  * Where an account ends a month: a figure read as Actual (History) or
@@ -12,17 +13,6 @@ export type MonthEndBalance =
       /** The account's first known History month ("YYYY-MM"), if any. */
       knownFrom: string | null;
     };
-
-/** The account's first History month with a known balance. */
-function firstKnownMonth(
-  points: HistoryPoint[],
-  accountId: string
-): string | null {
-  const first = points.find(
-    (p) => p.accounts[accountId] !== undefined && p.accounts[accountId] !== null
-  );
-  return first ? first.month : null;
-}
 
 /**
  * The Month-End Balance of one account, by the Past Lead-in's join rule: the
@@ -46,5 +36,8 @@ export function monthEndBalance(
       return { basis: "actual", cents: value };
     }
   }
-  return { basis: "unknown", knownFrom: firstKnownMonth(points, accountId) };
+  return {
+    basis: "unknown",
+    knownFrom: firstKnownMonths(points)[accountId] ?? null,
+  };
 }

@@ -17,7 +17,7 @@ import {
   rowAccountId,
   statementHistoryBefore,
 } from "../fixedFlows/fixedFlows";
-import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
+import type { MonthEndBalance } from "../monthEndBalance/monthEndBalance";
 import {
   StyledDay,
   StyledDayNum,
