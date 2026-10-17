@@ -1,6 +1,7 @@
 import type {
   RecurringFrequency,
   RecurringTransaction,
+  TransferSide,
 } from "../../types/recurring";
 
 /**
@@ -12,9 +13,6 @@ const PER_MONTH_WEIGHT: Record<RecurringFrequency, number> = {
   quarterly: 1 / 3,
   annual: 1 / 12,
 };
-
-/** Which end of a Recurring Transfer an account is. */
-export type TransferSide = "source" | "destination";
 
 /**
  * How a recurring relates to `accountId`: `"source"` when it is a Recurring

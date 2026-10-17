@@ -1,5 +1,8 @@
 export type RecurringFrequency = "monthly" | "quarterly" | "annual";
 
+/** Which end of a Recurring Transfer an account is. */
+export type TransferSide = "source" | "destination";
+
 export interface RecurringTransaction {
   id: string;
   accountId: string;
