@@ -1,11 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
+  approveProposal,
   blockersFor,
   buildReviewRows,
   canCommit,
+  dismissProposal,
+  FALLBACK_CATEGORY,
   flagsFor,
   propagateCategory,
+  proposalsFor,
   summarizeReview,
+  withoutProposal,
 } from "./reviewRows";
 import type { ReviewRow } from "./reviewRows";
 import type { ParsedImportRow } from "../importTypes/importTypes";
@@ -478,6 +483,146 @@ describe("propagateCategory", () => {
       duplicate: true,
       included: false,
       flags: ["duplicate"],
+    });
+  });
+});
+
+/**
+ * Category Proposals (#262), as pure transforms over the review rows. A row
+ * proposes a category while its source is `proposed`; approving moves it into
+ * the created category as `suggested`, dismissing returns it to Miscellaneous
+ * as `unmatched`. A row the user already changed proposes nothing and is left
+ * alone.
+ */
+describe("Category Proposal transforms", () => {
+  const proposed = (id: string, name: string): ReviewRow =>
+    buildReviewRows([
+      {
+        id,
+        date: "2026-03-16",
+        description: `Payee ${id}`,
+        counterparty: `Payee ${id}`,
+        amount: -1850,
+        category: "Miscellaneous",
+        categorySource: "proposed",
+        proposedCategory: name,
+      },
+    ])[0];
+
+  const learned: ReviewRow = buildReviewRows([
+    {
+      id: "l1",
+      date: "2026-03-05",
+      description: "REWE",
+      counterparty: "REWE",
+      amount: -1299,
+      category: "Food",
+      categorySource: "learned",
+    },
+  ])[0];
+
+  /** A proposed row the user already changed in review. */
+  const changed: ReviewRow = propagateCategory(
+    [proposed("c1", "Dining")],
+    "c1",
+    "Food"
+  )[0];
+
+  const byId = (rows: ReviewRow[], id: string) =>
+    rows.find((r) => r.id === id) as ReviewRow;
+
+  describe("withoutProposal", () => {
+    it("deletes the proposal field and keeps the rest of the row", () => {
+      const row = proposed("p1", "Dining");
+      const next = withoutProposal(row);
+      expect("proposedCategory" in next).toBe(false);
+      expect(next).toEqual({ ...row, proposedCategory: undefined });
+      expect(row.proposedCategory).toBe("Dining");
+    });
+  });
+
+  describe("proposalsFor", () => {
+    it("gives one entry per proposed category in first-row order, with its row count", () => {
+      const rows = [
+        learned,
+        proposed("s1", "Shopping"),
+        proposed("d1", "Dining"),
+        proposed("s2", "Shopping"),
+      ];
+      expect(proposalsFor(rows)).toEqual([
+        { name: "Shopping", count: 2 },
+        { name: "Dining", count: 1 },
+      ]);
+    });
+
+    it("does not count a row the user already changed", () => {
+      expect(proposalsFor([changed, proposed("d1", "Dining")])).toEqual([
+        { name: "Dining", count: 1 },
+      ]);
+    });
+
+    it("is empty once a proposal's rows are all gone", () => {
+      expect(proposalsFor([learned, changed])).toEqual([]);
+    });
+  });
+
+  describe("approveProposal", () => {
+    it("moves the rows still proposing the name into the category, as suggested", () => {
+      const next = approveProposal(
+        [proposed("d1", "Dining"), proposed("d2", "Dining")],
+        "Dining",
+        "Dining"
+      );
+      for (const id of ["d1", "d2"]) {
+        expect(byId(next, id)).toMatchObject({
+          category: "Dining",
+          categorySource: "suggested",
+        });
+        expect("proposedCategory" in byId(next, id)).toBe(false);
+      }
+    });
+
+    it("leaves another proposal, a learned row and a changed row alone", () => {
+      const shopping = proposed("s1", "Shopping");
+      const next = approveProposal(
+        [learned, changed, shopping, proposed("d1", "Dining")],
+        "Dining",
+        "Dining"
+      );
+      expect(byId(next, "l1")).toBe(learned);
+      expect(byId(next, "c1")).toBe(changed);
+      expect(byId(next, "s1")).toBe(shopping);
+    });
+
+    it("changes nothing when the proposal's rows are all gone", () => {
+      const rows = [learned, changed];
+      expect(approveProposal(rows, "Dining", "Dining")).toEqual(rows);
+    });
+  });
+
+  describe("dismissProposal", () => {
+    it("returns the rows still proposing the name to the fallback, as unmatched", () => {
+      const next = dismissProposal([proposed("d1", "Dining")], "Dining");
+      expect(next[0]).toMatchObject({
+        category: FALLBACK_CATEGORY,
+        categorySource: "unmatched",
+      });
+      expect("proposedCategory" in next[0]).toBe(false);
+    });
+
+    it("leaves another proposal and a changed row alone", () => {
+      const shopping = proposed("s1", "Shopping");
+      const next = dismissProposal(
+        [changed, shopping, proposed("d1", "Dining")],
+        "Dining"
+      );
+      expect(byId(next, "c1")).toBe(changed);
+      expect(byId(next, "s1")).toBe(shopping);
+    });
+
+    it("changes nothing when the proposal's rows are all gone", () => {
+      const rows = [learned, changed];
+      expect(dismissProposal(rows, "Dining")).toEqual(rows);
     });
   });
 });

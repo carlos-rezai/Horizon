@@ -17,6 +17,12 @@ import { counterpartyKey } from "../../../utils/counterpartyKey/counterpartyKey"
 import type { ParsedImportRow } from "../importTypes/importTypes";
 
 /**
+ * The client's name for the server's Miscellaneous fallback: the category a
+ * row lands in when nothing categorizes it, or when its proposal is dismissed.
+ */
+export const FALLBACK_CATEGORY = "Miscellaneous";
+
+/**
  * A hard reason a row cannot commit. An open set, not a boolean: the row model
  * already drifted once by hand-maintaining per-reason branches.
  */
@@ -98,6 +104,62 @@ export function summarizeReview(rows: ReviewRow[]): ReviewSummary {
   };
 }
 
+/** A Category Proposal as the rows hold it: a canonical name and its row count. */
+export interface ProposalCount {
+  name: string;
+  count: number;
+}
+
+/** True while the row still proposes `name` — the user has not changed it. */
+const isProposedAs = (row: ReviewRow, name: string) =>
+  row.categorySource === "proposed" && row.proposedCategory === name;
+
+/** The one way to drop a row's Category Proposal: delete the field. */
+export function withoutProposal<T extends ParsedImportRow>(row: T): T {
+  const next = { ...row };
+  delete next.proposedCategory;
+  return next;
+}
+
+/** One entry per proposed category, in first-row order, counting its still-proposed rows. */
+export function proposalsFor(rows: ReviewRow[]): ProposalCount[] {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    if (row.categorySource !== "proposed" || !row.proposedCategory) continue;
+    counts.set(
+      row.proposedCategory,
+      (counts.get(row.proposedCategory) ?? 0) + 1
+    );
+  }
+  return [...counts].map(([name, count]) => ({ name, count }));
+}
+
+/** Move the rows still proposing `name` into `category`, as `suggested`. */
+export function approveProposal(
+  rows: ReviewRow[],
+  name: string,
+  category: string
+): ReviewRow[] {
+  return rows.map((r) =>
+    isProposedAs(r, name)
+      ? { ...withoutProposal(r), category, categorySource: "suggested" }
+      : r
+  );
+}
+
+/** Return the rows still proposing `name` to the fallback, as `unmatched`. */
+export function dismissProposal(rows: ReviewRow[], name: string): ReviewRow[] {
+  return rows.map((r) =>
+    isProposedAs(r, name)
+      ? {
+          ...withoutProposal(r),
+          category: FALLBACK_CATEGORY,
+          categorySource: "unmatched",
+        }
+      : r
+  );
+}
+
 /**
  * Same-Counterparty Propagation: set `name` on row `id`, and on every other row
  * with the same non-empty Counterparty Key the user has not touched yet. The
@@ -121,12 +183,7 @@ export function propagateCategory(
       counterpartyKey(r.counterparty) === key);
   return rows.map((r) =>
     follows(r)
-      ? {
-          ...r,
-          category: name,
-          categorySource: "chosen",
-          proposedCategory: undefined,
-        }
+      ? { ...withoutProposal(r), category: name, categorySource: "chosen" }
       : r
   );
 }
