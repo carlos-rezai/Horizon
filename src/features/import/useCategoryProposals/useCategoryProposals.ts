@@ -1,9 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Category } from "../../../types/category";
-import { CATEGORIES } from "../../../components/CacheProvider/cacheKeys";
-import { useCacheBump } from "../../../components/CacheProvider/useCacheBump";
-import { createCategory } from "../../categories/categoriesApi/categoriesApi";
+import { useCreateCategory } from "../../categories/useCreateCategory/useCreateCategory";
 import { nextFreeCategoryColor } from "../../../utils/categoryColor/categoryColor";
 import type { ReviewRow } from "../reviewRows/reviewRows";
 
@@ -23,7 +21,11 @@ interface UseCategoryProposalsParams {
 interface UseCategoryProposalsResult {
   /** One per distinct proposed category, in first-row order. */
   proposals: CategoryProposal[];
-  /** Create the category with the Next Free Colour and move its still-proposed rows into it. */
+  /**
+   * Create the category with the Next Free Colour and move its still-proposed
+   * rows into it. Never rejects: a failed create leaves its error on the
+   * proposal.
+   */
   approve: (name: string) => Promise<void>;
   /** Return the proposal's rows to Miscellaneous and record the name for the commit. */
   dismiss: (name: string) => void;
@@ -46,15 +48,16 @@ function withoutProposal(row: ReviewRow): ReviewRow {
 /**
  * Category Proposals in the Import review step (issue #262). Proposals are
  * derived from the rows the caller holds; approving creates the category
- * through `POST /categories` and bumps the CATEGORIES cache, dismissing is
- * wizard-local until the commit sends `declinedProposals`.
+ * through `useCreateCategory`, which publishes it to every picker before the
+ * rows move into it; dismissing is wizard-local until the commit sends
+ * `declinedProposals`.
  */
 export function useCategoryProposals({
   rows,
   setRows,
   categories,
 }: UseCategoryProposalsParams): UseCategoryProposalsResult {
-  const bump = useCacheBump();
+  const { create } = useCreateCategory();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [declinedProposals, setDeclinedProposals] = useState<string[]>([]);
 
@@ -83,19 +86,15 @@ export function useCategoryProposals({
         delete next[name];
         return next;
       });
-      const res = await createCategory({
+      const outcome = await create({
         name,
         color: nextFreeCategoryColor(categories, name),
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        const message = body.error ?? "Failed to create category";
-        setErrors((prev) => ({ ...prev, [name]: message }));
-        throw new Error(message);
+      if (!outcome.ok) {
+        setErrors((prev) => ({ ...prev, [name]: outcome.error }));
+        return;
       }
-      const created = (await res.json()) as Category;
+      const created = outcome.category;
       setRows((rs) =>
         rs.map((r) =>
           isProposedAs(r, name)
@@ -107,9 +106,8 @@ export function useCategoryProposals({
             : r
         )
       );
-      bump(CATEGORIES);
     },
-    [categories, setRows, bump]
+    [categories, setRows, create]
   );
 
   const dismiss = useCallback(
