@@ -43,8 +43,17 @@ type MonthTransactionsKey = string & {
   readonly __brand: "monthTransactionsKey";
 };
 
+/**
+ * Brands the per-month cash flow report keys. Only `monthCashFlowKey` mints
+ * one.
+ */
+type MonthCashFlowKey = string & { readonly __brand: "monthCashFlowKey" };
+
 /** Any key the cache recognises: a fixed resource, or a per-month key. */
-export type CacheKey = GlobalResourceKey | MonthTransactionsKey;
+export type CacheKey =
+  | GlobalResourceKey
+  | MonthTransactionsKey
+  | MonthCashFlowKey;
 
 /**
  * Cache key for a month's transactions on a given set of accounts.
@@ -60,4 +69,12 @@ export function monthTransactionsKey(
   month: string
 ): MonthTransactionsKey {
   return `transactions:${accountIds.join(",")}:${month}` as MonthTransactionsKey;
+}
+
+/**
+ * Cache key for a month's cash flow report. Each month keeps its own entry, so
+ * stepping back to a month already viewed paints from cache.
+ */
+export function monthCashFlowKey(month: string): MonthCashFlowKey {
+  return `cashFlow:${month}` as MonthCashFlowKey;
 }

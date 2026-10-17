@@ -4,3 +4,4 @@ export type * from "./history";
 export type * from "./projection";
 export type * from "./recurring";
 export type * from "./transaction";
+export type * from "./monthCashFlow";

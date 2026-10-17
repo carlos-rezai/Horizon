@@ -18,11 +18,14 @@ import MonthBreakdown from "../MonthBreakdown/MonthBreakdown";
 import MonthBreakdownSkeleton from "../MonthBreakdown/MonthBreakdownSkeleton";
 import YearComparison from "../YearComparison/YearComparison";
 import YearComparisonSkeleton from "../YearComparison/YearComparisonSkeleton";
+import MonthCashFlow from "../MonthCashFlow/MonthCashFlow";
+import MonthCashFlowSkeleton from "../MonthCashFlow/MonthCashFlowSkeleton";
 import MonthYearPicker from "../MonthYearPicker/MonthYearPicker";
 import SectionState from "../../../components/SectionState/SectionState";
 import FadeSwap from "../../../components/FadeSwap/FadeSwap";
 import { useAllMonthTransactions } from "../useAllMonthTransactions/useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison/useYearComparison";
+import { useMonthCashFlow } from "../useMonthCashFlow/useMonthCashFlow";
 import { useImportStartDates } from "../useImportStartDates/useImportStartDates";
 import { useCategories } from "../../categories/useCategories/useCategories";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
@@ -93,6 +96,11 @@ export default function MonthOverview({
     isLoading: yearComparisonLoading,
     error: yearComparisonError,
   } = useYearComparison(monthStr);
+  const {
+    report: cashFlowReport,
+    isLoading: cashFlowLoading,
+    error: cashFlowError,
+  } = useMonthCashFlow(monthStr);
   const { startDates: importStartDates } = useImportStartDates();
   const { categories } = useCategories();
 
@@ -170,6 +178,23 @@ export default function MonthOverview({
             skeleton={<MonthStatStripSkeleton />}
           >
             <MonthStatStrip stats={stats} />
+          </SectionState>
+
+          {/* Every account kind has fixed flows, so the card is gated on the
+              accounts and its own report, not the spending accounts' reads. */}
+          <SectionState
+            testId="month-section-cash-flow"
+            isLoading={accountsLoading || cashFlowLoading}
+            error={accountsError ?? cashFlowError}
+            skeleton={<MonthCashFlowSkeleton monthLabel={monthLabel} />}
+          >
+            {cashFlowReport && (
+              <MonthCashFlow
+                accounts={accounts}
+                report={cashFlowReport}
+                monthLabel={monthLabel}
+              />
+            )}
           </SectionState>
 
           <StyledColumns>

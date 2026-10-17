@@ -53,6 +53,8 @@ export interface ProjectionTxEntry {
 }
 
 export interface ProjectionRecurringEntry {
+  /** The rule's id, which its applied flows report. */
+  id?: string;
   accountId: string;
   amount: number;
   frequency: Frequency;
@@ -71,14 +73,15 @@ export function toProjectionTxEntry(tx: Transaction): ProjectionTxEntry {
 }
 
 /**
- * A stored Recurring Transaction as the engine's recurring entry: the
- * account, amount and schedule, plus the transfer link and the annual month
+ * A stored Recurring Transaction as the engine's recurring entry: the rule's
+ * id, the account, amount and schedule, plus the transfer link and the annual month
  * only when they are set.
  */
 export function toProjectionRecurringEntry(
   r: RecurringTransaction
 ): ProjectionRecurringEntry {
   return {
+    id: r.id,
     accountId: r.accountId,
     amount: r.amount,
     frequency: r.frequency,
@@ -102,6 +105,25 @@ export interface MonthlySnapshot {
   totalLiquid: number;
 }
 
+/**
+ * One recurring leg the engine applied to an account in a month: the rule's
+ * id, the leg's date and its signed amount for that account. A transfer leg
+ * names its counterpart account and which side of the transfer it is.
+ */
+export interface AppliedFlow {
+  recurringId: string;
+  accountId: string;
+  date: string;
+  amount: number;
+  counterpartId?: string;
+  side?: "source" | "destination";
+}
+
+/** A monthly snapshot plus the recurring flows applied in that month. */
+export interface MonthlyProjection extends MonthlySnapshot {
+  flows: AppliedFlow[];
+}
+
 const DEFAULT_PROJECTION_MONTHS = 240;
 
 function addMonths(yyyyMM: string, n: number): string {
@@ -122,62 +144,78 @@ function accountPassesAnchorGate(
   return passesAnchorGate(accountMap.get(accountId)?.anchorDate, date);
 }
 
+// Applies one firing of a rule to the running balances and returns the legs
+// that moved an account.
 function applyRecurringToBalances(
   r: ProjectionRecurringEntry,
   month: string,
   accountMap: Map<string, ProjectionAccountEntry>,
   runningBalances: Map<string, number>
-): void {
+): AppliedFlow[] {
   const date = occurrenceDate(month, r.dayOfMonth);
   const sourceMoves = accountPassesAnchorGate(r.accountId, date, accountMap);
+  const flows: AppliedFlow[] = [];
+  const move = (
+    accountId: string,
+    amount: number,
+    transfer?: { counterpartId: string; side: "source" | "destination" }
+  ): void => {
+    runningBalances.set(
+      accountId,
+      (runningBalances.get(accountId) ?? 0) + amount
+    );
+    flows.push({
+      recurringId: r.id ?? "",
+      accountId,
+      date,
+      amount,
+      ...transfer,
+    });
+  };
 
   if (r.linkedAccountId) {
-    const destMoves = accountPassesAnchorGate(
-      r.linkedAccountId,
-      date,
-      accountMap
-    );
-    const destKind = accountMap.get(r.linkedAccountId)?.kind;
+    const destId = r.linkedAccountId;
+    const destMoves = accountPassesAnchorGate(destId, date, accountMap);
+    const destKind = accountMap.get(destId)?.kind;
+    const source = { counterpartId: destId, side: "source" as const };
+    const destination = {
+      counterpartId: r.accountId,
+      side: "destination" as const,
+    };
     if (destKind === "Mortgage" && destMoves) {
-      const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
+      const remaining = runningBalances.get(destId) ?? 0;
       // Operate on the magnitude so the paydown matches every other transfer's
       // sign convention: a transfer stored with the domain's negative outflow
       // sign reduces Restschuld identically to a positive-amount transfer.
       const actualDebit = Math.min(Math.abs(r.amount), remaining);
       if (actualDebit > 0) {
-        if (sourceMoves) {
-          runningBalances.set(
-            r.accountId,
-            (runningBalances.get(r.accountId) ?? 0) - actualDebit
-          );
-        }
-        runningBalances.set(r.linkedAccountId, remaining - actualDebit);
+        if (sourceMoves) move(r.accountId, -actualDebit, source);
+        // The Restschuld is a positive balance the repayment pays down; the
+        // leg is reported as the inflow it is to the Mortgage.
+        runningBalances.set(destId, remaining - actualDebit);
+        flows.push({
+          recurringId: r.id ?? "",
+          accountId: destId,
+          date,
+          amount: actualDebit,
+          ...destination,
+        });
       }
-      return;
+      return flows;
     }
     if (sourceMoves) {
       // A Mortgage leg behind its anchor still debits the payment's magnitude.
       const debit = destKind === "Mortgage" ? Math.abs(r.amount) : r.amount;
-      runningBalances.set(
-        r.accountId,
-        (runningBalances.get(r.accountId) ?? 0) - debit
-      );
+      move(r.accountId, -debit, source);
     }
     if (destMoves && destKind !== "Mortgage") {
-      runningBalances.set(
-        r.linkedAccountId,
-        (runningBalances.get(r.linkedAccountId) ?? 0) + r.amount
-      );
+      move(destId, r.amount, destination);
     }
-    return;
+    return flows;
   }
   const kind = accountMap.get(r.accountId)?.kind;
-  if (kind !== "Mortgage" && sourceMoves) {
-    runningBalances.set(
-      r.accountId,
-      (runningBalances.get(r.accountId) ?? 0) + r.amount
-    );
-  }
+  if (kind !== "Mortgage" && sourceMoves) move(r.accountId, r.amount);
+  return flows;
 }
 
 export function projectBalances(
@@ -188,6 +226,40 @@ export function projectBalances(
   currentDate: string,
   months: number = DEFAULT_PROJECTION_MONTHS
 ): MonthlySnapshot[] {
+  return projectMonths(
+    accounts,
+    transactions,
+    recurringTransactions,
+    fromDate,
+    currentDate,
+    months
+  ).map(
+    ({
+      month,
+      accounts: balances,
+      netCashflow,
+      totalLiquid,
+    }): MonthlySnapshot => ({
+      month,
+      accounts: balances,
+      netCashflow,
+      totalLiquid,
+    })
+  );
+}
+
+/**
+ * The projection run: each monthly snapshot plus the recurring flows applied
+ * in that month. `projectBalances` is this run with the flows dropped.
+ */
+export function projectMonths(
+  accounts: ProjectionAccountEntry[],
+  transactions: ProjectionTxEntry[],
+  recurringTransactions: ProjectionRecurringEntry[],
+  fromDate: string,
+  currentDate: string,
+  months: number = DEFAULT_PROJECTION_MONTHS
+): MonthlyProjection[] {
   const accountMap = new Map<string, ProjectionAccountEntry>();
   for (const a of accounts) accountMap.set(a.id, a);
 
@@ -256,7 +328,7 @@ export function projectBalances(
     });
   }
 
-  const snapshots: MonthlySnapshot[] = [];
+  const snapshots: MonthlyProjection[] = [];
 
   // Pending CC settlement to apply at the start of the next month.
   // Key: CC account ID → { giroId, amount (positive cents to deduct from giro) }
@@ -267,6 +339,7 @@ export function projectBalances(
     const month = addMonths(fromDate, i);
 
     let netCashflow = 0;
+    const flows: AppliedFlow[] = [];
 
     // Apply settlements queued from the previous month BEFORE variable spending
     // for this month (month M+1 settlement depends on month M CC closing balance;
@@ -281,7 +354,9 @@ export function projectBalances(
     for (const r of activeRecurring) {
       if (!firesInMonth(r, month, sourceAnchorMonth(r))) continue;
 
-      applyRecurringToBalances(r, month, accountMap, runningBalances);
+      flows.push(
+        ...applyRecurringToBalances(r, month, accountMap, runningBalances)
+      );
 
       // Transfers are excluded from netCashflow; Mortgage accounts are never
       // directly credited by a non-transfer recurring
@@ -346,6 +421,7 @@ export function projectBalances(
       accounts: accountsSnapshot,
       netCashflow,
       totalLiquid,
+      flows,
     });
   }
 
