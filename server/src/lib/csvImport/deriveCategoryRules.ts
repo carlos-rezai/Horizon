@@ -1,3 +1,4 @@
+import type { CategoryRuleInput } from "../../storage/types.js";
 import { counterpartyKey } from "./counterpartyKey.js";
 import type { CategorySource } from "./types.js";
 
@@ -9,12 +10,6 @@ export interface TeachingRowInput {
   counterparty: string;
   category: string;
   categorySource: CategorySource;
-}
-
-/** A Category Rule to learn: one Counterparty Key to one category by name. */
-export interface DerivedCategoryRule {
-  counterpartyKey: string;
-  category: string;
 }
 
 /** Sources whose category the user approved by committing the row. */
@@ -46,7 +41,7 @@ function beats(a: Tally, b: Tally): boolean {
  */
 export function deriveCategoryRules(
   rows: readonly TeachingRowInput[]
-): DerivedCategoryRule[] {
+): CategoryRuleInput[] {
   const tallies = new Map<string, Map<string, Tally>>();
 
   rows.forEach((row, index) => {
@@ -72,7 +67,7 @@ export function deriveCategoryRules(
     }
   });
 
-  const rules: DerivedCategoryRule[] = [];
+  const rules: CategoryRuleInput[] = [];
   for (const [key, byCategory] of tallies) {
     let best: { category: string; tally: Tally } | null = null;
     for (const [category, tally] of byCategory) {

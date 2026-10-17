@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type {
   Category,
+  CategoryRuleInput,
   ColumnMapping,
   StoredImportPreset,
   Transaction,
@@ -14,12 +15,6 @@ import {
 import { detectDuplicates, detectRecurring } from "./flagRows.js";
 import { categorizeRow } from "./categorizeRow.js";
 import type { CategorySource, MappedRow } from "./types.js";
-
-/** A stored Category Rule, as far as the preview needs it. */
-export interface PreviewCategoryRule {
-  counterpartyKey: string;
-  category: string;
-}
 
 /** A previewed row: a normalized row plus its id and detection flags. */
 export interface PreviewRow extends MappedRow {
@@ -78,7 +73,7 @@ export interface BuildPreviewInput {
    */
   anchorDate?: string;
   /** Every stored Category Rule, applied by Counterparty Key. */
-  categoryRules?: PreviewCategoryRule[];
+  categoryRules?: CategoryRuleInput[];
   /**
    * The user's categories. A rule applies only while its category exists
    * (hidden or not), so a stale rule never lands a row in a missing category.
