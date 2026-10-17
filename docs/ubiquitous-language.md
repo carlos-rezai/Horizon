@@ -13,7 +13,7 @@
 | **Investment**                     | An investment account kind — tracks ETF cost basis only, not market value                                                                                    | Brokerage, portfolio                |
 | ~~**Opening Balance**~~ (replaced) | ~~The user-entered balance at the moment an account is created.~~ Replaced by **Anchor Balance** (Balance Anchor, design log 30): same column, reinterpreted | —                                   |
 | ~~**Opening Date**~~ (replaced)    | ~~The calendar date the user set up the account.~~ Replaced by **Anchor Date** (Balance Anchor, design log 30)                                               | —                                   |
-| **Current Balance** (updated)      | The derived balance of an account today: **Anchor Balance** + every Transaction dated after the **Anchor Date**; see the Balance Anchor section              | Live balance                        |
+| **Current Balance** (updated)      | The derived balance of an account today: its **Recorded Balance** + its **Recurring History** through today (Month Cash Flow, design log 32 Q2)              | Live balance                        |
 
 ## Transactions
 
@@ -43,24 +43,24 @@
 
 ## Projections
 
-| Term                                | Definition                                                                                                                                                                                                                                        | Aliases to avoid                     |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| **Projection Engine**               | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months)                                                                                                    | Forecast engine, planner             |
-| **Recurring-Only Projection Model** | The design constraint that recurring transactions own all regular financial flows; actual transactions exist only for variable one-off spending (new)                                                                                             | —                                    |
-| **Recurring History**               | The set of recurring transactions that have already fired after an account's Anchor Date up to today (behind the **Anchor Gate**) — replayed by the engine to derive the correct starting balance (new)                                           | Past recurring, historical recurring |
-| **Replay Loop**                     | The engine phase that simulates Recurring History from each account's Anchor Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)                                                        | Historical replay, backfill          |
-| **Forward Projection**              | The engine phase that applies recurring transactions from the current month into the future — runs after the Replay Loop has established the correct starting balance (new)                                                                       | Projection loop, forecast            |
-| **monthOfYear**                     | The calendar month number (1–12) stored on a RecurringTransaction that anchors when annual or quarterly transactions fire — e.g. `monthOfYear: 10` fires in October every year (new)                                                              | Month anchor, firing month           |
-| **Variable Spending**               | Irregular, one-off actual transactions that record real expenditure (food, dental, shopping, cat food) — the only category of actual transaction in the Recurring-Only Projection Model; entered exclusively via the **Month Overview** (updated) | One-off spending, irregular expenses |
-| **MonthlySnapshot**                 | The projected state of all account balances for a given future month                                                                                                                                                                              | Projection row, forecast entry       |
-| **TrajectoryDataPoint** (new)       | A chart-ready data shape derived from a MonthlySnapshot — includes totalLiquid, restschuld, netCashflow, isSTMonth, isPayoffMonth                                                                                                                 | Chart point, data point              |
-| **Plan**                            | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                                                                                                                                         | Financial plan, budget plan          |
-| **Actual**                          | The real account balance derived from recorded Transactions                                                                                                                                                                                       | Real balance                         |
-| **Variance**                        | The difference between a projected balance and the actual balance for a given account and month                                                                                                                                                   | Delta, difference                    |
-| **Payoff Month** (updated)          | The first projected month in which one Mortgage account's balance reaches zero — per account, as the Mortgage Countdown card shows it (`findMortgagePayoffMonth`); plan-level surfaces flag the **Debt-free Month** instead                       | Payoff date, payoff year             |
-| **Payoff Year** (new)               | The calendar year that contains the Payoff Month                                                                                                                                                                                                  | Payoff year, final year              |
-| **ST Month** (new)                  | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded                                                                                                             | ST date, October payment             |
-| **Estimated Completion Month**      | The first projected month in which a Milestone's target balance is reached                                                                                                                                                                        | Target date, goal date               |
+| Term                                          | Definition                                                                                                                                                                                                                                                                                                            | Aliases to avoid                     |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **Projection Engine**                         | The system that calculates forward balances from RecurringTransactions and current account balances — default horizon is 20 years (240 months)                                                                                                                                                                        | Forecast engine, planner             |
+| **Recurring-Only Projection Model** (updated) | The design constraint that recurring transactions own all regular financial flows and are never stored as Transactions; stored one-off transactions are Variable Spending, One-off Transfers and settlements. Since Month Cash Flow the Month Overview shows recurring flows as **Fixed Flows**, computed, not stored | —                                    |
+| **Recurring History** (updated)               | The signed sum of an account's recurring legs that passed the **Anchor Gate** and are dated on or before the day the balance is read; part of the **Current Balance**, the engine's `actual` and the settlement closing balance (`recurringHistory` in `server/src/lib/recurringHistory/`)                            | Past recurring, historical recurring |
+| **Replay Loop**                               | The engine phase that simulates Recurring History from each account's Anchor Date up to (but not including) the current month, using the same firing logic as the Forward Projection (new)                                                                                                                            | Historical replay, backfill          |
+| **Forward Projection**                        | The engine phase that applies recurring transactions from the current month into the future — runs after the Replay Loop has established the correct starting balance (new)                                                                                                                                           | Projection loop, forecast            |
+| **monthOfYear**                               | The calendar month number (1–12) stored on a RecurringTransaction that anchors when annual or quarterly transactions fire — e.g. `monthOfYear: 10` fires in October every year (new)                                                                                                                                  | Month anchor, firing month           |
+| **Variable Spending**                         | Irregular, one-off actual transactions that record real expenditure (food, dental, shopping, cat food) — the only category of actual transaction in the Recurring-Only Projection Model; entered exclusively via the **Month Overview** (updated)                                                                     | One-off spending, irregular expenses |
+| **MonthlySnapshot**                           | The projected state of all account balances for a given future month                                                                                                                                                                                                                                                  | Projection row, forecast entry       |
+| **TrajectoryDataPoint** (new)                 | A chart-ready data shape derived from a MonthlySnapshot — includes totalLiquid, restschuld, netCashflow, isSTMonth, isPayoffMonth                                                                                                                                                                                     | Chart point, data point              |
+| **Plan**                                      | The full set of MonthlySnapshots produced by the Projection Engine — there is no separate plan data store                                                                                                                                                                                                             | Financial plan, budget plan          |
+| **Actual**                                    | The real account balance derived from recorded Transactions                                                                                                                                                                                                                                                           | Real balance                         |
+| **Variance**                                  | The difference between a projected balance and the actual balance for a given account and month                                                                                                                                                                                                                       | Delta, difference                    |
+| **Payoff Month** (updated)                    | The first projected month in which one Mortgage account's balance reaches zero — per account, as the Mortgage Countdown card shows it (`findMortgagePayoffMonth`); plan-level surfaces flag the **Debt-free Month** instead                                                                                           | Payoff date, payoff year             |
+| **Payoff Year** (new)                         | The calendar year that contains the Payoff Month                                                                                                                                                                                                                                                                      | Payoff year, final year              |
+| **ST Month** (new)                            | A projected month in which an annual Sondertilgung Recurring Transfer fires — detected from RecurringTransaction shape, not hardcoded                                                                                                                                                                                 | ST date, October payment             |
+| **Estimated Completion Month**                | The first projected month in which a Milestone's target balance is reached                                                                                                                                                                                                                                            | Target date, goal date               |
 
 ## Dashboard
 
@@ -872,6 +872,8 @@
   Anchor the definition is **Anchor Balance** + Transactions dated after the **Anchor
   Date**. Recurring flows after the anchor are counted only when they are recorded as
   Transactions. That gap is open and handed to Month Cash Flow (design log 30, Q8).
+  (updated) Closed by Month Cash Flow (design log 32, Q2): **Current Balance** =
+  **Recorded Balance** + **Recurring History** through today.
 - **"driver"** (new) — overloaded in software (DB driver, framework driver, hardware driver).
   Always qualify as **Storage Driver** when referring to a Mongo or SQLite implementation
   of the Storage facade.
@@ -1318,3 +1320,50 @@
 - **"estimated" / "interpolated"** (new): do not use either in UI copy for the **Paydown Bridge**. It is a connection, not an estimate Horizon stands behind. Say "No monthly data".
 - **"savings"** (new): **Monthly Savings** (a balance delta) versus **Net Cashflow** (a transaction sum) versus the Savings Streak's per-account targets. Never use "savings" for Net Cashflow.
 - Historical Month Navigation's relationships that bound history to "the earliest imported Transaction month" and gate the Year Archive on Statements are superseded by the **History Span** and the updated **Year Archive** entry above.
+
+## Month Cash Flow (new)
+
+| Term                       | Definition                                                                                                                                                                                                                                     | Aliases to avoid                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Month Cash Flow**        | The feature that makes the Month Overview the full picture of one month: each account's **Fixed Flows** and **Month-End Balance** beside the unchanged Variable Spending                                                                       | Monthly ledger, month cashflow report         |
+| **Fixed Flow**             | One leg the Projection Engine applied to an account in a month, signed for that account: a recurring occurrence (plain or one leg of a **Recurring Transfer**) or a CreditCard settlement (`FixedFlow`, `kind` `"recurring"` / `"settlement"`) | Fixed cost, standing order row, recurring row |
+| **Fixed Flows card**       | The full-width Month Overview card (`src/features/months/MonthCashFlow/`) that groups a month's **Fixed Flows** by account, every account kind included, each group headed by its **Month-End Balance**                                        | Recurring this month, fixed section           |
+| **In Balance Anchor**      | The muted state of a **Fixed Flow** in an account's Anchor month that the **Anchor Gate** blocked: listed so the user sees it was counted inside the **Anchor Balance**, and left out of the net                                               | Skipped, excluded, missing                    |
+| **Month-End Balance**      | An account's balance at the end of a month, with a basis: **actual** for a past month (Reconstructed Actuals), **projected** for the current and future months, or **Unknown** (`monthEndBalance` in `src/utils/monthEnd/`)                    | Closing balance, EOM balance                  |
+| **Recorded Balance**       | The storage layer's SQL balance: **Anchor Balance** + every Transaction dated after the **Anchor Date** (`recordedBalance` on `AccountWithRecordedBalance`); recurring flows not included                                                      | Current Balance, stored balance               |
+| **Month Cash Flow Report** | The per-month server report `GET /reports/month-cash-flow?month=YYYY-MM` (`MonthCashFlowReport`): every account's **Fixed Flows**, taken from the same engine run as the chart that shows that month                                           | Fixed flows endpoint, month report            |
+
+## Relationships (Month Cash Flow additions)
+
+- **Current Balance** = **Recorded Balance** + **Recurring History** through today; `balanceService` composes the two, and storage computes only the first
+- One firing rule (`server/src/lib/recurringOccurrence/`) serves the Replay Loop, the Forward Projection, **Recurring History** and the **Month Cash Flow Report**; it depends only on the rule and the month, never on where a run starts
+- A **Fixed Flow** follows the `recurringAmountFor` sign convention: −amount on a transfer's source, +amount on its destination (a Mortgage too), capped in the payoff month
+- An account's months before its Anchor month list no rule **Fixed Flows**: its imported statements are the history there
+- The **Month-End Balance** of a month ≥ current reads the projection's `projected`; of a month < current, the history point; the current month never comes from both
+- Before the Anchor Date nothing changes: the **Anchor Gate** holds, and Reconstructed Actuals there equal `balanceAt`
+- Editing or deleting a RecurringTransaction rewrites the **Recurring History** of every month since the anchor; **Re-anchor** is the correction
+
+## Example dialogue (Month Cash Flow)
+
+> **Dev:** "The user opens next March. Before this epic every account read €0. What do they see now?"
+>
+> **Domain expert:** "The **Fixed Flows card**: salary +€3,000 on the Girokonto, the Repayment Transfer −€955 there and +€955 'from Postbank' on the Mortgage. Each group is headed by its **Month-End Balance**, marked Projected."
+>
+> **Dev:** "And last August, after the anchor?"
+>
+> **Domain expert:** "The same legs, now part of the actual balance. They're **Recurring History**: they passed the **Anchor Gate** and they're in the past, so the **Current Balance** counts them too. The Recorded Balance alone would have lost the salary."
+>
+> **Dev:** "The anchor is 17 October and the salary landed on the 1st. Is October's salary missing?"
+>
+> **Domain expert:** "It's listed muted, **In Balance Anchor**. The €2,400 they entered already contained it, so it isn't counted twice."
+>
+> **Dev:** "And March two years ago, before the anchor?"
+>
+> **Domain expert:** "No rule rows. The imported statement is the history there. The group says so, and its Month-End Balance comes from Reconstructed Actuals, or reads 'No data before …' if the month is Unknown."
+
+## Flagged ambiguities (Month Cash Flow)
+
+- **"balance"** (new): there are now three. **Recorded Balance** (storage, transactions only), **Current Balance** (API, plus **Recurring History**) and **Month-End Balance** (one month, with a basis). The storage DTO field was renamed so `balance` never means the Recorded Balance.
+- **"fixed"** (new): a **Fixed Flow** is anything the engine applies on schedule, income included. Do not read it as "fixed costs". Say **Fixed Flow**, not "fixed expense".
+- **"Recurring History"** (updated): it used to mean only the Replay Loop's past firings. It is now a balance term, the sum that is part of the **Current Balance**. The **"history"** note above still holds: it is not the History page.
+- **"actual"** (updated): the engine's `actual` now includes **Recurring History**, so after the anchor it is no longer "stored transactions only". Never describe an actual as purely what the bank statement says.
