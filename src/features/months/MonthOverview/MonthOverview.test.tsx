@@ -358,7 +358,7 @@ describe("MonthOverview — header", () => {
       screen.getByRole("heading", { name: "Month Overview" })
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Variable spending · Recurring-Only Model")
+      screen.getByText("Fixed flows · Variable spending · Month-end balances")
     ).toBeInTheDocument();
   });
 

@@ -461,6 +461,49 @@ describe("the Month Overview topic", () => {
     expect(row).toBeDefined();
     expect(row?.body).not.toMatch(/planned|coming soon|not yet|placeholder/i);
   });
+
+  // Month Cash Flow (issue #255): the page is no longer variable-only. The
+  // blurb names the recurring flows and the month-end balance it now shows.
+  it("says in its blurb that the month shows its fixed flows and month-end balances", () => {
+    const { blurb } = MANUAL_TOPICS.month;
+
+    expect(blurb).toMatch(/fixed/i);
+    expect(blurb).toMatch(/month-end balance/i);
+  });
+
+  // The Fixed Flows card, as MonthCashFlow renders it: one group per account
+  // with recurring income and transfers, muted "In balance anchor" rows left
+  // out of "Net fixed", and a Month-End Balance captioned Actual / Projected or
+  // "No data before …".
+  describe("the Fixed flows row", () => {
+    const row = () => rowOf("month", /fixed flows/i);
+
+    it("gives the Fixed Flows card a row of its own", () => {
+      expect(row()).toBeDefined();
+    });
+
+    it("explains the rows: recurring income and transfers, per account", () => {
+      expect(row()).toBeDefined();
+      expect(row()?.body).toMatch(/recurring/i);
+      expect(row()?.body).toMatch(/income/i);
+      expect(row()?.body).toMatch(/transfer/i);
+      expect(row()?.body).toMatch(/account/i);
+    });
+
+    it("explains the muted rows, quoting In balance anchor and Net fixed", () => {
+      expect(row()).toBeDefined();
+      expect(row()?.body).toContain("In balance anchor");
+      expect(row()?.body).toContain("Net fixed");
+    });
+
+    it("explains the balance basis: Actual, Projected, or No data before", () => {
+      expect(row()).toBeDefined();
+      expect(row()?.body).toMatch(/month-end balance/i);
+      expect(row()?.body).toContain("Actual");
+      expect(row()?.body).toContain("Projected");
+      expect(row()?.body).toContain("No data before");
+    });
+  });
 });
 
 const HISTORY_SUBJECTS = [
@@ -999,6 +1042,51 @@ describe("the Settings topic", () => {
  * would document the inconsistency into permanence. It is a Live-Use Repair
  * defect, not a manual entry.
  */
+/**
+ * Month Cash Flow (issue #255): the Current Balance now counts the recurring
+ * flows since the As of date, a rule edit rewrites every month since the
+ * anchor, and re-anchoring is the correction. Accounts and Getting Started both
+ * have to say so, each in a row a reader can find.
+ */
+describe.each<ManualTopicId>(["accounts", "start"])(
+  "the %s topic on recurring flows in the balance",
+  (id) => {
+    const rows = () => MANUAL_TOPICS[id].details;
+
+    it("says the balance counts recurring flows since the As of date", () => {
+      const row = rows().find(
+        (detail) =>
+          /recurring/i.test(detail.body) &&
+          /As of/.test(detail.body) &&
+          /since/i.test(detail.body) &&
+          /balance/i.test(detail.body)
+      );
+
+      expect(row).toBeDefined();
+    });
+
+    it("says editing a rule rewrites the months since the anchor", () => {
+      const row = rows().find(
+        (detail) =>
+          /rewrit/i.test(detail.body) &&
+          /rule/i.test(detail.body) &&
+          /anchor/i.test(detail.body)
+      );
+
+      expect(row).toBeDefined();
+    });
+
+    it("names re-anchoring as the correction for a rewritten balance", () => {
+      const row = rows().find(
+        (detail) =>
+          /rewrit/i.test(detail.body) && /re-anchor/i.test(detail.body)
+      );
+
+      expect(row).toBeDefined();
+    });
+  }
+);
+
 describe("the manual's deliberate silences", () => {
   it("says nothing about Account Detail's recurring net per month", () => {
     EXPECTED_TOPIC_IDS.forEach((id) => {
