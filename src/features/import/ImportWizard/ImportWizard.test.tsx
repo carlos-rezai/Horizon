@@ -1640,6 +1640,101 @@ describe("ImportWizard — Category Proposals (#262)", () => {
 });
 
 /**
+ * Refactor 35, B1 — approving a Category Proposal while the category list
+ * refetches. The tests above answer every GET at once; a real refetch leaves
+ * a window in which the moved rows' pickers hold a value their list does not
+ * hold yet. Approval must publish the new category before it moves the rows,
+ * so no picker falls back to another category and reports it as a choice.
+ */
+
+/** Categories API double whose GETs after the POST never answer. */
+function mockCategoryApiWithRefetchInFlight(created: Category) {
+  let posted = false;
+  return vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation((_url: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posted = true;
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: async () => created,
+        } as Response);
+      }
+      if (posted) return new Promise<Response>(() => undefined);
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [...learningCategories],
+      } as Response);
+    });
+}
+
+/**
+ * The proposal preview plus an untouched row that shares the first proposed
+ * row's Counterparty but matched no Keyword Group.
+ */
+function makeSharedCounterpartyProposalPreview(): ImportPreview {
+  const base = makeProposalPreview();
+  const payee = "Muster Zahlungsdienst GmbH";
+  return {
+    ...base,
+    rows: [
+      base.rows[0],
+      { ...base.rows[1], counterparty: payee },
+      base.rows[2],
+      {
+        id: "r3",
+        date: "2026-03-18",
+        description: "Erstattung",
+        counterparty: payee,
+        amount: 1200,
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+      },
+    ],
+    summary: { ...base.summary, total: 4 },
+  };
+}
+
+describe("ImportWizard — approving a proposal while the list refetches (refactor 35)", () => {
+  it("commits the proposed rows as suggested in the new category, and moves no other row", async () => {
+    mockCategoryApiWithRefetchInFlight(dining);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(
+      learningCategories,
+      commit,
+      makeSharedCounterpartyProposalPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+    fireEvent.click(screen.getByRole("button", { name: /create category/i }));
+
+    await waitFor(() => expect(proposalStrip("Dining", 2)).toHaveLength(0));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 4 transactions/i })
+    );
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    const rows = commit.mock.calls[0][0].rows;
+    expect(rows[1]).toMatchObject({
+      category: "Dining",
+      categorySource: "suggested",
+    });
+    expect(rows[2]).toMatchObject({
+      category: "Dining",
+      categorySource: "suggested",
+    });
+    // The same-Counterparty row the user never touched is not swept along.
+    expect(rows[3]).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+});
+
+/**
  * Same-Counterparty Propagation (#263): one correction in review moves every
  * same-Counterparty-Key row the user has not touched, the followed rows'
  * pickers show it, and the whole group commits as `chosen` — so the commit
