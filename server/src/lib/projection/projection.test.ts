@@ -812,7 +812,7 @@ describe("projectBalances - annual recurrence with monthOfYear", () => {
 // ---------------------------------------------------------------------------
 
 describe("projectBalances - quarterly recurrence with monthOfYear", () => {
-  it("quarterly with monthOfYear: 1 from April fires at July (index 3), October (index 6), January (index 9) — not April (index 0)", () => {
+  it("quarterly with monthOfYear: 1 from April fires in April (the current month), July, October and January", () => {
     const accounts = [
       { id: "a1", kind: "Girokonto" as const, anchorBalance: 200000 },
     ];
@@ -834,18 +834,102 @@ describe("projectBalances - quarterly recurrence with monthOfYear", () => {
       "2026-04"
     );
 
-    // April (index 0): monthOfYear is 1 (January) — must not fire at start
-    expect(snapshots[0].accounts["a1"].projected).toBe(200000);
-    // May, June (indices 1–2): no fire
+    // April is in the January cycle: the current month's occurrence fires
+    // → 200000 - 30000 = 170000 (projected; re-anchors to actual=200000)
+    expect(snapshots[0].accounts["a1"].projected).toBe(170000);
+    // May, June: re-anchored 200000, no fire
     expect(snapshots[1].accounts["a1"].projected).toBe(200000);
     expect(snapshots[2].accounts["a1"].projected).toBe(200000);
-    // July (index 3): first fire → 200000 - 30000 = 170000
+    // July: fires → 200000 - 30000 = 170000
     expect(snapshots[3].accounts["a1"].projected).toBe(170000);
-    // October (index 6): second fire → 170000 - 30000 = 140000
+    // October: fires → 170000 - 30000 = 140000
     expect(snapshots[6].accounts["a1"].projected).toBe(140000);
-    // January (index 9): third fire → 140000 - 30000 = 110000
+    // January: fires → 140000 - 30000 = 110000
     expect(snapshots[9].accounts["a1"].projected).toBe(110000);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Pure function: legacy rules fire in the same months in both loops
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - legacy rules in the Replay and Forward loops", () => {
+  const accounts = [
+    {
+      id: "giro",
+      kind: "Girokonto" as const,
+      anchorBalance: 1000000,
+      anchorDate: "2026-02-01",
+    },
+  ];
+
+  it("a legacy quarterly rule's forward cycle counts from its source account's Anchor month, not from the run's start", () => {
+    const recurring = [
+      {
+        accountId: "giro",
+        amount: -30000,
+        frequency: "quarterly" as const,
+        dayOfMonth: 15,
+        isActive: true,
+      },
+    ];
+    // Anchored February: the cycle is Feb, May, Aug, Nov.
+    // Replay covers Feb (15 Feb passes the gate) and Mar → 970000
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-04"
+    );
+
+    // April is not in the cycle: no fire → 970000 (re-anchors to actual)
+    expect(snapshots[0].accounts["giro"].projected).toBe(970000);
+    // May is: re-anchored 1000000 − 30000 = 970000
+    expect(snapshots[1].accounts["giro"].projected).toBe(970000);
+  });
+
+  it.each([["quarterly" as const], ["annual" as const]])(
+    "a legacy %s rule fires in the same months whichever month the run starts from",
+    (frequency) => {
+      const recurring = [
+        {
+          accountId: "giro",
+          amount: -30000,
+          frequency,
+          dayOfMonth: 15,
+          isActive: true,
+        },
+      ];
+      // A currentDate before both runs keeps actual out of the picture, so
+      // projected is the replayed and forward-fired recurring alone.
+      const fromAnchor = projectBalances(
+        accounts,
+        [],
+        recurring,
+        "2026-02",
+        "2026-01",
+        36
+      );
+      const fromLater = projectBalances(
+        accounts,
+        [],
+        recurring,
+        "2026-07",
+        "2026-01",
+        31
+      );
+
+      const projectedFromAnchor = fromAnchor
+        .slice(5)
+        .map((s) => [s.month, s.accounts["giro"].projected]);
+      const projectedFromLater = fromLater.map((s) => [
+        s.month,
+        s.accounts["giro"].projected,
+      ]);
+      expect(projectedFromLater).toEqual(projectedFromAnchor);
+    }
+  );
 });
 
 // ---------------------------------------------------------------------------
