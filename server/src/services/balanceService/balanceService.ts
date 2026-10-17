@@ -30,7 +30,7 @@ export async function findAllWithBalance(
 ): Promise<AccountWithBalance[]> {
   const [recorded, recurrings] = await Promise.all([
     storage.accounts.findAllWithRecordedBalance(),
-    storage.recurringTransactions.findAll(),
+    storage.recurringTransactions.findActive(),
   ]);
   const today = todayIso();
   return recorded.map((a) =>
@@ -46,7 +46,7 @@ export async function findByIdWithBalance(
   if (!recorded) return null;
   const [accounts, recurrings] = await Promise.all([
     storage.accounts.findAll(),
-    storage.recurringTransactions.findAll(),
+    storage.recurringTransactions.findActive(),
   ]);
   return withCurrentBalance(recorded, accounts, recurrings, todayIso());
 }
