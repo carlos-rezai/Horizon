@@ -18,18 +18,23 @@ import type { Storage } from "../../storage/Storage.js";
 
 const router = Router();
 
+const MonthQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must be YYYY-MM"),
+});
+
 function getStorage(req: Request): Storage {
   return req.app.locals.storage;
 }
 
 router.get("/year-comparison", async (req, res) => {
-  const storage = getStorage(req);
-  const { month } = req.query;
-
-  if (typeof month !== "string" || !/^\d{4}-\d{2}$/.test(month)) {
-    res.status(400).json({ error: "month must match YYYY-MM" });
+  const parsed = MonthQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ issues: parsed.error.issues });
     return;
   }
+  const { month } = parsed.data;
+
+  const storage = getStorage(req);
 
   // The library only compares Jan 1 of the prior year through the viewed month,
   // so fetch exactly that two-year span instead of the whole table. The lower
@@ -53,10 +58,6 @@ router.get("/year-comparison", async (req, res) => {
   const rows = computeYearComparison(transactions, accounts, month);
 
   res.json({ month, rows });
-});
-
-const MonthQuerySchema = z.object({
-  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "month must be YYYY-MM"),
 });
 
 router.get("/month-cash-flow", async (req, res) => {
