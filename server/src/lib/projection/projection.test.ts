@@ -3,6 +3,7 @@ import request from "supertest";
 import type { Express } from "express";
 import {
   projectBalances,
+  projectMonths,
   toProjectionAccountEntry,
   toProjectionRecurringEntry,
   toProjectionTxEntry,
@@ -136,8 +137,9 @@ describe("toProjectionRecurringEntry", () => {
     dayOfMonth: 1,
   };
 
-  it("carries the account, amount and schedule, and omits unset optional fields", () => {
+  it("carries the rule's id, the account, amount and schedule, and omits unset optional fields", () => {
     expect(toProjectionRecurringEntry(salary)).toEqual({
+      id: "rec-1",
       accountId: "giro",
       amount: 300000,
       frequency: "monthly",
@@ -153,6 +155,7 @@ describe("toProjectionRecurringEntry", () => {
       monthOfYear: 11,
     };
     expect(toProjectionRecurringEntry(sondertilgung)).toEqual({
+      id: "rec-1",
       accountId: "giro",
       amount: 300000,
       frequency: "annual",
@@ -2108,5 +2111,184 @@ describe("projectBalances - Anchor Gate", () => {
     expect(forward[0].accounts["giro"].projected).toBe(90000);
     expect(forward[3].accounts["giro"].projected).toBe(30000);
     expect(replayed[0].accounts["giro"].projected).toBe(30000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// projectMonths: each monthly snapshot plus the flows applied in it
+// ---------------------------------------------------------------------------
+
+describe("projectMonths", () => {
+  // Restschuld €1,500 known on 15 Feb; a €1,000 rate on the 1st pays it down
+  // in March, is capped at the €500 left in April, and moves nothing in May.
+  const accounts = [
+    {
+      id: "giro",
+      kind: "Girokonto" as const,
+      anchorBalance: 500000,
+      anchorDate: "2026-02-15",
+    },
+    {
+      id: "savings",
+      kind: "Tagesgeld" as const,
+      anchorBalance: 0,
+      anchorDate: "2026-02-15",
+    },
+    {
+      id: "mortgage",
+      kind: "Mortgage" as const,
+      anchorBalance: 150000,
+      anchorDate: "2026-02-15",
+    },
+  ];
+  const recurring = [
+    {
+      id: "salary",
+      accountId: "giro",
+      amount: 300000,
+      frequency: "monthly" as const,
+      dayOfMonth: 25,
+    },
+    {
+      id: "save",
+      accountId: "giro",
+      amount: 20000,
+      frequency: "monthly" as const,
+      dayOfMonth: 3,
+      linkedAccountId: "savings",
+    },
+    {
+      id: "rate",
+      accountId: "giro",
+      amount: 100000,
+      frequency: "monthly" as const,
+      dayOfMonth: 1,
+      linkedAccountId: "mortgage",
+    },
+    {
+      id: "fee",
+      accountId: "mortgage",
+      amount: -1000,
+      frequency: "monthly" as const,
+      dayOfMonth: 10,
+    },
+  ];
+
+  const run = () =>
+    projectMonths(accounts, [], recurring, "2026-03", "2026-03", 6);
+  const flowsIn = (month: string) =>
+    run().find((m) => m.month === month)?.flows ?? [];
+
+  it("keeps the /projection payload: its snapshots are projectBalances' snapshots", () => {
+    const withoutFlows = run().map((m) => {
+      const { flows: _flows, ...snapshot } = m;
+      return snapshot;
+    });
+
+    expect(withoutFlows).toEqual(
+      projectBalances(accounts, [], recurring, "2026-03", "2026-03", 6)
+    );
+  });
+
+  it("reports a plain leg with its rule id, date and signed amount", () => {
+    expect(flowsIn("2026-05")).toContainEqual({
+      recurringId: "salary",
+      accountId: "giro",
+      date: "2026-05-25",
+      amount: 300000,
+    });
+  });
+
+  it("reports a transfer as a source leg and a destination leg, each naming its counterpart", () => {
+    const flows = flowsIn("2026-05");
+
+    expect(flows).toContainEqual({
+      recurringId: "save",
+      accountId: "giro",
+      date: "2026-05-03",
+      amount: -20000,
+      counterpartId: "savings",
+      side: "source",
+    });
+    expect(flows).toContainEqual({
+      recurringId: "save",
+      accountId: "savings",
+      date: "2026-05-03",
+      amount: 20000,
+      counterpartId: "giro",
+      side: "destination",
+    });
+  });
+
+  it("reports the capped Repayment Transfer in the payoff month", () => {
+    const rate = flowsIn("2026-04").filter((f) => f.recurringId === "rate");
+
+    expect(rate).toEqual([
+      {
+        recurringId: "rate",
+        accountId: "giro",
+        date: "2026-04-01",
+        amount: -50000,
+        counterpartId: "mortgage",
+        side: "source",
+      },
+      {
+        recurringId: "rate",
+        accountId: "mortgage",
+        date: "2026-04-01",
+        amount: 50000,
+        counterpartId: "giro",
+        side: "destination",
+      },
+    ]);
+  });
+
+  it("reports the full Repayment Transfer before the payoff month", () => {
+    const toMortgage = flowsIn("2026-03").find(
+      (f) => f.recurringId === "rate" && f.accountId === "mortgage"
+    );
+
+    expect(toMortgage?.amount).toBe(100000);
+  });
+
+  it("reports no flow for a Repayment Transfer capped to zero after payoff", () => {
+    expect(flowsIn("2026-05").filter((f) => f.recurringId === "rate")).toEqual(
+      []
+    );
+  });
+
+  it("reports no flow for a plain recurring on a Mortgage", () => {
+    for (const m of run()) {
+      expect(m.flows.filter((f) => f.recurringId === "fee")).toEqual([]);
+    }
+  });
+
+  it("reports quarterly and annual rules only in the months they fire", () => {
+    const rules = [
+      {
+        id: "insurance",
+        accountId: "giro",
+        amount: -30000,
+        frequency: "quarterly" as const,
+        dayOfMonth: 15,
+        monthOfYear: 2,
+      },
+      {
+        id: "tax",
+        accountId: "giro",
+        amount: -12000,
+        frequency: "annual" as const,
+        dayOfMonth: 31,
+        monthOfYear: 6,
+      },
+    ];
+    const months = projectMonths(accounts, [], rules, "2026-03", "2026-03", 6);
+    const firing = (id: string) =>
+      months
+        .filter((m) => m.flows.some((f) => f.recurringId === id))
+        .map((m) => m.month);
+
+    expect(firing("insurance")).toEqual(["2026-05", "2026-08"]);
+    expect(firing("tax")).toEqual(["2026-06"]);
   });
 });

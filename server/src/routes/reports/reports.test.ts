@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import request from "supertest";
 import type { Express } from "express";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
@@ -162,5 +170,221 @@ describe("GET /reports/year-comparison — ?month validation", () => {
   it("returns 400 for a non-date month value", async () => {
     const res = await request(app).get("/reports/year-comparison?month=June");
     expect(res.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /reports/month-cash-flow?month=YYYY-MM
+// ---------------------------------------------------------------------------
+
+interface FixedFlowBody {
+  kind: string;
+  recurringId?: string;
+  date: string;
+  description: string;
+  category?: string;
+  amount: number;
+  counterpartId?: string;
+  side?: string;
+}
+
+interface MonthCashFlowBody {
+  month: string;
+  accounts: { accountId: string; flows: FixedFlowBody[] }[];
+}
+
+async function addRecurring(
+  accountId: string,
+  overrides: Record<string, unknown> = {}
+) {
+  const res = await request(app)
+    .post("/recurring-transactions")
+    .send({
+      accountId,
+      amount: 300000,
+      description: "Salary",
+      category: "Income",
+      frequency: "monthly",
+      dayOfMonth: 25,
+      ...overrides,
+    });
+  return res.body as { id: string };
+}
+
+async function monthCashFlow(month: string) {
+  const res = await request(app).get(`/reports/month-cash-flow?month=${month}`);
+  return res as typeof res & { body: MonthCashFlowBody };
+}
+
+function groupOf(body: MonthCashFlowBody, accountId: string) {
+  return body.accounts.find((g) => g.accountId === accountId);
+}
+
+describe("GET /reports/month-cash-flow", () => {
+  // The route reads "the current month" from the clock; only `Date` is faked
+  // so supertest's real socket keeps working.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"));
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
+  it("answers 400 with issues on a malformed month", async () => {
+    for (const month of ["2026-7", "july", ""]) {
+      const res = await request(app).get(
+        `/reports/month-cash-flow?month=${month}`
+      );
+      expect(res.status).toBe(400);
+      expect(res.body.issues).toBeDefined();
+    }
+  });
+
+  it("answers 400 with issues when the month is missing", async () => {
+    const res = await request(app).get("/reports/month-cash-flow");
+
+    expect(res.status).toBe(400);
+    expect(res.body.issues).toBeDefined();
+  });
+
+  it("lists a future month's recurring flows per account, running forward", async () => {
+    const giro = await createAccount({ anchorDate: "2026-07-01" });
+    const savings = await createAccount({
+      kind: "Tagesgeld",
+      name: "Savings",
+      anchorDate: "2026-07-01",
+    });
+    const salary = await addRecurring(giro.id);
+    const plan = await addRecurring(giro.id, {
+      amount: 20000,
+      description: "Savings plan",
+      category: "Transfer",
+      dayOfMonth: 3,
+      linkedAccountId: savings.id,
+    });
+
+    const res = await monthCashFlow("2026-09");
+
+    expect(res.status).toBe(200);
+    expect(res.body.month).toBe("2026-09");
+    expect(groupOf(res.body, giro.id)?.flows).toEqual([
+      expect.objectContaining({
+        kind: "recurring",
+        recurringId: plan.id,
+        date: "2026-09-03",
+        description: "Savings plan",
+        amount: -20000,
+        counterpartId: savings.id,
+        side: "source",
+      }),
+      expect.objectContaining({
+        kind: "recurring",
+        recurringId: salary.id,
+        date: "2026-09-25",
+        description: "Salary",
+        category: "Income",
+        amount: 300000,
+      }),
+    ]);
+    expect(groupOf(res.body, savings.id)?.flows).toEqual([
+      expect.objectContaining({
+        recurringId: plan.id,
+        amount: 20000,
+        counterpartId: giro.id,
+        side: "destination",
+      }),
+    ]);
+  });
+
+  it("lists the current month's recurring flows", async () => {
+    const giro = await createAccount({ anchorDate: "2026-07-01" });
+    await addRecurring(giro.id);
+
+    const res = await monthCashFlow("2026-07");
+
+    expect(groupOf(res.body, giro.id)?.flows).toEqual([
+      expect.objectContaining({ date: "2026-07-25", amount: 300000 }),
+    ]);
+  });
+
+  it("derives a past month from History's run, from the History Span's start", async () => {
+    // Restschuld €1,500 known on 10 Jan: the €1,000 rate pays it down in
+    // February and is capped at the €500 left in March — only a run that
+    // starts at the History Span sees that.
+    const giro = await createAccount({
+      anchorBalance: 500000,
+      anchorDate: "2026-01-10",
+    });
+    const mortgage = await createAccount({
+      kind: "Mortgage",
+      name: "Mortgage",
+      anchorBalance: 150000,
+      anchorDate: "2026-01-10",
+    });
+    const rate = await addRecurring(giro.id, {
+      amount: 100000,
+      description: "Darlehen",
+      category: "Housing",
+      dayOfMonth: 1,
+      linkedAccountId: mortgage.id,
+    });
+
+    const feb = await monthCashFlow("2026-02");
+    const mar = await monthCashFlow("2026-03");
+    const apr = await monthCashFlow("2026-04");
+
+    expect(feb.status).toBe(200);
+    expect(groupOf(feb.body, mortgage.id)?.flows).toEqual([
+      expect.objectContaining({ recurringId: rate.id, amount: 100000 }),
+    ]);
+    expect(groupOf(mar.body, mortgage.id)?.flows).toEqual([
+      expect.objectContaining({
+        recurringId: rate.id,
+        amount: 50000,
+        counterpartId: giro.id,
+        side: "destination",
+      }),
+    ]);
+    expect(groupOf(apr.body, mortgage.id)?.flows).toEqual([]);
+  });
+
+  it("returns empty groups for a month before the History Span", async () => {
+    const giro = await createAccount({ anchorDate: "2026-01-10" });
+    await addRecurring(giro.id);
+
+    const res = await monthCashFlow("2025-11");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      month: "2025-11",
+      accounts: [{ accountId: giro.id, flows: [] }],
+    });
+  });
+
+  it("returns one group per account of every kind, in sortOrder", async () => {
+    const giro = await createAccount({ anchorDate: "2026-07-01" });
+    const etf = await createAccount({
+      kind: "Investment",
+      name: "ETF",
+      anchorDate: "2026-07-01",
+    });
+    const visa = await createAccount({
+      kind: "CreditCard",
+      name: "Visa",
+      anchorDate: "2026-07-01",
+    });
+    await request(app)
+      .patch("/accounts/reorder")
+      .send({ orderedIds: [visa.id, giro.id, etf.id] });
+
+    const res = await monthCashFlow("2026-09");
+
+    expect(res.body.accounts.map((g) => g.accountId)).toEqual([
+      visa.id,
+      giro.id,
+      etf.id,
+    ]);
   });
 });

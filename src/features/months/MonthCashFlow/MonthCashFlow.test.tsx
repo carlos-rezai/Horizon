@@ -1,0 +1,341 @@
+// @vitest-environment jsdom
+import { render, screen, cleanup, within } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { ThemeProvider } from "styled-components";
+import { MemoryRouter } from "react-router-dom";
+import { theme } from "../../../tokens";
+import type { AccountWithBalance } from "../../../types/account";
+import type {
+  FixedFlow,
+  MonthCashFlowReport,
+} from "../../../types/monthCashFlow";
+import MonthCashFlow from "./MonthCashFlow";
+
+// Accounts in their sortOrder: every kind, the Mortgage included.
+const accounts: AccountWithBalance[] = [
+  {
+    id: "main",
+    kind: "Girokonto",
+    name: "Main",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+    color: "#7FA7D9",
+  },
+  {
+    id: "savings",
+    kind: "Tagesgeld",
+    name: "Savings",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+    color: "#8FBF8F",
+  },
+  {
+    id: "mortgage",
+    kind: "Mortgage",
+    name: "Mortgage",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+  },
+  {
+    id: "etf",
+    kind: "Investment",
+    name: "ETF",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+  },
+];
+
+function flow(overrides: Partial<FixedFlow>): FixedFlow {
+  return {
+    kind: "recurring",
+    recurringId: "rule",
+    date: "2026-09-01",
+    description: "Rule",
+    amount: 0,
+    inAnchor: false,
+    ...overrides,
+  };
+}
+
+const report: MonthCashFlowReport = {
+  month: "2026-09",
+  accounts: [
+    {
+      accountId: "main",
+      flows: [
+        flow({
+          recurringId: "rate",
+          date: "2026-09-01",
+          description: "Darlehen",
+          category: "Housing",
+          amount: -100000,
+          counterpartId: "mortgage",
+          side: "source",
+        }),
+        flow({
+          recurringId: "save",
+          date: "2026-09-03",
+          description: "Savings plan",
+          category: "Transfer",
+          amount: -20000,
+          counterpartId: "savings",
+          side: "source",
+        }),
+        flow({
+          recurringId: "netflix",
+          date: "2026-09-12",
+          description: "Netflix",
+          category: "Entertainment",
+          amount: -1299,
+        }),
+        flow({
+          recurringId: "salary",
+          date: "2026-09-25",
+          description: "Salary",
+          category: "Income",
+          amount: 300000,
+        }),
+      ],
+    },
+    {
+      accountId: "savings",
+      flows: [
+        flow({
+          recurringId: "save",
+          date: "2026-09-03",
+          description: "Savings plan",
+          category: "Transfer",
+          amount: 20000,
+          counterpartId: "main",
+          side: "destination",
+        }),
+      ],
+    },
+    {
+      accountId: "mortgage",
+      flows: [
+        flow({
+          recurringId: "rate",
+          date: "2026-09-01",
+          description: "Darlehen",
+          category: "Housing",
+          amount: 100000,
+          counterpartId: "main",
+          side: "destination",
+        }),
+      ],
+    },
+    { accountId: "etf", flows: [] },
+  ],
+};
+
+function renderCard(r: MonthCashFlowReport = report) {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <MonthCashFlow accounts={accounts} report={r} monthLabel="September" />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+}
+
+function groups(): HTMLElement[] {
+  return screen.getAllByTestId("fixed-flow-group");
+}
+
+/** A group, found by the account name in its heading. */
+function groupFor(name: string): HTMLElement {
+  const group = groups().find(
+    (g) => within(g).getByRole("heading").textContent === name
+  );
+  if (!group) throw new Error(`no group headed ${name}`);
+  return group;
+}
+
+function rowFor(group: HTMLElement, description: string): HTMLElement {
+  const row = within(group)
+    .getAllByTestId("fixed-flow-row")
+    .find((r) => within(r).queryByText(description));
+  if (!row) throw new Error(`no row ${description}`);
+  return row;
+}
+
+afterEach(() => {
+  cleanup();
+});
+
+describe("MonthCashFlow — card", () => {
+  it("heads the card Fixed Flows, titled for the month", () => {
+    renderCard();
+
+    expect(screen.getByText("Fixed Flows")).toBeInTheDocument();
+    expect(screen.getByText("Fixed in September")).toBeInTheDocument();
+  });
+
+  it("renders one group per account, every kind included, in the report's order", () => {
+    renderCard();
+
+    expect(
+      groups().map((g) => within(g).getByRole("heading").textContent)
+    ).toEqual(["Main", "Savings", "Mortgage", "ETF"]);
+  });
+
+  it("heads each group with the account's Chip and name", () => {
+    renderCard();
+
+    const header = within(groupFor("Main")).getByTestId(
+      "fixed-flow-group-head"
+    );
+    expect(within(header).getByTestId("chip")).toBeInTheDocument();
+    expect(within(header).getByText("Main")).toBeInTheDocument();
+  });
+
+  it("does not tab the accounts", () => {
+    renderCard();
+
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  });
+});
+
+describe("MonthCashFlow — rows", () => {
+  it("lists each account's flows in date order", () => {
+    renderCard();
+
+    const order = ["Darlehen", "Savings plan", "Netflix", "Salary"];
+    const descriptions = within(groupFor("Main"))
+      .getAllByTestId("fixed-flow-row")
+      .map((r) => order.find((d) => within(r).queryByText(d)));
+    expect(descriptions).toEqual(order);
+  });
+
+  it("shows each row's day block, description and category", () => {
+    renderCard();
+
+    const salary = rowFor(groupFor("Main"), "Salary");
+    expect(within(salary).getByText("25")).toBeInTheDocument();
+    expect(within(salary).getByText("Sep")).toBeInTheDocument();
+    expect(within(salary).getByText("Income")).toBeInTheDocument();
+  });
+
+  it("signs an inflow green with a plus and an outflow red with a minus", () => {
+    renderCard();
+
+    const main = groupFor("Main");
+    expect(
+      within(rowFor(main, "Salary")).getByText(/^\+3\.000,00/)
+    ).toBeInTheDocument();
+    expect(
+      within(rowFor(main, "Netflix")).getByText(/^-12,99/)
+    ).toBeInTheDocument();
+  });
+
+  it("marks a transfer's source leg red with an arrow to its destination", () => {
+    renderCard();
+
+    const row = rowFor(groupFor("Main"), "Savings plan");
+    expect(within(row).getByText(/^-200,00/)).toBeInTheDocument();
+    const line = within(row).getByTestId("fixed-flow-counterpart");
+    expect(line.textContent).toContain("→");
+    expect(line.textContent).toContain("Savings");
+    expect(line.textContent).not.toContain("from");
+    expect(within(line).getByTestId("chip")).toBeInTheDocument();
+  });
+
+  it("marks a transfer's destination leg green with an arrow from its source", () => {
+    renderCard();
+
+    const row = rowFor(groupFor("Savings"), "Savings plan");
+    expect(within(row).getByText(/^\+200,00/)).toBeInTheDocument();
+    const line = within(row).getByTestId("fixed-flow-counterpart");
+    expect(line.textContent).toContain("←");
+    expect(line.textContent).toContain("from Main");
+    expect(within(line).getByTestId("chip")).toBeInTheDocument();
+  });
+
+  it("shows a Repayment Transfer as a green inflow on the Mortgage", () => {
+    renderCard();
+
+    const row = rowFor(groupFor("Mortgage"), "Darlehen");
+    expect(within(row).getByText(/^\+1\.000,00/)).toBeInTheDocument();
+    expect(
+      within(row).getByTestId("fixed-flow-counterpart").textContent
+    ).toContain("from Main");
+  });
+
+  it("gives a plain leg no counterpart line", () => {
+    renderCard();
+
+    const row = rowFor(groupFor("Main"), "Salary");
+    expect(
+      within(row).queryByTestId("fixed-flow-counterpart")
+    ).not.toBeInTheDocument();
+  });
+
+  it("links every recurring row to its source account page", () => {
+    renderCard();
+
+    const linkOf = (group: string, description: string) =>
+      within(rowFor(groupFor(group), description)).getByRole("link");
+
+    expect(linkOf("Main", "Salary")).toHaveAttribute("href", "/accounts/main");
+    expect(linkOf("Main", "Savings plan")).toHaveAttribute(
+      "href",
+      "/accounts/main"
+    );
+    expect(linkOf("Savings", "Savings plan")).toHaveAttribute(
+      "href",
+      "/accounts/main"
+    );
+    expect(linkOf("Mortgage", "Darlehen")).toHaveAttribute(
+      "href",
+      "/accounts/main"
+    );
+  });
+
+  it("offers no editing", () => {
+    renderCard();
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});
+
+describe("MonthCashFlow — group footer and empty state", () => {
+  it("closes a group with a Net fixed footer summing its rows", () => {
+    renderCard();
+
+    // -1,000.00 - 200.00 - 12.99 + 3,000.00 = +1,787.01
+    const footer = within(groupFor("Main")).getByTestId("fixed-flow-net");
+    expect(footer).toHaveTextContent("Net fixed");
+    expect(within(footer).getByText(/^\+1\.787,01/)).toBeInTheDocument();
+  });
+
+  it("nets a single-row group to that row", () => {
+    renderCard();
+
+    const footer = within(groupFor("Savings")).getByTestId("fixed-flow-net");
+    expect(within(footer).getByText(/^\+200,00/)).toBeInTheDocument();
+  });
+
+  it("reads 'No fixed flows this month.' for an account without flows", () => {
+    renderCard();
+
+    const etf = groupFor("ETF");
+    expect(
+      within(etf).getByText("No fixed flows this month.")
+    ).toBeInTheDocument();
+    expect(within(etf).queryAllByTestId("fixed-flow-row")).toHaveLength(0);
+  });
+
+  it("reads 'No fixed flows this month.' in every group of an empty report", () => {
+    renderCard({
+      month: "2025-11",
+      accounts: accounts.map((a) => ({ accountId: a.id, flows: [] })),
+    });
+
+    expect(screen.getAllByText("No fixed flows this month.")).toHaveLength(4);
+  });
+});

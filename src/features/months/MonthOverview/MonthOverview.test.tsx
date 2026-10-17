@@ -34,6 +34,11 @@ vi.mock("../useYearComparison/useYearComparison", () => ({
   useYearComparison: (...args: unknown[]) => mockUseYearComparison(...args),
 }));
 
+const mockUseMonthCashFlow = vi.fn();
+vi.mock("../useMonthCashFlow/useMonthCashFlow", () => ({
+  useMonthCashFlow: (...args: unknown[]) => mockUseMonthCashFlow(...args),
+}));
+
 const mockUseImportStartDates = vi.fn();
 vi.mock("../useImportStartDates/useImportStartDates", () => ({
   useImportStartDates: (...args: unknown[]) => mockUseImportStartDates(...args),
@@ -159,6 +164,41 @@ const transactions: Transaction[] = [
   },
 ];
 
+/** June's Fixed Flows: a salary on Main, nothing on Visa or the Mortgage. */
+const cashFlowReport = {
+  month: "2026-06",
+  accounts: [
+    {
+      accountId: "main",
+      flows: [
+        {
+          kind: "recurring",
+          recurringId: "salary",
+          date: "2026-06-25",
+          description: "Salary",
+          category: "Income",
+          amount: 300000,
+          inAnchor: false,
+        },
+      ],
+    },
+    { accountId: "visa", flows: [] },
+    { accountId: "mortgage", flows: [] },
+  ],
+};
+
+const LOADED_CASH_FLOW = {
+  report: cashFlowReport,
+  isLoading: false,
+  error: null,
+};
+
+const PENDING_CASH_FLOW = {
+  report: null,
+  isLoading: true,
+  error: null,
+};
+
 const refetch = vi.fn();
 const create = vi.fn();
 const update = vi.fn();
@@ -181,6 +221,7 @@ beforeEach(() => {
     startDates: [],
     isLoading: false,
   });
+  mockUseMonthCashFlow.mockReturnValue(LOADED_CASH_FLOW);
 });
 
 afterEach(() => {
@@ -408,6 +449,7 @@ const LOADED_COMPARISON = {
 
 const SECTION_SKELETONS = [
   "month-stat-strip-skeleton",
+  "month-cash-flow-skeleton",
   "spending-list-skeleton",
   "month-breakdown-skeleton",
   "year-comparison-skeleton",
@@ -418,8 +460,9 @@ const SECTION_SKELETONS = [
  *  #205) out of the count — the layout being asserted is the sections'. */
 function sectionOrder(): string[] {
   return screen
-    .getAllByTestId(/^month-section-[a-z]+$/)
-    .map((el) => el.getAttribute("data-testid") ?? "");
+    .getAllByTestId(/^month-section-[a-z-]+$/)
+    .map((el) => el.getAttribute("data-testid") ?? "")
+    .filter((id) => !id.endsWith("-fade"));
 }
 
 describe("MonthOverview — progressive reveal", () => {
@@ -430,6 +473,7 @@ describe("MonthOverview — progressive reveal", () => {
       isLoading: true,
       error: null,
     });
+    mockUseMonthCashFlow.mockReturnValue(PENDING_CASH_FLOW);
   });
 
   it("renders the page frame and every section skeleton on the first load of a month", () => {
@@ -483,6 +527,7 @@ describe("MonthOverview — progressive reveal", () => {
   it("swaps every section to its content once the month's data lands", () => {
     mockUseAllMonthTransactions.mockReturnValue(LOADED_TRANSACTIONS);
     mockUseYearComparison.mockReturnValue(LOADED_COMPARISON);
+    mockUseMonthCashFlow.mockReturnValue(LOADED_CASH_FLOW);
     renderOverview();
 
     const section = (name: string) =>
@@ -494,6 +539,7 @@ describe("MonthOverview — progressive reveal", () => {
     expect(section("spending").getByText("Cat food")).toBeInTheDocument();
     expect(section("breakdown").getByText("By category")).toBeInTheDocument();
     expect(section("comparison").getByTestId("yc-row")).toBeInTheDocument();
+    expect(section("cash-flow").getByText("Salary")).toBeInTheDocument();
     expect(screen.queryAllByTestId(/skeleton/)).toHaveLength(0);
   });
 
@@ -501,10 +547,11 @@ describe("MonthOverview — progressive reveal", () => {
     const { rerender } = renderOverview("2026-06", { accountsLoading: true });
 
     const whileLoading = sectionOrder();
-    expect(whileLoading).toHaveLength(4);
+    expect(whileLoading).toHaveLength(5);
 
     mockUseAllMonthTransactions.mockReturnValue(LOADED_TRANSACTIONS);
     mockUseYearComparison.mockReturnValue(LOADED_COMPARISON);
+    mockUseMonthCashFlow.mockReturnValue(LOADED_CASH_FLOW);
     rerender(overviewTree("2026-06"));
 
     expect(sectionOrder()).toEqual(whileLoading);
@@ -722,5 +769,105 @@ describe("MonthOverview — month cross-fade", () => {
       "data-motion",
       "none"
     );
+  });
+});
+
+describe("MonthOverview — Fixed Flows card", () => {
+  it("reads the viewed month's cash flow report", () => {
+    renderOverview("2026-09");
+
+    expect(mockUseMonthCashFlow).toHaveBeenCalledWith("2026-09");
+  });
+
+  it("renders the card in its own section, between the stat strip and the columns", () => {
+    renderOverview();
+
+    expect(sectionOrder()).toEqual([
+      "month-section-stats",
+      "month-section-cash-flow",
+      "month-section-spending",
+      "month-section-breakdown",
+      "month-section-comparison",
+    ]);
+  });
+
+  it("lists the month's recurring flows per account", () => {
+    renderOverview();
+
+    const card = within(screen.getByTestId("month-section-cash-flow"));
+    expect(card.getByText("Fixed Flows")).toBeInTheDocument();
+    expect(card.getByText("Salary")).toBeInTheDocument();
+    expect(card.getAllByTestId("fixed-flow-group")).toHaveLength(3);
+  });
+
+  it("includes the accounts Variable Spending leaves out, such as the Mortgage", () => {
+    renderOverview();
+
+    expect(
+      within(screen.getByTestId("month-section-cash-flow")).getByText(
+        "Mortgage"
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows its layout-matched skeleton while the report loads, without holding back the other sections", () => {
+    mockUseMonthCashFlow.mockReturnValue(PENDING_CASH_FLOW);
+    renderOverview();
+
+    const section = within(screen.getByTestId("month-section-cash-flow"));
+    expect(section.getByTestId("month-cash-flow-skeleton")).toBeInTheDocument();
+    expect(section.getAllByTestId("skeleton").length).toBeGreaterThan(0);
+    expect(
+      within(screen.getByTestId("month-section-spending")).getByText("Cat food")
+    ).toBeInTheDocument();
+  });
+
+  it("shows its skeleton while the accounts load", () => {
+    renderOverview("2026-06", { accountsLoading: true });
+
+    expect(
+      within(screen.getByTestId("month-section-cash-flow")).getByTestId(
+        "month-cash-flow-skeleton"
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows a failed report as the section's error state without blanking the page", () => {
+    mockUseMonthCashFlow.mockReturnValue({
+      report: null,
+      isLoading: false,
+      error: "Report unavailable",
+    });
+    renderOverview();
+
+    expect(
+      within(screen.getByTestId("month-section-cash-flow")).getByText(
+        /Report unavailable/
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Month Overview" })
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("month-section-spending")).getByText("Cat food")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("month-stat-strip")).toBeInTheDocument();
+  });
+
+  it("cross-fades with the month's content, so reduced motion holds for it too", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+    renderOverview();
+
+    const fade = screen.getByTestId("month-content-fade");
+    expect(fade).toHaveAttribute("data-motion", "none");
+    expect(
+      within(fade).getByTestId("month-section-cash-flow")
+    ).toBeInTheDocument();
   });
 });
