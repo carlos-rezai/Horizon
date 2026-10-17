@@ -5,7 +5,8 @@ import type {
   TransferCreateInput,
 } from "../../storage/types.js";
 import { balanceAt } from "../balanceAnchor/balanceAnchor.js";
-import { endOfMonth } from "../date/date.js";
+import { addMonths, endOfMonth } from "../date/date.js";
+import { occurrenceDate } from "../recurringOccurrence/recurringOccurrence.js";
 import { recurringHistory } from "../recurringHistory/recurringHistory.js";
 import type { MonthlySnapshot } from "../projection/projection.js";
 
@@ -21,37 +22,9 @@ export interface InsufficientFundsWarning {
   settlementDay: number;
 }
 
-function parseYearMonth(date: string): { year: number; month: number } {
-  const [y, m] = date.split("-");
-  return { year: Number(y), month: Number(m) };
-}
-
-function nextYearMonth(
-  year: number,
-  month: number
-): { year: number; month: number } {
-  return month === 12
-    ? { year: year + 1, month: 1 }
-    : { year, month: month + 1 };
-}
-
-function compareYearMonth(
-  y1: number,
-  m1: number,
-  y2: number,
-  m2: number
-): number {
-  return y1 !== y2 ? y1 - y2 : m1 - m2;
-}
-
-function firstDayOfNextMonth(year: number, month: number): string {
-  const { year: ny, month: nm } = nextYearMonth(year, month);
-  return `${ny}-${String(nm).padStart(2, "0")}-01`;
-}
-
-function formatDate(year: number, month: number, day: number): string {
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
+/** The description and category an auto-settlement is booked with. */
+export const SETTLEMENT_DESCRIPTION = "Auto-settlement";
+export const SETTLEMENT_CATEGORY = "Transfer";
 
 export function computeMissingSettlements(
   accounts: Account[],
@@ -60,30 +33,32 @@ export function computeMissingSettlements(
   recurrings: RecurringTransaction[] = []
 ): SettlementTransferInput[] {
   const result: SettlementTransferInput[] = [];
-  const asOf_ = parseYearMonth(asOf);
+  const lastMonth = asOf.slice(0, 7);
 
   for (const cc of accounts) {
     if (cc.kind !== "CreditCard") continue;
     if (!cc.linkedAccountId || !cc.settlementDay || !cc.linkedSince) continue;
 
-    const start = parseYearMonth(cc.linkedSince);
     const { linkedAccountId, settlementDay } = cc;
 
     const ccTxs = transactions.filter((tx) => tx.accountId === cc.id);
     const virtualSettlements: Array<{ date: string; amount: number }> = [];
 
-    let { year, month } = start;
-    while (compareYearMonth(year, month, asOf_.year, asOf_.month) <= 0) {
-      const cutoff = firstDayOfNextMonth(year, month);
-      const { year: sYear, month: sMonth } = nextYearMonth(year, month);
-      const settlementDate = formatDate(sYear, sMonth, settlementDay);
+    for (
+      let month = cc.linkedSince.slice(0, 7);
+      month <= lastMonth;
+      month = addMonths(month, 1)
+    ) {
+      const nextMonth = addMonths(month, 1);
+      const cutoff = `${nextMonth}-01`;
+      const settlementDate = occurrenceDate(nextMonth, settlementDay);
 
       const alreadyExists =
         ccTxs.some((tx) => tx.isAutoSettlement && tx.date === settlementDate) ||
         virtualSettlements.some((v) => v.date === settlementDate);
 
       if (!alreadyExists) {
-        const closingDate = endOfMonth(formatDate(year, month, 1).slice(0, 7));
+        const closingDate = endOfMonth(month);
         const closingBalance =
           balanceAt(
             cc,
@@ -98,15 +73,13 @@ export function computeMissingSettlements(
             toAccountId: cc.id,
             amount,
             date: settlementDate,
-            description: "Auto-settlement",
-            category: "Transfer",
+            description: SETTLEMENT_DESCRIPTION,
+            category: SETTLEMENT_CATEGORY,
             isAutoSettlement: true,
           });
           virtualSettlements.push({ date: settlementDate, amount });
         }
       }
-
-      ({ year, month } = nextYearMonth(year, month));
     }
   }
 

@@ -14,6 +14,10 @@ import {
   sourceAnchorMonth,
   type TransferSide,
 } from "../recurringOccurrence/recurringOccurrence.js";
+import {
+  SETTLEMENT_CATEGORY,
+  SETTLEMENT_DESCRIPTION,
+} from "../settlement/settlement.js";
 
 /**
  * One row of an account's Fixed Flows: a recurring leg the engine applied in
@@ -52,9 +56,6 @@ export interface SettlementFixedFlow {
 }
 
 export type FixedFlow = RecurringFixedFlow | SettlementFixedFlow;
-
-const SETTLEMENT_DESCRIPTION = "Auto-settlement";
-const SETTLEMENT_CATEGORY = "Transfer";
 
 export interface AccountFixedFlows {
   accountId: string;
