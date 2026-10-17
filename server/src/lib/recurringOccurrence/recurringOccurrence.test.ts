@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   firesInMonth,
+  legBalanceDelta,
   occurrenceDate,
+  occurrenceLegs,
   passesAnchorGate,
+  sourceAnchorMonth,
+  type LegAccount,
 } from "./recurringOccurrence.js";
 import type { Frequency } from "../../storage/types.js";
 
@@ -152,5 +156,215 @@ describe("passesAnchorGate", () => {
 
   it("passes every leg of an account with no anchor", () => {
     expect(passesAnchorGate(undefined, "2020-01-01")).toBe(true);
+  });
+});
+
+describe("sourceAnchorMonth", () => {
+  const accounts = new Map<string, LegAccount>([
+    ["giro", { kind: "Girokonto", anchorDate: "2026-06-15" }],
+    ["tg", { kind: "Tagesgeld" }],
+  ]);
+
+  it("is the source account's Anchor month", () => {
+    expect(sourceAnchorMonth({ accountId: "giro" }, accounts, "2026-01")).toBe(
+      "2026-06"
+    );
+  });
+
+  it("falls back to the run's first month without an Anchor Date", () => {
+    expect(sourceAnchorMonth({ accountId: "tg" }, accounts, "2026-01")).toBe(
+      "2026-01"
+    );
+  });
+
+  it("falls back to the run's first month for an unknown account", () => {
+    expect(sourceAnchorMonth({ accountId: "gone" }, accounts, "2026-01")).toBe(
+      "2026-01"
+    );
+  });
+});
+
+describe("occurrenceLegs", () => {
+  // Every account anchored 15 Jun; a firing on the 20th passes every gate,
+  // one on the 10th passes none.
+  const accounts = new Map<string, LegAccount>([
+    ["giro", { kind: "Girokonto", anchorDate: "2026-06-15" }],
+    ["tg", { kind: "Tagesgeld", anchorDate: "2026-06-15" }],
+    ["mortgage", { kind: "Mortgage", anchorDate: "2026-06-15" }],
+    ["late", { kind: "Tagesgeld", anchorDate: "2026-07-15" }],
+  ]);
+  const noCap = (): number => Number.POSITIVE_INFINITY;
+
+  it("a plain rule moves its own account", () => {
+    expect(
+      occurrenceLegs(
+        { accountId: "giro", amount: 300000 },
+        "2026-07-20",
+        accounts,
+        noCap
+      )
+    ).toEqual([{ accountId: "giro", amount: 300000, passesGate: true }]);
+  });
+
+  it("a plain rule before its account's anchor is blocked", () => {
+    expect(
+      occurrenceLegs(
+        { accountId: "giro", amount: -5000 },
+        "2026-06-10",
+        accounts,
+        noCap
+      )
+    ).toEqual([{ accountId: "giro", amount: -5000, passesGate: false }]);
+  });
+
+  it("a plain rule on a Mortgage yields no legs", () => {
+    expect(
+      occurrenceLegs(
+        { accountId: "mortgage", amount: 150000 },
+        "2026-07-20",
+        accounts,
+        noCap
+      )
+    ).toEqual([]);
+  });
+
+  it("a transfer moves the source down and the destination up", () => {
+    expect(
+      occurrenceLegs(
+        { accountId: "giro", amount: 50000, linkedAccountId: "tg" },
+        "2026-07-20",
+        accounts,
+        noCap
+      )
+    ).toEqual([
+      {
+        accountId: "giro",
+        amount: -50000,
+        counterpartId: "tg",
+        side: "source",
+        passesGate: true,
+      },
+      {
+        accountId: "tg",
+        amount: 50000,
+        counterpartId: "giro",
+        side: "destination",
+        passesGate: true,
+      },
+    ]);
+  });
+
+  it("a transfer whose destination is gated blocks only the destination", () => {
+    const legs = occurrenceLegs(
+      { accountId: "giro", amount: 50000, linkedAccountId: "late" },
+      "2026-07-10",
+      accounts,
+      noCap
+    );
+    expect(legs.map((l) => [l.accountId, l.amount, l.passesGate])).toEqual([
+      ["giro", -50000, true],
+      ["late", 50000, false],
+    ]);
+  });
+
+  it("a transfer whose source is gated blocks only the source", () => {
+    const legs = occurrenceLegs(
+      { accountId: "late", amount: 50000, linkedAccountId: "giro" },
+      "2026-07-10",
+      accounts,
+      noCap
+    );
+    expect(legs.map((l) => [l.accountId, l.amount, l.passesGate])).toEqual([
+      ["late", -50000, false],
+      ["giro", 50000, true],
+    ]);
+  });
+
+  describe("a Repayment Transfer into a Mortgage", () => {
+    const repayment = {
+      accountId: "giro",
+      amount: 150000,
+      linkedAccountId: "mortgage",
+    };
+    const legsOf = (
+      rule: typeof repayment,
+      date: string,
+      restschuld: number
+    ): [string, number, boolean][] =>
+      occurrenceLegs(rule, date, accounts, () => restschuld).map((l) => [
+        l.accountId,
+        l.amount,
+        l.passesGate,
+      ]);
+
+    it("is uncapped below the remaining Restschuld", () => {
+      expect(legsOf(repayment, "2026-07-20", 20000000)).toEqual([
+        ["giro", -150000, true],
+        ["mortgage", 150000, true],
+      ]);
+    });
+
+    it("caps both legs at the remaining Restschuld", () => {
+      expect(legsOf(repayment, "2026-07-20", 40000)).toEqual([
+        ["giro", -40000, true],
+        ["mortgage", 40000, true],
+      ]);
+    });
+
+    it("yields no legs once the Restschuld is paid off", () => {
+      expect(legsOf(repayment, "2026-07-20", 0)).toEqual([]);
+    });
+
+    it("pays down by the magnitude of a repayment stored with a negative sign", () => {
+      expect(
+        legsOf({ ...repayment, amount: -150000 }, "2026-07-20", 20000000)
+      ).toEqual([
+        ["giro", -150000, true],
+        ["mortgage", 150000, true],
+      ]);
+    });
+
+    it("behind the Mortgage's anchor is blocked, uncapped and asks for no Restschuld", () => {
+      const restschuldOf = (): number => {
+        throw new Error("the cap is read only while the gate is open");
+      };
+      expect(
+        occurrenceLegs(repayment, "2026-06-10", accounts, restschuldOf).map(
+          (l) => [l.accountId, l.amount, l.passesGate]
+        )
+      ).toEqual([
+        ["giro", -150000, false],
+        ["mortgage", 150000, false],
+      ]);
+    });
+  });
+
+  it("gates the date occurrenceDate clamps to the month's length", () => {
+    // Anchored 27 Feb; a rule on the 31st fires on 28 Feb, after the anchor.
+    const february = new Map<string, LegAccount>([
+      ["giro", { kind: "Girokonto", anchorDate: "2026-02-27" }],
+    ]);
+    expect(
+      occurrenceLegs(
+        { accountId: "giro", amount: 1000 },
+        occurrenceDate("2026-02", 31),
+        february,
+        noCap
+      )
+    ).toEqual([{ accountId: "giro", amount: 1000, passesGate: true }]);
+  });
+});
+
+describe("legBalanceDelta", () => {
+  it("is the leg's amount", () => {
+    expect(
+      legBalanceDelta({ amount: -50000, side: "source" }, "Girokonto")
+    ).toBe(-50000);
+  });
+
+  it("pays a Mortgage down by its destination leg's inflow", () => {
+    expect(
+      legBalanceDelta({ amount: 150000, side: "destination" }, "Mortgage")
+    ).toBe(-150000);
   });
 });
