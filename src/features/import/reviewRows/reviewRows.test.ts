@@ -4,6 +4,7 @@ import {
   buildReviewRows,
   canCommit,
   flagsFor,
+  propagateCategory,
   summarizeReview,
 } from "./reviewRows";
 import type { ParsedImportRow, ReviewRow } from "./reviewRows";
@@ -308,6 +309,174 @@ describe("summarizeReview", () => {
       duplicates: 1,
       recurring: 1,
       pending: 1,
+    });
+  });
+});
+
+/**
+ * Same-Counterparty Propagation (#263): a category change on one row also
+ * moves every same-Counterparty-Key row the user has not touched yet. A row is
+ * touched once its Category Source is `chosen` — by hand or by an earlier
+ * propagation — and is never overwritten again.
+ */
+describe("propagateCategory", () => {
+  const row = (
+    id: string,
+    counterparty: string,
+    overrides: Partial<ParsedImportRow> = {}
+  ): ReviewRow =>
+    buildReviewRows([
+      {
+        id,
+        date: "2026-03-05",
+        description: counterparty,
+        counterparty,
+        amount: -1999,
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+        ...overrides,
+      },
+    ])[0];
+
+  const byId = (rows: ReviewRow[], id: string) =>
+    rows.find((r) => r.id === id) as ReviewRow;
+
+  it("moves every untouched row with the same Counterparty Key, not only identical text", () => {
+    const rows = [
+      row("a1", "AMAZON EU S.A.R.L., 302-1234567-7654321"),
+      row("a2", "Amazon EU S.a.r.l. 028-9876543-1234567"),
+      row("a3", "amazon eu", { category: "Food", categorySource: "suggested" }),
+      row("r1", "REWE Markt GmbH", { category: "Food" }),
+    ];
+
+    const next = propagateCategory(rows, "a1", "Shopping");
+
+    expect(byId(next, "a1").category).toBe("Shopping");
+    expect(byId(next, "a2").category).toBe("Shopping");
+    expect(byId(next, "a3").category).toBe("Shopping");
+    // A different payee is left alone.
+    expect(byId(next, "r1")).toMatchObject({
+      category: "Food",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("marks the edited row and every row that followed as chosen, dropping any proposal", () => {
+    const rows = [
+      row("a1", "Amazon EU", { categorySource: "learned", category: "Food" }),
+      row("a2", "AMAZON EU 1234", {
+        categorySource: "proposed",
+        proposedCategory: "Shopping",
+      }),
+      row("a3", "amazon eu", { categorySource: "unmatched" }),
+    ];
+
+    const next = propagateCategory(rows, "a1", "Household");
+
+    for (const id of ["a1", "a2", "a3"]) {
+      expect(byId(next, id)).toMatchObject({
+        category: "Household",
+        categorySource: "chosen",
+      });
+      expect(byId(next, id).proposedCategory).toBeUndefined();
+    }
+  });
+
+  it("never overwrites a touched row, whatever order the user edits in", () => {
+    const rows = [
+      row("a1", "Amazon EU"),
+      // Already changed by hand before a1 is edited.
+      row("a2", "Amazon EU", {
+        category: "Household",
+        categorySource: "chosen",
+      }),
+      row("a3", "Amazon EU"),
+    ];
+
+    const afterFirst = propagateCategory(rows, "a1", "Shopping");
+    // a3 followed the first propagation, so a later one on a1 leaves it.
+    const afterSecond = propagateCategory(afterFirst, "a1", "Books");
+
+    expect(byId(afterFirst, "a2").category).toBe("Household");
+    expect(byId(afterFirst, "a3").category).toBe("Shopping");
+    expect(byId(afterSecond, "a1").category).toBe("Books");
+    expect(byId(afterSecond, "a2").category).toBe("Household");
+    expect(byId(afterSecond, "a3").category).toBe("Shopping");
+  });
+
+  it("still applies the edit to the edited row itself when it was already chosen", () => {
+    const rows = [
+      row("a1", "Amazon EU", {
+        category: "Household",
+        categorySource: "chosen",
+      }),
+      row("a2", "Amazon EU"),
+    ];
+
+    const next = propagateCategory(rows, "a1", "Shopping");
+
+    expect(byId(next, "a1")).toMatchObject({
+      category: "Shopping",
+      categorySource: "chosen",
+    });
+    expect(byId(next, "a2").category).toBe("Shopping");
+  });
+
+  it("never propagates between rows with an empty Counterparty Key", () => {
+    const rows = [
+      row("e1", ""),
+      row("e2", ""),
+      // Digits and punctuation only — also no key.
+      row("e3", "302-1234567 / 24.06.2026"),
+    ];
+
+    const next = propagateCategory(rows, "e1", "Shopping");
+
+    expect(byId(next, "e1")).toMatchObject({
+      category: "Shopping",
+      categorySource: "chosen",
+    });
+    expect(byId(next, "e2")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(byId(next, "e3")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("is a no-op when the name equals the row's current category", () => {
+    const rows = [
+      row("a1", "Amazon EU", {
+        category: "Shopping",
+        categorySource: "learned",
+      }),
+      row("a2", "Amazon EU", { category: "Food", categorySource: "suggested" }),
+    ];
+
+    const next = propagateCategory(rows, "a1", "Shopping");
+
+    expect(byId(next, "a1").categorySource).toBe("learned");
+    expect(byId(next, "a2")).toMatchObject({
+      category: "Food",
+      categorySource: "suggested",
+    });
+  });
+
+  it("keeps every other field of a row that follows", () => {
+    const rows = [
+      row("a1", "Amazon EU"),
+      row("a2", "Amazon EU", { duplicate: true, amount: -4250 }),
+    ];
+
+    const next = propagateCategory(rows, "a1", "Shopping");
+
+    expect(byId(next, "a2")).toMatchObject({
+      amount: -4250,
+      duplicate: true,
+      included: false,
+      flags: ["duplicate"],
     });
   });
 });

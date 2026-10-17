@@ -1638,3 +1638,115 @@ describe("ImportWizard — Category Proposals (#262)", () => {
     expect(input.declinedProposals).toEqual(["Dining"]);
   });
 });
+
+/**
+ * Same-Counterparty Propagation (#263): one correction in review moves every
+ * same-Counterparty-Key row the user has not touched, the followed rows'
+ * pickers show it, and the whole group commits as `chosen` — so the commit
+ * teaches the Category Rule. Rendering the pickers is never a change.
+ */
+
+const shopping: Category = {
+  id: "c-shopping",
+  name: "Shopping",
+  isDefault: false,
+  color: "#B58BD1",
+  hidden: false,
+};
+
+const amazonCategories: Category[] = [...learningCategories, shopping];
+
+/** One learned REWE row, then ten Amazon rows that landed in Miscellaneous. */
+function makeAmazonPreview(): ImportPreview {
+  const base = makeLearningPreview();
+  const amazonRows = Array.from({ length: 10 }, (_, i) => ({
+    id: `a${i}`,
+    date: `2026-03-${String(i + 10).padStart(2, "0")}`,
+    description: `AMAZON EU S.A.R.L., 30${i}-1234567-765432${i}`,
+    counterparty: `AMAZON EU S.A.R.L., 30${i}-1234567-765432${i}`,
+    amount: -(1000 + i * 111),
+    category: "Miscellaneous",
+    categorySource: "unmatched" as const,
+  }));
+  return {
+    ...base,
+    rows: [base.rows[0], ...amazonRows],
+    summary: { ...base.summary, total: 11, duplicates: 0 },
+  };
+}
+
+describe("ImportWizard — Same-Counterparty Propagation (#263)", () => {
+  it("opening the review step marks no row chosen", async () => {
+    mockCategoryFetch(learningCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeLearningPreview());
+
+    await gotoReview();
+    await settlePickers();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 2 transactions/i })
+    );
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    expect(commit.mock.calls[0][0].rows.map((r) => r.categorySource)).toEqual([
+      "learned",
+      "unmatched",
+    ]);
+  });
+
+  it("the followed rows' pickers show the propagated category", async () => {
+    mockCategoryFetch(amazonCategories);
+    renderWizard(
+      amazonCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeAmazonPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+
+    fireEvent.change(screen.getAllByLabelText(/^category$/i)[1], {
+      target: { value: "c-shopping" },
+    });
+
+    await waitFor(() => {
+      const pickers = screen.getAllByLabelText(/^category$/i);
+      pickers.slice(1).forEach((p) => expect(p).toHaveValue("c-shopping"));
+    });
+    // The REWE row is another payee and keeps its own category.
+    expect(screen.getAllByLabelText(/^category$/i)[0]).toHaveValue("c-food");
+  });
+
+  it("ten Amazon rows need one correction, and all ten commit as chosen to teach the rule", async () => {
+    mockCategoryFetch(amazonCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(amazonCategories, commit, makeAmazonPreview());
+
+    await gotoReview();
+    await settlePickers();
+
+    fireEvent.change(screen.getAllByLabelText(/^category$/i)[4], {
+      target: { value: "c-shopping" },
+    });
+    await waitFor(() =>
+      expect(screen.getAllByLabelText(/^category$/i)[10]).toHaveValue(
+        "c-shopping"
+      )
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 11 transactions/i })
+    );
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+
+    const [rewe, ...amazon] = commit.mock.calls[0][0].rows;
+    expect(rewe).toMatchObject({ category: "Food", categorySource: "learned" });
+    expect(amazon).toHaveLength(10);
+    amazon.forEach((r) =>
+      expect(r).toMatchObject({
+        category: "Shopping",
+        categorySource: "chosen",
+      })
+    );
+  });
+});

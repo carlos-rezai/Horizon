@@ -208,6 +208,43 @@ describe("useImportWizard — row editing", () => {
     });
   });
 
+  it("setCategory moves every untouched same-counterparty row with it (#263)", async () => {
+    const base = makePreview();
+    const amazon = (id: string, counterparty: string) => ({
+      id,
+      date: "2026-03-07",
+      description: counterparty,
+      counterparty,
+      amount: -2499,
+      category: "Food",
+      categorySource: "suggested" as const,
+    });
+    const preview = vi.fn<PreviewFn>().mockResolvedValue({
+      ...base,
+      rows: [
+        ...base.rows,
+        amazon("a0", "AMAZON EU S.A.R.L., 302-1234567"),
+        amazon("a1", "Amazon EU S.a.r.l. 028-9876543"),
+      ],
+    });
+    const { result } = setup({ preview });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.setCategory("a0", "Income"));
+
+    for (const id of ["a0", "a1"]) {
+      expect(result.current.rows.find((r) => r.id === id)).toMatchObject({
+        category: "Income",
+        categorySource: "chosen",
+      });
+    }
+    // A different payee is left alone.
+    expect(result.current.rows.find((r) => r.id === "r0")).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+  });
+
   it("categoryOptions merges configured categories with row-assigned ones", async () => {
     const { result } = setup();
     await waitFor(() => expect(result.current.loading).toBe(false));
