@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Category } from "../../../types/category";
-import { API_BASE } from "../../../utils/api/api";
 import { fetchCategories } from "../categoriesApi/categoriesApi";
 import { CATEGORIES } from "../../../components/CacheProvider/cacheKeys";
 import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
-import { useCacheBump } from "../../../components/CacheProvider/useCacheBump";
+import {
+  useCreateCategory,
+  withAdded,
+} from "../useCreateCategory/useCreateCategory";
 
 interface UseCategoriesWithInlineAddResult {
   categories: Category[];
@@ -18,12 +20,6 @@ interface UseCategoriesWithInlineAddResult {
 
 const NO_CATEGORIES: Category[] = [];
 
-/** Appends the categories in `extra` that `list` does not already hold. */
-function withAdded(list: Category[], extra: Category[]): Category[] {
-  const missing = extra.filter((e) => !list.some((c) => c.id === e.id));
-  return missing.length === 0 ? list : [...list, ...missing];
-}
-
 /**
  * The Category list behind a `CategorySelect`, read through the app cache so
  * every picker on a page shares one request, plus inline-add.
@@ -36,11 +32,8 @@ export function useCategoriesWithInlineAdd(
   initialCategoryName?: string,
   controlledName?: string
 ): UseCategoriesWithInlineAddResult {
-  const { data, error, setData } = useCachedResource(
-    CATEGORIES,
-    fetchCategories
-  );
-  const bump = useCacheBump();
+  const { data, error } = useCachedResource(CATEGORIES, fetchCategories);
+  const { create } = useCreateCategory();
 
   // Categories this picker created. A cached read that started before the add
   // can land after it without them — they are kept regardless.
@@ -74,26 +67,16 @@ export function useCategoriesWithInlineAdd(
     setAddError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/categories`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        const message = body.error ?? "Failed to create category";
-        setAddError(message);
-        throw new Error(message);
+      // useCreateCategory publishes the new category to every other picker at
+      // once, then lets the server's list reconcile it.
+      const outcome = await create({ name });
+      if (!outcome.ok) {
+        setAddError(outcome.error);
+        throw new Error(outcome.error);
       }
 
-      const created = (await res.json()) as Category;
-      setAdded((prev) => [...prev, created]);
-      setChosenId(created.id);
-      // Publish the new category to every other picker at once, then let the
-      // server's list reconcile it.
-      setData((prev) => withAdded(prev ?? NO_CATEGORIES, [created]));
-      bump(CATEGORIES);
+      setAdded((prev) => [...prev, outcome.category]);
+      setChosenId(outcome.category.id);
     } finally {
       setIsAdding(false);
     }
