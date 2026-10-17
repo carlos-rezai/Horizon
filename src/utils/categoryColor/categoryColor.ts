@@ -71,3 +71,22 @@ export function resolveCategoryColor(
   const match = categories.find((c) => c.name === name);
   return match?.color ?? colorForCategoryName(name);
 }
+
+/**
+ * The Next Free Colour (issue #262): the first palette swatch no category —
+ * hidden ones included — uses yet, compared ignoring case. Colours outside the
+ * palette are ignored. Once every swatch is taken it falls back to the
+ * name-derived colour of the category being created.
+ */
+export function nextFreeCategoryColor(
+  categories: Pick<Category, "color">[],
+  name: string
+): string {
+  const used = new Set(
+    categories.map((c) => c.color?.toUpperCase()).filter(Boolean)
+  );
+  return (
+    categoryColorPalette.find((swatch) => !used.has(swatch.toUpperCase())) ??
+    colorForCategoryName(name)
+  );
+}

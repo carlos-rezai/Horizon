@@ -22,6 +22,13 @@ export function createSqliteCategoryRulesRepo(
        updated_at = excluded.updated_at`
   );
 
+  const selectDeclinedStmt = db.prepare(
+    `SELECT name FROM declined_category_proposals ORDER BY rowid`
+  );
+  const declineStmt = db.prepare(
+    `INSERT OR IGNORE INTO declined_category_proposals (name) VALUES (?)`
+  );
+
   return {
     async findAll() {
       const rows = selectAllStmt.all() as CategoryRuleRow[];
@@ -41,6 +48,18 @@ export function createSqliteCategoryRulesRepo(
         for (const rule of rules) {
           upsertStmt.run(rule.counterpartyKey, rule.category, updatedAt);
         }
+      })();
+    },
+
+    async findDeclined() {
+      const rows = selectDeclinedStmt.all() as Array<{ name: string }>;
+      return rows.map((row) => row.name);
+    },
+
+    async decline(names) {
+      if (names.length === 0) return;
+      db.transaction(() => {
+        for (const name of names) declineStmt.run(name);
       })();
     },
   };

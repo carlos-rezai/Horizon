@@ -11,3 +11,10 @@ CREATE TABLE category_rules (
   category         TEXT NOT NULL,
   updated_at       TEXT NOT NULL      -- ISO timestamp of the last learn
 );
+
+-- A Declined Proposal (issue #262): a canonical category name the user
+-- dismissed as a Category Proposal, never proposed again. Case-insensitive,
+-- keeping the spelling first declined.
+CREATE TABLE declined_category_proposals (
+  name TEXT PRIMARY KEY COLLATE NOCASE
+);

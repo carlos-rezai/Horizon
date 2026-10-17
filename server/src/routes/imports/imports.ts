@@ -61,7 +61,15 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  const { mapping, delimiter, decimal, dateFmt, rows, ...rest } = parsed.data;
+  const {
+    mapping,
+    delimiter,
+    decimal,
+    dateFmt,
+    rows,
+    declinedProposals,
+    ...rest
+  } = parsed.data;
   const input = {
     ...rest,
     rows: rows.map(({ date, amount, description, category }) => ({
@@ -97,6 +105,8 @@ router.post("/", async (req, res) => {
   await storage.categoryRules.learn(
     deriveCategoryRules(rows).filter((rule) => existing.has(rule.category))
   );
+  // A dismissed Category Proposal is never proposed again.
+  await storage.categoryRules.decline(declinedProposals);
 
   res.status(201).json(created);
 });
@@ -136,6 +146,7 @@ router.post("/preview", (req, res) => {
         anchorDate: account?.anchorDate,
         categoryRules: await storage.categoryRules.findAll(),
         categories: await storage.categories.findAll(),
+        declinedProposals: await storage.categoryRules.findDeclined(),
         getRememberedPreset: (bank) => storage.importPresets.get(bank),
         mappingOverride,
       });

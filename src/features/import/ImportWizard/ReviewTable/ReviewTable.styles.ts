@@ -26,16 +26,20 @@ export const StyledCategoryCell = styled.span`
 `;
 
 /* Why the row carries its category. Muted on purpose: it explains, it never
-   warns, so it reads quieter than the soft-flag badges beside it. */
-export const StyledSourceChip = styled.span`
+   warns, so it reads quieter than the soft-flag badges beside it. A proposed
+   row's chip carries the primary accent: it asks for a decision. */
+export const StyledSourceChip = styled.span<{ $proposed?: boolean }>`
   flex-shrink: 0;
   padding: 2px 7px;
   border-radius: ${({ theme }) => theme.radius.pill}px;
   font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
   font-size: 10px;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+  color: ${({ theme, $proposed }) =>
+    $proposed ? theme.colors.primary : theme.colors.onSurfaceVariant};
+  border: 1px solid
+    ${({ theme, $proposed }) =>
+      $proposed ? theme.colors.primary : theme.colors.outlineVariant};
 `;
 
 export const StyledReviewHead = styled.div`

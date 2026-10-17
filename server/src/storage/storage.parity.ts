@@ -3657,7 +3657,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         });
         await seed.close();
         const buf = fs.readFileSync(corruptPath);
-        for (let i = 2000; i < 3000 && i < buf.length; i++) {
+        // Page 1's whole B-tree, past the 100-byte header (see connection.test.ts).
+        for (let i = 100; i < 4096 && i < buf.length; i++) {
           buf[i] = 0xff;
         }
         fs.writeFileSync(corruptPath, buf);

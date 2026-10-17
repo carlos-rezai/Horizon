@@ -28,9 +28,12 @@ export interface PreviewRow extends MappedRow {
   category: string;
   /**
    * Why the row carries its category — `learned` from a Category Rule,
-   * `suggested` from a Keyword Group, else `unmatched`.
+   * `suggested` from a Keyword Group, `proposed` when the group's category
+   * does not exist yet, else `unmatched`.
    */
   categorySource: CategorySource;
+  /** A Category Proposal's canonical name — present only when `proposed`. */
+  proposedCategory?: string;
   duplicate: boolean;
   recurring: boolean;
 }
@@ -81,6 +84,8 @@ export interface BuildPreviewInput {
    * (hidden or not), so a stale rule never lands a row in a missing category.
    */
   categories?: Category[];
+  /** Canonical names the user declined as Category Proposals. */
+  declinedProposals?: string[];
   /**
    * Look up a bank's remembered preset (or null if none saved). A remembered
    * mapping and format are preferred over the freshly-detected defaults so a
@@ -145,15 +150,19 @@ export async function buildPreview(
   const context = {
     rules,
     categories: input.categories ?? [],
-    declined: new Set<string>(),
+    declined: new Set(input.declinedProposals ?? []),
   };
   const rows: PreviewRow[] = mappedRows.map((row, index) => {
-    const { category, categorySource } = categorizeRow(row, context);
+    const { category, categorySource, proposedCategory } = categorizeRow(
+      row,
+      context
+    );
     return {
       id: generateId(),
       ...row,
       category,
       categorySource,
+      ...(proposedCategory === undefined ? {} : { proposedCategory }),
       duplicate: duplicateFlags[index],
       recurring: recurringFlags[index],
     };

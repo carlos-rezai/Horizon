@@ -2,6 +2,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, type Mock } from "vitest";
 import { useImportWizard } from "./useImportWizard";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
 import type {
@@ -111,17 +112,20 @@ function setup(
   const onClose = overrides.onClose ?? vi.fn<OnCloseFn>();
   const onDone = overrides.onDone ?? vi.fn<OnDoneFn>();
 
-  const hook = renderHook(() =>
-    useImportWizard({
-      importAccounts: accounts,
-      categories,
-      file,
-      presetAccountId: null,
-      preview,
-      commit,
-      onClose,
-      onDone,
-    })
+  const hook = renderHook(
+    () =>
+      useImportWizard({
+        importAccounts: accounts,
+        categories,
+        file,
+        presetAccountId: null,
+        preview,
+        commit,
+        onClose,
+        onDone,
+      }),
+    // Category Proposals (#262) bump the CATEGORIES cache on create.
+    { wrapper: CacheProvider }
   );
   return { ...hook, preview, commit, onClose, onDone };
 }

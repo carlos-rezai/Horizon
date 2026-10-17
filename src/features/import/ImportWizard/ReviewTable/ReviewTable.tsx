@@ -38,6 +38,14 @@ const SOURCE_CHIP: Partial<Record<CategorySource, string>> = {
   suggested: "Suggested",
 };
 
+/** A proposed row names its Category Proposal; other rows read off SOURCE_CHIP. */
+function sourceChip(row: ReviewRow): string | undefined {
+  if (row.categorySource === "proposed") {
+    return row.proposedCategory ? `New: ${row.proposedCategory}` : undefined;
+  }
+  return SOURCE_CHIP[row.categorySource];
+}
+
 interface Props {
   rows: ReviewRow[];
   flagSpecs: Record<RowFlag, FlagSpec>;
@@ -109,9 +117,9 @@ export default function ReviewTable({
                   value={r.category}
                   onChange={(name) => setCategory(r.id, name)}
                 />
-                {SOURCE_CHIP[r.categorySource] && (
-                  <StyledSourceChip>
-                    {SOURCE_CHIP[r.categorySource]}
+                {sourceChip(r) && (
+                  <StyledSourceChip $proposed={r.categorySource === "proposed"}>
+                    {sourceChip(r)}
                   </StyledSourceChip>
                 )}
               </StyledCategoryCell>

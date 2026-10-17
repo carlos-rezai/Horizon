@@ -48,4 +48,6 @@ export const ImportCreateSchema = z.object({
   decimal: z.string().min(1).default(","),
   dateFmt: z.string().min(1).default("DD.MM.YYYY"),
   rows: z.array(ImportRowSchema).min(1),
+  // Category Proposals the user dismissed — persisted after the commit.
+  declinedProposals: z.array(z.string().min(1)).default([]),
 });

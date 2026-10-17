@@ -6,6 +6,7 @@ import {
   Banknote,
   AlertCircle,
   Clock,
+  Sparkles,
 } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
@@ -57,6 +58,10 @@ import {
   StyledAttentionToggle,
   StyledFlagBadge,
   StyledFootnote,
+  StyledProposalStrip,
+  StyledProposalText,
+  StyledProposalActions,
+  StyledProposalError,
 } from "./ImportWizard.styles";
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
@@ -137,6 +142,9 @@ export default function ImportWizard({
     setDescription,
     updateMap,
     confirm,
+    proposals,
+    approveProposal,
+    dismissProposal,
   } = useImportWizard({
     importAccounts,
     categories,
@@ -427,6 +435,41 @@ export default function ImportWizard({
                 </StyledRejectedSamples>
               </StyledRejectedNote>
             )}
+
+            {proposals.map((proposal) => (
+              <StyledProposalStrip key={proposal.name}>
+                <StyledProposalText>
+                  <Sparkles size={13} />
+                  <span>
+                    New category: <strong>{proposal.name}</strong>
+                    {` · ${pluralize(proposal.count, "row")}`}
+                  </span>
+                </StyledProposalText>
+                <StyledProposalActions>
+                  <Button
+                    variant="secondary"
+                    onClick={() => dismissProposal(proposal.name)}
+                  >
+                    Dismiss
+                  </Button>
+                  <Button
+                    variant="primary"
+                    icon="Plus"
+                    onClick={() => {
+                      // A failure is surfaced on the strip itself.
+                      approveProposal(proposal.name).catch(() => undefined);
+                    }}
+                  >
+                    Create category
+                  </Button>
+                </StyledProposalActions>
+                {proposal.error && (
+                  <StyledProposalError role="alert">
+                    {proposal.error}
+                  </StyledProposalError>
+                )}
+              </StyledProposalStrip>
+            ))}
 
             <ReviewTable
               rows={visibleRows}

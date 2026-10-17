@@ -148,7 +148,7 @@ export interface CategorizeContext {
 export interface CategorizedRow {
   category: string;
   categorySource: CategorySource;
-  /** A Category Proposal's canonical name — never set in this slice. */
+  /** A Category Proposal's canonical name, set only when the source is `proposed`. */
   proposedCategory?: string;
 }
 
@@ -166,10 +166,25 @@ function resolveGroup(
 }
 
 /**
+ * Whether the group's canonical name may be proposed: not declined and not
+ * already held by a Hidden Category, both compared ignoring case.
+ */
+function canPropose(group: KeywordGroup, ctx: CategorizeContext): boolean {
+  const name = group.category.toLowerCase();
+  for (const declined of ctx.declined) {
+    if (declined.toLowerCase() === name) return false;
+  }
+  return !ctx.categories.some(
+    (category) => category.hidden && category.name.toLowerCase() === name
+  );
+}
+
+/**
  * Categorize one row. Precedence: the Category Rule for its Counterparty Key
  * (`learned`) → the first Keyword Group found in the lowercased counterparty
- * plus description that resolves to a visible category (`suggested`) →
- * Miscellaneous (`unmatched`). Pure.
+ * plus description that resolves to a visible category (`suggested`) or, when
+ * the user has none for it, proposes its canonical name (`proposed`, in
+ * Miscellaneous) unless declined or hidden → Miscellaneous (`unmatched`). Pure.
  */
 export function categorizeRow(
   row: MappedRow,
@@ -191,6 +206,13 @@ export function categorizeRow(
     const category = resolveGroup(group, ctx.categories);
     if (category !== undefined) {
       return { category, categorySource: "suggested" };
+    }
+    if (canPropose(group, ctx)) {
+      return {
+        category: FALLBACK_CATEGORY,
+        categorySource: "proposed",
+        proposedCategory: group.category,
+      };
     }
   }
 

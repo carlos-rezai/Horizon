@@ -16,8 +16,9 @@
 /**
  * Why a row carries its category: `learned` from a Category Rule, `suggested`
  * by a Keyword Group, `chosen` by the user in review, `unmatched` on the
- * Miscellaneous fallback. `proposed` is reserved for a later slice. Mirrors
- * the server type.
+ * Miscellaneous fallback, `proposed` in Miscellaneous while a Category
+ * Proposal names a category the user does not have yet. Mirrors the server
+ * type.
  */
 export type CategorySource =
   | "learned"
@@ -36,6 +37,8 @@ export interface ParsedImportRow {
   amount: number;
   category: string;
   categorySource: CategorySource;
+  /** A Category Proposal's canonical name — present only while `proposed`. */
+  proposedCategory?: string;
   duplicate?: boolean;
   recurring?: boolean;
   /** Not-yet-settled (pending / "vorgemerkt") booking; pre-unchecked. */

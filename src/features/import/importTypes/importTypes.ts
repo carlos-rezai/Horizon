@@ -125,4 +125,6 @@ export interface CommitImportInput {
     /** Whether committing this row teaches a Category Rule. */
     categorySource: CategorySource;
   }>;
+  /** Category Proposals dismissed in this wizard — never proposed again. */
+  declinedProposals?: string[];
 }

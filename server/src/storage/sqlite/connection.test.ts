@@ -136,11 +136,12 @@ describe("connection (SQLite)", () => {
         .run("55555555-5555-4555-8555-555555555555", "Seed");
       closeConnection(seed);
 
-      // Corrupt bytes inside the B-tree cell area of page 1 (well past the
-      // 100-byte SQLite header). This trips PRAGMA integrity_check while
-      // leaving the header intact enough to open the file.
+      // Corrupt page 1's whole B-tree (everything past the 100-byte SQLite
+      // header). This trips PRAGMA integrity_check while leaving the header
+      // intact enough to open the file, however full or split the schema page
+      // is — a fixed mid-page window lands in free space once page 1 splits.
       const buf = fs.readFileSync(dbPath);
-      for (let i = 2000; i < 3000 && i < buf.length; i++) {
+      for (let i = 100; i < 4096 && i < buf.length; i++) {
         buf[i] = 0xff;
       }
       fs.writeFileSync(dbPath, buf);

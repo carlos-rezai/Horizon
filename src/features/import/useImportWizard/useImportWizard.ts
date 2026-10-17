@@ -15,6 +15,10 @@ import {
   type ReviewSummary,
 } from "../reviewRows/reviewRows";
 import {
+  useCategoryProposals,
+  type CategoryProposal,
+} from "../useCategoryProposals/useCategoryProposals";
+import {
   attributeIssues,
   ImportCommitError,
 } from "../importErrors/importErrors";
@@ -64,6 +68,10 @@ interface UseImportWizardResult {
   setDescription: (id: string, description: string) => void;
   updateMap: (patch: Partial<ColumnMapping>) => void;
   confirm: () => Promise<void>;
+  /** One Category Proposal per proposed category, above the review table. */
+  proposals: CategoryProposal[];
+  approveProposal: (name: string) => Promise<void>;
+  dismissProposal: (name: string) => void;
 }
 
 /**
@@ -154,6 +162,13 @@ export function useImportWizard({
     [accountId]
   );
 
+  const {
+    proposals,
+    approve: approveProposal,
+    dismiss: dismissProposal,
+    declinedProposals,
+  } = useCategoryProposals({ rows, setRows, categories });
+
   const summary = summarizeReview(rows);
   const account =
     importAccounts.find((a) => a.id === accountId) ?? importAccounts[0];
@@ -179,7 +194,12 @@ export function useImportWizard({
       setRows((rs) =>
         rs.map((r) =>
           r.id === id && r.category !== category
-            ? { ...r, category, categorySource: "chosen" }
+            ? {
+                ...r,
+                category,
+                categorySource: "chosen",
+                proposedCategory: undefined,
+              }
             : r
         )
       ),
@@ -258,6 +278,7 @@ export function useImportWizard({
           category: r.category,
           categorySource: r.categorySource,
         })),
+        declinedProposals,
       });
       onDone({
         account,
@@ -292,6 +313,7 @@ export function useImportWizard({
     file,
     map,
     rows,
+    declinedProposals,
     summary.included,
     onDone,
     onClose,
@@ -317,5 +339,8 @@ export function useImportWizard({
     setDescription,
     updateMap,
     confirm,
+    proposals,
+    approveProposal,
+    dismissProposal,
   };
 }

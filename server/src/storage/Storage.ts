@@ -127,6 +127,10 @@ export interface CategoryRulesRepo {
   findAll(): Promise<CategoryRule[]>;
   /** Upsert a batch in one transaction, stamping `updatedAt`. */
   learn(rules: CategoryRuleInput[]): Promise<void>;
+  /** Declined Proposals, each in the spelling first declined. */
+  findDeclined(): Promise<string[]>;
+  /** Record declined canonical names: insert-or-ignore, case-insensitive. */
+  decline(names: string[]): Promise<void>;
 }
 
 export interface SavingsGoalRepo {
