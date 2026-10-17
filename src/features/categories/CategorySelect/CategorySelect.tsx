@@ -20,9 +20,18 @@ interface Props {
   onChange: (categoryName: string) => void;
   /** Pre-select this category by *name* (e.g. when editing an existing row). */
   initialCategory?: string;
+  /**
+   * Controlled category *name*. Wins over `initialCategory`, and a change from
+   * outside moves the picker (e.g. the Import review table's row category).
+   */
+  value?: string;
 }
 
-export default function CategorySelect({ onChange, initialCategory }: Props) {
+export default function CategorySelect({
+  onChange,
+  initialCategory,
+  value,
+}: Props) {
   const {
     categories,
     selectedCategoryId,
@@ -31,7 +40,7 @@ export default function CategorySelect({ onChange, initialCategory }: Props) {
     isAdding,
     addCategory,
     addError,
-  } = useCategoriesWithInlineAdd(initialCategory);
+  } = useCategoriesWithInlineAdd(initialCategory, value);
 
   const [showInlineAdd, setShowInlineAdd] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");

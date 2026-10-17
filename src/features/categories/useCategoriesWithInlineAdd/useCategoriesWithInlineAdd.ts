@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Category } from "../../../types/category";
 import { API_BASE } from "../../../utils/api/api";
 import { fetchCategories } from "../categoriesApi/categoriesApi";
+import { CATEGORIES } from "../../../components/CacheProvider/cacheKeys";
+import { useCachedResource } from "../../../components/CacheProvider/useCachedResource";
+import { useCacheBump } from "../../../components/CacheProvider/useCacheBump";
 
 interface UseCategoriesWithInlineAddResult {
   categories: Category[];
@@ -13,62 +16,58 @@ interface UseCategoriesWithInlineAddResult {
   addError: string | null;
 }
 
+const NO_CATEGORIES: Category[] = [];
+
+/** Appends the categories in `extra` that `list` does not already hold. */
+function withAdded(list: Category[], extra: Category[]): Category[] {
+  const missing = extra.filter((e) => !list.some((c) => c.id === e.id));
+  return missing.length === 0 ? list : [...list, ...missing];
+}
+
+/**
+ * The Category list behind a `CategorySelect`, read through the app cache so
+ * every picker on a page shares one request, plus inline-add.
+ *
+ * `initialCategoryName` seeds the selection; `controlledName`, when given,
+ * drives it — a change from outside moves the selection, and a pick made in
+ * the picker holds only until the next outside change.
+ */
 export function useCategoriesWithInlineAdd(
-  initialCategoryName?: string
+  initialCategoryName?: string,
+  controlledName?: string
 ): UseCategoriesWithInlineAddResult {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  // Resolved from initialCategoryName once the list loads — a name can't be
-  // mapped to an id synchronously before the categories are fetched.
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const { data, error, setData } = useCachedResource(
+    CATEGORIES,
+    fetchCategories
+  );
+  const bump = useCacheBump();
+
+  // Categories this picker created. A cached read that started before the add
+  // can land after it without them — they are kept regardless.
+  const [added, setAdded] = useState<Category[]>([]);
+  // A pick made in this picker. It wins over the name-derived selection until
+  // the controlled name changes from outside.
+  const [chosenId, setChosenId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
-  // The initial fetch resolves asynchronously, but the picker is usable before
-  // it lands — so a user can select or inline-add a category while the request
-  // is still in flight. Once they have, the fetch may no longer touch the
-  // selection: it would silently revert their choice to `initialCategoryName`.
-  const chosenRef = useRef(false);
-
-  const selectCategory = useCallback((id: string) => {
-    chosenRef.current = true;
-    setSelectedCategoryId(id);
-  }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    if (controlledName !== undefined) setChosenId(null);
+  }, [controlledName]);
 
-    fetchCategories()
-      .then((data) => {
-        if (!cancelled) {
-          // An inline-add that beat this fetch isn't in `data` — keep it.
-          setCategories((prev) => [
-            ...data,
-            ...prev.filter((p) => !data.some((d) => d.id === p.id)),
-          ]);
-          if (!chosenRef.current) {
-            const preferred =
-              data.find((c) => c.name === initialCategoryName)?.id ??
-              data[0]?.id ??
-              "";
-            setSelectedCategoryId(preferred);
-          }
-          setIsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAddError("Failed to load categories");
-          setIsLoading(false);
-        }
-      });
+  const categories = useMemo(
+    () => withAdded(data ?? NO_CATEGORIES, added),
+    [data, added]
+  );
 
-    return () => {
-      cancelled = true;
-    };
-    // Runs once on mount: the initial category is resolved against the first
-    // fetch, not re-resolved when initialCategoryName changes later.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const preferredName = controlledName ?? initialCategoryName;
+  const selectedCategoryId =
+    chosenId ??
+    (data === undefined
+      ? ""
+      : (categories.find((c) => c.name === preferredName)?.id ??
+        categories[0]?.id ??
+        ""));
 
   async function addCategory(name: string): Promise<void> {
     setIsAdding(true);
@@ -82,15 +81,19 @@ export function useCategoriesWithInlineAdd(
       });
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        const message = data.error ?? "Failed to create category";
+        const body = (await res.json()) as { error?: string };
+        const message = body.error ?? "Failed to create category";
         setAddError(message);
         throw new Error(message);
       }
 
       const created = (await res.json()) as Category;
-      setCategories((prev) => [...prev, created]);
-      selectCategory(created.id);
+      setAdded((prev) => [...prev, created]);
+      setChosenId(created.id);
+      // Publish the new category to every other picker at once, then let the
+      // server's list reconcile it.
+      setData((prev) => withAdded(prev ?? NO_CATEGORIES, [created]));
+      bump(CATEGORIES);
     } finally {
       setIsAdding(false);
     }
@@ -98,11 +101,15 @@ export function useCategoriesWithInlineAdd(
 
   return {
     categories,
-    isLoading,
+    isLoading: data === undefined && error === null,
     selectedCategoryId,
-    setSelectedCategoryId: selectCategory,
+    setSelectedCategoryId: setChosenId,
     isAdding,
     addCategory,
-    addError,
+    addError:
+      addError ??
+      (data === undefined && error !== null
+        ? "Failed to load categories"
+        : null),
   };
 }

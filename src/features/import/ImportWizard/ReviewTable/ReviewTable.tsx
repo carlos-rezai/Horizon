@@ -105,7 +105,7 @@ export default function ReviewTable({
               />
               <StyledCategoryCell>
                 <CategorySelect
-                  initialCategory={r.category}
+                  value={r.category}
                   onChange={(name) => setCategory(r.id, name)}
                 />
                 {SOURCE_CHIP[r.categorySource] && (
