@@ -3224,6 +3224,81 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Issue #261 — Import Category Learning, Phase 2: rules follow categories.
+  //
+  // Category Rules reference their category by name, like Transactions and
+  // RecurringTransactions, so Category Reassignment carries them too: a rename
+  // moves a category's rules to the new name, reassign-on-delete moves them to
+  // the target, and a plain delete of an unused category deletes them. Every
+  // test keeps a rule for an untouched category as a control.
+  // -------------------------------------------------------------------------
+
+  describe("CategoryRulesRepo — Category Reassignment", () => {
+    const TIERARZT = "muster tierarzt";
+    const SUPERMARKT = "muster supermarkt gmbh";
+
+    async function ruleMap(): Promise<Record<string, string>> {
+      const rules = await storage.categoryRules.findAll();
+      return Object.fromEntries(
+        rules.map((rule) => [rule.counterpartyKey, rule.category])
+      );
+    }
+
+    it("a rename moves the category's Category Rules to the new name", async () => {
+      const vet = await createCategory("Vet");
+      await storage.categoryRules.learn([
+        { counterpartyKey: TIERARZT, category: "Vet" },
+        { counterpartyKey: SUPERMARKT, category: "Food" },
+      ]);
+
+      const result = await storage.categories.rename(vet.id, "Pets");
+      expect(result).toMatchObject({ ok: true });
+
+      expect(await ruleMap()).toEqual({
+        [TIERARZT]: "Pets",
+        [SUPERMARKT]: "Food",
+      });
+    });
+
+    it("reassign-on-delete moves the category's Category Rules to the target category", async () => {
+      const vet = await createCategory("Vet");
+      const pets = await createCategory("Pets");
+      const account = await makeAccount();
+      await storage.transactions.create(account.id, {
+        date: "2026-03-01",
+        amount: -6425,
+        description: "Lassie",
+        category: "Vet",
+      });
+      await storage.categoryRules.learn([
+        { counterpartyKey: TIERARZT, category: "Vet" },
+        { counterpartyKey: SUPERMARKT, category: "Food" },
+      ]);
+
+      const result = await storage.categories.delete(vet.id, pets.id);
+      expect(result).toEqual({ ok: true });
+
+      expect(await ruleMap()).toEqual({
+        [TIERARZT]: "Pets",
+        [SUPERMARKT]: "Food",
+      });
+    });
+
+    it("a plain delete of an unused category deletes its Category Rules", async () => {
+      const vet = await createCategory("Vet");
+      await storage.categoryRules.learn([
+        { counterpartyKey: TIERARZT, category: "Vet" },
+        { counterpartyKey: SUPERMARKT, category: "Food" },
+      ]);
+
+      const result = await storage.categories.delete(vet.id);
+      expect(result).toEqual({ ok: true });
+
+      expect(await ruleMap()).toEqual({ [SUPERMARKT]: "Food" });
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Storage.backup
   // -------------------------------------------------------------------------
 

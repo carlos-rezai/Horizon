@@ -1086,3 +1086,118 @@ describe("POST /imports/preview — Keyword Groups (#260)", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #261 — Import Category Learning, Phase 2: rules follow categories.
+//
+// Category Management changes carry through to Category Rules: a rename moves
+// a category's rules to the new name, reassign-on-delete moves them to the
+// target, and a plain delete of an unused category deletes them. Observed, as
+// in #258, only through a later preview. Each test keeps a rule for an
+// untouched category as a positive control.
+// ---------------------------------------------------------------------------
+
+async function createCategoryViaApi(name: string): Promise<string> {
+  const res = await request(app).post("/categories").send({ name });
+  expect(res.status).toBe(201);
+  return (res.body as { id: string }).id;
+}
+
+async function categoryIdByName(name: string): Promise<string> {
+  const res = await request(app).get("/categories");
+  const found = (res.body as Array<{ id: string; name: string }>).find(
+    (c) => c.name === name
+  );
+  expect(found, name).toBeDefined();
+  return (found as { id: string }).id;
+}
+
+describe("Category Rules follow Category Management (#261)", () => {
+  it("after a rename, the next preview shows the renamed category as learned", async () => {
+    const account = await createAccount();
+    const vetId = await createCategoryViaApi("Vet");
+    const committed = await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Vet", "chosen"),
+        teachRow(DIENST, "Subscriptions", "chosen"),
+      ],
+    });
+    expect(committed.status).toBe(201);
+
+    const renamed = await request(app)
+      .patch(`/categories/${vetId}`)
+      .send({ name: "Pets" });
+    expect(renamed.status).toBe(200);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Pets",
+      categorySource: "learned",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "learned",
+    });
+  });
+
+  it("after reassign-on-delete, the next preview shows the target category as learned", async () => {
+    const account = await createAccount();
+    const vetId = await createCategoryViaApi("Vet");
+    const committed = await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Vet", "chosen"),
+        teachRow(DIENST, "Subscriptions", "chosen"),
+      ],
+    });
+    expect(committed.status).toBe(201);
+    const foodId = await categoryIdByName("Food");
+
+    const deleted = await request(app).delete(
+      `/categories/${vetId}?reassignTo=${foodId}`
+    );
+    expect(deleted.status).toBe(204);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "learned",
+    });
+  });
+
+  it("a plain delete of an unused category removes its rules, so re-creating the name revives nothing", async () => {
+    const account = await createAccount();
+    const vetId = await createCategoryViaApi("Vet");
+    const committed = await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Vet", "chosen"),
+        teachRow(DIENST, "Subscriptions", "chosen"),
+      ],
+    });
+    expect(committed.status).toBe(201);
+    // Deleting the import leaves "Vet" with no transactions, so the category
+    // delete below is a plain delete rather than in_use.
+    const undone = await request(app).delete(`/imports/${committed.body.id}`);
+    expect(undone.status).toBe(204);
+
+    const deleted = await request(app).delete(`/categories/${vetId}`);
+    expect(deleted.status).toBe(204);
+    await createCategoryViaApi("Vet");
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "learned",
+    });
+  });
+});

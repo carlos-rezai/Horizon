@@ -195,3 +195,39 @@ describe("categorizeRow — Keyword Groups (#260)", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #261 — Import Category Learning, Phase 2: rules follow categories.
+//
+// A safety net behind the cascades: a Category Rule whose category no longer
+// exists is ignored, so a stale rule never assigns a missing category. The row
+// falls through the normal precedence — Keyword Group, then Miscellaneous.
+// ---------------------------------------------------------------------------
+
+describe("categorizeRow — dangling Category Rule (#261)", () => {
+  it("skips a Category Rule whose category no longer exists and falls through to a Keyword Group", () => {
+    const rules = new Map([[counterpartyKey("REWE Markt 0815"), "Pets"]]);
+    const result = categorizeRow(
+      row("REWE Markt 0815"),
+      ctx([category("Groceries"), MISC], rules)
+    );
+
+    expect(result).toMatchObject({
+      category: "Groceries",
+      categorySource: "suggested",
+    });
+  });
+
+  it("skips a Category Rule whose category no longer exists and falls back to Miscellaneous", () => {
+    const rules = new Map([[counterpartyKey("Muster Tierarzt"), "Pets"]]);
+    const result = categorizeRow(
+      row("Muster Tierarzt"),
+      ctx([category("Groceries"), MISC], rules)
+    );
+
+    expect(result).toEqual({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+});
