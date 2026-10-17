@@ -1,14 +1,16 @@
 /**
  * Recurring History: the signed sum of an account's recurring legs dated after
- * its Anchor Date, up to and including `through`. Firing, dates and gating come
- * from the recurring-occurrence module; Mortgage legs are capped at the
- * remaining Restschuld, in date order. Amounts are integer cents, dates ISO.
+ * its Anchor Date, up to and including `through`. Firing, dates, legs and
+ * gating come from the recurring-occurrence module; Mortgage legs are capped
+ * at the remaining Restschuld, in date order. Amounts are integer cents, dates ISO.
  */
 import type { Account, RecurringTransaction } from "../../storage/types.js";
 import {
   firesInMonth,
+  legBalanceDelta,
   occurrenceDate,
-  passesAnchorGate,
+  occurrenceLegs,
+  sourceAnchorMonth,
 } from "../recurringOccurrence/recurringOccurrence.js";
 import { addMonths, monthsBetween } from "../date/date.js";
 
@@ -41,9 +43,8 @@ export function recurringHistory(
   for (let i = 0; i <= length; i++) {
     const month = addMonths(startMonth, i);
     for (const rule of recurrings) {
-      const sourceAnchorMonth =
-        accountMap.get(rule.accountId)?.anchorDate.slice(0, 7) ?? startMonth;
-      if (!firesInMonth(rule, month, sourceAnchorMonth)) continue;
+      const anchorMonth = sourceAnchorMonth(rule, accountMap, startMonth);
+      if (!firesInMonth(rule, month, anchorMonth)) continue;
       const date = occurrenceDate(month, rule.dayOfMonth);
       if (date > through) continue;
       occurrences.push({ rule, date });
@@ -51,47 +52,30 @@ export function recurringHistory(
   }
   occurrences.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-  const gate = (id: string, date: string): boolean =>
-    passesAnchorGate(accountMap.get(id)?.anchorDate, date);
-
   // Remaining Restschuld per Mortgage, paid down in date order.
-  const remaining = new Map<string, number>();
+  const restschuld = new Map<string, number>();
   for (const a of accounts) {
-    if (a.kind === "Mortgage") remaining.set(a.id, a.anchorBalance);
+    if (a.kind === "Mortgage") restschuld.set(a.id, a.anchorBalance);
   }
 
   let total = 0;
   for (const { rule, date } of occurrences) {
-    const sourceMoves = gate(rule.accountId, date);
-
-    if (rule.linkedAccountId) {
-      const destId = rule.linkedAccountId;
-      const destMoves = gate(destId, date);
-      const destKind = accountMap.get(destId)?.kind;
-
-      if (destKind === "Mortgage") {
-        let debit = Math.abs(rule.amount);
-        if (destMoves) {
-          const left = remaining.get(destId) ?? 0;
-          debit = Math.min(debit, left);
-          remaining.set(destId, left - debit);
-          if (destId === accountId) total -= debit;
-        }
-        if (sourceMoves && rule.accountId === accountId) total -= debit;
-        continue;
+    const legs = occurrenceLegs(
+      rule,
+      date,
+      accountMap,
+      (mortgageId) => restschuld.get(mortgageId) ?? 0
+    );
+    for (const leg of legs) {
+      if (!leg.passesGate) continue;
+      const delta = legBalanceDelta(leg, accountMap.get(leg.accountId)?.kind);
+      if (restschuld.has(leg.accountId)) {
+        restschuld.set(
+          leg.accountId,
+          (restschuld.get(leg.accountId) ?? 0) + delta
+        );
       }
-
-      if (sourceMoves && rule.accountId === accountId) total -= rule.amount;
-      if (destMoves && destId === accountId) total += rule.amount;
-      continue;
-    }
-
-    if (
-      rule.accountId === accountId &&
-      account.kind !== "Mortgage" &&
-      sourceMoves
-    ) {
-      total += rule.amount;
+      if (leg.accountId === accountId) total += delta;
     }
   }
   return total;
