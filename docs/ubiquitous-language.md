@@ -668,18 +668,18 @@
 
 ## Bank Statement Import — Backend (new)
 
-| Term                       | Definition                                                                                                                                                                                      | Aliases to avoid                         |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Import Record**          | The persisted `imports` table row for one imported **Statement** — account, bank, filename, date range, row count, imported-on, size; the durable backing of an **Import History** entry        | Import row, history entry, statement row |
-| **Import Preview Request** | `POST /imports/preview` — multipart upload (file bytes + accountId + optional mapping) that parses, auto-categorizes, and runs **Duplicate**/**Recurring Detection**; **writes nothing**        | Parse request, dry run                   |
-| **Import Commit**          | `POST /imports` — the JSON request carrying the chosen rows that atomically inserts the **Import Record** + its **Imported Transactions** and upserts the **Bank Preset** in one DB transaction | Save import, finalize import             |
-| **Stateless Preview**      | The rule that an **Import Preview Request** holds **no server session** — the **Import Commit** re-sends the reviewed rows and the server re-validates them; the raw file is never persisted    | —                                        |
-| **Import Cascade Delete**  | `DELETE /imports/:id` — deletes an **Import Record** and the **Imported Transactions** carrying its `import_id`, implemented in the repo use-case method (not SQL `ON DELETE CASCADE`)          | Cascade, bulk delete                     |
-| **Charset Detection**      | The server step that sniffs a statement's encoding (BOM → UTF-8, else **Windows-1252**) and decodes the raw bytes via `TextDecoder` before parsing — owned by the server, never the Renderer    | Encoding sniff, decode                   |
-| **Header Signature**       | The set of column names on a **Bank Preset** that identifies the real header row inside a CSV — the parser skips the metadata **preamble** by scanning down to it                               | Header match, column fingerprint         |
-| **Preamble**               | The bank-specific metadata lines (IBAN, period, opening balance) that precede the real header row in some exports — discarded by matching the **Header Signature**                              | Header junk, metadata rows               |
-| **Auto-Categorization**    | The server keyword→category rule map that assigns each parsed row one of the eight default Categories (`Miscellaneous` fallback); overridable per-row in the wizard                             | Auto-tag, category guess                 |
-| **csvImport module**       | The pure, fully-tested `server/src/lib/csvImport/` engine — **Charset Detection**, bank detection, parse, cents/ISO conversion, **Auto-Categorization**, duplicate/recurring detection          | Parser, import engine                    |
+| Term                              | Definition                                                                                                                                                                                      | Aliases to avoid                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Import Record**                 | The persisted `imports` table row for one imported **Statement** — account, bank, filename, date range, row count, imported-on, size; the durable backing of an **Import History** entry        | Import row, history entry, statement row |
+| **Import Preview Request**        | `POST /imports/preview` — multipart upload (file bytes + accountId + optional mapping) that parses, auto-categorizes, and runs **Duplicate**/**Recurring Detection**; **writes nothing**        | Parse request, dry run                   |
+| **Import Commit**                 | `POST /imports` — the JSON request carrying the chosen rows that atomically inserts the **Import Record** + its **Imported Transactions** and upserts the **Bank Preset** in one DB transaction | Save import, finalize import             |
+| **Stateless Preview**             | The rule that an **Import Preview Request** holds **no server session** — the **Import Commit** re-sends the reviewed rows and the server re-validates them; the raw file is never persisted    | —                                        |
+| **Import Cascade Delete**         | `DELETE /imports/:id` — deletes an **Import Record** and the **Imported Transactions** carrying its `import_id`, implemented in the repo use-case method (not SQL `ON DELETE CASCADE`)          | Cascade, bulk delete                     |
+| **Charset Detection**             | The server step that sniffs a statement's encoding (BOM → UTF-8, else **Windows-1252**) and decodes the raw bytes via `TextDecoder` before parsing — owned by the server, never the Renderer    | Encoding sniff, decode                   |
+| **Header Signature**              | The set of column names on a **Bank Preset** that identifies the real header row inside a CSV — the parser skips the metadata **preamble** by scanning down to it                               | Header match, column fingerprint         |
+| **Preamble**                      | The bank-specific metadata lines (IBAN, period, opening balance) that precede the real header row in some exports — discarded by matching the **Header Signature**                              | Header junk, metadata rows               |
+| **Auto-Categorization** (updated) | The preview step that gives each row a category by precedence **Category Rule** → **Keyword Group** → `Miscellaneous`, with a **Category Source**; overridable per-row in the wizard (log 33)   | Auto-tag, category guess                 |
+| **csvImport module**              | The pure, fully-tested `server/src/lib/csvImport/` engine — **Charset Detection**, bank detection, parse, cents/ISO conversion, **Auto-Categorization**, duplicate/recurring detection          | Parser, import engine                    |
 
 ## Relationships (Bank Statement Import — Backend additions)
 
@@ -798,15 +798,15 @@
 
 ## Category Management (new)
 
-| Term                      | Definition                                                                                                                                                                                 | Aliases to avoid                         |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| **Category Management**   | The feature giving the user control over the Category set — add/rename/recolor/delete **Custom Categories**, recolor/hide **Default Categories** — plus per-row category editing in import | Category editor, tag management          |
-| **Custom Category**       | A user-created Category — full CRUD (add, rename, recolor, delete); `is_default = 0`                                                                                                       | User category, added category            |
-| **Default Category**      | One of the eight seeded Categories (`is_default = 1`) — **recolor + hide only**, never renamed or deleted, because some names are referenced in code (`settlement.ts`, `categorize.ts`)    | Seeded category, built-in category       |
-| **Hidden Category**       | A **Default Category** with `hidden = 1` — filtered out of the **CategorySelect** pickers but still valid on existing data and in reports; a picker-visibility filter, never a data filter | Archived/disabled category, blend-out    |
-| **Category Reassignment** | The atomic bulk move of a Category's Transactions **and** RecurringTransactions from one name to another — the shared cascade behind both **rename** and **reassign-on-delete**            | Recategorize, category migration         |
-| **CategoryManagerModal**  | The modal (opened from the **CategoriesCard** in Settings) that is the full CRUD surface — lists Default and Custom Categories with rename/recolor/hide/delete affordances                 | Category modal, manage-categories dialog |
-| **CategoriesCard**        | The Settings-page card with a blurb and a "Manage categories" button that opens the **CategoryManagerModal**                                                                               | Category settings card                   |
+| Term                      | Definition                                                                                                                                                                                                                       | Aliases to avoid                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Category Management**   | The feature giving the user control over the Category set — add/rename/recolor/delete **Custom Categories**, recolor/hide **Default Categories** — plus per-row category editing in import                                       | Category editor, tag management          |
+| **Custom Category**       | A user-created Category — full CRUD (add, rename, recolor, delete); `is_default = 0`                                                                                                                                             | User category, added category            |
+| **Default Category**      | One of the eight seeded Categories (`is_default = 1`) — **recolor + hide only**, never renamed or deleted, because some names are referenced in code (`settlement.ts`; `categorize.ts` relies only on `Miscellaneous`) (updated) | Seeded category, built-in category       |
+| **Hidden Category**       | A **Default Category** with `hidden = 1` — filtered out of the **CategorySelect** pickers but still valid on existing data and in reports; a picker-visibility filter, never a data filter                                       | Archived/disabled category, blend-out    |
+| **Category Reassignment** | The atomic bulk move of a Category's Transactions **and** RecurringTransactions from one name to another — the shared cascade behind both **rename** and **reassign-on-delete**                                                  | Recategorize, category migration         |
+| **CategoryManagerModal**  | The modal (opened from the **CategoriesCard** in Settings) that is the full CRUD surface — lists Default and Custom Categories with rename/recolor/hide/delete affordances                                                       | Category modal, manage-categories dialog |
+| **CategoriesCard**        | The Settings-page card with a blurb and a "Manage categories" button that opens the **CategoryManagerModal**                                                                                                                     | Category settings card                   |
 
 ## Relationships (Category Management additions)
 
@@ -816,7 +816,7 @@
 - **Category Color** is now authoritative (read from the stored `color` column); `colorForCategoryName` is only a fallback for a **Default Category** whose color is still NULL
 - The category palette (`categoryColorPalette`) is **20** on-theme swatches, mirrored identically in `server/src/storage/categoryColors.ts` and `src/utils/categoryColor/categoryColor.ts`
 - A **Hidden Category** is dropped from **CategorySelect** options everywhere (transaction, recurring, import) except that a Transaction already sitting in it still shows its current value when edited; the **CategoryManagerModal** always lists it (disabled) so it can be un-hidden
-- The CSV **Auto-Categorization** map stays hardcoded to **Default Categories** — flexibility comes from the per-row **CategorySelect** in the import review, not from custom keyword rules
+- ~~The CSV **Auto-Categorization** map stays hardcoded to **Default Categories**~~ (superseded by log 33): **Auto-Categorization** now applies learned **Category Rules** first, and its **Keyword Groups** resolve to the user's own visible categories by canonical name or synonym
 - Name uniqueness is **case-insensitive**; a colliding create/rename is rejected (409), never silently merged
 
 ## Example dialogue (Category Management)
@@ -1370,3 +1370,54 @@
 - **"actual"** (updated): the engine's `actual` now includes **Recurring History**, so after the anchor it is no longer "stored transactions only". Never describe an actual as purely what the bank statement says.
 - **"Recurring-Only Model"** (retired as UI copy): the Month Overview subtitle no longer names it. The page reads "Fixed flows · Variable spending · Month-end balances", because the month now shows its **Fixed Flows** and **Month-End Balances** beside Variable Spending. The term survives only as the engine constraint **Recurring-Only Projection Model**.
 - **Upgrade caveat** (new): an account anchored in the past grows by the **Recurring History** since its Anchor Date on upgrade. When a rule was already inside the anchored figure, the balance can read doubled; **Re-anchor** is the correction, never deleting the rule.
+
+## Import Category Learning (new)
+
+| Term                              | Definition                                                                                                                                                                                      | Aliases to avoid                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| **Import Category Learning**      | The feature that remembers the categories approved at an **Import Commit** and applies them, through **Auto-Categorization**, to later statements; deterministic and rule-based, never AI       | Smart categories, auto-learning, AI tagging  |
+| **Counterparty**                  | The raw source cell naming who a row's money went to or came from: the preset's **Counterparty Column** when that cell is non-empty, else the description cell, as parsed and before any edit   | Payee, merchant, Empfänger                   |
+| **Counterparty Column**           | The optional preset-only `counterpartyColumn` on a `BankPreset` (Renault: `Name Zahlungsbeteiligter`); never part of `ColumnMapping`, never shown in the Map-columns step                       | Payee mapping, counterparty mapping          |
+| **Counterparty Key**              | The normalised **Counterparty** (`counterpartyKey`): NFKC, lowercased, non-letters stripped, tokens under 2 letters dropped, the first 3 tokens kept; empty means "no key"                      | Merchant key, match key, fingerprint         |
+| **Category Rule**                 | A learned `category_rules` row mapping one **Counterparty Key** to one Category by name; global, never per account or per bank                                                                  | Learned mapping, auto-rule, keyword rule     |
+| **Keyword Group**                 | One entry of the built-in cold-start vocabulary (`KEYWORD_GROUPS`): a canonical category name, its synonyms, and the keywords that match it                                                     | Keyword list, built-in rule, preset category |
+| **Category Source**               | Where a review row's category came from: `learned`, `suggested`, `proposed`, `unmatched` or `chosen`; a third axis beside flags and blockers, never merged with either                          | Category origin, confidence, category flag   |
+| **Category Proposal**             | A review-step offer to create a missing canonical category that a **Keyword Group** matched: one per category per statement, approved with "Create category" or dismissed                       | Category suggestion, auto-created category   |
+| **Declined Proposal**             | A canonical category name in `declined_category_proposals`, persisted by the **Import Commit** after the user dismissed its **Category Proposal**; it is never proposed again                   | Rejected category, blocked category          |
+| **Same-Counterparty Propagation** | The review rule that a category change on one row also applies to every same-**Counterparty Key** row the user has not yet touched, marking all of them `chosen`                                | Bulk recategorize, apply-to-all              |
+| **Next Free Colour**              | `nextFreeCategoryColor`: the first palette swatch no Category uses, falling back to `colorForCategoryName` once all 20 are taken; the colour of a category created from a **Category Proposal** | Auto colour, random colour                   |
+
+## Relationships (Import Category Learning additions)
+
+- **Auto-Categorization** precedence is **Category Rule** → first matching **Keyword Group** → `Miscellaneous`; it runs in `buildPreview`, and `mapStatementRows` no longer categorizes
+- A committed row teaches when its **Counterparty Key** is non-empty and its **Category Source** is `learned`, `suggested` or `chosen`; an `unmatched` or undecided `proposed` row teaches nothing
+- When one statement commits a key into several categories, the category with the most teaching rows wins (ties: latest date, then later row) — `deriveCategoryRules`
+- **Category Reassignment** now moves Transactions, RecurringTransactions **and** **Category Rules**; deleting an unused category deletes its rules — a rule always names an existing Category
+- A **Keyword Group** suggests the first **visible** Category named its canonical name or a synonym; with none, it proposes the canonical name unless that name is a **Declined Proposal** or a **Hidden Category**
+- Approving a **Category Proposal** creates the Category at once with the **Next Free Colour**; dismissing it is remembered only when the **Import Commit** succeeds
+- **Import Cascade Delete** never unlearns a **Category Rule**; hand-entered Variable Spending and Month Overview edits never teach
+- The server re-derives every **Counterparty Key** on commit; the client mirror in `src/utils/counterpartyKey/` exists only for **Same-Counterparty Propagation** and is pinned by a parity test
+
+## Example dialogue (Import Category Learning)
+
+> **Dev:** "Last month I moved twelve REWE rows from Miscellaneous to Groceries. What happens on this month's statement?"
+>
+> **Domain expert:** "They arrive as Groceries with a 'Learned' chip. Your commit was the approval: it stored a **Category Rule** from the **Counterparty Key** `rewe markt gmbh` to Groceries."
+>
+> **Dev:** "And a pharmacy Horizon has never seen, when I have no Health category?"
+>
+> **Domain expert:** "The **Keyword Group** for Health matches `apotheke`, but you have no visible Health, so you get a **Category Proposal**: 'New category: Health · 3 rows'. Create it and those rows move into it. Dismiss it and they stay in Miscellaneous; once you commit, Health is a **Declined Proposal** and won't come back."
+>
+> **Dev:** "I fix one Amazon row to Shopping. Do I have to fix the other nine?"
+>
+> **Domain expert:** "No. **Same-Counterparty Propagation** moves every same-key row you haven't touched. If you then set one back to Household, Shopping still wins on commit, nine to one."
+>
+> **Dev:** "And the forty rows I left on Miscellaneous?"
+>
+> **Domain expert:** "Their **Category Source** is `unmatched`, so they teach nothing. Horizon only remembers what you actually approved."
+
+## Flagged ambiguities (Import Category Learning)
+
+- **"rule"** (new): a **Category Rule** is learned, one key to one category. A **Keyword Group** is shipped code, not a rule. A **RecurringTransaction** is a "recurring rule" elsewhere in this glossary. Always qualify it: say **Category Rule**, never "rule" alone, in import code and docs.
+- **"suggested"** (new): it names exactly one **Category Source**, a **Keyword Group** hit on an existing category. A **Category Proposal** is not a suggestion: it offers a category that does not exist yet.
+- **"counterparty" vs "description"** (new): the description is what the user sees and may edit in review. The **Counterparty** is the immutable source cell that learning keys on. For Sparkasse and Postbank giro the two start out as the same text, but they are still different fields.
