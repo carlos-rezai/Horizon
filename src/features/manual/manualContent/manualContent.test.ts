@@ -739,6 +739,13 @@ describe("the Import topic", () => {
       expect(row?.body).toMatch(/Miscellaneous/);
     });
 
+    // Issue #260 — a Keyword Group hit arrives with a "Suggested" chip.
+    it("names the Suggested chip in the review row", () => {
+      const row = rowOf("import", /review/i);
+
+      expect(row?.body).toMatch(/Suggested/);
+    });
+
     it("says a committed import is what teaches a category", () => {
       const row = rowOf("import", /review/i);
 

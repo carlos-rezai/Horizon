@@ -1003,3 +1003,86 @@ describe("Category Rules are never taught outside an import (#258)", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #260 — Import Category Learning, Phase 3: Keyword Groups.
+//
+// With no Category Rule, a row whose counterparty or description hits a
+// Keyword Group arrives `suggested` in the user's visible category of that
+// name or a synonym. On an untouched install that means the default
+// categories: REWE lands in Food, Netflix in Subscriptions. The keyword lists
+// are a build detail; these payees are ones any vocabulary carries.
+// ---------------------------------------------------------------------------
+
+const KEYWORD_CSV =
+  "Datum;Beschreibung;Betrag\n" +
+  "24.06.2026;REWE Markt 0815;-12,50\n" +
+  "25.06.2026;NETFLIX.COM;-13,99\n" +
+  "26.06.2026;MUSTER DIENST GMBH;-9,90\n";
+
+async function previewKeywordCsv(
+  accountId: string
+): Promise<LearningPreviewRow[]> {
+  const res = await request(app)
+    .post("/imports/preview")
+    .field("accountId", accountId)
+    .attach("file", Buffer.from(KEYWORD_CSV, "utf8"), {
+      filename: "keywords.csv",
+      contentType: "text/csv",
+    });
+  expect(res.status).toBe(200);
+  return res.body.rows as LearningPreviewRow[];
+}
+
+describe("POST /imports/preview — Keyword Groups (#260)", () => {
+  it("demo: on an untouched install a first import is partly categorized into the default categories", async () => {
+    const account = await createAccount();
+
+    const rows = await previewKeywordCsv(account.id);
+
+    expect(payee(rows, "REWE Markt 0815")).toMatchObject({
+      category: "Food",
+      categorySource: "suggested",
+    });
+    expect(payee(rows, "NETFLIX.COM")).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "suggested",
+    });
+    expect(payee(rows, "MUSTER DIENST GMBH")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("teaches a Category Rule from a committed suggested row, so the next preview has it learned", async () => {
+    const account = await createAccount();
+    const first = await previewKeywordCsv(account.id);
+
+    const committed = await postImport(account.id, {
+      // Committed under the default "dkb" label so no remembered preset
+      // changes how the generic CSV parses next time.
+      filename: "keywords.csv",
+      rows: first.map((r) => ({
+        date: r.date,
+        amount: r.amount,
+        description: r.description,
+        counterparty: r.counterparty,
+        category: r.category,
+        categorySource: r.categorySource,
+      })),
+    });
+    expect(committed.status).toBe(201);
+
+    const second = await previewKeywordCsv(account.id);
+
+    expect(payee(second, "REWE Markt 0815")).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+    // The unmatched row taught nothing.
+    expect(payee(second, "MUSTER DIENST GMBH")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+});

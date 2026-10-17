@@ -171,3 +171,85 @@ describe("buildPreview — Renault Tagesgeld fixture", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #260 — Renault's Counterparty Column. The preset gains a preset-only
+// `counterpartyColumn` (`Name Zahlungsbeteiligter`, like `pendingColumn`), so a
+// Category Rule keys on the merchant rather than the booking-text label. A
+// blank counterparty (interest, tax) falls back to `Buchungstext`. The column
+// is not part of ColumnMapping, so the mapping the Map-columns step edits and
+// the stored import_presets JSON are untouched.
+// ---------------------------------------------------------------------------
+
+describe("Renault — Counterparty Column (#260)", () => {
+  it("names Name Zahlungsbeteiligter as a preset-only counterparty column", () => {
+    expect(BANK_PRESETS.Renault.counterpartyColumn).toBe(
+      "Name Zahlungsbeteiligter"
+    );
+    expect(BANK_PRESETS.Renault.map).not.toHaveProperty("counterparty");
+    expect(BANK_PRESETS.Renault.map).not.toHaveProperty("counterpartyColumn");
+    // Every other preset and a generic CSV keep the description.
+    for (const [bank, preset] of Object.entries(BANK_PRESETS)) {
+      if (bank === "Renault") continue;
+      expect(preset.counterpartyColumn, bank).toBeUndefined();
+    }
+  });
+
+  it("takes each row's counterparty from Name Zahlungsbeteiligter", async () => {
+    const result = await preview(fixtureBytes(FIXTURE));
+
+    expect(
+      result.rows.find((r) => r.description === "Gutschrift")?.counterparty
+    ).toBe("MUSTER ARBEITGEBER AG");
+    expect(
+      result.rows.find((r) => r.description === "Lastschrift")?.counterparty
+    ).toMatch(/^MUSTER B.CKEREI$/u);
+  });
+
+  it("falls back to Buchungstext on a row with a blank counterparty", async () => {
+    const result = await preview(fixtureBytes(FIXTURE));
+
+    // Control: a row with a counterparty does not fall back.
+    expect(
+      result.rows.find((r) => r.description === "Gutschrift")?.counterparty
+    ).toBe("MUSTER ARBEITGEBER AG");
+
+    expect(
+      result.rows.find((r) => r.description === "Abschluss")?.counterparty
+    ).toBe("Abschluss");
+    expect(
+      result.rows.find((r) => r.description === "Kapitalertragsteuer")
+        ?.counterparty
+    ).toBe("Kapitalertragsteuer");
+  });
+
+  it("reads the counterparty column under a remembered preset and echoes a mapping without it", async () => {
+    // A remembered preset is the stored import_presets JSON: a ColumnMapping
+    // and the format, never a counterparty column.
+    const remembered: StoredImportPreset = {
+      mapping: {
+        date: "Buchungstag",
+        description: "Buchungstext",
+        amount: "Betrag",
+      },
+      delimiter: ";",
+      decimal: ",",
+      dateFmt: "DD.MM.YYYY",
+    };
+    const result = await buildPreview({
+      bytes: fixtureBytes(FIXTURE),
+      existingTxns: [],
+      recurring: [],
+      getRememberedPreset: async () => remembered,
+    });
+
+    expect(
+      result.rows.find((r) => r.description === "Gutschrift")?.counterparty
+    ).toBe("MUSTER ARBEITGEBER AG");
+    // The mapping the Map-columns step edits and the commit stores stays a
+    // plain ColumnMapping.
+    expect(Object.keys(result.mapping).sort()).toEqual(
+      ["amount", "date", "description"].sort()
+    );
+  });
+});

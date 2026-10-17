@@ -1350,3 +1350,60 @@ describe("ImportWizard — Learned chip (#258)", () => {
     ]);
   });
 });
+
+/**
+ * Issue #260 — Keyword Groups. A row a Keyword Group matched arrives in the
+ * user's category with the Category Source `suggested`, and the review table
+ * marks it with a muted "Suggested" chip beside the picker. Committed as it
+ * is, the row keeps its source, so the server learns a Category Rule from it.
+ */
+
+/** Two included rows: a keyword suggestion and an unmatched fallback. */
+function makeSuggestedPreview(): ImportPreview {
+  const learning = makeLearningPreview();
+  return {
+    ...learning,
+    rows: [
+      { ...learning.rows[0], categorySource: "suggested" },
+      learning.rows[1],
+    ],
+    summary: { ...learning.summary, total: 2, duplicates: 0 },
+  };
+}
+
+describe("ImportWizard — Suggested chip (#260)", () => {
+  it("shows Suggested beside the picker on a suggested row, and no chip on an unmatched row", async () => {
+    mockCategoryFetch(learningCategories);
+    renderWizard(
+      learningCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeSuggestedPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+
+    expect(within(reviewRow(0)).getByText(/^suggested$/i)).toBeInTheDocument();
+    expect(within(reviewRow(0)).queryByText(/learned/i)).toBeNull();
+    expect(within(reviewRow(1)).queryByText(/suggested/i)).toBeNull();
+  });
+
+  it("commits an untouched suggested row as suggested, so it teaches a Category Rule", async () => {
+    mockCategoryFetch(learningCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeSuggestedPreview());
+
+    await gotoReview();
+    await settlePickers();
+    expect(within(reviewRow(0)).getByText(/^suggested$/i)).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 2 transactions/i })
+    );
+
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    expect(commit.mock.calls[0][0].rows[0]).toMatchObject({
+      category: "Food",
+      categorySource: "suggested",
+    });
+  });
+});

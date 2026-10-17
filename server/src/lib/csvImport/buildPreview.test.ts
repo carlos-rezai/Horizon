@@ -588,6 +588,8 @@ describe("buildPreview — Counterparty and Category Rules (#258)", () => {
   });
 
   it("leaves every row without a Category Rule in Miscellaneous, unmatched", async () => {
+    // Only a hidden Food and Miscellaneous exist, so no Keyword Group can
+    // suggest anything (#260) and the fallback alone is under test.
     const preview = await buildPreview({
       bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
@@ -598,7 +600,10 @@ describe("buildPreview — Counterparty and Category Rules (#258)", () => {
           category: "Food",
         },
       ],
-      categories: defaultCategories,
+      categories: [
+        makeCategory({ id: "c-food", name: "Food", hidden: true }),
+        makeCategory({ id: "c-misc", name: "Miscellaneous" }),
+      ],
       getRememberedPreset: noPreset,
     });
 
@@ -607,24 +612,6 @@ describe("buildPreview — Counterparty and Category Rules (#258)", () => {
     );
     expect(others).toHaveLength(3);
     for (const row of others) {
-      expect(row).toMatchObject({
-        category: "Miscellaneous",
-        categorySource: "unmatched",
-      });
-    }
-  });
-
-  it("no longer categorizes by keyword: a salary with no Category Rule is unmatched", async () => {
-    const preview = await buildPreview({
-      bytes: fixtureBytes("postbank-giro.csv"),
-      existingTxns: [],
-      recurring: [],
-      categoryRules: [],
-      categories: defaultCategories,
-      getRememberedPreset: noPreset,
-    });
-
-    for (const row of preview.rows) {
       expect(row).toMatchObject({
         category: "Miscellaneous",
         categorySource: "unmatched",
@@ -696,5 +683,98 @@ describe("buildPreview — Counterparty and Category Rules (#258)", () => {
     expect(Object.keys(preview.summary).sort()).toEqual(
       ["duplicates", "pending", "recurring", "rejected", "total"].sort()
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #260 — Keyword Groups. With no Category Rule for a row, buildPreview
+// suggests the user's visible category for the first matching Keyword Group.
+// The keyword lists are a build detail; REWE (Groceries) and Netflix
+// (Subscriptions) are unmistakable payees any vocabulary carries.
+// ---------------------------------------------------------------------------
+
+const KEYWORD_CSV =
+  "Datum;Beschreibung;Betrag\n" +
+  "24.06.2026;REWE Markt 0815;-12,50\n" +
+  "25.06.2026;NETFLIX.COM;-13,99\n" +
+  "26.06.2026;MUSTER DIENST GMBH;-9,90\n";
+
+describe("buildPreview — Keyword Groups (#260)", () => {
+  it("suggests a visible category for a keyword hit and leaves the rest unmatched", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(KEYWORD_CSV),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    const byDescription = (d: string) =>
+      preview.rows.find((r) => r.description === d);
+    expect(byDescription("REWE Markt 0815")).toMatchObject({
+      category: "Food",
+      categorySource: "suggested",
+    });
+    expect(byDescription("NETFLIX.COM")).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "suggested",
+    });
+    expect(byDescription("MUSTER DIENST GMBH")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("never suggests a Hidden Category", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(KEYWORD_CSV),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: [
+        ...defaultCategories.filter((c) => c.name !== "Subscriptions"),
+        makeCategory({ id: "c-subs", name: "Subscriptions", hidden: true }),
+      ],
+      getRememberedPreset: noPreset,
+    });
+
+    expect(
+      preview.rows.find((r) => r.description === "NETFLIX.COM")
+    ).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    // Control: a visible category is still suggested in the same preview.
+    expect(
+      preview.rows.find((r) => r.description === "REWE Markt 0815")
+    ).toMatchObject({ category: "Food", categorySource: "suggested" });
+  });
+
+  it("lets a Category Rule beat a keyword match", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(KEYWORD_CSV),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [
+        {
+          counterpartyKey: counterpartyKey("REWE Markt 0815"),
+          category: "Housing",
+        },
+      ],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    expect(
+      preview.rows.find((r) => r.description === "REWE Markt 0815")
+    ).toMatchObject({
+      category: "Housing",
+      categorySource: "learned",
+    });
+    // Control: a row without a Category Rule still gets its keyword match.
+    expect(
+      preview.rows.find((r) => r.description === "NETFLIX.COM")
+    ).toMatchObject({ category: "Subscriptions", categorySource: "suggested" });
   });
 });
