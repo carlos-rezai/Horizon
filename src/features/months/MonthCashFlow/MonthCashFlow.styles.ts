@@ -26,6 +26,21 @@ export const StyledGroupName = styled.h3`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
+export const StyledBalance = styled.div`
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: ${({ theme }) => theme.spacing.space1}px;
+`;
+
+export const StyledBalanceCaption = styled.span`
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
+  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+`;
+
 export const StyledNet = styled.div`
   display: flex;
   align-items: center;

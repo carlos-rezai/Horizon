@@ -136,7 +136,7 @@ const report: MonthCashFlowReport = {
 
 /** Each group's Month-End Balance, keyed by account id. */
 const balances: Record<string, MonthEndBalance> = {
-  main: { basis: "projected", cents: 1234567 },
+  main: { basis: "projected", cents: 123456700 },
   savings: { basis: "actual", cents: 800000 },
   mortgage: { basis: "projected", cents: 21000000 },
   etf: { basis: "unknown", knownFrom: "2027-03" },

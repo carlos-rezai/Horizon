@@ -12,7 +12,8 @@ import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { MONTHS } from "../../../utils/format/format";
+import { MONTHS, formatMonth } from "../../../utils/format/format";
+import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
 import {
   StyledDay,
   StyledDayNum,
@@ -27,6 +28,8 @@ import {
   StyledGroups,
   StyledGroupHead,
   StyledGroupName,
+  StyledBalance,
+  StyledBalanceCaption,
   StyledNet,
 } from "./MonthCashFlow.styles";
 
@@ -36,6 +39,8 @@ interface Props {
   report: MonthCashFlowReport;
   /** Full month label (e.g. "September") for the section title. */
   monthLabel: string;
+  /** Each group's Month-End Balance, keyed by account id. */
+  balances: Record<string, MonthEndBalance>;
 }
 
 /** The account whose rule a row comes from: a destination leg's counterpart. */
@@ -50,7 +55,12 @@ function sourceAccountId(group: AccountFixedFlows, flow: FixedFlow): string {
  * order, listing the month's recurring flows with a "Net fixed" footer.
  * Read-only — each row links to the account page its rule lives on.
  */
-export default function MonthCashFlow({ accounts, report, monthLabel }: Props) {
+export default function MonthCashFlow({
+  accounts,
+  report,
+  monthLabel,
+  balances,
+}: Props) {
   const byId = new Map(accounts.map((a) => [a.id, a]));
 
   return (
@@ -67,6 +77,7 @@ export default function MonthCashFlow({ accounts, report, monthLabel }: Props) {
               <StyledGroupHead data-testid="fixed-flow-group-head">
                 {account && <Chip color={resolveAccountColor(account)} />}
                 <StyledGroupName>{account?.name ?? "—"}</StyledGroupName>
+                <GroupBalance balance={balances[group.accountId]} />
               </StyledGroupHead>
 
               {group.flows.length === 0 ? (
@@ -99,6 +110,30 @@ export default function MonthCashFlow({ accounts, report, monthLabel }: Props) {
         })}
       </StyledGroups>
     </Card>
+  );
+}
+
+/** The header's Month-End Balance: a figure with its basis, or "No data". */
+function GroupBalance({ balance }: { balance: MonthEndBalance | undefined }) {
+  if (!balance || balance.basis === "unknown") {
+    const knownFrom = balance?.knownFrom;
+    return (
+      <StyledBalance>
+        <StyledBalanceCaption>
+          {knownFrom ? `No data before ${formatMonth(knownFrom)}` : "No data"}
+        </StyledBalanceCaption>
+      </StyledBalance>
+    );
+  }
+  return (
+    <StyledBalance>
+      <Money cents={balance.cents} />
+      <StyledBalanceCaption>
+        {balance.basis === "actual"
+          ? "Month-end · Actual"
+          : "Month-end · Projected"}
+      </StyledBalanceCaption>
+    </StyledBalance>
   );
 }
 

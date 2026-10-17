@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+// jsdom because the barrel re-exports the API base, which reads `window`.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { monthEndBalance } from "./monthEndBalance";
 import { monthEndBalance as fromBarrel } from "../index";
