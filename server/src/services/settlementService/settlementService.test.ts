@@ -54,7 +54,8 @@ describe("generateSettlements — today", () => {
 
     const settled = (await storage.transactions.findAll())
       .filter((tx) => tx.accountId === card.id && tx.isAutoSettlement)
-      .map((tx) => [tx.date, tx.amount]);
+      .map((tx) => [tx.date, tx.amount])
+      .sort(([a], [b]) => String(a).localeCompare(String(b)));
     expect(settled).toEqual([
       ["2026-11-15", 5000],
       ["2026-12-15", 2000],
