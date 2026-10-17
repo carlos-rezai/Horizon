@@ -6,7 +6,12 @@ import type {
 } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
-import { daysInMonth, endOfMonth, monthsBetween } from "../date/date.js";
+import { endOfMonth, monthsBetween } from "../date/date.js";
+import {
+  firesInMonth,
+  occurrenceDate,
+  passesAnchorGate,
+} from "../recurringOccurrence/recurringOccurrence.js";
 import { selectLiquidAccounts } from "../accountKinds/accountKinds.js";
 
 export interface ProjectionAccountEntry {
@@ -108,45 +113,13 @@ function addMonths(yyyyMM: string, n: number): string {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-function firesInMonth(
-  frequency: Frequency,
-  index: number,
-  calendarMonth: number,
-  monthOfYear?: number
-): boolean {
-  if (frequency === "monthly") return true;
-
-  if (monthOfYear != null) {
-    if (frequency === "annual") {
-      return calendarMonth === monthOfYear;
-    }
-    // Quarterly calendar-aware: fire when the calendar month is in the 3-month
-    // cycle anchored at monthOfYear. At index 0, only fire if this IS the anchor
-    // month — don't fire mid-cycle at the projection start.
-    const distance = (calendarMonth - monthOfYear + 12) % 12;
-    return distance % 3 === 0 && (distance === 0 || index > 0);
-  }
-
-  // Legacy offset-based firing when monthOfYear is not set
-  if (frequency === "quarterly") return index % 3 === 0;
-  return index % 12 === 0; // annual
-}
-
-// An occurrence's date: the month's dayOfMonth, clamped to the month's length.
-function occurrenceDate(yyyyMM: string, dayOfMonth: number): string {
-  const day = Math.min(dayOfMonth, daysInMonth(yyyyMM));
-  return `${yyyyMM}-${String(day).padStart(2, "0")}`;
-}
-
-// Anchor Gate: a leg moves its account's balance only when the occurrence is
-// dated after that account's Anchor Date — the anchor already contains it.
-function passesAnchorGate(
+// The account's Anchor Gate, looked up by id.
+function accountPassesAnchorGate(
   accountId: string,
   date: string,
   accountMap: Map<string, ProjectionAccountEntry>
 ): boolean {
-  const anchorDate = accountMap.get(accountId)?.anchorDate;
-  return !anchorDate || date > anchorDate;
+  return passesAnchorGate(accountMap.get(accountId)?.anchorDate, date);
 }
 
 function applyRecurringToBalances(
@@ -156,10 +129,14 @@ function applyRecurringToBalances(
   runningBalances: Map<string, number>
 ): void {
   const date = occurrenceDate(month, r.dayOfMonth);
-  const sourceMoves = passesAnchorGate(r.accountId, date, accountMap);
+  const sourceMoves = accountPassesAnchorGate(r.accountId, date, accountMap);
 
   if (r.linkedAccountId) {
-    const destMoves = passesAnchorGate(r.linkedAccountId, date, accountMap);
+    const destMoves = accountPassesAnchorGate(
+      r.linkedAccountId,
+      date,
+      accountMap
+    );
     const destKind = accountMap.get(r.linkedAccountId)?.kind;
     if (destKind === "Mortgage" && destMoves) {
       const remaining = runningBalances.get(r.linkedAccountId) ?? 0;
@@ -218,6 +195,11 @@ export function projectBalances(
     (r) => r.isActive !== false
   );
 
+  // A rule's source account's Anchor month; without an Anchor Date, the run's
+  // first month.
+  const sourceAnchorMonth = (r: ProjectionRecurringEntry): string =>
+    accountMap.get(r.accountId)?.anchorDate?.slice(0, 7) ?? fromDate;
+
   // Initialise from Anchor Balances
   const runningBalances = new Map<string, number>();
   for (const a of accounts) {
@@ -234,23 +216,11 @@ export function projectBalances(
   const replayLength = monthsBetween(replayStart, fromDate);
   for (let j = 0; j < replayLength; j++) {
     const replayMonth = addMonths(replayStart, j);
-    const replayCalendarMonth = parseInt(replayMonth.split("-")[1], 10);
 
     for (const r of activeRecurring) {
-      const sourceOpened =
-        accountMap.get(r.accountId)?.anchorDate?.slice(0, 7) ?? fromDate;
+      const sourceOpened = sourceAnchorMonth(r);
       if (replayMonth < sourceOpened) continue;
-
-      const indexFromOpening = monthsBetween(sourceOpened, replayMonth);
-      if (
-        !firesInMonth(
-          r.frequency,
-          indexFromOpening,
-          replayCalendarMonth,
-          r.monthOfYear
-        )
-      )
-        continue;
+      if (!firesInMonth(r, replayMonth, sourceOpened)) continue;
 
       applyRecurringToBalances(r, replayMonth, accountMap, runningBalances);
     }
@@ -295,7 +265,6 @@ export function projectBalances(
 
   for (let i = 0; i < months; i++) {
     const month = addMonths(fromDate, i);
-    const calendarMonth = parseInt(month.split("-")[1], 10);
 
     let netCashflow = 0;
 
@@ -310,7 +279,7 @@ export function projectBalances(
     pendingSettlements.clear();
 
     for (const r of activeRecurring) {
-      if (!firesInMonth(r.frequency, i, calendarMonth, r.monthOfYear)) continue;
+      if (!firesInMonth(r, month, sourceAnchorMonth(r))) continue;
 
       applyRecurringToBalances(r, month, accountMap, runningBalances);
 
