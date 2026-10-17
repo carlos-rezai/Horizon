@@ -39,6 +39,16 @@ vi.mock("../useMonthCashFlow/useMonthCashFlow", () => ({
   useMonthCashFlow: (...args: unknown[]) => mockUseMonthCashFlow(...args),
 }));
 
+const mockUseProjection = vi.fn();
+vi.mock("../../projection/useProjection/useProjection", () => ({
+  useProjection: (...args: unknown[]) => mockUseProjection(...args),
+}));
+
+const mockUseHistoryPoints = vi.fn();
+vi.mock("../../history/useHistoryPoints/useHistoryPoints", () => ({
+  useHistoryPoints: (...args: unknown[]) => mockUseHistoryPoints(...args),
+}));
+
 const mockUseImportStartDates = vi.fn();
 vi.mock("../useImportStartDates/useImportStartDates", () => ({
   useImportStartDates: (...args: unknown[]) => mockUseImportStartDates(...args),
@@ -199,6 +209,64 @@ const PENDING_CASH_FLOW = {
   error: null,
 };
 
+/** History through July 2026: Main known all along, Visa from July. */
+const historyPoints = [
+  {
+    month: "2026-06",
+    totalLiquid: 412300,
+    restschuld: 21500000,
+    netCashflow: 0,
+    accounts: { main: 412300, visa: null, mortgage: 21500000 },
+  },
+  {
+    month: "2026-07",
+    totalLiquid: 430000,
+    restschuld: 21400000,
+    netCashflow: 0,
+    accounts: { main: 420000, visa: 10000, mortgage: 21400000 },
+  },
+];
+
+/** The projection from the current month, October 2026, through November. */
+function projectionFrom(mainOctober: number) {
+  return [
+    {
+      month: "2026-10",
+      accounts: {
+        main: { projected: mainOctober },
+        visa: { projected: 0 },
+        mortgage: { projected: 21100000 },
+      },
+      netCashflow: 0,
+      totalLiquid: mainOctober,
+    },
+    {
+      month: "2026-11",
+      accounts: {
+        main: { projected: 765400 },
+        visa: { projected: 0 },
+        mortgage: { projected: 21000000 },
+      },
+      netCashflow: 0,
+      totalLiquid: 765400,
+    },
+  ];
+}
+
+const LOADED_PROJECTION = {
+  snapshots: projectionFrom(100000),
+  isLoading: false,
+  error: null,
+  refetch: vi.fn(),
+};
+
+const LOADED_HISTORY = {
+  points: historyPoints,
+  isLoading: false,
+  error: null,
+  refresh: vi.fn(),
+};
+
 const refetch = vi.fn();
 const create = vi.fn();
 const update = vi.fn();
@@ -222,6 +290,8 @@ beforeEach(() => {
     isLoading: false,
   });
   mockUseMonthCashFlow.mockReturnValue(LOADED_CASH_FLOW);
+  mockUseProjection.mockReturnValue(LOADED_PROJECTION);
+  mockUseHistoryPoints.mockReturnValue(LOADED_HISTORY);
 });
 
 afterEach(() => {
@@ -868,6 +938,185 @@ describe("MonthOverview — Fixed Flows card", () => {
     expect(fade).toHaveAttribute("data-motion", "none");
     expect(
       within(fade).getByTestId("month-section-cash-flow")
+    ).toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Issue #250 — Month-End Balance in the group headers
+// Today is October 2026: an earlier month reads History, the current and a
+// later month read the projection.
+// ─────────────────────────────────────────────────────────────
+
+/** A Fixed Flows group's header, found by the account name in it. */
+function cashFlowHeadFor(name: string): HTMLElement {
+  const head = within(screen.getByTestId("month-section-cash-flow"))
+    .getAllByTestId("fixed-flow-group-head")
+    .find((h) => within(h).getByRole("heading").textContent === name);
+  if (!head) throw new Error(`no group headed ${name}`);
+  return head;
+}
+
+describe("MonthOverview — Month-End Balance", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-16T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("heads a past month's groups with the Actual balance from History", () => {
+    renderOverview("2026-06");
+
+    const main = within(cashFlowHeadFor("Main"));
+    expect(main.getByText("4.123,00 €")).toBeInTheDocument();
+    expect(main.getByText("Month-end · Actual")).toBeInTheDocument();
+  });
+
+  it("heads the current month's groups with the Projected balance", () => {
+    renderOverview("2026-10");
+
+    const main = within(cashFlowHeadFor("Main"));
+    expect(main.getByText("1.000,00 €")).toBeInTheDocument();
+    expect(main.getByText("Month-end · Projected")).toBeInTheDocument();
+  });
+
+  it("heads a future month's groups with the Projected balance", () => {
+    renderOverview("2026-11");
+
+    const main = within(cashFlowHeadFor("Main"));
+    expect(main.getByText("7.654,00 €")).toBeInTheDocument();
+    expect(main.getByText("Month-end · Projected")).toBeInTheDocument();
+  });
+
+  it("reads an account History does not know yet as 'No data before …', never €0", () => {
+    renderOverview("2026-06");
+
+    const visa = cashFlowHeadFor("Visa");
+    expect(
+      within(visa).getByText("No data before Jul 2026")
+    ).toBeInTheDocument();
+    expect(visa).not.toHaveTextContent("0,00 €");
+  });
+
+  it("reads a month past the projection horizon as Unknown, never €0", () => {
+    renderOverview("2027-02");
+
+    const main = cashFlowHeadFor("Main");
+    expect(main).toHaveTextContent(/No data before/);
+    expect(main).not.toHaveTextContent("0,00 €");
+    expect(main).not.toHaveTextContent("Month-end · ");
+  });
+
+  it("holds the card on its skeleton while the projection loads", () => {
+    mockUseProjection.mockReturnValue({
+      ...LOADED_PROJECTION,
+      snapshots: [],
+      isLoading: true,
+    });
+    renderOverview("2026-10");
+
+    expect(
+      within(screen.getByTestId("month-section-cash-flow")).getByTestId(
+        "month-cash-flow-skeleton"
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("month-section-spending")).getByText("Cat food")
+    ).toBeInTheDocument();
+  });
+
+  it("holds the card on its skeleton while History loads", () => {
+    mockUseHistoryPoints.mockReturnValue({
+      ...LOADED_HISTORY,
+      points: [],
+      isLoading: true,
+    });
+    renderOverview("2026-06");
+
+    expect(
+      within(screen.getByTestId("month-section-cash-flow")).getByTestId(
+        "month-cash-flow-skeleton"
+      )
+    ).toBeInTheDocument();
+  });
+});
+
+describe("MonthOverview — Month-End Balance after an expense", () => {
+  let posted = false;
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-16T12:00:00Z"));
+    posted = false;
+
+    // The real month, projection and History hooks, so the expense's commit
+    // goes through the shared cache exactly as it does in the app.
+    const months = await vi.importActual<
+      typeof import("../useAllMonthTransactions/useAllMonthTransactions")
+    >("../useAllMonthTransactions/useAllMonthTransactions");
+    mockUseAllMonthTransactions.mockImplementation(
+      months.useAllMonthTransactions
+    );
+    const projection = await vi.importActual<
+      typeof import("../../projection/useProjection/useProjection")
+    >("../../projection/useProjection/useProjection");
+    mockUseProjection.mockImplementation(projection.useProjection);
+    const history = await vi.importActual<
+      typeof import("../../history/useHistoryPoints/useHistoryPoints")
+    >("../../history/useHistoryPoints/useHistoryPoints");
+    mockUseHistoryPoints.mockImplementation(history.useHistoryPoints);
+
+    // The server projects Main at 1,000.00 until the expense lands, and at
+    // 995.50 after it.
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = (init as RequestInit | undefined)?.method ?? "GET";
+      if (method === "POST") {
+        posted = true;
+        return {
+          ok: true,
+          json: async () => ({ id: "t-new", accountId: "main", ...COFFEE }),
+        } as Response;
+      }
+      if (url.includes("/projection/history")) {
+        return { ok: true, json: async () => historyPoints } as Response;
+      }
+      if (url.includes("/projection")) {
+        return {
+          ok: true,
+          json: async () => projectionFrom(posted ? 99550 : 100000),
+        } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("updates the Month-End Balance without a reload", async () => {
+    renderOverview("2026-10");
+
+    await waitFor(() => {
+      expect(
+        within(cashFlowHeadFor("Main")).getByText("1.000,00 €")
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /add transaction/i }));
+
+    await waitFor(() => {
+      expect(
+        within(cashFlowHeadFor("Main")).getByText("995,50 €")
+      ).toBeInTheDocument();
+    });
+    expect(
+      within(cashFlowHeadFor("Main")).getByText("Month-end · Projected")
     ).toBeInTheDocument();
   });
 });

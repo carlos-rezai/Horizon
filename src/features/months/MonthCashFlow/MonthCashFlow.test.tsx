@@ -9,6 +9,7 @@ import type {
   FixedFlow,
   MonthCashFlowReport,
 } from "../../../types/monthCashFlow";
+import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
 import MonthCashFlow from "./MonthCashFlow";
 
 // Accounts in their sortOrder: every kind, the Mortgage included.
@@ -133,11 +134,27 @@ const report: MonthCashFlowReport = {
   ],
 };
 
-function renderCard(r: MonthCashFlowReport = report) {
+/** Each group's Month-End Balance, keyed by account id. */
+const balances: Record<string, MonthEndBalance> = {
+  main: { basis: "projected", cents: 1234567 },
+  savings: { basis: "actual", cents: 800000 },
+  mortgage: { basis: "projected", cents: 21000000 },
+  etf: { basis: "unknown", knownFrom: "2027-03" },
+};
+
+function renderCard(
+  r: MonthCashFlowReport = report,
+  b: Record<string, MonthEndBalance> = balances
+) {
   return render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <MonthCashFlow accounts={accounts} report={r} monthLabel="September" />
+        <MonthCashFlow
+          accounts={accounts}
+          report={r}
+          monthLabel="September"
+          balances={b}
+        />
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -337,5 +354,67 @@ describe("MonthCashFlow — group footer and empty state", () => {
     });
 
     expect(screen.getAllByText("No fixed flows this month.")).toHaveLength(4);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Issue #250 — Month-End Balance in the group headers
+// ─────────────────────────────────────────────────────────────
+
+function headFor(name: string): HTMLElement {
+  return within(groupFor(name)).getByTestId("fixed-flow-group-head");
+}
+
+describe("MonthCashFlow — Month-End Balance", () => {
+  it("shows a projected Month-End Balance captioned Month-end · Projected", () => {
+    renderCard();
+
+    const head = within(headFor("Main"));
+    expect(head.getByText("1.234.567,00 €")).toBeInTheDocument();
+    expect(head.getByText("Month-end · Projected")).toBeInTheDocument();
+  });
+
+  it("shows an actual Month-End Balance captioned Month-end · Actual", () => {
+    renderCard();
+
+    const head = within(headFor("Savings"));
+    expect(head.getByText("8.000,00 €")).toBeInTheDocument();
+    expect(head.getByText("Month-end · Actual")).toBeInTheDocument();
+  });
+
+  it("shows a Mortgage's Month-End Balance too", () => {
+    renderCard();
+
+    expect(
+      within(headFor("Mortgage")).getByText("210.000,00 €")
+    ).toBeInTheDocument();
+  });
+
+  it("reads an Unknown balance as 'No data before {Mon YYYY}', never €0", () => {
+    renderCard();
+
+    const head = headFor("ETF");
+    expect(
+      within(head).getByText("No data before Mar 2027")
+    ).toBeInTheDocument();
+    expect(head).not.toHaveTextContent("0,00 €");
+    expect(within(head).queryByTestId("money")).not.toBeInTheDocument();
+    expect(head).not.toHaveTextContent("Month-end · ");
+  });
+
+  it("shows a real zero balance as €0, not as Unknown", () => {
+    renderCard(report, { ...balances, etf: { basis: "actual", cents: 0 } });
+
+    const head = within(headFor("ETF"));
+    expect(head.getByText("0,00 €")).toBeInTheDocument();
+    expect(head.getByText("Month-end · Actual")).toBeInTheDocument();
+    expect(head.queryByText(/No data before/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the Month-End Balance out of the Net fixed footer", () => {
+    renderCard();
+
+    const footer = within(groupFor("Main")).getByTestId("fixed-flow-net");
+    expect(footer).not.toHaveTextContent("1.234.567,00");
   });
 });
