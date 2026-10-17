@@ -7,7 +7,8 @@ import {
   propagateCategory,
   summarizeReview,
 } from "./reviewRows";
-import type { ParsedImportRow, ReviewRow } from "./reviewRows";
+import type { ReviewRow } from "./reviewRows";
+import type { ParsedImportRow } from "../importTypes/importTypes";
 
 const clean: ParsedImportRow = {
   id: "i1",

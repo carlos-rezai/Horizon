@@ -14,38 +14,7 @@
  */
 
 import { counterpartyKey } from "../../../utils/counterpartyKey/counterpartyKey";
-
-/**
- * Why a row carries its category: `learned` from a Category Rule, `suggested`
- * by a Keyword Group, `chosen` by the user in review, `unmatched` on the
- * Miscellaneous fallback, `proposed` in Miscellaneous while a Category
- * Proposal names a category the user does not have yet. Mirrors the server
- * type.
- */
-export type CategorySource =
-  | "learned"
-  | "suggested"
-  | "proposed"
-  | "unmatched"
-  | "chosen";
-
-/** A previewed row as returned by the parse + detection engine. */
-export interface ParsedImportRow {
-  id: string;
-  date: string;
-  description: string;
-  /** The raw Counterparty as parsed — kept even when the description is edited. */
-  counterparty: string;
-  amount: number;
-  category: string;
-  categorySource: CategorySource;
-  /** A Category Proposal's canonical name — present only while `proposed`. */
-  proposedCategory?: string;
-  duplicate?: boolean;
-  recurring?: boolean;
-  /** Not-yet-settled (pending / "vorgemerkt") booking; pre-unchecked. */
-  pending?: boolean;
-}
+import type { ParsedImportRow } from "../importTypes/importTypes";
 
 /**
  * A hard reason a row cannot commit. An open set, not a boolean: the row model

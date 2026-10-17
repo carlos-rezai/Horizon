@@ -2,11 +2,8 @@ import { Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import CategorySelect from "../../../categories/CategorySelect/CategorySelect";
 import Money from "../../../../primitives/Money/Money";
-import type {
-  CategorySource,
-  ReviewRow,
-  RowFlag,
-} from "../../reviewRows/reviewRows";
+import type { CategorySource } from "../../importTypes/importTypes";
+import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
 import { StyledFlagBadge } from "../ImportWizard.styles";
 import {
   StyledFlagCell,

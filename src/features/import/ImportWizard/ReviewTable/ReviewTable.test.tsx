@@ -7,11 +7,8 @@ import { theme } from "../../../../tokens";
 import CacheProvider from "../../../../components/CacheProvider/CacheProvider";
 import ReviewTable, { type FlagSpec } from "./ReviewTable";
 import { buildReviewRows } from "../../reviewRows/reviewRows";
-import type {
-  ParsedImportRow,
-  ReviewRow,
-  RowFlag,
-} from "../../reviewRows/reviewRows";
+import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
+import type { ParsedImportRow } from "../../importTypes/importTypes";
 import type { Category } from "../../../../types/category";
 
 /**
