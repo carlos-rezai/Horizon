@@ -10,7 +10,8 @@ import type {
 import {
   firesInMonth,
   occurrenceDate,
-  passesAnchorGate,
+  occurrenceLegs,
+  sourceAnchorMonth,
   type TransferSide,
 } from "../recurringOccurrence/recurringOccurrence.js";
 
@@ -223,64 +224,33 @@ function blockedAnchorLegs(
   const byId = new Map(accounts.map((a) => [a.id, a]));
   const blocked = new Map<string, RecurringFixedFlow[]>();
 
-  // A leg is listed as In Balance Anchor when its account is anchored this
-  // month and the gate holds it back.
-  const isBlocked = (accountId: string, date: string): boolean => {
-    const anchorDate = byId.get(accountId)?.anchorDate;
-    return (
-      !!anchorDate &&
-      anchorDate.slice(0, 7) === month &&
-      !passesAnchorGate(anchorDate, date)
-    );
-  };
-  const add = (
-    accountId: string,
-    rule: RecurringTransaction,
-    date: string,
-    amount: number,
-    transfer?: { counterpartId: string; side: TransferSide }
-  ): void => {
-    const list = blocked.get(accountId) ?? [];
-    list.push({
-      kind: "recurring",
-      recurringId: rule.id,
-      date,
-      description: rule.description,
-      category: rule.category,
-      amount,
-      ...transfer,
-      inAnchor: true,
-    });
-    blocked.set(accountId, list);
-  };
-
   for (const rule of recurrings) {
-    const sourceAnchorMonth =
-      byId.get(rule.accountId)?.anchorDate?.slice(0, 7) || runStart;
-    if (!firesInMonth(rule, month, sourceAnchorMonth)) continue;
+    const anchorMonth = sourceAnchorMonth(rule, byId, runStart);
+    if (!firesInMonth(rule, month, anchorMonth)) continue;
     const date = occurrenceDate(month, rule.dayOfMonth);
-    const sourceKind = byId.get(rule.accountId)?.kind;
-
-    if (rule.linkedAccountId) {
-      const destId = rule.linkedAccountId;
-      const destIsMortgage = byId.get(destId)?.kind === "Mortgage";
-      const magnitude = destIsMortgage ? Math.abs(rule.amount) : rule.amount;
-      if (isBlocked(rule.accountId, date)) {
-        add(rule.accountId, rule, date, -magnitude, {
-          counterpartId: destId,
-          side: "source",
-        });
-      }
-      if (isBlocked(destId, date)) {
-        add(destId, rule, date, magnitude, {
-          counterpartId: rule.accountId,
-          side: "destination",
-        });
-      }
-      continue;
-    }
-    if (sourceKind !== "Mortgage" && isBlocked(rule.accountId, date)) {
-      add(rule.accountId, rule, date, rule.amount);
+    // The report keeps no Restschuld: a blocked leg is listed at its full
+    // magnitude.
+    const legs = occurrenceLegs(rule, date, byId, () => Infinity);
+    for (const leg of legs) {
+      // Listed as In Balance Anchor when the gate holds the leg back and its
+      // account is anchored this month.
+      if (leg.passesGate) continue;
+      if (byId.get(leg.accountId)?.anchorDate.slice(0, 7) !== month) continue;
+      const list = blocked.get(leg.accountId) ?? [];
+      list.push({
+        kind: "recurring",
+        recurringId: rule.id,
+        date,
+        description: rule.description,
+        category: rule.category,
+        amount: leg.amount,
+        ...(leg.counterpartId !== undefined && {
+          counterpartId: leg.counterpartId,
+        }),
+        ...(leg.side !== undefined && { side: leg.side }),
+        inAnchor: true,
+      });
+      blocked.set(leg.accountId, list);
     }
   }
   return blocked;
