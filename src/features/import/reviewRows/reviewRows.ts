@@ -13,6 +13,8 @@
  * and gates the Import button until it is repaired in place or unchecked.
  */
 
+import { counterpartyKey } from "../../../utils/counterpartyKey/counterpartyKey";
+
 /**
  * Why a row carries its category: `learned` from a Category Rule, `suggested`
  * by a Keyword Group, `chosen` by the user in review, `unmatched` on the
@@ -125,4 +127,37 @@ export function summarizeReview(rows: ReviewRow[]): ReviewSummary {
     recurring: countFlag("recurring"),
     pending: countFlag("pending"),
   };
+}
+
+/**
+ * Same-Counterparty Propagation: set `name` on row `id`, and on every other row
+ * with the same non-empty Counterparty Key the user has not touched yet. The
+ * edited row and every row that follows become `chosen` (dropping any Category
+ * Proposal), so the whole group teaches the Category Rule on commit. A touched
+ * row — one already `chosen` — is never overwritten. Re-setting the row's own
+ * category is not a choice and changes nothing.
+ */
+export function propagateCategory(
+  rows: ReviewRow[],
+  id: string,
+  name: string
+): ReviewRow[] {
+  const edited = rows.find((r) => r.id === id);
+  if (!edited || edited.category === name) return rows;
+  const key = counterpartyKey(edited.counterparty);
+  const follows = (r: ReviewRow) =>
+    r.id === id ||
+    (key !== "" &&
+      r.categorySource !== "chosen" &&
+      counterpartyKey(r.counterparty) === key);
+  return rows.map((r) =>
+    follows(r)
+      ? {
+          ...r,
+          category: name,
+          categorySource: "chosen",
+          proposedCategory: undefined,
+        }
+      : r
+  );
 }

@@ -10,6 +10,7 @@ import {
   blockersFor,
   buildReviewRows,
   canCommit,
+  propagateCategory,
   summarizeReview,
   type ReviewRow,
   type ReviewSummary,
@@ -190,19 +191,8 @@ export function useImportWizard({
   const setCategory = useCallback(
     (id: string, category: string) =>
       // The picker reports its current selection on mount; re-setting the
-      // row's own category is not a choice, so its source is kept.
-      setRows((rs) =>
-        rs.map((r) =>
-          r.id === id && r.category !== category
-            ? {
-                ...r,
-                category,
-                categorySource: "chosen",
-                proposedCategory: undefined,
-              }
-            : r
-        )
-      ),
+      // row's own category is not a choice, so propagateCategory keeps it.
+      setRows((rs) => propagateCategory(rs, id, category)),
     []
   );
 
