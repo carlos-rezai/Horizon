@@ -52,3 +52,17 @@ export const StyledNet = styled.div`
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;
+
+// A leg already inside the Balance Anchor: shown for completeness, at the
+// Import review's excluded-row opacity, and left out of "Net fixed".
+export const StyledFlowRow = styled.div<{ $inAnchor: boolean }>`
+  opacity: ${({ $inAnchor }) => ($inAnchor ? 0.55 : 1)};
+`;
+
+export const StyledAnchorNote = styled.span`
+  display: block;
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
+  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
+  color: ${({ theme }) => theme.colors.onSurfaceDim};
+`;

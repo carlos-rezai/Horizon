@@ -12,7 +12,7 @@ import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { MONTHS, formatMonth } from "../../../utils/format/format";
+import { MONTHS, formatDate, formatMonth } from "../../../utils/format/format";
 import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
 import {
   StyledDay,
@@ -31,6 +31,8 @@ import {
   StyledBalance,
   StyledBalanceCaption,
   StyledNet,
+  StyledFlowRow,
+  StyledAnchorNote,
 } from "./MonthCashFlow.styles";
 
 interface Props {
@@ -48,6 +50,15 @@ function sourceAccountId(group: AccountFixedFlows, flow: FixedFlow): string {
   return flow.side === "destination" && flow.counterpartId
     ? flow.counterpartId
     : group.accountId;
+}
+
+/** The account's Anchor Date when `month` lies before its anchor month. */
+function beforeAnchorDate(
+  account: AccountWithBalance | undefined,
+  month: string
+): string | null {
+  const anchorDate = account?.anchorDate;
+  return anchorDate && month < anchorDate.slice(0, 7) ? anchorDate : null;
 }
 
 /**
@@ -72,6 +83,7 @@ export default function MonthCashFlow({
           const net = group.flows
             .filter((f) => !f.inAnchor)
             .reduce((sum, f) => sum + f.amount, 0);
+          const beforeAnchor = beforeAnchorDate(account, report.month);
           return (
             <section key={group.accountId} data-testid="fixed-flow-group">
               <StyledGroupHead data-testid="fixed-flow-group-head">
@@ -80,7 +92,12 @@ export default function MonthCashFlow({
                 <GroupBalance balance={balances[group.accountId]} />
               </StyledGroupHead>
 
-              {group.flows.length === 0 ? (
+              {beforeAnchor ? (
+                <StyledEmpty>
+                  Before {formatDate(beforeAnchor)} this account&apos;s history
+                  comes from its statements
+                </StyledEmpty>
+              ) : group.flows.length === 0 ? (
                 <StyledEmpty>No fixed flows this month.</StyledEmpty>
               ) : (
                 <>
@@ -148,7 +165,7 @@ function FlowRow({ flow, last, to, counterpart }: FlowRowProps) {
   const day = parseInt(flow.date.slice(8, 10), 10);
   const monthIdx = parseInt(flow.date.slice(5, 7), 10) - 1;
   return (
-    <div data-testid="fixed-flow-row">
+    <StyledFlowRow data-testid="fixed-flow-row" $inAnchor={flow.inAnchor}>
       <DataRow as={Link} to={to} columns={ROW_COLUMNS} last={last}>
         <StyledDay>
           <StyledDayNum>{day}</StyledDayNum>
@@ -156,6 +173,9 @@ function FlowRow({ flow, last, to, counterpart }: FlowRowProps) {
         </StyledDay>
         <div>
           <StyledDesc>{flow.description}</StyledDesc>
+          {flow.inAnchor && (
+            <StyledAnchorNote>In balance anchor</StyledAnchorNote>
+          )}
           {flow.side && (
             <StyledAccountLine data-testid="fixed-flow-counterpart">
               <StyledAccountName>
@@ -175,6 +195,6 @@ function FlowRow({ flow, last, to, counterpart }: FlowRowProps) {
         {flow.category ? <Badge>{flow.category}</Badge> : <span />}
         <Money cents={flow.amount} sign />
       </DataRow>
-    </div>
+    </StyledFlowRow>
   );
 }

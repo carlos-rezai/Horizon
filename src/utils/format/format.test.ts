@@ -6,6 +6,7 @@ import {
   formatFileSizeKB,
   formatMonth,
   formatMonthLong,
+  formatDate,
   pluralize,
   toOrdinal,
 } from "./format";
@@ -142,4 +143,11 @@ describe("toOrdinal", () => {
   it("converts 22 to '22nd'", () => expect(toOrdinal(22)).toBe("22nd"));
   it("converts 23 to '23rd'", () => expect(toOrdinal(23)).toBe("23rd"));
   it("converts 31 to '31st'", () => expect(toOrdinal(31)).toBe("31st"));
+});
+
+describe("formatDate", () => {
+  it("formats an ISO date as D MMM YYYY", () =>
+    expect(formatDate("2026-10-15")).toBe("15 Oct 2026"));
+  it("drops the leading zero of a single-digit day", () =>
+    expect(formatDate("2031-01-05")).toBe("5 Jan 2031"));
 });

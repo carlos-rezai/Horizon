@@ -64,6 +64,12 @@ export function formatMonth(yyyyMM: string): string {
   return `${MONTHS[parseInt(month, 10) - 1]} ${year}`;
 }
 
+/** An ISO date as "D MMM YYYY": `formatDate("2026-10-05")` → `"5 Oct 2026"`. */
+export function formatDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-");
+  return `${parseInt(day, 10)} ${MONTHS[parseInt(month, 10) - 1]} ${year}`;
+}
+
 /** Full month names, index 0 = January. Shared by `formatMonthLong` and the
  *  Savings Streak calendar strip's tile titles and goal summary. */
 export const MONTHS_LONG = [
