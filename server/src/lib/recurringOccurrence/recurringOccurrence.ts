@@ -7,6 +7,9 @@
 import type { Frequency } from "../../storage/types.js";
 import { daysInMonth, monthsBetween } from "../date/date.js";
 
+/** Which end of a Recurring Transfer an account is. */
+export type TransferSide = "source" | "destination";
+
 export interface FiringRule {
   frequency: Frequency;
   monthOfYear?: number;

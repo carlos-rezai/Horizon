@@ -11,6 +11,7 @@ import {
   firesInMonth,
   occurrenceDate,
   passesAnchorGate,
+  type TransferSide,
 } from "../recurringOccurrence/recurringOccurrence.js";
 import { selectLiquidAccounts } from "../accountKinds/accountKinds.js";
 
@@ -116,7 +117,7 @@ export interface AppliedFlow {
   date: string;
   amount: number;
   counterpartId?: string;
-  side?: "source" | "destination";
+  side?: TransferSide;
 }
 
 /**
@@ -165,7 +166,7 @@ function applyRecurringToBalances(
   const move = (
     accountId: string,
     amount: number,
-    transfer?: { counterpartId: string; side: "source" | "destination" }
+    transfer?: { counterpartId: string; side: TransferSide }
   ): void => {
     runningBalances.set(
       accountId,

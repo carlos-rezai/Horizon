@@ -11,6 +11,7 @@ import {
   firesInMonth,
   occurrenceDate,
   passesAnchorGate,
+  type TransferSide,
 } from "../recurringOccurrence/recurringOccurrence.js";
 
 /**
@@ -27,7 +28,7 @@ export interface RecurringFixedFlow {
   category?: string;
   amount: number;
   counterpartId?: string;
-  side?: "source" | "destination";
+  side?: TransferSide;
   /** Blocked by the Anchor Gate, and left out of the group's net. */
   inAnchor: boolean;
 }
@@ -45,7 +46,7 @@ export interface SettlementFixedFlow {
   category?: string;
   amount: number;
   counterpartId: string;
-  side: "source" | "destination";
+  side: TransferSide;
   inAnchor: boolean;
 }
 
@@ -129,7 +130,7 @@ function settlementLeg(
   date: string,
   amount: number,
   counterpartId: string,
-  side: "source" | "destination"
+  side: TransferSide
 ): SettlementFixedFlow {
   return {
     kind: "settlement",
@@ -237,7 +238,7 @@ function blockedAnchorLegs(
     rule: RecurringTransaction,
     date: string,
     amount: number,
-    transfer?: { counterpartId: string; side: "source" | "destination" }
+    transfer?: { counterpartId: string; side: TransferSide }
   ): void => {
     const list = blocked.get(accountId) ?? [];
     list.push({
