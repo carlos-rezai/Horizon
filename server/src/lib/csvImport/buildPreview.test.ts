@@ -778,3 +778,72 @@ describe("buildPreview — Keyword Groups (#260)", () => {
     ).toMatchObject({ category: "Subscriptions", categorySource: "suggested" });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #262 — Category Proposals. A Keyword Group hit with no visible
+// category for it arrives proposed: Miscellaneous, source `proposed`, and the
+// canonical name as `proposedCategory`. The injected `declinedProposals` are
+// never proposed again, whatever their case.
+// ---------------------------------------------------------------------------
+
+const PROPOSAL_CSV =
+  "Datum;Beschreibung;Betrag\n" +
+  "24.06.2026;REWE Markt 0815;-12,50\n" +
+  "25.06.2026;LIEFERANDO.DE;-23,90\n" +
+  "26.06.2026;MUSTER DIENST GMBH;-9,90\n" +
+  "27.06.2026;MUSTER APOTHEKE;-8,40\n";
+
+describe("buildPreview — Category Proposals (#262)", () => {
+  it("proposes the canonical name for a keyword hit the user has no category for", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(PROPOSAL_CSV),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: defaultCategories,
+      declinedProposals: [],
+      getRememberedPreset: noPreset,
+    });
+
+    const byDescription = (d: string) =>
+      preview.rows.find((r) => r.description === d);
+    expect(byDescription("LIEFERANDO.DE")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "proposed",
+      proposedCategory: "Dining",
+    });
+    // Controls: an existing category is suggested, a no-hit row is unmatched.
+    expect(byDescription("REWE Markt 0815")).toMatchObject({
+      category: "Food",
+      categorySource: "suggested",
+    });
+    expect(byDescription("REWE Markt 0815")?.proposedCategory).toBeUndefined();
+    expect(byDescription("MUSTER DIENST GMBH")).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("never proposes a declined name, matching it case-insensitively", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(PROPOSAL_CSV),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: defaultCategories,
+      declinedProposals: ["DINING"],
+      getRememberedPreset: noPreset,
+    });
+
+    const row = preview.rows.find((r) => r.description === "LIEFERANDO.DE");
+    expect(row).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(row?.proposedCategory).toBeUndefined();
+    // Control: a name that was not declined is still proposed.
+    expect(
+      preview.rows.find((r) => r.description === "MUSTER APOTHEKE")
+    ).toMatchObject({ categorySource: "proposed", proposedCategory: "Health" });
+  });
+});

@@ -125,6 +125,16 @@ describe("reset() — SQLite driver (real temp-file database)", () => {
     expect(await storage.categoryRules.findAll()).toEqual([]);
   });
 
+  it("removes every Declined Proposal (#262)", async () => {
+    await seedFullDatabase();
+    await storage.categoryRules.decline(["Dining"]);
+    expect(await storage.categoryRules.findDeclined()).toEqual(["Dining"]);
+
+    await storage.reset();
+
+    expect(await storage.categoryRules.findDeclined()).toEqual([]);
+  });
+
   it("succeeds on an already-empty database and leaves the clean-install state", async () => {
     // Nothing seeded — the database is already at clean-install state.
     await expect(storage.reset()).resolves.toBeUndefined();

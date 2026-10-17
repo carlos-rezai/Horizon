@@ -1407,3 +1407,234 @@ describe("ImportWizard — Suggested chip (#260)", () => {
     });
   });
 });
+
+/**
+ * Issue #262 — Category Proposals. A row whose Keyword Group names a category
+ * the user does not have arrives proposed: Miscellaneous, a "New: {name}"
+ * chip beside the picker, and one strip above the table per proposed category
+ * with its name, row count, Create category and Dismiss. Create makes the
+ * category at once and moves the rows into it; Dismiss returns them to
+ * Miscellaneous and the commit sends the name as a declined proposal. A
+ * proposal never disables the commit.
+ */
+
+const dining: Category = {
+  id: "c-dining",
+  name: "Dining",
+  isDefault: false,
+  color: "#C9897F",
+  hidden: false,
+};
+
+/** One learned row and two rows proposing Dining. */
+function makeProposalPreview(): ImportPreview {
+  const base = makeLearningPreview();
+  const proposedRow = (id: string, payee: string, amount: number) => ({
+    id,
+    date: "2026-03-16",
+    description: payee,
+    counterparty: payee,
+    amount,
+    category: "Miscellaneous",
+    categorySource: "proposed" as const,
+    proposedCategory: "Dining",
+  });
+  return {
+    ...base,
+    rows: [
+      base.rows[0],
+      proposedRow("r1", "LIEFERANDO.DE", -2390),
+      proposedRow("r2", "Pizzeria Muster", -1850),
+    ],
+    summary: { ...base.summary, total: 3, duplicates: 0 },
+  };
+}
+
+/**
+ * Categories API double that remembers a created category: GET answers the
+ * list plus anything POSTed so far; POST answers `created`, or fails with
+ * `failWith` when given.
+ */
+function mockCategoryApi(created: Category, failWith?: string) {
+  const list = [...learningCategories];
+  return vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation((_url: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        if (failWith !== undefined) {
+          return Promise.resolve({
+            ok: false,
+            status: 409,
+            json: async () => ({ error: failWith }),
+          } as Response);
+        }
+        list.push(created);
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: async () => created,
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => [...list],
+      } as Response);
+    });
+}
+
+/** Elements whose text names a proposal and its row count. */
+function proposalStrip(name: string, count: number) {
+  const pattern = new RegExp(`New category: ${name}[^0-9]+${count} rows`, "i");
+  return screen.queryAllByText((_, el) => pattern.test(el?.textContent ?? ""));
+}
+
+describe("ImportWizard — Category Proposals (#262)", () => {
+  it("shows one strip per proposed category with its name and row count", async () => {
+    mockCategoryApi(dining);
+    renderWizard(
+      learningCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeProposalPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+
+    expect(proposalStrip("Dining", 2).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: /create category/i })
+    ).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /dismiss/i })).toHaveLength(1);
+  });
+
+  it("marks each proposed row with a New: {name} chip, and no other row", async () => {
+    mockCategoryApi(dining);
+    renderWizard(
+      learningCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeProposalPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+
+    expect(within(reviewRow(1)).getByText(/^New: Dining$/)).toBeInTheDocument();
+    expect(within(reviewRow(2)).getByText(/^New: Dining$/)).toBeInTheDocument();
+    expect(within(reviewRow(0)).queryByText(/^New:/)).toBeNull();
+  });
+
+  it("never disables the commit: an undecided proposal commits its rows as Miscellaneous, declining nothing", async () => {
+    mockCategoryApi(dining);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeProposalPreview());
+
+    await gotoReview();
+    await settlePickers();
+    // The proposal is on screen and undecided.
+    expect(proposalStrip("Dining", 2).length).toBeGreaterThan(0);
+    const importBtn = screen.getByRole("button", {
+      name: /import 3 transactions/i,
+    });
+    expect(importBtn).not.toBeDisabled();
+    fireEvent.click(importBtn);
+
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    const input = commit.mock.calls[0][0] as CommitImportInput & {
+      declinedProposals?: string[];
+    };
+    expect(input.rows[1]).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "proposed",
+    });
+    expect(input.declinedProposals ?? []).toEqual([]);
+  });
+
+  it("Create category creates it with a colour and moves the proposed rows into it", async () => {
+    const fetchSpy = mockCategoryApi(dining);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeProposalPreview());
+
+    await gotoReview();
+    await settlePickers();
+    fireEvent.click(screen.getByRole("button", { name: /create category/i }));
+
+    await waitFor(() =>
+      expect(within(reviewRow(1)).queryByText(/^New:/)).toBeNull()
+    );
+    const posts = fetchSpy.mock.calls.filter(
+      ([, init]) => init?.method === "POST"
+    );
+    expect(posts).toHaveLength(1);
+    const body = JSON.parse(String(posts[0][1]?.body)) as {
+      name: string;
+      color?: string;
+    };
+    expect(body.name).toBe("Dining");
+    expect(body.color).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    expect(proposalStrip("Dining", 2)).toHaveLength(0);
+    expect(within(reviewRow(1)).getByText(/^suggested$/i)).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 3 transactions/i })
+    );
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    const input = commit.mock.calls[0][0];
+    expect(input.rows[1]).toMatchObject({
+      category: "Dining",
+      categorySource: "suggested",
+    });
+    expect(input.rows[2]).toMatchObject({
+      category: "Dining",
+      categorySource: "suggested",
+    });
+  });
+
+  it("keeps the strip and shows the error when the create fails", async () => {
+    mockCategoryApi(dining, "Category already exists");
+    renderWizard(
+      learningCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeProposalPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+    fireEvent.click(screen.getByRole("button", { name: /create category/i }));
+
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+    expect(proposalStrip("Dining", 2).length).toBeGreaterThan(0);
+    expect(within(reviewRow(1)).getByText(/^New: Dining$/)).toBeInTheDocument();
+  });
+
+  it("Dismiss returns the rows to Miscellaneous and the commit sends the declined name", async () => {
+    const fetchSpy = mockCategoryApi(dining);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeProposalPreview());
+
+    await gotoReview();
+    await settlePickers();
+    fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
+
+    await waitFor(() =>
+      expect(within(reviewRow(1)).queryByText(/^New:/)).toBeNull()
+    );
+    expect(proposalStrip("Dining", 2)).toHaveLength(0);
+    expect(
+      fetchSpy.mock.calls.filter(([, init]) => init?.method === "POST")
+    ).toHaveLength(0);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 3 transactions/i })
+    );
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    const input = commit.mock.calls[0][0] as CommitImportInput & {
+      declinedProposals?: string[];
+    };
+    expect(input.rows[1]).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(input.declinedProposals).toEqual(["Dining"]);
+  });
+});

@@ -746,6 +746,27 @@ describe("the Import topic", () => {
       expect(row?.body).toMatch(/\bSuggested\b/);
     });
 
+    // Issue #262 — a Keyword Group hit for a category the user does not have
+    // arrives as a Category Proposal: a strip with Create category and
+    // Dismiss, and a "New: {name}" chip on its rows. A dismissal is remembered
+    // only once the import is committed.
+    it("describes Category Proposals with their Create category and Dismiss actions", () => {
+      const text = detailText("import");
+
+      expect(text).toMatch(/propos/i);
+      expect(text).toMatch(/Create category/);
+      expect(text).toMatch(/Dismiss/);
+      expect(text).toMatch(/New:/);
+    });
+
+    it("says a dismissed proposal is not offered again once the import is committed", () => {
+      const text = detailText("import");
+
+      expect(text).toMatch(
+        /dismiss[^.]*(again|remember)|(again|remember)[^.]*dismiss/i
+      );
+    });
+
     it("says a committed import is what teaches a category", () => {
       const row = rowOf("import", /review/i);
 

@@ -3,6 +3,7 @@ import type { Category } from "../../types/category";
 import {
   categoryColorPalette,
   colorForCategoryName,
+  nextFreeCategoryColor,
   resolveCategoryColor,
 } from "./categoryColor";
 
@@ -66,6 +67,70 @@ describe("resolveCategoryColor (issue #157)", () => {
     );
     expect(resolveCategoryColor("Anything", [])).toBe(
       colorForCategoryName("Anything")
+    );
+  });
+});
+
+/**
+ * Issue #262 — the Next Free Colour. A category created from a Category
+ * Proposal takes the first palette swatch no category uses yet, so a new
+ * category reads apart from the ones beside it. Once all 20 swatches are taken
+ * it falls back to the name-derived colour of the category being created.
+ */
+describe("nextFreeCategoryColor (#262)", () => {
+  const withColors = (colors: readonly string[]): Category[] =>
+    colors.map((color, i) => ({
+      id: `c${i}`,
+      name: `Category ${i}`,
+      isDefault: false,
+      color,
+      hidden: false,
+    }));
+
+  it("returns the first swatch when no category exists", () => {
+    expect(nextFreeCategoryColor([], "Dining")).toBe(categoryColorPalette[0]);
+  });
+
+  it("returns the first swatch no category uses, in palette order", () => {
+    const used = withColors([
+      categoryColorPalette[0],
+      categoryColorPalette[1],
+      categoryColorPalette[3],
+    ]);
+
+    expect(nextFreeCategoryColor(used, "Dining")).toBe(categoryColorPalette[2]);
+  });
+
+  it("treats a stored colour as used whatever its case", () => {
+    const used = withColors([categoryColorPalette[0].toLowerCase()]);
+
+    expect(nextFreeCategoryColor(used, "Dining")).toBe(categoryColorPalette[1]);
+  });
+
+  it("counts a Hidden Category's colour as used", () => {
+    const used = withColors([categoryColorPalette[0]]).map((c) => ({
+      ...c,
+      hidden: true,
+    }));
+
+    expect(nextFreeCategoryColor(used, "Dining")).toBe(categoryColorPalette[1]);
+  });
+
+  it("ignores colours outside the palette", () => {
+    const used = withColors(["#123456"]);
+
+    expect(nextFreeCategoryColor(used, "Dining")).toBe(categoryColorPalette[0]);
+  });
+
+  it("falls back to colorForCategoryName once all 20 swatches are used", () => {
+    expect(categoryColorPalette).toHaveLength(20);
+    const used = withColors(categoryColorPalette);
+
+    expect(nextFreeCategoryColor(used, "Dining")).toBe(
+      colorForCategoryName("Dining")
+    );
+    expect(nextFreeCategoryColor(used, "Insurance")).toBe(
+      colorForCategoryName("Insurance")
     );
   });
 });

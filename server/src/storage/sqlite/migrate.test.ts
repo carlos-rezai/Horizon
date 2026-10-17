@@ -275,6 +275,7 @@ describe("migrate (SQLite)", () => {
       db.exec(`DROP TABLE savings_goal`);
       // 018 (plain CREATE TABLE) re-runs on the replay too.
       db.exec(`DROP TABLE IF EXISTS category_rules`);
+      db.exec(`DROP TABLE IF EXISTS declined_category_proposals`);
       db.exec(
         `ALTER TABLE accounts RENAME COLUMN anchor_balance TO ${OLD_BALANCE}`
       );
@@ -498,6 +499,32 @@ describe("migration 018 — Category Rules (#258)", () => {
     expect(
       db.pragma("user_version", { simple: true }) as number
     ).toBeGreaterThanOrEqual(18);
+
+    db.close();
+  });
+
+  // Issue #262 — migration 018 is unreleased, so the Declined Proposals table
+  // ships in it rather than in a 019.
+  it("creates declined_category_proposals keyed by a case-insensitive name", async () => {
+    const db = new Database(":memory:");
+
+    await migrate(db);
+
+    const cols = db
+      .prepare(`PRAGMA table_info(declined_category_proposals)`)
+      .all() as Array<{ name: string; pk: number }>;
+    expect(cols.map((c) => c.name)).toEqual(["name"]);
+    expect(cols[0].pk).toBe(1);
+
+    db.prepare(`INSERT INTO declined_category_proposals (name) VALUES (?)`).run(
+      "Dining"
+    );
+    expect(() =>
+      db
+        .prepare(`INSERT INTO declined_category_proposals (name) VALUES (?)`)
+        .run("dining")
+    ).toThrow();
+    expect(db.pragma("user_version", { simple: true }) as number).toBe(18);
 
     db.close();
   });

@@ -3299,6 +3299,119 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Issue #262 — Import Category Learning, Phase 4: Declined Proposals.
+  //
+  // A dismissed Category Proposal is persisted by the Import Commit as a
+  // Declined Proposal and never proposed again. `decline` is insert-or-ignore
+  // and case-insensitive, so declining the same canonical name twice, in any
+  // case, keeps one entry under the spelling first declined. Like Category
+  // Rules, Declined Proposals survive backup and restore.
+  // -------------------------------------------------------------------------
+
+  describe("CategoryRulesRepo — Declined Proposals (#262)", () => {
+    const sorted = (names: string[]): string[] =>
+      [...names].sort((a, b) => a.localeCompare(b));
+
+    it("findDeclined returns no names on a fresh database", async () => {
+      expect(await storage.categoryRules.findDeclined()).toEqual([]);
+    });
+
+    it("decline then findDeclined round-trips every name in the batch", async () => {
+      await storage.categoryRules.decline(["Dining", "Health"]);
+
+      expect(sorted(await storage.categoryRules.findDeclined())).toEqual([
+        "Dining",
+        "Health",
+      ]);
+    });
+
+    it("declining a name twice is idempotent", async () => {
+      await storage.categoryRules.decline(["Dining"]);
+      await storage.categoryRules.decline(["Dining"]);
+
+      expect(await storage.categoryRules.findDeclined()).toEqual(["Dining"]);
+    });
+
+    it("declining is case-insensitive and keeps the spelling first declined", async () => {
+      await storage.categoryRules.decline(["Dining"]);
+      await storage.categoryRules.decline(["dining", "DINING"]);
+
+      expect(await storage.categoryRules.findDeclined()).toEqual(["Dining"]);
+    });
+
+    it("tolerates a case-duplicate within one batch", async () => {
+      await storage.categoryRules.decline(["Transport", "transport"]);
+
+      const declined = await storage.categoryRules.findDeclined();
+      expect(declined).toHaveLength(1);
+      expect(declined[0].toLowerCase()).toBe("transport");
+    });
+
+    it("decline with an empty batch is a no-op", async () => {
+      await storage.categoryRules.decline(["Dining"]);
+      await storage.categoryRules.decline([]);
+
+      expect(await storage.categoryRules.findDeclined()).toEqual(["Dining"]);
+    });
+
+    it("declining leaves the Category Rules untouched, and learning leaves the declined names", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+      await storage.categoryRules.decline(["Dining"]);
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster dienst gmbh", category: "Subscriptions" },
+      ]);
+
+      expect(await storage.categoryRules.findAll()).toHaveLength(2);
+      expect(await storage.categoryRules.findDeclined()).toEqual(["Dining"]);
+    });
+
+    it("declined names survive a backup and reopen", async () => {
+      await storage.categoryRules.decline(["Dining"]);
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-declined-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        const restored = await createStorage({ path: destPath });
+        try {
+          expect(await restored.categoryRules.findDeclined()).toEqual([
+            "Dining",
+          ]);
+        } finally {
+          await restored.close();
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("restore brings back the snapshot's declined names and drops names declined after it", async () => {
+      const liveDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-dl-"));
+      const snapDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-ds-"));
+      const live = await createStorage({
+        path: path.join(liveDir, "horizon.db"),
+      });
+      const snapPath = path.join(snapDir, "snapshot.db");
+      try {
+        await live.categoryRules.decline(["Dining"]);
+        await live.backup(snapPath);
+        await live.categoryRules.decline(["Health"]);
+
+        await live.restore(snapPath);
+
+        expect(await live.categoryRules.findDeclined()).toEqual(["Dining"]);
+      } finally {
+        await live.close();
+        fs.rmSync(liveDir, { recursive: true, force: true });
+        fs.rmSync(snapDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Storage.backup
   // -------------------------------------------------------------------------
 

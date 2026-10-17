@@ -1201,3 +1201,224 @@ describe("Category Rules follow Category Management (#261)", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #262 — Import Category Learning, Phase 4: Category Proposals.
+//
+// On an untouched install there is no Dining category, so a Lieferando row is
+// proposed: Miscellaneous, `proposed`, `proposedCategory: "Dining"`. Dismissing
+// is remembered only by a successful commit's `declinedProposals`; from then
+// on the name is never proposed again. A proposal left undecided teaches
+// nothing and comes back on the next statement, and a preview — or a wizard
+// cancelled before the commit — leaves no declined name behind.
+// ---------------------------------------------------------------------------
+
+const PROPOSAL_CSV =
+  "Datum;Beschreibung;Betrag\n" +
+  "24.06.2026;REWE Markt 0815;-12,50\n" +
+  "25.06.2026;LIEFERANDO.DE;-23,90\n" +
+  "26.06.2026;MUSTER DIENST GMBH;-9,90\n" +
+  "27.06.2026;MUSTER APOTHEKE;-8,40\n";
+
+const LIEFERANDO = "LIEFERANDO.DE";
+
+interface ProposalPreviewRow extends LearningPreviewRow {
+  proposedCategory?: string;
+}
+
+async function previewProposalCsv(
+  accountId: string
+): Promise<ProposalPreviewRow[]> {
+  const res = await request(app)
+    .post("/imports/preview")
+    .field("accountId", accountId)
+    .attach("file", Buffer.from(PROPOSAL_CSV, "utf8"), {
+      filename: "proposals.csv",
+      contentType: "text/csv",
+    });
+  expect(res.status).toBe(200);
+  return res.body.rows as ProposalPreviewRow[];
+}
+
+/** Commit a preview's rows exactly as they arrived. */
+function commitAsPreviewed(
+  accountId: string,
+  rows: ProposalPreviewRow[],
+  overrides: Record<string, unknown> = {}
+) {
+  return postImport(accountId, {
+    filename: "proposals.csv",
+    rows: rows.map((r) => ({
+      date: r.date,
+      amount: r.amount,
+      description: r.description,
+      counterparty: r.counterparty,
+      category: r.category,
+      categorySource: r.categorySource,
+    })),
+    ...overrides,
+  });
+}
+
+/** Control: Health is never created or declined in these tests. */
+function expectHealthProposed(rows: ProposalPreviewRow[]) {
+  expect(rows.find((r) => r.description === "MUSTER APOTHEKE")).toMatchObject({
+    category: "Miscellaneous",
+    categorySource: "proposed",
+    proposedCategory: "Health",
+  });
+}
+
+function lieferando(rows: ProposalPreviewRow[]): ProposalPreviewRow {
+  const row = rows.find((r) => r.description === LIEFERANDO);
+  expect(row, LIEFERANDO).toBeDefined();
+  return row as ProposalPreviewRow;
+}
+
+describe("POST /imports/preview — Category Proposals (#262)", () => {
+  it("proposes a canonical category the user does not have, leaving the row in Miscellaneous", async () => {
+    const account = await createAccount();
+
+    const rows = await previewProposalCsv(account.id);
+
+    expect(lieferando(rows)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "proposed",
+      proposedCategory: "Dining",
+    });
+    // Control: a category the user has is suggested, not proposed.
+    expect(rows.find((r) => r.description === "REWE Markt 0815")).toMatchObject(
+      { category: "Food", categorySource: "suggested" }
+    );
+  });
+
+  it("proposes nothing once the category exists — the row is suggested into it", async () => {
+    const account = await createAccount();
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Dining" });
+    expect(created.status).toBe(201);
+
+    const rows = await previewProposalCsv(account.id);
+
+    expect(lieferando(rows)).toMatchObject({
+      category: "Dining",
+      categorySource: "suggested",
+    });
+    expect(lieferando(rows).proposedCategory).toBeUndefined();
+    expectHealthProposed(rows);
+  });
+
+  it("a preview alone records no declined name: previewing twice proposes twice", async () => {
+    const account = await createAccount();
+
+    await previewProposalCsv(account.id);
+    const again = await previewProposalCsv(account.id);
+
+    expect(lieferando(again)).toMatchObject({
+      categorySource: "proposed",
+      proposedCategory: "Dining",
+    });
+  });
+});
+
+describe("POST /imports — Declined Proposals (#262)", () => {
+  it("persists declinedProposals, so the declined name is not proposed again", async () => {
+    const account = await createAccount();
+    const first = await previewProposalCsv(account.id);
+
+    const committed = await commitAsPreviewed(
+      account.id,
+      first.map((r) =>
+        r.description === LIEFERANDO
+          ? { ...r, categorySource: "unmatched" as const }
+          : r
+      ),
+      { declinedProposals: ["Dining"] }
+    );
+    expect(committed.status).toBe(201);
+
+    const second = await previewProposalCsv(account.id);
+    expect(lieferando(second)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(lieferando(second).proposedCategory).toBeUndefined();
+    expectHealthProposed(second);
+  });
+
+  it("matches a declined name case-insensitively", async () => {
+    const account = await createAccount();
+    const first = await previewProposalCsv(account.id);
+
+    const committed = await commitAsPreviewed(account.id, first, {
+      declinedProposals: ["dining"],
+    });
+    expect(committed.status).toBe(201);
+
+    const second = await previewProposalCsv(account.id);
+    expect(lieferando(second).categorySource).toBe("unmatched");
+    expectHealthProposed(second);
+  });
+
+  it("an undecided proposal teaches nothing and comes back on the next statement", async () => {
+    const account = await createAccount();
+    const first = await previewProposalCsv(account.id);
+    expect(lieferando(first).categorySource).toBe("proposed");
+
+    const committed = await commitAsPreviewed(account.id, first);
+    expect(committed.status).toBe(201);
+
+    const second = await previewProposalCsv(account.id);
+    expect(lieferando(second)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "proposed",
+      proposedCategory: "Dining",
+    });
+  });
+
+  it("an older payload without declinedProposals commits and declines nothing", async () => {
+    const account = await createAccount();
+
+    const committed = await postImport(account.id);
+    expect(committed.status).toBe(201);
+
+    const rows = await previewProposalCsv(account.id);
+    expect(lieferando(rows)).toMatchObject({
+      categorySource: "proposed",
+      proposedCategory: "Dining",
+    });
+  });
+
+  it("a commit that fails validation declines nothing", async () => {
+    const account = await createAccount();
+
+    const failed = await postImport(account.id, {
+      rows: [
+        {
+          date: "2026-06-24",
+          amount: -2041,
+          description: "",
+          category: "Food",
+        },
+      ],
+      declinedProposals: ["Dining"],
+    });
+    expect(failed.status).toBe(400);
+
+    const rows = await previewProposalCsv(account.id);
+    expect(lieferando(rows).categorySource).toBe("proposed");
+  });
+
+  it("a commit to an unknown account declines nothing", async () => {
+    const account = await createAccount();
+
+    const failed = await postImport("00000000-0000-0000-0000-000000000000", {
+      declinedProposals: ["Dining"],
+    });
+    expect(failed.status).toBe(404);
+
+    const rows = await previewProposalCsv(account.id);
+    expect(lieferando(rows).categorySource).toBe("proposed");
+  });
+});
