@@ -2,7 +2,7 @@ import type { CategoryRuleInput } from "../../storage/types.js";
 import { counterpartyKey } from "./counterpartyKey.js";
 import type { CategorySource } from "./types.js";
 
-/** One committed row, as far as rule derivation needs it. */
+/** One committed row, as far as Category Rule derivation needs it. */
 export interface TeachingRowInput {
   /** ISO date. */
   date: string;
@@ -67,13 +67,14 @@ export function deriveCategoryRules(
     }
   });
 
-  const rules: CategoryRuleInput[] = [];
+  const categoryRules: CategoryRuleInput[] = [];
   for (const [key, byCategory] of tallies) {
     let best: { category: string; tally: Tally } | null = null;
     for (const [category, tally] of byCategory) {
       if (!best || beats(tally, best.tally)) best = { category, tally };
     }
-    if (best) rules.push({ counterpartyKey: key, category: best.category });
+    if (best)
+      categoryRules.push({ counterpartyKey: key, category: best.category });
   }
-  return rules;
+  return categoryRules;
 }

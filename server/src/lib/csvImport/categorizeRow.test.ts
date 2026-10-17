@@ -38,8 +38,11 @@ function category(name: string, hidden = false): Category {
   };
 }
 
-function ctx(categories: Category[], rules: Map<string, string> = new Map()) {
-  return { rules, categories, declined: new Set<string>() };
+function ctx(
+  categories: Category[],
+  categoryRules: Map<string, string> = new Map()
+) {
+  return { categoryRules, categories, declined: new Set<string>() };
 }
 
 const CANONICAL_NAMES = [
@@ -245,7 +248,7 @@ describe("categorizeRow — dangling Category Rule (#261)", () => {
 
 function ctxDeclined(categories: Category[], declined: string[]) {
   return {
-    rules: new Map<string, string>(),
+    categoryRules: new Map<string, string>(),
     categories,
     declined: new Set(declined),
   };

@@ -10,8 +10,8 @@ export interface MappedRow {
   amount: number;
   /**
    * The raw Counterparty as parsed — the preset's counterparty column, else
-   * the description cell. A Category Rule is
-   * keyed on its normalised Counterparty Key, never on an edited description.
+   * the description cell. A Category Rule is keyed on its normalised
+   * Counterparty Key, never on an edited description.
    */
   counterparty: string;
   /**

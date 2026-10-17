@@ -140,7 +140,7 @@ export interface CategorizeContext {
    * Category Rules: Counterparty Key → category name. A Category Rule whose
    * category no longer exists is skipped, never applied.
    */
-  rules: ReadonlyMap<string, string>;
+  categoryRules: ReadonlyMap<string, string>;
   /** The user's categories, hidden ones included. */
   categories: readonly Category[];
   /** Canonical names the user declined as Category Proposals. */
@@ -199,8 +199,8 @@ export function categorizeRow(
   ctx: CategorizeContext
 ): CategorizedRow {
   const key = counterpartyKey(row.counterparty);
-  const learned = key === "" ? undefined : ctx.rules.get(key);
-  // A rule whose category no longer exists is skipped, never applied.
+  const learned = key === "" ? undefined : ctx.categoryRules.get(key);
+  // A Category Rule whose category no longer exists is skipped, never applied.
   if (
     learned !== undefined &&
     ctx.categories.some((category) => category.name === learned)

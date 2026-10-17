@@ -98,12 +98,14 @@ router.post("/", async (req, res) => {
 
   // Committing a row is the approval: learn a Category Rule from every teaching
   // row. Keys are re-derived from the raw counterparty (never trusted from the
-  // client), and a rule only ever points at a category that exists.
+  // client), and a Category Rule only ever points at a category that exists.
   const existing = new Set(
     (await storage.categories.findAll()).map((c) => c.name)
   );
   await storage.categoryRules.learn(
-    deriveCategoryRules(rows).filter((rule) => existing.has(rule.category))
+    deriveCategoryRules(rows).filter((categoryRule) =>
+      existing.has(categoryRule.category)
+    )
   );
   // A dismissed Category Proposal is never proposed again.
   await storage.categoryRules.decline(declinedProposals);

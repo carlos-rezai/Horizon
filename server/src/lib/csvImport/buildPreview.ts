@@ -66,8 +66,9 @@ export interface BuildPreviewInput {
   /** Every stored Category Rule, applied by Counterparty Key. */
   categoryRules?: CategoryRuleInput[];
   /**
-   * The user's categories. A rule applies only while its category exists
-   * (hidden or not), so a stale rule never lands a row in a missing category.
+   * The user's categories. A Category Rule applies only while its category
+   * exists (hidden or not), so a stale Category Rule never lands a row in a
+   * missing category.
    */
   categories?: Category[];
   /** Canonical names the user declined as Category Proposals. */
@@ -125,16 +126,16 @@ export async function buildPreview(
     input.anchorDate
   );
 
-  const rules = new Map(
-    (input.categoryRules ?? []).map((rule) => [
-      rule.counterpartyKey,
-      rule.category,
+  const categoryRules = new Map(
+    (input.categoryRules ?? []).map((categoryRule) => [
+      categoryRule.counterpartyKey,
+      categoryRule.category,
     ])
   );
 
   const generateId = input.generateId ?? randomUUID;
   const context = {
-    rules,
+    categoryRules,
     categories: input.categories ?? [],
     declined: new Set(input.declinedProposals ?? []),
   };
