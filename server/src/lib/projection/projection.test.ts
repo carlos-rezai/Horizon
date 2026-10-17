@@ -14,6 +14,8 @@ import type {
   Transaction,
 } from "../../storage/types.js";
 import { deriveHistory } from "./history.js";
+import { recurringHistory } from "../recurringHistory/recurringHistory.js";
+import { monthsBetween } from "../date/date.js";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
 
 let app: Express;
@@ -2633,5 +2635,109 @@ describe("GET /projection - Recurring History", () => {
         totalLiquid: 700000,
       },
     ]);
+  });
+});
+
+describe("projectBalances - destination legs do not depend on where the run starts", () => {
+  // Today is 17 Oct. A run from the current month replays from the earliest
+  // Anchor month; a run from the History Span's start replays nothing.
+  const today = "2026-10-17";
+
+  function account(
+    id: string,
+    kind: Account["kind"],
+    anchorBalance: number,
+    anchorDate: string
+  ): Account {
+    return {
+      id,
+      kind,
+      name: id,
+      anchorBalance,
+      anchorDate,
+      showInTrajectory: true,
+    };
+  }
+
+  function actualIn(
+    accounts: Account[],
+    recurrings: RecurringTransaction[],
+    fromDate: string,
+    accountId: string
+  ): number | undefined {
+    const snapshots = projectBalances(
+      accounts.map(toProjectionAccountEntry),
+      [],
+      recurrings.map(toProjectionRecurringEntry),
+      fromDate,
+      today.slice(0, 7),
+      monthsBetween(fromDate, today.slice(0, 7)) + 1
+    );
+    return snapshots.find((s) => s.month === today.slice(0, 7))?.accounts[
+      accountId
+    ].actual;
+  }
+
+  it("a transfer into an account anchored before its source", () => {
+    // Tagesgeld anchored 15 Jan at 0, Girokonto 15 Jun; 100 EUR moves on the
+    // 1st. February to October reach the Tagesgeld: 9 x 10000.
+    const accounts = [
+      account("tg", "Tagesgeld", 0, "2026-01-15"),
+      account("giro", "Girokonto", 500000, "2026-06-15"),
+    ];
+    const recurrings: RecurringTransaction[] = [
+      {
+        id: "save",
+        accountId: "giro",
+        linkedAccountId: "tg",
+        amount: 10000,
+        description: "Save",
+        category: "Transfer",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      },
+    ];
+
+    expect({
+      fromCurrent: actualIn(accounts, recurrings, "2026-10", "tg"),
+      fromSpanStart: actualIn(accounts, recurrings, "2026-01", "tg"),
+      recurringHistory: recurringHistory("tg", accounts, recurrings, today),
+    }).toEqual({
+      fromCurrent: 90000,
+      fromSpanStart: 90000,
+      recurringHistory: 90000,
+    });
+  });
+
+  it("a Repayment Transfer into a Mortgage anchored before its paying account", () => {
+    // Restschuld 200,000 EUR known on 15 Jan; the Girokonto is anchored 15 Jun.
+    // The 1,500 EUR rate on the 1st pays down February to October: 9 x.
+    const accounts = [
+      account("mortgage", "Mortgage", 20000000, "2026-01-15"),
+      account("giro", "Girokonto", 500000, "2026-06-15"),
+    ];
+    const recurrings: RecurringTransaction[] = [
+      {
+        id: "rate",
+        accountId: "giro",
+        linkedAccountId: "mortgage",
+        amount: 150000,
+        description: "Rate",
+        category: "Transfer",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      },
+    ];
+
+    expect({
+      fromCurrent: actualIn(accounts, recurrings, "2026-10", "mortgage"),
+      fromSpanStart: actualIn(accounts, recurrings, "2026-01", "mortgage"),
+      restschuld:
+        20000000 + recurringHistory("mortgage", accounts, recurrings, today),
+    }).toEqual({
+      fromCurrent: 18650000,
+      fromSpanStart: 18650000,
+      restschuld: 18650000,
+    });
   });
 });
