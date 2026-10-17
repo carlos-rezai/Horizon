@@ -171,6 +171,25 @@ describe("GET /reports/year-comparison — ?month validation", () => {
     const res = await request(app).get("/reports/year-comparison?month=June");
     expect(res.status).toBe(400);
   });
+
+  it("returns 400 for month 13", async () => {
+    const res = await request(app).get(
+      "/reports/year-comparison?month=2026-13"
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("answers 400 with issues on a malformed month", async () => {
+    const res = await request(app).get("/reports/year-comparison?month=June");
+    expect(res.status).toBe(400);
+    expect(res.body.issues).toBeDefined();
+  });
+
+  it("answers 400 with issues when the month is missing", async () => {
+    const res = await request(app).get("/reports/year-comparison");
+    expect(res.status).toBe(400);
+    expect(res.body.issues).toBeDefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
