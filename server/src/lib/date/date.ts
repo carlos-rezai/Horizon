@@ -40,6 +40,14 @@ export function monthsBetween(from: string, to: string): number {
   return (b.year - a.year) * 12 + (b.month - a.month);
 }
 
+/** The `YYYY-MM` month `n` months after `yyyyMM`; a negative `n` goes back. */
+export function addMonths(yyyyMM: string, n: number): string {
+  const { year, month } = parseYearMonth(yyyyMM);
+  const index = year * 12 + (month - 1) + n;
+  const m = String((((index % 12) + 12) % 12) + 1).padStart(2, "0");
+  return `${Math.floor(index / 12)}-${m}`;
+}
+
 /** The number of days in a `YYYY-MM` month, leap years included. */
 export function daysInMonth(yearMonth: string): number {
   const { year, month } = parseYearMonth(yearMonth);

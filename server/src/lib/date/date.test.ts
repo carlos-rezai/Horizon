@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import {
+  addMonths,
   currentMonth,
   daysInMonth,
   endOfMonth,
@@ -79,6 +80,29 @@ describe("monthsBetween", () => {
 
   it("gives 0 for equal months", () => {
     expect(monthsBetween("2026-10", "2026-10")).toBe(0);
+  });
+});
+
+describe("addMonths", () => {
+  it("goes forward within a year", () => {
+    expect(addMonths("2026-03", 7)).toBe("2026-10");
+  });
+
+  it("goes forward across a year boundary", () => {
+    expect(addMonths("2025-11", 3)).toBe("2026-02");
+  });
+
+  it("goes back across a year boundary", () => {
+    expect(addMonths("2026-02", -3)).toBe("2025-11");
+  });
+
+  it("gives the same month for 0", () => {
+    expect(addMonths("2026-10", 0)).toBe("2026-10");
+  });
+
+  it("lands on December going forward and back", () => {
+    expect(addMonths("2026-11", 1)).toBe("2026-12");
+    expect(addMonths("2027-01", -1)).toBe("2026-12");
   });
 });
 
