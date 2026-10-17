@@ -10,8 +10,9 @@ import Money from "../../../primitives/Money/Money";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
+import DayBlock from "../../../components/DayBlock/DayBlock";
 import { resolveAccountColor } from "../../../utils/color/color";
-import { MONTHS, formatDate, formatMonth } from "../../../utils/format/format";
+import { formatDate, formatMonth } from "../../../utils/format/format";
 import {
   netFixed,
   rowAccountId,
@@ -19,9 +20,6 @@ import {
 } from "../fixedFlows/fixedFlows";
 import type { MonthEndBalance } from "../monthEndBalance/monthEndBalance";
 import {
-  StyledDay,
-  StyledDayNum,
-  StyledDayMonth,
   StyledDesc,
   StyledAccountLine,
   StyledAccountName,
@@ -147,15 +145,10 @@ interface FlowRowProps {
 }
 
 function FlowRow({ flow, last, to, counterpart }: FlowRowProps) {
-  const day = parseInt(flow.date.slice(8, 10), 10);
-  const monthIdx = parseInt(flow.date.slice(5, 7), 10) - 1;
   return (
     <StyledFlowRow data-testid="fixed-flow-row" $inAnchor={flow.inAnchor}>
       <DataRow as={Link} to={to} columns={ROW_COLUMNS} last={last}>
-        <StyledDay>
-          <StyledDayNum>{day}</StyledDayNum>
-          <StyledDayMonth>{MONTHS[monthIdx]}</StyledDayMonth>
-        </StyledDay>
+        <DayBlock date={flow.date} />
         <div>
           <StyledDesc>{flow.description}</StyledDesc>
           {flow.inAnchor && (

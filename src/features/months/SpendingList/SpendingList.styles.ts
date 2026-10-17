@@ -8,25 +8,6 @@ export const StyledTabsWrap = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.space3}px;
 `;
 
-export const StyledDay = styled.div`
-  text-align: center;
-`;
-
-export const StyledDayNum = styled.div`
-  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
-  font-size: 15px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.onSurface};
-`;
-
-export const StyledDayMonth = styled.div`
-  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
-  font-size: 9px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.onSurfaceFaint};
-`;
-
 export const StyledDesc = styled.div`
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: ${({ theme }) => theme.typography.scale.body.fontSize};

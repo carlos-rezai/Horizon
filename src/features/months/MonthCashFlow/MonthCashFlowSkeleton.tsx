@@ -3,7 +3,7 @@ import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
 import Skeleton from "../../../primitives/Skeleton/Skeleton";
 import { StyledAccountLine } from "../SpendingList/SpendingList.styles";
-import { StyledDayBlock } from "../SpendingList/SpendingListSkeleton.styles";
+import { StyledDayBlockSkeleton } from "../../../components/DayBlock/DayBlock.styles";
 import {
   ROW_COLUMNS,
   StyledGroups,
@@ -43,10 +43,10 @@ export default function MonthCashFlowSkeleton({ monthLabel }: Props) {
                 columns={ROW_COLUMNS}
                 last={row === ROWS.length - 1}
               >
-                <StyledDayBlock>
+                <StyledDayBlockSkeleton>
                   <Skeleton width={22} height={15} />
                   <Skeleton width={26} height={9} />
-                </StyledDayBlock>
+                </StyledDayBlockSkeleton>
                 <div>
                   <Skeleton width="52%" height={15} />
                   <StyledAccountLine>

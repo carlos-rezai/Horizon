@@ -7,7 +7,7 @@ import {
   StyledTabsWrap,
   StyledAccountLine,
 } from "./SpendingList.styles";
-import { StyledDayBlock } from "./SpendingListSkeleton.styles";
+import { StyledDayBlockSkeleton } from "../../../components/DayBlock/DayBlock.styles";
 
 // A typical month of variable spending; enough rows to fill the card without
 // pretending to know how many the month actually holds.
@@ -46,10 +46,10 @@ export default function SpendingListSkeleton({ monthLabel }: Props) {
           last={row === ROWS.length - 1}
           aria-hidden="true"
         >
-          <StyledDayBlock>
+          <StyledDayBlockSkeleton>
             <Skeleton width={22} height={15} />
             <Skeleton width={26} height={9} />
-          </StyledDayBlock>
+          </StyledDayBlockSkeleton>
           <div>
             <Skeleton width="58%" height={15} />
             <StyledAccountLine>

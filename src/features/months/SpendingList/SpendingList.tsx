@@ -10,15 +10,13 @@ import Tabs, { type TabItem } from "../../../primitives/Tabs/Tabs";
 import Card from "../../../components/Card/Card";
 import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
+import DayBlock from "../../../components/DayBlock/DayBlock";
 import FadeSwap from "../../../components/FadeSwap/FadeSwap";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { resolveCategoryColor } from "../../../utils/categoryColor/categoryColor";
 import {
   ROW_COLUMNS,
   StyledTabsWrap,
-  StyledDay,
-  StyledDayNum,
-  StyledDayMonth,
   StyledDesc,
   StyledAccountLine,
   StyledAccountName,
@@ -26,21 +24,6 @@ import {
 } from "./SpendingList.styles";
 
 const ALL = "all";
-
-const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 interface Props {
   /** Accounts shown as tabs (spendable accounts only). */
@@ -119,8 +102,6 @@ export default function SpendingList({
           <div>
             {rows.map((t, i) => {
               const account = accounts.find((a) => a.id === t.accountId);
-              const day = parseInt(t.date.slice(8, 10), 10);
-              const monthIdx = parseInt(t.date.slice(5, 7), 10) - 1;
               return (
                 <DataRow
                   key={t.id}
@@ -128,10 +109,7 @@ export default function SpendingList({
                   last={i === rows.length - 1}
                   onClick={() => onEditTransaction(t)}
                 >
-                  <StyledDay>
-                    <StyledDayNum>{day}</StyledDayNum>
-                    <StyledDayMonth>{MONTHS_SHORT[monthIdx]}</StyledDayMonth>
-                  </StyledDay>
+                  <DayBlock date={t.date} />
                   <div>
                     <StyledDesc>{t.description}</StyledDesc>
                     <StyledAccountLine>
