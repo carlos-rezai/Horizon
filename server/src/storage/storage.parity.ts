@@ -617,7 +617,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   // -------------------------------------------------------------------------
 
   describe("AccountsRepo.findByIdWithBalance", () => {
-    it("returns AccountWithBalance: balance = opening + sum(tx)", async () => {
+    it("returns AccountWithRecordedBalance: recordedBalance = anchor + sum(tx)", async () => {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
@@ -642,7 +642,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe(created.id);
-      expect(result?.balance).toBe(550000);
+      expect(result?.recordedBalance).toBe(550000);
     });
 
     it("returns null for an unparseable id", async () => {
@@ -650,7 +650,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(result).toBeNull();
     });
 
-    it("returns balance = anchorBalance for an account with no transactions", async () => {
+    it("returns recordedBalance = anchorBalance for an account with no transactions", async () => {
       const created = await storage.accounts.create({
         kind: "Tagesgeld",
         name: "Reserve",
@@ -660,7 +660,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       const result = await storage.accounts.findByIdWithBalance(created.id);
 
-      expect(result?.balance).toBe(12345);
+      expect(result?.recordedBalance).toBe(12345);
     });
   });
 
@@ -669,7 +669,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   // -------------------------------------------------------------------------
 
   describe("AccountsRepo.findAllWithBalance", () => {
-    it("returns one entry per account with balance = opening + sum(tx)", async () => {
+    it("returns one entry per account with recordedBalance = anchor + sum(tx)", async () => {
       const a = await storage.accounts.create({
         kind: "Girokonto",
         name: "Main",
@@ -699,11 +699,11 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       const all = await storage.accounts.findAllWithBalance();
       const byId = new Map(all.map((acc) => [acc.id, acc]));
 
-      expect(byId.get(a.id)?.balance).toBe(600000);
-      expect(byId.get(b.id)?.balance).toBe(150000);
+      expect(byId.get(a.id)?.recordedBalance).toBe(600000);
+      expect(byId.get(b.id)?.recordedBalance).toBe(150000);
     });
 
-    it("returns balance = anchorBalance for an account with no transactions", async () => {
+    it("returns recordedBalance = anchorBalance for an account with no transactions", async () => {
       const created = await storage.accounts.create({
         kind: "Girokonto",
         name: "Empty",
@@ -715,7 +715,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       expect(all).toHaveLength(1);
       expect(all[0].id).toBe(created.id);
-      expect(all[0].balance).toBe(12345);
+      expect(all[0].recordedBalance).toBe(12345);
     });
 
     it("returns an empty array when no accounts exist", async () => {
@@ -724,83 +724,11 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Accounts — getTotalLiquid
-  // -------------------------------------------------------------------------
-
-  describe("AccountsRepo.getTotalLiquid", () => {
-    it("sums Girokonto + Tagesgeld balances and excludes other kinds", async () => {
-      const giro = await storage.accounts.create({
-        kind: "Girokonto",
-        name: "Main",
-        anchorBalance: 500000,
-        anchorDate: "2026-03-01",
-      });
-      const tg = await storage.accounts.create({
-        kind: "Tagesgeld",
-        name: "Reserve",
-        anchorBalance: 200000,
-        anchorDate: "2026-03-01",
-      });
-      await storage.accounts.create({
-        kind: "Mortgage",
-        name: "Darlehen",
-        anchorBalance: 4000000,
-        anchorDate: "2026-03-01",
-      });
-      await storage.accounts.create({
-        kind: "Investment",
-        name: "MSCI",
-        anchorBalance: 100000,
-        anchorDate: "2026-03-01",
-      });
-      await storage.accounts.create({
-        kind: "CreditCard",
-        name: "Visa",
-        anchorBalance: 0,
-        anchorDate: "2026-03-01",
-      });
-
-      await storage.transactions.create(giro.id, {
-        date: "2026-03-15",
-        amount: 100000,
-        description: "Salary",
-        category: "Income",
-      });
-      await storage.transactions.create(tg.id, {
-        date: "2026-03-15",
-        amount: 50000,
-        description: "Interest",
-        category: "Income",
-      });
-
-      const total = await storage.accounts.getTotalLiquid();
-
-      expect(total).toBe(500000 + 100000 + 200000 + 50000);
-    });
-
-    it("returns 0 when no Girokonto or Tagesgeld accounts exist", async () => {
-      await storage.accounts.create({
-        kind: "Mortgage",
-        name: "Darlehen",
-        anchorBalance: 4000000,
-        anchorDate: "2026-03-01",
-      });
-
-      const total = await storage.accounts.getTotalLiquid();
-      expect(total).toBe(0);
-    });
-
-    it("returns 0 when no accounts exist", async () => {
-      const total = await storage.accounts.getTotalLiquid();
-      expect(total).toBe(0);
-    });
-  });
-
   // ---------------------------------------------------------------------------
-  // Current Balance — the three native SQL statements (findAllWithBalance,
-  // findByIdWithBalance, getTotalLiquid) must equal the Balance Anchor lib's
-  // balanceAt(today), so the two definitions cannot drift.
+  // Recorded Balance — the two native SQL statements (findAllWithBalance,
+  // findByIdWithBalance) must equal the Balance Anchor lib's balanceAt(today),
+  // so the two definitions cannot drift. Recurring History is the balance
+  // service's job, never the storage's.
   // ---------------------------------------------------------------------------
 
   /** The 15th of each of the 12 months before the current one, oldest first. */
@@ -822,26 +750,23 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
   async function expectParity(accounts: Account[]): Promise<void> {
     const all = await storage.accounts.findAllWithBalance();
-    const listed = new Map(all.map((a) => [a.id, a.balance]));
-    let liquid = 0;
+    const listed = new Map(all.map((a) => [a.id, a.recordedBalance]));
 
     for (const account of accounts) {
       const expected = await expectedBalance(account);
       const byId = await storage.accounts.findByIdWithBalance(account.id);
 
-      expect({ list: listed.get(account.id), byId: byId?.balance }).toEqual({
+      expect({
+        list: listed.get(account.id),
+        byId: byId?.recordedBalance,
+      }).toEqual({
         list: expected,
         byId: expected,
       });
-      if (account.kind === "Girokonto" || account.kind === "Tagesgeld") {
-        liquid += expected;
-      }
     }
-
-    expect(await storage.accounts.getTotalLiquid()).toBe(liquid);
   }
 
-  describe("Current Balance — SQL equals balanceAt(today)", () => {
+  describe("Recorded Balance — SQL equals balanceAt(today)", () => {
     it("live-use fixture: a Girokonto anchored today keeps its balance after 12 past months are imported", async () => {
       const giro = await storage.accounts.create({
         kind: "Girokonto",
@@ -876,8 +801,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       await expectParity([giro]);
 
       const byId = await storage.accounts.findByIdWithBalance(giro.id);
-      expect(byId?.balance).toBe(254321);
-      expect(await storage.accounts.getTotalLiquid()).toBe(254321);
+      expect(byId?.recordedBalance).toBe(254321);
     });
 
     it("an anchor that precedes every transaction adds them all", async () => {
@@ -922,8 +846,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       await expectParity([giro, tg]);
 
       const byId = await storage.accounts.findByIdWithBalance(giro.id);
-      expect(byId?.balance).toBe(550000);
-      expect(await storage.accounts.getTotalLiquid()).toBe(550000 + 201500);
+      expect(byId?.recordedBalance).toBe(550000);
     });
 
     it("a transaction on the Anchor Date is absorbed, not added on top", async () => {
@@ -956,8 +879,35 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       await expectParity([giro]);
 
       const byId = await storage.accounts.findByIdWithBalance(giro.id);
-      expect(byId?.balance).toBe(51000);
-      expect(await storage.accounts.getTotalLiquid()).toBe(51000);
+      expect(byId?.recordedBalance).toBe(51000);
+    });
+
+    it("a recurring rule never moves the Recorded Balance", async () => {
+      const giro = await storage.accounts.create({
+        kind: "Girokonto",
+        name: "Main",
+        anchorBalance: 500000,
+        anchorDate: "2025-01-01",
+      });
+      await storage.transactions.create(giro.id, {
+        date: "2025-02-15",
+        amount: -20000,
+        description: "Supermarkt",
+        category: "Food",
+      });
+      await storage.recurringTransactions.create({
+        accountId: giro.id,
+        amount: 250000,
+        description: "Gehalt",
+        category: "Income",
+        frequency: "monthly",
+        dayOfMonth: 1,
+      });
+
+      await expectParity([giro]);
+
+      const byId = await storage.accounts.findByIdWithBalance(giro.id);
+      expect(byId?.recordedBalance).toBe(480000);
     });
   });
 

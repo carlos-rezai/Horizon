@@ -10,6 +10,7 @@ import {
 import request from "supertest";
 import type { Express } from "express";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
+import { currentMonth, endOfMonth } from "../../lib/date/date.js";
 
 let app: Express;
 let reset: () => Promise<void>;
@@ -941,5 +942,108 @@ describe("Anchor Date — today is the local calendar date", () => {
       .send({ anchorDate: "2026-10-17" });
 
     expect(res.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Current Balance — Recorded Balance + Recurring History through today
+// ---------------------------------------------------------------------------
+
+describe("Accounts routes — Recurring History in the Current Balance", () => {
+  // Anchored at the end of the month three months back, so a day-1 rule has
+  // fired three times since the anchor by today.
+  function monthOffset(n: number): string {
+    const [year, month] = currentMonth().split("-").map(Number);
+    const index = year * 12 + (month - 1) + n;
+    const m = String((index % 12) + 1).padStart(2, "0");
+    return `${Math.floor(index / 12)}-${m}`;
+  }
+  const anchorDate = (): string => endOfMonth(monthOffset(-3));
+
+  async function seed() {
+    const giro = await request(app).post("/accounts").send({
+      kind: "Girokonto",
+      name: "Main",
+      anchorBalance: 500000,
+      anchorDate: anchorDate(),
+    });
+    const tg = await request(app).post("/accounts").send({
+      kind: "Tagesgeld",
+      name: "Reserve",
+      anchorBalance: 200000,
+      anchorDate: anchorDate(),
+    });
+    const giroId = giro.body.id as string;
+    const tgId = tg.body.id as string;
+    const salary = await request(app).post("/recurring-transactions").send({
+      accountId: giroId,
+      amount: 250000,
+      description: "Gehalt",
+      category: "Income",
+      frequency: "monthly",
+      dayOfMonth: 1,
+    });
+    expect(salary.status).toBe(201);
+    return { giroId, tgId, salaryId: salary.body.id as string };
+  }
+
+  it("GET /accounts returns each account's Current Balance as `balance`", async () => {
+    const { giroId, tgId } = await seed();
+
+    const res = await request(app).get("/accounts");
+    const byId = new Map(
+      (res.body as { id: string; balance: number }[]).map((a) => [
+        a.id,
+        a.balance,
+      ])
+    );
+
+    expect(res.status).toBe(200);
+    expect(byId.get(giroId)).toBe(500000 + 750000);
+    expect(byId.get(tgId)).toBe(200000);
+  });
+
+  it("GET /accounts/:id returns the Current Balance as `balance`", async () => {
+    const { giroId } = await seed();
+
+    const res = await request(app).get(`/accounts/${giroId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.balance).toBe(500000 + 750000);
+  });
+
+  it("GET /accounts/liquid sums the liquid accounts' Current Balances", async () => {
+    await seed();
+
+    const res = await request(app).get("/accounts/liquid");
+
+    expect(res.body).toEqual({ totalLiquid: 1250000 + 200000 });
+  });
+
+  it("editing a rule changes the balance on the next read", async () => {
+    const { giroId, salaryId } = await seed();
+
+    await request(app)
+      .patch(`/recurring-transactions/${salaryId}`)
+      .send({ amount: 300000 })
+      .expect(200);
+
+    const res = await request(app).get(`/accounts/${giroId}`);
+    expect(res.body.balance).toBe(500000 + 900000);
+  });
+
+  it("deleting a rule changes the balance on the next read", async () => {
+    const { giroId, salaryId } = await seed();
+    const before = await request(app).get(`/accounts/${giroId}`);
+    expect(before.body.balance).toBe(500000 + 750000);
+
+    await request(app)
+      .delete(`/recurring-transactions/${salaryId}`)
+      .expect(204);
+
+    const res = await request(app).get(`/accounts/${giroId}`);
+    expect(res.body.balance).toBe(500000);
+    const liquid = await request(app).get("/accounts/liquid");
+    expect(liquid.body).toEqual({ totalLiquid: 700000 });
   });
 });
