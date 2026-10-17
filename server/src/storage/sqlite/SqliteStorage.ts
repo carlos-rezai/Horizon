@@ -19,6 +19,7 @@ import {
   createSqliteImportsRepo,
 } from "./imports.js";
 import { createSqliteSavingsGoalRepo } from "./savingsGoal.js";
+import { createSqliteCategoryRulesRepo } from "./categoryRules.js";
 
 export type SqliteStorageOptions = OpenConnectionOptions;
 
@@ -33,6 +34,7 @@ interface Repos {
   >;
   imports: ReturnType<typeof createSqliteImportsRepo>;
   importPresets: ReturnType<typeof createSqliteImportPresetsRepo>;
+  categoryRules: ReturnType<typeof createSqliteCategoryRulesRepo>;
   savingsGoal: ReturnType<typeof createSqliteSavingsGoalRepo>;
 }
 
@@ -45,6 +47,7 @@ function buildRepos(db: Database.Database): Repos {
   const recurringTransactions = createSqliteRecurringTransactionsRepo(db);
   const imports = createSqliteImportsRepo(db);
   const importPresets = createSqliteImportPresetsRepo(db);
+  const categoryRules = createSqliteCategoryRulesRepo(db);
   const savingsGoal = createSqliteSavingsGoalRepo(db);
   return {
     accounts,
@@ -55,6 +58,7 @@ function buildRepos(db: Database.Database): Repos {
     recurringTransactions,
     imports,
     importPresets,
+    categoryRules,
     savingsGoal,
   };
 }
@@ -112,6 +116,9 @@ export async function createSqliteStorage(
     },
     get importPresets() {
       return repos.importPresets;
+    },
+    get categoryRules() {
+      return repos.categoryRules;
     },
     get savingsGoal() {
       return repos.savingsGoal;

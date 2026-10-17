@@ -48,7 +48,9 @@ const COMMIT: CommitImportInput = {
       date: "2024-02-03",
       amount: -1299,
       description: "REWE",
+      counterparty: "REWE",
       category: "Food",
+      categorySource: "unmatched",
     },
   ],
 };

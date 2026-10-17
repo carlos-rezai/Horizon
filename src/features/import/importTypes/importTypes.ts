@@ -7,7 +7,7 @@
  * `description`/`category` field names as the server end-to-end — no
  * translation layer.
  */
-import type { ParsedImportRow } from "../reviewRows/reviewRows";
+import type { CategorySource, ParsedImportRow } from "../reviewRows/reviewRows";
 
 /** Which raw CSV column feeds each Horizon field (server `ColumnMapping`). */
 export interface ColumnMapping {
@@ -119,6 +119,10 @@ export interface CommitImportInput {
     date: string;
     amount: number;
     description: string;
+    /** The raw Counterparty the server keys Category Rules on. */
+    counterparty: string;
     category: string;
+    /** Whether committing this row teaches a Category Rule. */
+    categorySource: CategorySource;
   }>;
 }

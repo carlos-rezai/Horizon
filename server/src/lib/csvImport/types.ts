@@ -1,6 +1,5 @@
 /**
- * A single statement row after column mapping, amount/date parsing, and
- * categorization — the engine's normalized output and the unit duplicate /
+ * A single statement row after column mapping and amount/date parsing — the engine's normalized output and the unit duplicate /
  * recurring detection operate on.
  */
 export interface MappedRow {
@@ -9,7 +8,11 @@ export interface MappedRow {
   description: string;
   /** Signed integer cents. */
   amount: number;
-  category: string;
+  /**
+   * The raw Counterparty as parsed — the description cell. A Category Rule is
+   * keyed on its normalised Counterparty Key, never on an edited description.
+   */
+  counterparty: string;
   /**
    * True when the source row is a not-yet-settled (pending / "vorgemerkt")
    * booking, per the preset's pendingColumn/pendingValues. Pending rows arrive
@@ -17,3 +20,11 @@ export interface MappedRow {
    */
   pending: boolean;
 }
+
+/** Why a previewed row carries its category. */
+export type CategorySource =
+  | "learned"
+  | "suggested"
+  | "proposed"
+  | "unmatched"
+  | "chosen";

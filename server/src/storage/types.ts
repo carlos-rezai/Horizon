@@ -200,6 +200,20 @@ export interface StoredImportPreset {
   dateFmt: string;
 }
 
+/**
+ * A Category Rule: one Counterparty Key mapped to one category by name, learned
+ * when an import is committed. Persisted in `category_rules`.
+ */
+export interface CategoryRuleInput {
+  counterpartyKey: string;
+  category: string;
+}
+
+export interface CategoryRule extends CategoryRuleInput {
+  /** ISO timestamp of the last learn that wrote this rule. */
+  updatedAt: string;
+}
+
 export interface ImportRowInput {
   date: string;
   amount: number;

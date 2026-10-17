@@ -3,6 +3,7 @@ import multer from "multer";
 import { ImportCreateSchema, describeImportIssues } from "./import.js";
 import {
   buildPreview,
+  deriveCategoryRules,
   StatementParseError,
 } from "../../lib/csvImport/index.js";
 import type { Storage } from "../../storage/Storage.js";
@@ -60,9 +61,19 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  const { mapping, delimiter, decimal, dateFmt, ...input } = parsed.data;
+  const { mapping, delimiter, decimal, dateFmt, rows, ...rest } = parsed.data;
+  const input = {
+    ...rest,
+    rows: rows.map(({ date, amount, description, category }) => ({
+      date,
+      amount,
+      description,
+      category,
+    })),
+  };
 
-  const created = await getStorage(req).imports.create(input);
+  const storage = getStorage(req);
+  const created = await storage.imports.create(input);
   if (!created) {
     res.status(404).json({ error: "Account not found" });
     return;
@@ -70,12 +81,22 @@ router.post("/", async (req, res) => {
 
   // Remember the per-bank mapping and full format so the next import of the
   // same bank pre-fills the columns and re-applies the decimal/date format.
-  await getStorage(req).importPresets.upsert(input.bank, {
+  await storage.importPresets.upsert(input.bank, {
     mapping,
     delimiter,
     decimal,
     dateFmt,
   });
+
+  // Committing a row is the approval: learn a Category Rule from every teaching
+  // row. Keys are re-derived from the raw counterparty (never trusted from the
+  // client), and a rule only ever points at a category that exists.
+  const existing = new Set(
+    (await storage.categories.findAll()).map((c) => c.name)
+  );
+  await storage.categoryRules.learn(
+    deriveCategoryRules(rows).filter((rule) => existing.has(rule.category))
+  );
 
   res.status(201).json(created);
 });
@@ -113,6 +134,8 @@ router.post("/preview", (req, res) => {
         existingTxns: await storage.transactions.findByAccount(accountId),
         recurring,
         anchorDate: account?.anchorDate,
+        categoryRules: await storage.categoryRules.findAll(),
+        categories: await storage.categories.findAll(),
         getRememberedPreset: (bank) => storage.importPresets.get(bank),
         mappingOverride,
       });

@@ -2,10 +2,16 @@ import { Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import CategorySelect from "../../../categories/CategorySelect/CategorySelect";
 import Money from "../../../../primitives/Money/Money";
-import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
+import type {
+  CategorySource,
+  ReviewRow,
+  RowFlag,
+} from "../../reviewRows/reviewRows";
 import { StyledFlagBadge } from "../ImportWizard.styles";
 import {
   StyledFlagCell,
+  StyledCategoryCell,
+  StyledSourceChip,
   StyledReviewHead,
   StyledReviewBody,
   StyledReviewRow,
@@ -24,6 +30,12 @@ export interface FlagSpec {
   Icon: LucideIcon;
   summaryLabel: (count: number) => string;
 }
+
+/** The chip shown beside the picker per Category Source; none for a row the
+ *  user chose or one left on the Miscellaneous fallback. */
+const SOURCE_CHIP: Partial<Record<CategorySource, string>> = {
+  learned: "Learned",
+};
 
 interface Props {
   rows: ReviewRow[];
@@ -91,10 +103,17 @@ export default function ReviewTable({
                 $error={showsError}
                 onChange={(e) => setDescription(r.id, e.target.value)}
               />
-              <CategorySelect
-                initialCategory={r.category}
-                onChange={(name) => setCategory(r.id, name)}
-              />
+              <StyledCategoryCell>
+                <CategorySelect
+                  initialCategory={r.category}
+                  onChange={(name) => setCategory(r.id, name)}
+                />
+                {SOURCE_CHIP[r.categorySource] && (
+                  <StyledSourceChip>
+                    {SOURCE_CHIP[r.categorySource]}
+                  </StyledSourceChip>
+                )}
+              </StyledCategoryCell>
               <StyledFlagCell>
                 {r.flags.map((flag) => {
                   const { label, tone, Icon } = flagSpecs[flag];

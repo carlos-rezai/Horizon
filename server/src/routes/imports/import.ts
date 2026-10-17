@@ -11,6 +11,12 @@ export const ImportRowSchema = z.object({
   amount: z.number().int(),
   description: z.string().min(1),
   category: z.string().min(1),
+  // The raw Counterparty and Category Source the commit learns from. Optional
+  // with defaults so an older payload still commits — and teaches nothing.
+  counterparty: z.string().default(""),
+  categorySource: z
+    .enum(["learned", "suggested", "proposed", "unmatched", "chosen"])
+    .default("unmatched"),
 });
 
 /**

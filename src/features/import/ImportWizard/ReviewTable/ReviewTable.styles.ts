@@ -9,7 +9,34 @@ export const StyledFlagCell = styled.span`
   gap: 4px;
 `;
 
-const REVIEW_GRID = "34px 78px minmax(0, 1fr) 130px 110px 96px";
+const REVIEW_GRID = "34px 78px minmax(0, 1fr) 190px 110px 96px";
+
+/* The category picker and, beside it, the Category Source chip. The picker
+   takes the remaining width so the chip never pushes it out of its column. */
+export const StyledCategoryCell = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+/* Why the row carries its category. Muted on purpose: it explains, it never
+   warns, so it reads quieter than the soft-flag badges beside it. */
+export const StyledSourceChip = styled.span`
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: ${({ theme }) => theme.radius.pill}px;
+  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
+  font-size: 10px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
+`;
 
 export const StyledReviewHead = styled.div`
   display: grid;

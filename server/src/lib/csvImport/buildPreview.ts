@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import type {
+  Category,
   ColumnMapping,
   StoredImportPreset,
   Transaction,
@@ -11,12 +12,25 @@ import {
   type RejectedSample,
 } from "./detectStatement.js";
 import { detectDuplicates, detectRecurring } from "./flagRows.js";
-import type { MappedRow } from "./types.js";
+import { counterpartyKey } from "./counterpartyKey.js";
+import type { CategorySource, MappedRow } from "./types.js";
+
+/** The category every row without a Category Rule falls back to. */
+const FALLBACK_CATEGORY = "Miscellaneous";
+
+/** A stored Category Rule, as far as the preview needs it. */
+export interface PreviewCategoryRule {
+  counterpartyKey: string;
+  category: string;
+}
 
 /** A previewed row: a normalized row plus its id and detection flags. */
 export interface PreviewRow extends MappedRow {
   /** Stable id assigned for this preview so the wizard can track inclusion. */
   id: string;
+  category: string;
+  /** Why the row carries its category — `learned` from a Category Rule. */
+  categorySource: CategorySource;
   duplicate: boolean;
   recurring: boolean;
 }
@@ -60,6 +74,13 @@ export interface BuildPreviewInput {
    * when the target account is unknown — every row is then checked as before.
    */
   anchorDate?: string;
+  /** Every stored Category Rule, applied by Counterparty Key. */
+  categoryRules?: PreviewCategoryRule[];
+  /**
+   * The user's categories. A rule applies only while its category exists
+   * (hidden or not), so a stale rule never lands a row in a missing category.
+   */
+  categories?: Category[];
   /**
    * Look up a bank's remembered preset (or null if none saved). A remembered
    * mapping and format are preferred over the freshly-detected defaults so a
@@ -80,7 +101,8 @@ export interface BuildPreviewInput {
 /**
  * Orchestrate a stateless import preview: detect the statement, re-apply the
  * bank's remembered mapping if one was saved, map rows to normalized
- * (signed-cents / ISO) form, flag duplicates and recurring matches, assign
+ * (signed-cents / ISO) form, categorize each row by its Counterparty Key's
+ * Category Rule (else Miscellaneous), flag duplicates and recurring matches, assign
  * row ids, and summarise. Pure: all I/O is injected. Propagates
  * `StatementParseError` from {@link detectStatement} for the caller to map.
  */
@@ -112,13 +134,26 @@ export async function buildPreview(
     input.anchorDate
   );
 
+  const existing = new Set((input.categories ?? []).map((c) => c.name));
+  const rules = new Map(
+    (input.categoryRules ?? [])
+      .filter((rule) => existing.has(rule.category))
+      .map((rule) => [rule.counterpartyKey, rule.category])
+  );
+
   const generateId = input.generateId ?? randomUUID;
-  const rows: PreviewRow[] = mappedRows.map((row, index) => ({
-    id: generateId(),
-    ...row,
-    duplicate: duplicateFlags[index],
-    recurring: recurringFlags[index],
-  }));
+  const rows: PreviewRow[] = mappedRows.map((row, index) => {
+    const key = counterpartyKey(row.counterparty);
+    const learned = key === "" ? undefined : rules.get(key);
+    return {
+      id: generateId(),
+      ...row,
+      category: learned ?? FALLBACK_CATEGORY,
+      categorySource: learned ? "learned" : "unmatched",
+      duplicate: duplicateFlags[index],
+      recurring: recurringFlags[index],
+    };
+  });
 
   return {
     bank: detected.bank,

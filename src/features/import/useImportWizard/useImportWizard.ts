@@ -174,7 +174,15 @@ export function useImportWizard({
 
   const setCategory = useCallback(
     (id: string, category: string) =>
-      setRows((rs) => rs.map((r) => (r.id === id ? { ...r, category } : r))),
+      // The picker reports its current selection on mount; re-setting the
+      // row's own category is not a choice, so its source is kept.
+      setRows((rs) =>
+        rs.map((r) =>
+          r.id === id && r.category !== category
+            ? { ...r, category, categorySource: "chosen" }
+            : r
+        )
+      ),
     []
   );
 
@@ -246,7 +254,9 @@ export function useImportWizard({
           date: r.date,
           amount: r.amount,
           description: r.description,
+          counterparty: r.counterparty,
           category: r.category,
+          categorySource: r.categorySource,
         })),
       });
       onDone({

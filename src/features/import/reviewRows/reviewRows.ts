@@ -13,13 +13,28 @@
  * and gates the Import button until it is repaired in place or unchecked.
  */
 
+/**
+ * Why a row carries its category: `learned` from a Category Rule, `chosen` by
+ * the user in review, `unmatched` on the Miscellaneous fallback. `suggested`
+ * and `proposed` are reserved for later slices. Mirrors the server type.
+ */
+export type CategorySource =
+  | "learned"
+  | "suggested"
+  | "proposed"
+  | "unmatched"
+  | "chosen";
+
 /** A previewed row as returned by the parse + detection engine. */
 export interface ParsedImportRow {
   id: string;
   date: string;
   description: string;
+  /** The raw Counterparty as parsed — kept even when the description is edited. */
+  counterparty: string;
   amount: number;
   category: string;
+  categorySource: CategorySource;
   duplicate?: boolean;
   recurring?: boolean;
   /** Not-yet-settled (pending / "vorgemerkt") booking; pre-unchecked. */

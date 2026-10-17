@@ -12,16 +12,20 @@ const clean: ParsedImportRow = {
   id: "i1",
   date: "2026-11-02",
   description: "REWE SAGT DANKE",
+  counterparty: "REWE SAGT DANKE",
   amount: -6284,
   category: "Groceries",
+  categorySource: "unmatched",
 };
 
 const duplicate: ParsedImportRow = {
   id: "i4",
   date: "2026-11-03",
   description: "Restaurant Mitte",
+  counterparty: "Restaurant Mitte",
   amount: -6400,
   category: "Dining",
+  categorySource: "unmatched",
   duplicate: true,
 };
 
@@ -29,8 +33,10 @@ const recurring: ParsedImportRow = {
   id: "i2",
   date: "2026-11-01",
   description: "Gehalt Arbeitgeber GmbH",
+  counterparty: "Gehalt Arbeitgeber GmbH",
   amount: 412000,
   category: "Income",
+  categorySource: "unmatched",
   recurring: true,
 };
 
@@ -38,8 +44,10 @@ const both: ParsedImportRow = {
   id: "i5",
   date: "2026-11-05",
   description: "BVG Monatskarte",
+  counterparty: "BVG Monatskarte",
   amount: -4900,
   category: "Transport",
+  categorySource: "unmatched",
   duplicate: true,
   recurring: true,
 };
@@ -48,8 +56,10 @@ const pending: ParsedImportRow = {
   id: "i6",
   date: "2026-11-04",
   description: "Umsatz vorgemerkt Amazon",
+  counterparty: "Umsatz vorgemerkt Amazon",
   amount: -2999,
   category: "Shopping",
+  categorySource: "unmatched",
   pending: true,
 };
 
@@ -59,8 +69,10 @@ const blank: ParsedImportRow = {
   id: "i7",
   date: "2026-11-06",
   description: "",
+  counterparty: "",
   amount: -1850,
   category: "Uncategorized",
+  categorySource: "unmatched",
 };
 
 const whitespace: ParsedImportRow = { ...blank, id: "i8", description: "   " };

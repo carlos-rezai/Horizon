@@ -15,7 +15,6 @@ import {
   buildRecord,
   dedupeHeader,
 } from "./parse.js";
-import { categorize } from "./categorize.js";
 import type { MappedRow } from "./types.js";
 
 /**
@@ -241,8 +240,8 @@ function isPending(
 
 /**
  * Turn detected records into normalized rows under the given mapping:
- * signed-cents amounts, ISO dates, an auto-assigned category, and a pending
- * flag. Records with an empty date cell are dropped silently (blank lines,
+ * signed-cents amounts, ISO dates, the row's Counterparty (the description
+ * cell, as parsed), and a pending flag. Records with an empty date cell are dropped silently (blank lines,
  * balance-footer rows); a record with a non-empty date that fails date/amount
  * parsing is counted as `rejected`, sampled up to {@link MAX_REJECTED_SAMPLES},
  * and never emitted.
@@ -281,7 +280,7 @@ export function mapStatementRows(
       date,
       description,
       amount,
-      category: categorize(description),
+      counterparty: description,
       pending: isPending(record, detected),
     });
   }

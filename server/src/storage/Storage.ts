@@ -7,6 +7,8 @@ import type {
   CategoryCreateInput,
   CategoryCreateResult,
   CategoryRenameResult,
+  CategoryRule,
+  CategoryRuleInput,
   CategorySetHiddenResult,
   DeleteResult,
   ImportRecord,
@@ -121,6 +123,12 @@ export interface ImportPresetsRepo {
   upsert(bank: string, preset: StoredImportPreset): Promise<void>;
 }
 
+export interface CategoryRulesRepo {
+  findAll(): Promise<CategoryRule[]>;
+  /** Upsert a batch in one transaction, stamping `updatedAt`. */
+  learn(rules: CategoryRuleInput[]): Promise<void>;
+}
+
 export interface SavingsGoalRepo {
   get(): Promise<SavingsGoalConfig | null>;
   upsert(config: SavingsGoalConfig): Promise<void>;
@@ -143,6 +151,7 @@ export interface Storage {
   recurringTransactions: RecurringTransactionsRepo;
   imports: ImportsRepo;
   importPresets: ImportPresetsRepo;
+  categoryRules: CategoryRulesRepo;
   savingsGoal: SavingsGoalRepo;
   close(): Promise<void>;
   serialize(): Buffer;
