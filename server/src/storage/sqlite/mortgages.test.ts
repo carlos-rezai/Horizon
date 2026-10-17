@@ -62,7 +62,9 @@ describe("SQLite mortgages.create", () => {
     expect(created.startDate).toBe("2020-06-01");
     expect(created.termYears).toBe(25);
 
-    const stored = await storage.accounts.findByIdWithBalance(created.id);
+    const stored = await storage.accounts.findByIdWithRecordedBalance(
+      created.id
+    );
     expect(stored?.originalPrincipal).toBe(40000000);
     expect(stored?.termYears).toBe(25);
   });

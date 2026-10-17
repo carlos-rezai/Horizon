@@ -263,7 +263,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(found?.showInTrajectory).toBe(false);
     });
 
-    it("includes showInTrajectory in findAll and findAllWithBalance DTOs", async () => {
+    it("includes showInTrajectory in findAll and findAllWithRecordedBalance DTOs", async () => {
       await storage.accounts.create({
         kind: "Girokonto",
         name: "Hidden",
@@ -276,7 +276,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(all).toHaveLength(1);
       expect(all[0].showInTrajectory).toBe(false);
 
-      const withBalance = await storage.accounts.findAllWithBalance();
+      const withBalance = await storage.accounts.findAllWithRecordedBalance();
       expect(withBalance).toHaveLength(1);
       expect(withBalance[0].showInTrajectory).toBe(false);
     });
@@ -326,11 +326,11 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(all.map((acc) => acc.id)).toEqual([b.id, c.id, a.id]);
     });
 
-    it("findAllWithBalance reflects the same order as findAll (consistent across surfaces)", async () => {
+    it("findAllWithRecordedBalance reflects the same order as findAll (consistent across surfaces)", async () => {
       const [a, b, c] = await makeThree();
 
       await storage.accounts.reorder([c.id, b.id, a.id]);
-      const withBalance = await storage.accounts.findAllWithBalance();
+      const withBalance = await storage.accounts.findAllWithRecordedBalance();
 
       expect(withBalance.map((acc) => acc.id)).toEqual([c.id, b.id, a.id]);
     });
@@ -418,7 +418,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(found?.termYears).toBe(25);
     });
 
-    it("includes origination fields in findAll and findAllWithBalance DTOs", async () => {
+    it("includes origination fields in findAll and findAllWithRecordedBalance DTOs", async () => {
       const mortgage = await makeMortgage(30000000);
       await storage.accounts.setMortgageOrigination(mortgage.id, {
         originalPrincipal: 50000000,
@@ -432,7 +432,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
       expect(fromAll?.startDate).toBe("2019-03-01");
       expect(fromAll?.termYears).toBe(30);
 
-      const withBalance = await storage.accounts.findAllWithBalance();
+      const withBalance = await storage.accounts.findAllWithRecordedBalance();
       const fromBalance = withBalance.find((a) => a.id === mortgage.id);
       expect(fromBalance?.originalPrincipal).toBe(50000000);
     });
@@ -613,10 +613,10 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
-  // Accounts — findByIdWithBalance
+  // Accounts — findByIdWithRecordedBalance
   // -------------------------------------------------------------------------
 
-  describe("AccountsRepo.findByIdWithBalance", () => {
+  describe("AccountsRepo.findByIdWithRecordedBalance", () => {
     it("returns AccountWithRecordedBalance: recordedBalance = anchor + sum(tx)", async () => {
       const created = await storage.accounts.create({
         kind: "Girokonto",
@@ -638,7 +638,9 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         category: "Housing",
       });
 
-      const result = await storage.accounts.findByIdWithBalance(created.id);
+      const result = await storage.accounts.findByIdWithRecordedBalance(
+        created.id
+      );
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe(created.id);
@@ -646,7 +648,8 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("returns null for an unparseable id", async () => {
-      const result = await storage.accounts.findByIdWithBalance("not-an-id");
+      const result =
+        await storage.accounts.findByIdWithRecordedBalance("not-an-id");
       expect(result).toBeNull();
     });
 
@@ -658,17 +661,19 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         anchorDate: "2026-03-01",
       });
 
-      const result = await storage.accounts.findByIdWithBalance(created.id);
+      const result = await storage.accounts.findByIdWithRecordedBalance(
+        created.id
+      );
 
       expect(result?.recordedBalance).toBe(12345);
     });
   });
 
   // -------------------------------------------------------------------------
-  // Accounts — findAllWithBalance
+  // Accounts — findAllWithRecordedBalance
   // -------------------------------------------------------------------------
 
-  describe("AccountsRepo.findAllWithBalance", () => {
+  describe("AccountsRepo.findAllWithRecordedBalance", () => {
     it("returns one entry per account with recordedBalance = anchor + sum(tx)", async () => {
       const a = await storage.accounts.create({
         kind: "Girokonto",
@@ -696,7 +701,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         category: "Transfer",
       });
 
-      const all = await storage.accounts.findAllWithBalance();
+      const all = await storage.accounts.findAllWithRecordedBalance();
       const byId = new Map(all.map((acc) => [acc.id, acc]));
 
       expect(byId.get(a.id)?.recordedBalance).toBe(600000);
@@ -711,7 +716,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
         anchorDate: "2026-03-01",
       });
 
-      const all = await storage.accounts.findAllWithBalance();
+      const all = await storage.accounts.findAllWithRecordedBalance();
 
       expect(all).toHaveLength(1);
       expect(all[0].id).toBe(created.id);
@@ -719,14 +724,14 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
     });
 
     it("returns an empty array when no accounts exist", async () => {
-      const all = await storage.accounts.findAllWithBalance();
+      const all = await storage.accounts.findAllWithRecordedBalance();
       expect(all).toEqual([]);
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Recorded Balance — the two native SQL statements (findAllWithBalance,
-  // findByIdWithBalance) must equal the Balance Anchor lib's balanceAt(today),
+  // Recorded Balance — the two native SQL statements (findAllWithRecordedBalance,
+  // findByIdWithRecordedBalance) must equal the Balance Anchor lib's balanceAt(today),
   // so the two definitions cannot drift. Recurring History is the balance
   // service's job, never the storage's.
   // ---------------------------------------------------------------------------
@@ -749,12 +754,14 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   }
 
   async function expectParity(accounts: Account[]): Promise<void> {
-    const all = await storage.accounts.findAllWithBalance();
+    const all = await storage.accounts.findAllWithRecordedBalance();
     const listed = new Map(all.map((a) => [a.id, a.recordedBalance]));
 
     for (const account of accounts) {
       const expected = await expectedBalance(account);
-      const byId = await storage.accounts.findByIdWithBalance(account.id);
+      const byId = await storage.accounts.findByIdWithRecordedBalance(
+        account.id
+      );
 
       expect({
         list: listed.get(account.id),
@@ -800,7 +807,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       await expectParity([giro]);
 
-      const byId = await storage.accounts.findByIdWithBalance(giro.id);
+      const byId = await storage.accounts.findByIdWithRecordedBalance(giro.id);
       expect(byId?.recordedBalance).toBe(254321);
     });
 
@@ -845,7 +852,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       await expectParity([giro, tg]);
 
-      const byId = await storage.accounts.findByIdWithBalance(giro.id);
+      const byId = await storage.accounts.findByIdWithRecordedBalance(giro.id);
       expect(byId?.recordedBalance).toBe(550000);
     });
 
@@ -878,7 +885,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       await expectParity([giro]);
 
-      const byId = await storage.accounts.findByIdWithBalance(giro.id);
+      const byId = await storage.accounts.findByIdWithRecordedBalance(giro.id);
       expect(byId?.recordedBalance).toBe(51000);
     });
 
@@ -906,7 +913,7 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
 
       await expectParity([giro]);
 
-      const byId = await storage.accounts.findByIdWithBalance(giro.id);
+      const byId = await storage.accounts.findByIdWithRecordedBalance(giro.id);
       expect(byId?.recordedBalance).toBe(480000);
     });
   });

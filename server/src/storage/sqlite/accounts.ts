@@ -28,7 +28,7 @@ interface AccountRow {
   term_years: number | null;
 }
 
-interface AccountWithBalanceRow extends AccountRow {
+interface AccountWithRecordedBalanceRow extends AccountRow {
   balance: number;
 }
 
@@ -61,8 +61,8 @@ function toAccountDTO(row: AccountRow): Account {
   return dto;
 }
 
-function toAccountWithBalanceDTO(
-  row: AccountWithBalanceRow
+function toAccountWithRecordedBalanceDTO(
+  row: AccountWithRecordedBalanceRow
 ): AccountWithRecordedBalance {
   return { ...toAccountDTO(row), recordedBalance: row.balance };
 }
@@ -98,7 +98,7 @@ export function createSqliteAccountsRepo(
     `SELECT COUNT(*) AS n FROM recurring_transactions
        WHERE account_id = ? OR linked_account_id = ?`
   );
-  const selectAllWithBalanceStmt = db.prepare(
+  const selectAllWithRecordedBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.anchor_balance, a.anchor_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
@@ -111,7 +111,7 @@ export function createSqliteAccountsRepo(
       GROUP BY a.id
       ORDER BY a.sort_order`
   );
-  const selectByIdWithBalanceStmt = db.prepare(
+  const selectByIdWithRecordedBalanceStmt = db.prepare(
     `SELECT a.id, a.kind, a.name, a.anchor_balance, a.anchor_date,
             a.sondertilgung_allowance, a.icon, a.color,
             a.linked_account_id, a.settlement_day, a.linked_since,
@@ -260,8 +260,8 @@ export function createSqliteAccountsRepo(
       const existing = selectByIdStmt.get(id) as AccountRow | undefined;
       if (!existing || existing.kind !== "Mortgage") return null;
 
-      const balanceRow = selectByIdWithBalanceStmt.get(id) as
-        | AccountWithBalanceRow
+      const balanceRow = selectByIdWithRecordedBalanceStmt.get(id) as
+        | AccountWithRecordedBalanceRow
         | undefined;
       const restschuld = balanceRow
         ? balanceRow.balance
@@ -275,17 +275,18 @@ export function createSqliteAccountsRepo(
       return { ok: true, account: toAccountDTO(updated) };
     },
 
-    async findAllWithBalance() {
-      const rows = selectAllWithBalanceStmt.all() as AccountWithBalanceRow[];
-      return rows.map(toAccountWithBalanceDTO);
+    async findAllWithRecordedBalance() {
+      const rows =
+        selectAllWithRecordedBalanceStmt.all() as AccountWithRecordedBalanceRow[];
+      return rows.map(toAccountWithRecordedBalanceDTO);
     },
 
-    async findByIdWithBalance(id) {
+    async findByIdWithRecordedBalance(id) {
       if (!isValidUuid(id)) return null;
-      const row = selectByIdWithBalanceStmt.get(id) as
-        | AccountWithBalanceRow
+      const row = selectByIdWithRecordedBalanceStmt.get(id) as
+        | AccountWithRecordedBalanceRow
         | undefined;
-      return row ? toAccountWithBalanceDTO(row) : null;
+      return row ? toAccountWithRecordedBalanceDTO(row) : null;
     },
   };
 }

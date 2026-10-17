@@ -60,7 +60,7 @@ export function createSqliteMortgagesRepo(
     async create(setup) {
       const id = randomUUID();
       createInTransaction(id, setup);
-      const created = await accounts.findByIdWithBalance(id);
+      const created = await accounts.findByIdWithRecordedBalance(id);
       if (!created) {
         throw new Error("Mortgage account missing after create");
       }

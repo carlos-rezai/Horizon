@@ -101,7 +101,7 @@ describe("DEBUG_SQL query tracing switch (issue #58)", () => {
         description: "Tea",
         category: "Food",
       });
-      await storage.accounts.findAllWithBalance();
+      await storage.accounts.findAllWithRecordedBalance();
 
       await storage.close();
 

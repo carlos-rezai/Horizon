@@ -36,8 +36,10 @@ export interface AccountsRepo {
     id: string,
     input: MortgageOriginationInput
   ): Promise<SetMortgageOriginationResult | null>;
-  findAllWithBalance(): Promise<AccountWithRecordedBalance[]>;
-  findByIdWithBalance(id: string): Promise<AccountWithRecordedBalance | null>;
+  findAllWithRecordedBalance(): Promise<AccountWithRecordedBalance[]>;
+  findByIdWithRecordedBalance(
+    id: string
+  ): Promise<AccountWithRecordedBalance | null>;
 }
 
 export interface MortgagesRepo {
