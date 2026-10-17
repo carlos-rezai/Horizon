@@ -258,3 +258,204 @@ describe("deriveMonthCashFlow — recurring rows", () => {
     expect(has("2026-07")).toBe(false);
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// Issue #253 — honest around the anchor
+// ─────────────────────────────────────────────────────────────
+
+// Giro is anchored on 15 Mar, Savings on 10 Mar, Cash has no anchor. The run
+// starts in January, so February lies before the anchor month and March is
+// the anchor month itself.
+function anchoredAccount(
+  id: string,
+  kind: AccountKind,
+  anchorDate: string,
+  anchorBalance = 0
+): Account {
+  return {
+    id,
+    kind,
+    name: id,
+    anchorBalance,
+    anchorDate,
+    showInTrajectory: true,
+  };
+}
+
+const anchorAccounts: Account[] = [
+  anchoredAccount("cash", "Girokonto", "", 100000),
+  anchoredAccount("giro", "Girokonto", "2026-03-15", 500000),
+  anchoredAccount("savings", "Tagesgeld", "2026-03-10"),
+];
+
+const anchorRules: RecurringTransaction[] = [
+  rule("rent", {
+    amount: -100000,
+    description: "Rent",
+    category: "Housing",
+    dayOfMonth: 1,
+  }),
+  rule("save", {
+    amount: 20000,
+    description: "Savings plan",
+    category: "Transfer",
+    dayOfMonth: 3,
+    linkedAccountId: "savings",
+  }),
+  rule("topup", {
+    amount: 5000,
+    description: "Top-up",
+    category: "Transfer",
+    dayOfMonth: 12,
+    linkedAccountId: "savings",
+  }),
+  rule("salary", {
+    amount: 300000,
+    description: "Salary",
+    category: "Income",
+    dayOfMonth: 25,
+  }),
+  rule("pocket", {
+    accountId: "cash",
+    amount: 10000,
+    description: "Pocket money",
+    category: "Transfer",
+    dayOfMonth: 1,
+    linkedAccountId: "giro",
+  }),
+  rule("cashfee", {
+    accountId: "cash",
+    amount: -500,
+    description: "Cash fee",
+    dayOfMonth: 5,
+  }),
+];
+
+function anchorFlowsOf(month: string, accountId: string) {
+  const projected = projectMonths(
+    anchorAccounts.map(toProjectionAccountEntry),
+    [],
+    anchorRules.map(toProjectionRecurringEntry),
+    "2026-01",
+    "2026-01",
+    6
+  );
+  return (
+    deriveMonthCashFlow(
+      month,
+      projected,
+      anchorAccounts,
+      anchorRules
+    ).accounts.find((g) => g.accountId === accountId)?.flows ?? []
+  );
+}
+
+describe("deriveMonthCashFlow — honest around the anchor", () => {
+  it("lists a leg the Anchor Gate blocks in the anchor month as In Balance Anchor", () => {
+    expect(anchorFlowsOf("2026-03", "giro")).toContainEqual({
+      kind: "recurring",
+      recurringId: "rent",
+      date: "2026-03-01",
+      description: "Rent",
+      category: "Housing",
+      amount: -100000,
+      inAnchor: true,
+    });
+  });
+
+  it("lists both blocked legs of a transfer, each signed for its own account", () => {
+    expect(anchorFlowsOf("2026-03", "giro")).toContainEqual(
+      expect.objectContaining({
+        recurringId: "save",
+        date: "2026-03-03",
+        amount: -20000,
+        counterpartId: "savings",
+        side: "source",
+        inAnchor: true,
+      })
+    );
+    expect(anchorFlowsOf("2026-03", "savings")).toContainEqual(
+      expect.objectContaining({
+        recurringId: "save",
+        date: "2026-03-03",
+        amount: 20000,
+        counterpartId: "giro",
+        side: "destination",
+        inAnchor: true,
+      })
+    );
+  });
+
+  it("gates each transfer leg against its own account's Anchor Date", () => {
+    // 12 Mar: on or before Giro's 15 Mar anchor, after Savings' 10 Mar one.
+    expect(anchorFlowsOf("2026-03", "giro")).toContainEqual(
+      expect.objectContaining({
+        recurringId: "topup",
+        amount: -5000,
+        side: "source",
+        inAnchor: true,
+      })
+    );
+    expect(anchorFlowsOf("2026-03", "savings")).toContainEqual(
+      expect.objectContaining({
+        recurringId: "topup",
+        amount: 5000,
+        side: "destination",
+        inAnchor: false,
+      })
+    );
+  });
+
+  it("keeps a leg after the Anchor Date in the anchor month as a normal row", () => {
+    const giro = anchorFlowsOf("2026-03", "giro");
+
+    expect(giro).toContainEqual(
+      expect.objectContaining({
+        recurringId: "salary",
+        date: "2026-03-25",
+        amount: 300000,
+        inAnchor: false,
+      })
+    );
+    expect(giro).toHaveLength(5);
+    expect(giro.filter((f) => f.inAnchor)).toHaveLength(4);
+    const dates = giro.map((f) => f.date);
+    expect(dates).toEqual([...dates].sort());
+  });
+
+  it("lists blocked legs from the anchor month on, never before it", () => {
+    expect(anchorFlowsOf("2026-02", "giro")).toEqual([]);
+    expect(anchorFlowsOf("2026-02", "savings")).toEqual([]);
+    expect(anchorFlowsOf("2026-03", "giro").some((f) => f.inAnchor)).toBe(true);
+  });
+
+  it("leaves an account without an anchor unaffected, even when its transfer lands in an anchor month", () => {
+    for (const month of ["2026-02", "2026-03"]) {
+      expect(anchorFlowsOf(month, "cash")).toEqual([
+        expect.objectContaining({
+          recurringId: "pocket",
+          date: `${month}-01`,
+          amount: -10000,
+          side: "source",
+          inAnchor: false,
+        }),
+        expect.objectContaining({
+          recurringId: "cashfee",
+          date: `${month}-05`,
+          amount: -500,
+          inAnchor: false,
+        }),
+      ]);
+    }
+    expect(anchorFlowsOf("2026-03", "giro")).toContainEqual(
+      expect.objectContaining({
+        recurringId: "pocket",
+        date: "2026-03-01",
+        amount: 10000,
+        counterpartId: "cash",
+        side: "destination",
+        inAnchor: true,
+      })
+    );
+  });
+});

@@ -349,7 +349,7 @@ describe("MonthCashFlow — group footer and empty state", () => {
 
   it("reads 'No fixed flows this month.' in every group of an empty report", () => {
     renderCard({
-      month: "2025-11",
+      month: "2026-11",
       accounts: accounts.map((a) => ({ accountId: a.id, flows: [] })),
     });
 
@@ -416,5 +416,151 @@ describe("MonthCashFlow — Month-End Balance", () => {
 
     const footer = within(groupFor("Main")).getByTestId("fixed-flow-net");
     expect(footer).not.toHaveTextContent("1.234.567,00");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Issue #253 — honest around the anchor
+// ─────────────────────────────────────────────────────────────
+
+// September 2026: Main's anchor month (15 Sep), a month before Savings' anchor
+// month (15 Oct), and Cash has no anchor at all.
+const anchorAccounts: AccountWithBalance[] = [
+  {
+    id: "main",
+    kind: "Girokonto",
+    name: "Main",
+    anchorBalance: 0,
+    anchorDate: "2026-09-15",
+    balance: 0,
+  },
+  {
+    id: "savings",
+    kind: "Tagesgeld",
+    name: "Savings",
+    anchorBalance: 0,
+    anchorDate: "2026-10-15",
+    balance: 0,
+  },
+  {
+    id: "cash",
+    kind: "Girokonto",
+    name: "Cash",
+    anchorBalance: 0,
+    anchorDate: "",
+    balance: 0,
+  },
+];
+
+const anchorReport: MonthCashFlowReport = {
+  month: "2026-09",
+  accounts: [
+    {
+      accountId: "main",
+      flows: [
+        flow({
+          recurringId: "rent",
+          date: "2026-09-01",
+          description: "Rent",
+          category: "Housing",
+          amount: -100000,
+          inAnchor: true,
+        }),
+        flow({
+          recurringId: "salary",
+          date: "2026-09-25",
+          description: "Salary",
+          category: "Income",
+          amount: 300000,
+        }),
+      ],
+    },
+    { accountId: "savings", flows: [] },
+    {
+      accountId: "cash",
+      flows: [
+        flow({
+          recurringId: "cashfee",
+          date: "2026-09-05",
+          description: "Cash fee",
+          amount: -500,
+        }),
+      ],
+    },
+  ],
+};
+
+const BEFORE_SAVINGS_ANCHOR =
+  "Before 15 Oct 2026 this account's history comes from its statements";
+
+function renderAnchorCard() {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <MonthCashFlow
+          accounts={anchorAccounts}
+          report={anchorReport}
+          monthLabel="September"
+          balances={{}}
+        />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+}
+
+describe("MonthCashFlow — honest around the anchor", () => {
+  it("mutes a gate-blocked leg as 'In balance anchor' and leaves it out of Net fixed", () => {
+    renderAnchorCard();
+
+    const main = groupFor("Main");
+    expect(
+      within(rowFor(main, "Rent")).getByText("In balance anchor")
+    ).toBeInTheDocument();
+    // Only the salary counts: +3,000.00, not +2,000.00.
+    const footer = within(main).getByTestId("fixed-flow-net");
+    expect(within(footer).getByText(/^\+3\.000,00/)).toBeInTheDocument();
+  });
+
+  it("renders a leg after the Anchor Date normally and counts it", () => {
+    renderAnchorCard();
+
+    const main = groupFor("Main");
+    const salary = rowFor(main, "Salary");
+    expect(
+      within(salary).queryByText("In balance anchor")
+    ).not.toBeInTheDocument();
+    expect(within(salary).getByText(/^\+3\.000,00/)).toBeInTheDocument();
+    expect(within(main).getAllByText("In balance anchor")).toHaveLength(1);
+    expect(
+      within(main).queryByText(/history comes from its statements/)
+    ).not.toBeInTheDocument();
+  });
+
+  it("lists no rule rows before the anchor month and shows the before-anchor note", () => {
+    renderAnchorCard();
+
+    const savings = groupFor("Savings");
+    expect(within(savings).queryAllByTestId("fixed-flow-row")).toHaveLength(0);
+    expect(
+      within(savings).getByText(BEFORE_SAVINGS_ANCHOR)
+    ).toBeInTheDocument();
+  });
+
+  it("leaves an account without an anchor unaffected", () => {
+    renderAnchorCard();
+
+    const cash = groupFor("Cash");
+    expect(rowFor(cash, "Cash fee")).toBeInTheDocument();
+    expect(
+      within(cash).queryByText("In balance anchor")
+    ).not.toBeInTheDocument();
+    expect(
+      within(cash).queryByText(/history comes from its statements/)
+    ).not.toBeInTheDocument();
+    const footer = within(cash).getByTestId("fixed-flow-net");
+    expect(within(footer).getByText(/^-5,00/)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/history comes from its statements/)
+    ).toHaveLength(1);
   });
 });
