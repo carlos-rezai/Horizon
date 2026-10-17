@@ -1478,3 +1478,109 @@ Both were found by reading the code for the plan, not in live use.
   midnight flake in the accounts route tests, requiring
   `ProjectionAccountEntry.anchorDate`, reshaping `applyRecurringToBalances`,
   and KpiStrip's private `restschuldOf`.
+
+## 2026-10-17 — #256 Month Cash Flow refactor: one leg rule
+
+Refactor plan 34, worked commit by commit. Month Cash Flow promised that the
+Fixed section, the Month-End Balance, the Current Balance, Outlook and
+History can never disagree; built phase by phase, it still left three copies
+of the leg rule on the server, and one of them already disagreed. This pass
+gives the leg rule one home, picks up the convention drift, and closes the
+epic.
+
+- **One leg rule.** `recurringOccurrence` now owns `TransferSide`,
+  `sourceAnchorMonth` (the one fallback for a source without an Anchor
+  Date), `occurrenceLegs` and `legBalanceDelta`. The engine's
+  `applyRecurringToBalances`, `recurringHistory` and the month-cash-flow
+  lib's In Balance Anchor rows all read them; their own sign, gate and cap
+  branches are gone. `addMonths` joins the server date lib, replacing the
+  engine's and `recurringHistory`'s private copies.
+- **Storage names.** The accounts repo's `findAllWithBalance` /
+  `findByIdWithBalance` are now `…WithRecordedBalance`, with the SQLite row
+  type, mapper and statements to match; the `balanceService` exports keep
+  `WithBalance`, because they return the Current Balance. `balanceService`
+  reads `findActive()` like every other engine reader.
+- **Settlement.** `computeMissingSettlements` walks `YYYY-MM` months with
+  `addMonths` and dates with `occurrenceDate`; its five private date helpers
+  are gone, and it exports the `Auto-settlement` / `Transfer` copy the
+  month-cash-flow lib now imports.
+- **Reports route.** Year comparison validates with `MonthQuerySchema` and
+  answers `400 { issues }`, rejecting month 13.
+- **Client.** `TransferSide` lives in `src/types/recurring.ts`; the
+  `FixedFlow` mirror is the server's `RecurringFixedFlow |
+SettlementFixedFlow` union. A new `fixedFlows` module takes the card's
+  "Net fixed", row-link and before-anchor rules; `monthEndBalance` moved into
+  the months feature and reads the history feature's `firstKnownMonths`; the
+  page reads one `useMonthEndBalances` resource; and a `DayBlock` component
+  replaces the day block SpendingList and MonthCashFlow each rendered.
+
+### Three behaviour changes
+
+- **Outlook disagreed about a transfer into an older account.** Found while
+  reading the code for the plan, not in live use; it predates the epic. The
+  Replay Loop skipped a rule outright in any month before its _source_
+  account's Anchor month, although each leg already passes its own
+  account's Anchor Gate. With Tagesgeld anchored 15 Jan, Girokonto 15 Jun and
+  a monthly €100 transfer Girokonto → Tagesgeld on the 1st, the Dashboard and
+  History put Tagesgeld at €900 in October and Outlook at €500: February to
+  May were replayed only by the `/projection` run, so only it dropped them.
+  The skip is removed, and a parity test pins the run from the current
+  month, the run from the History Span's start and `recurringHistory` to one
+  answer, for that transfer and for a Repayment Transfer into a Mortgage
+  anchored before its paying account.
+- **The settlement service reads the local today**, the last server "today"
+  taken from `toISOString()`.
+- **Year comparison's validation contract** matches every other route.
+
+### Where the plan met the code
+
+- **`legBalanceDelta` is new.** The plan listed `sourceAnchorMonth` and
+  `occurrenceLegs`; but the engine's running balances, its Recurring History
+  accumulator and `recurringHistory` each turned a Mortgage destination
+  leg's positive inflow back into a paydown. That sign flip is part of the
+  leg rule, so it moved too.
+- **Blocked legs and the cap.** While a Mortgage's gate is open, both legs
+  carry the capped magnitude, the source leg too when its own gate blocks
+  it. The month-cash-flow lib keeps no Restschuld and passes an unbounded
+  cap, so its In Balance Anchor rows read the full magnitude as before.
+- **The A1 Mortgage case pays on the 1st.** With today on the 17th, a rate
+  on the 20th has not yet fired today, so `recurringHistory` through today
+  rightly counts one fewer than the October snapshot's month end.
+- **B4 asserts today's own month, not the month that just closed.** At 00:30
+  on 1 November the UTC date is still 31 October, and the settlement loop
+  already covers October either way; what UTC loses is November. The test
+  books a charge on 1 November and expects its December settlement. Its
+  first version also leaned on `findAll`'s order and was sorted in B5.
+- **B6 had no `{ error }` assertion to edit.** The existing year-comparison
+  cases checked only the status; B6 added the month-13 and `{ issues }`
+  cases.
+- **C2's one fixture edit.** MonthCashFlow's `flow()` test helper took
+  `Partial<FixedFlow>`, which could describe a settlement carrying a
+  `recurringId`; it now builds a `RecurringFixedFlow`. The settlement
+  literals already matched the union. The card's row key now narrows on
+  `kind` before reading `recurringId`.
+- **C5 deleted the utils-barrel case.** `monthEndBalance`'s test asserted
+  the utils barrel exported it; the move removes that export by design.
+- **C9 dropped two more copies.** SpendingList's private `MONTHS_SHORT`
+  equalled the format util's `MONTHS`, which `DayBlock` reads, and
+  `SpendingListSkeleton.styles.ts`, which held only the skeleton day block,
+  is gone.
+
+### Follow-ups
+
+- Still open from the plan's Out of Scope: the reports route's run-start
+  choice; `findActive` returning every rule and the engine's vestigial
+  `isActive` filter; requiring `ProjectionAccountEntry.anchorDate`; an
+  opacity token (`ui-meridian`); the client's month arithmetic
+  (`shiftMonth`, the projection util's private `addMonths`); cross-feature
+  deep imports; the accounts routes' `withBalance ?? updated` fallback; and
+  everything log 32 deferred.
+- Still open from refactors 32 and 33: `linkedSince`'s UTC "today", the
+  `isoDaysFromToday` midnight flake in the accounts route tests, reshaping
+  `applyRecurringToBalances` beyond reading `occurrenceLegs`, and KpiStrip's
+  private `restschuldOf`.
+- Year comparison still works out its upper bound by hand; `addMonths`
+  would serve it.
+- The glossary's older **AccountWithBalance** row still names the repo
+  methods as they were before the Current Balance; it sits in the storage
+  section's historical snapshot beside the Mongo Driver and was left alone.
