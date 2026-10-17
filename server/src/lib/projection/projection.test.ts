@@ -13,6 +13,7 @@ import type {
   RecurringTransaction,
   Transaction,
 } from "../../storage/types.js";
+import { deriveHistory } from "./history.js";
 import { createSqliteAppHandle } from "../../testing/sqliteApp.js";
 
 let app: Express;
@@ -2290,5 +2291,341 @@ describe("projectMonths", () => {
 
     expect(firing("insurance")).toEqual(["2026-05", "2026-08"]);
     expect(firing("tax")).toEqual(["2026-06"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Recurring History in actual
+//
+// For a month at or before the current month, `actual` is balanceAt(end of
+// month) plus the account's Recurring History accumulator through that month's
+// end: every recurring leg that passed the Anchor Gate, in the Replay Loop and
+// the Forward Projection alike. Before the anchor the accumulator is 0.
+// ---------------------------------------------------------------------------
+
+describe("projectBalances - Recurring History in actual", () => {
+  it("actual includes the accumulator after the anchor and is unchanged before it", () => {
+    // Anchored 15 Mar at 1,000 EUR; imported history reaches back to 10 Feb,
+    // so February is the first known month. Salary 3,000 EUR on the 1st:
+    // February's and March's are before the anchor (gated), April's on count.
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 100000,
+        anchorDate: "2026-03-15",
+      },
+    ];
+    const transactions = [
+      { accountId: "giro", date: "2026-02-10", amount: -5000 },
+      { accountId: "giro", date: "2026-03-05", amount: -2000 },
+      { accountId: "giro", date: "2026-05-20", amount: -10000 },
+    ];
+    const recurring = [
+      {
+        id: "salary",
+        accountId: "giro",
+        amount: 300000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+      },
+    ];
+
+    const snapshots = projectBalances(
+      accounts,
+      transactions,
+      recurring,
+      "2026-01",
+      "2026-06",
+      6
+    );
+    const actuals = Object.fromEntries(
+      snapshots.map((s) => [s.month, s.accounts["giro"].actual])
+    );
+
+    expect(actuals).toEqual({
+      "2026-01": undefined,
+      // Before the anchor: balanceAt only, the 5 Mar -2000 undone.
+      "2026-02": 102000,
+      // Anchor month: the 1 Mar salary is inside the anchor.
+      "2026-03": 100000,
+      // 100000 + 300000
+      "2026-04": 400000,
+      // 100000 + 2 x 300000 - 10000
+      "2026-05": 690000,
+      // 100000 + 3 x 300000 - 10000
+      "2026-06": 990000,
+    });
+  });
+
+  it("legs replayed before the run's first month count in actual", () => {
+    // Anchored 10 Jan; the run starts in April, so January to March replay.
+    // A 1,500 EUR rate on the 20th leaves the Girokonto every month.
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 1000000,
+        anchorDate: "2026-01-10",
+      },
+      {
+        id: "mortgage",
+        kind: "Mortgage" as const,
+        anchorBalance: 20000000,
+        anchorDate: "2026-01-10",
+      },
+    ];
+    const recurring = [
+      {
+        id: "rate",
+        accountId: "giro",
+        linkedAccountId: "mortgage",
+        amount: 150000,
+        frequency: "monthly" as const,
+        dayOfMonth: 20,
+      },
+    ];
+
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-04",
+      "2026-06",
+      3
+    );
+
+    // 1000000 - 4 x 150000, - 5 x, - 6 x
+    expect(snapshots.map((s) => s.accounts["giro"].actual)).toEqual([
+      400000, 250000, 100000,
+    ]);
+  });
+
+  it("the current month's recurring legs survive into month 1", () => {
+    // Anchored 1 Oct; the salary on the 15th is after the anchor, so it is in
+    // October's balance and month 1 builds on it.
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 100000,
+        anchorDate: "2026-10-01",
+      },
+    ];
+    const recurring = [
+      {
+        id: "salary",
+        accountId: "giro",
+        amount: 300000,
+        frequency: "monthly" as const,
+        dayOfMonth: 15,
+      },
+    ];
+
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-10",
+      "2026-10",
+      3
+    );
+
+    expect(snapshots[0].accounts["giro"]).toEqual({
+      projected: 400000,
+      actual: 400000,
+    });
+    expect(snapshots[1].accounts["giro"].projected).toBe(700000);
+    expect(snapshots[2].accounts["giro"].projected).toBe(1000000);
+  });
+
+  describe("the Mortgage's History value equals the replayed Restschuld", () => {
+    // Restschuld 200,000 EUR known on 10 Jan; a 1,500 EUR rate on the 20th.
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 1000000,
+        anchorDate: "2026-01-10",
+      },
+      {
+        id: "mortgage",
+        kind: "Mortgage" as const,
+        anchorBalance: 20000000,
+        anchorDate: "2026-01-10",
+      },
+    ];
+    const recurring = [
+      {
+        id: "rate",
+        accountId: "giro",
+        linkedAccountId: "mortgage",
+        amount: 150000,
+        frequency: "monthly" as const,
+        dayOfMonth: 20,
+      },
+    ];
+
+    it("in the Forward Projection", () => {
+      const snapshots = projectBalances(
+        accounts,
+        [],
+        recurring,
+        "2026-01",
+        "2026-06",
+        6
+      );
+
+      expect(snapshots.map((s) => s.accounts["mortgage"].actual)).toEqual([
+        19850000, 19700000, 19550000, 19400000, 19250000, 19100000,
+      ]);
+
+      const points = deriveHistory(
+        snapshots,
+        [],
+        [
+          { id: "giro", kind: "Girokonto" },
+          { id: "mortgage", kind: "Mortgage" },
+        ]
+      );
+      for (const p of points) {
+        expect({ month: p.month, history: p.accounts["mortgage"] }).toEqual({
+          month: p.month,
+          history: p.restschuld,
+        });
+      }
+    });
+
+    it("in the Replay Loop", () => {
+      const snapshots = projectBalances(
+        accounts,
+        [],
+        recurring,
+        "2026-04",
+        "2026-06",
+        3
+      );
+
+      // 20000000 - 4 x 150000, - 5 x, - 6 x
+      expect(snapshots.map((s) => s.accounts["mortgage"].actual)).toEqual([
+        19400000, 19250000, 19100000,
+      ]);
+    });
+  });
+
+  it("History and Monthly Savings for post-anchor months include their recurring flows", () => {
+    // Both anchored 15 Mar. Salary 3,000 EUR on the 1st into the Girokonto and
+    // a 500 EUR transfer to Tagesgeld on the 5th: March's are inside the
+    // anchor, April's on count. Each month saves 300000 across both accounts.
+    const accounts = [
+      {
+        id: "giro",
+        kind: "Girokonto" as const,
+        anchorBalance: 100000,
+        anchorDate: "2026-03-15",
+      },
+      {
+        id: "tg",
+        kind: "Tagesgeld" as const,
+        anchorBalance: 500000,
+        anchorDate: "2026-03-15",
+      },
+    ];
+    const recurring = [
+      {
+        id: "salary",
+        accountId: "giro",
+        amount: 300000,
+        frequency: "monthly" as const,
+        dayOfMonth: 1,
+      },
+      {
+        id: "save",
+        accountId: "giro",
+        linkedAccountId: "tg",
+        amount: 50000,
+        frequency: "monthly" as const,
+        dayOfMonth: 5,
+      },
+    ];
+
+    const snapshots = projectBalances(
+      accounts,
+      [],
+      recurring,
+      "2026-03",
+      "2026-06",
+      4
+    );
+    const points = deriveHistory(
+      snapshots,
+      [],
+      [
+        { id: "giro", kind: "Girokonto" },
+        { id: "tg", kind: "Tagesgeld" },
+      ]
+    );
+
+    expect(points.map((p) => p.accounts["giro"])).toEqual([
+      100000, 350000, 600000, 850000,
+    ]);
+    expect(points.map((p) => p.accounts["tg"])).toEqual([
+      500000, 550000, 600000, 650000,
+    ]);
+    expect(points.map((p) => p.monthlySavings)).toEqual([
+      null,
+      300000,
+      300000,
+      300000,
+    ]);
+  });
+});
+
+describe("GET /projection - Recurring History", () => {
+  it("snapshots keep their shape and carry the current month's legs into month 1", async () => {
+    // Anchored on the 1st of the current month; a 1,000 EUR salary on the
+    // 28th is after the anchor, so it is in month 0 and month 1 builds on it.
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const thisMonth = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonth = `${next.getFullYear()}-${pad(next.getMonth() + 1)}`;
+
+    const accountRes = await request(app)
+      .post("/accounts")
+      .send({
+        kind: "Girokonto",
+        name: "Main",
+        anchorBalance: 500000,
+        anchorDate: `${thisMonth}-01`,
+      });
+    const accountId = accountRes.body.id;
+
+    await request(app).post("/recurring-transactions").send({
+      accountId,
+      amount: 100000,
+      description: "Salary",
+      category: "Income",
+      frequency: "monthly",
+      dayOfMonth: 28,
+    });
+
+    const res = await request(app).get("/projection?months=2");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([
+      {
+        month: thisMonth,
+        accounts: { [accountId]: { projected: 600000, actual: 600000 } },
+        netCashflow: 100000,
+        totalLiquid: 600000,
+      },
+      {
+        month: nextMonth,
+        accounts: { [accountId]: { projected: 700000 } },
+        netCashflow: 100000,
+        totalLiquid: 700000,
+      },
+    ]);
   });
 });

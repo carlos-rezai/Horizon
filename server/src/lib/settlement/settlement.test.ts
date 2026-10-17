@@ -3,7 +3,11 @@ import {
   computeMissingSettlements,
   detectInsufficientFunds,
 } from "./settlement.js";
-import type { Account, Transaction } from "../../storage/types.js";
+import type {
+  Account,
+  RecurringTransaction,
+  Transaction,
+} from "../../storage/types.js";
 import type { MonthlySnapshot } from "../projection/projection.js";
 
 // ---------------------------------------------------------------------------
@@ -290,6 +294,53 @@ describe("computeMissingSettlements from the Balance Anchor", () => {
     expect(result).toHaveLength(1);
     expect(result[0].amount).toBe(8000);
     expect(result[0].date).toBe("2026-04-15");
+  });
+});
+
+describe("computeMissingSettlements with Recurring History", () => {
+  // A 12.99 EUR subscription on the card on the 10th of every month. The
+  // card is anchored at 0 on 1 Jan, so every occurrence passes the Anchor Gate.
+  const subscription: RecurringTransaction = {
+    id: "stream",
+    accountId: "cc1",
+    amount: -1299,
+    description: "Streaming",
+    category: "Entertainment",
+    frequency: "monthly",
+    dayOfMonth: 10,
+  };
+
+  it("includes a recurring subscription on the card in the closing balance", () => {
+    const accounts = [makeGiro("giro1"), makeCc({ id: "cc1" })];
+    const transactions = [
+      makeTx({ id: "t1", accountId: "cc1", date: "2026-01-20", amount: -5000 }),
+    ];
+
+    const result = computeMissingSettlements(
+      accounts,
+      transactions,
+      "2026-01-31",
+      [subscription]
+    );
+
+    // January closing: -5000 + -1299 = -6299 -> 6299 on 15 Feb
+    expect(result).toHaveLength(1);
+    expect(result[0].amount).toBe(6299);
+    expect(result[0].date).toBe("2026-02-15");
+  });
+
+  it("settles a card that only carries a subscription, month after month", () => {
+    const accounts = [makeGiro("giro1"), makeCc({ id: "cc1" })];
+
+    const result = computeMissingSettlements(accounts, [], "2026-02-28", [
+      subscription,
+    ]);
+
+    // Each settlement clears the month before; each month adds one -1299.
+    expect(result.map((r) => [r.date, r.amount])).toEqual([
+      ["2026-02-15", 1299],
+      ["2026-03-15", 1299],
+    ]);
   });
 });
 
