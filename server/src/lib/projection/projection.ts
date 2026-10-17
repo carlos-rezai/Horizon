@@ -285,6 +285,28 @@ export function projectMonths(
     return od < earliest ? od : earliest;
   }, fromDate);
 
+  // Recurring History: per account, the signed sum of every recurring leg that
+  // passed the Anchor Gate, in the Replay Loop and the Forward Projection. An
+  // account without an Anchor Date has no "after the anchor": its balance
+  // already holds every leg, so it keeps no history.
+  const recurringHistory = new Map<string, number>();
+  const accumulate = (applied: AppliedFlow[]): void => {
+    for (const f of applied) {
+      if (!accountMap.get(f.accountId)?.anchorDate) continue;
+      // A Mortgage's destination leg is reported as an inflow but pays the
+      // Restschuld down.
+      const delta =
+        f.side === "destination" &&
+        accountMap.get(f.accountId)?.kind === "Mortgage"
+          ? -f.amount
+          : f.amount;
+      recurringHistory.set(
+        f.accountId,
+        (recurringHistory.get(f.accountId) ?? 0) + delta
+      );
+    }
+  };
+
   const replayLength = monthsBetween(replayStart, fromDate);
   for (let j = 0; j < replayLength; j++) {
     const replayMonth = addMonths(replayStart, j);
@@ -294,7 +316,9 @@ export function projectMonths(
       if (replayMonth < sourceOpened) continue;
       if (!firesInMonth(r, replayMonth, sourceOpened)) continue;
 
-      applyRecurringToBalances(r, replayMonth, accountMap, runningBalances);
+      accumulate(
+        applyRecurringToBalances(r, replayMonth, accountMap, runningBalances)
+      );
     }
   }
 
@@ -368,6 +392,8 @@ export function projectMonths(
       }
     }
 
+    accumulate(flows);
+
     const totalLiquid = selectLiquidAccounts(accounts).reduce(
       (sum, a) => sum + (runningBalances.get(a.id) ?? 0),
       0
@@ -382,7 +408,8 @@ export function projectMonths(
       if (month <= currentDate) {
         const balance = anchored.get(a.id);
         if (balance && month >= balance.knownMonth) {
-          snapshot.actual = balance.endOf(month);
+          snapshot.actual =
+            balance.endOf(month) + (recurringHistory.get(a.id) ?? 0);
         }
       }
 
@@ -397,7 +424,12 @@ export function projectMonths(
       for (const a of accounts) {
         if (a.kind === "Mortgage") continue;
         const balance = anchored.get(a.id);
-        if (balance) runningBalances.set(a.id, balance.endOf(month));
+        if (balance) {
+          runningBalances.set(
+            a.id,
+            balance.endOf(month) + (recurringHistory.get(a.id) ?? 0)
+          );
+        }
       }
     }
 

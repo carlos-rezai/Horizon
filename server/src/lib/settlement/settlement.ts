@@ -1,10 +1,12 @@
 import type {
   Account,
+  RecurringTransaction,
   Transaction,
   TransferCreateInput,
 } from "../../storage/types.js";
 import { balanceAt } from "../balanceAnchor/balanceAnchor.js";
 import { endOfMonth } from "../date/date.js";
+import { recurringHistory } from "../recurringHistory/recurringHistory.js";
 import type { MonthlySnapshot } from "../projection/projection.js";
 
 export type SettlementTransferInput = TransferCreateInput & {
@@ -54,7 +56,8 @@ function formatDate(year: number, month: number, day: number): string {
 export function computeMissingSettlements(
   accounts: Account[],
   transactions: Transaction[],
-  asOf: string
+  asOf: string,
+  recurrings: RecurringTransaction[] = []
 ): SettlementTransferInput[] {
   const result: SettlementTransferInput[] = [];
   const asOf_ = parseYearMonth(asOf);
@@ -80,11 +83,13 @@ export function computeMissingSettlements(
         virtualSettlements.some((v) => v.date === settlementDate);
 
       if (!alreadyExists) {
-        const closingBalance = balanceAt(
-          cc,
-          [...ccTxs, ...virtualSettlements.filter((v) => v.date < cutoff)],
-          endOfMonth(formatDate(year, month, 1).slice(0, 7))
-        );
+        const closingDate = endOfMonth(formatDate(year, month, 1).slice(0, 7));
+        const closingBalance =
+          balanceAt(
+            cc,
+            [...ccTxs, ...virtualSettlements.filter((v) => v.date < cutoff)],
+            closingDate
+          ) + recurringHistory(cc.id, accounts, recurrings, closingDate);
 
         if (closingBalance < 0) {
           const amount = -closingBalance;

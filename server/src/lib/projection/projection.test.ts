@@ -887,10 +887,11 @@ describe("projectBalances - legacy rules in the Replay and Forward loops", () =>
       "2026-04"
     );
 
-    // April is not in the cycle: no fire → 970000 (re-anchors to actual)
+    // April is not in the cycle: no fire → 970000 (re-anchors to actual,
+    // which keeps the replayed 15 Feb leg: 1000000 − 30000)
     expect(snapshots[0].accounts["giro"].projected).toBe(970000);
-    // May is: re-anchored 1000000 − 30000 = 970000
-    expect(snapshots[1].accounts["giro"].projected).toBe(970000);
+    // May is: 970000 − 30000 = 940000
+    expect(snapshots[1].accounts["giro"].projected).toBe(940000);
   });
 
   it.each([["quarterly" as const], ["annual" as const]])(
@@ -969,10 +970,11 @@ describe("projectBalances - replay loop", () => {
     );
 
     // Jan 1 is the anchor day → gated; Feb and Mar apply: 1000000 − 2×50000 = 900000
-    // Forward index 0 (April): 900000 − 50000 = 850000 (re-anchors to actual=1000000)
+    // Forward index 0 (April): 900000 − 50000 = 850000 (actual keeps the
+    // Feb–Apr legs: 1000000 − 3×50000 = 850000)
     expect(snapshots[0].accounts["a1"].projected).toBe(850000);
-    // Forward index 1 (May): re-anchored 1000000 − 50000 = 950000
-    expect(snapshots[1].accounts["a1"].projected).toBe(950000);
+    // Forward index 1 (May): 850000 − 50000 = 800000
+    expect(snapshots[1].accounts["a1"].projected).toBe(800000);
   });
 
   it("account opened 13 months ago with annual ST (monthOfYear: 10) has the ST applied once when October is within the replay window", () => {
