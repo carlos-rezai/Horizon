@@ -177,7 +177,11 @@ export function categorizeRow(
 ): CategorizedRow {
   const key = counterpartyKey(row.counterparty);
   const learned = key === "" ? undefined : ctx.rules.get(key);
-  if (learned !== undefined) {
+  // A rule whose category no longer exists is skipped, never applied.
+  if (
+    learned !== undefined &&
+    ctx.categories.some((category) => category.name === learned)
+  ) {
     return { category: learned, categorySource: "learned" };
   }
 

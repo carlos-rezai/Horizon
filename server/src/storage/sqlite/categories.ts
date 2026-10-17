@@ -58,11 +58,18 @@ export function createSqliteCategoriesRepo(
   const cascadeRecurringStmt = db.prepare(
     `UPDATE recurring_transactions SET category = ? WHERE category = ?`
   );
+  const cascadeRulesStmt = db.prepare(
+    `UPDATE category_rules SET category = ? WHERE category = ?`
+  );
+  const deleteRulesStmt = db.prepare(
+    `DELETE FROM category_rules WHERE category = ?`
+  );
   const renameCascade = db.transaction(
     (id: string, oldName: string, newName: string) => {
       renameStmt.run(newName, id);
       cascadeTxStmt.run(newName, oldName);
       cascadeRecurringStmt.run(newName, oldName);
+      cascadeRulesStmt.run(newName, oldName);
     }
   );
   const deleteStmt = db.prepare(`DELETE FROM categories WHERE id = ?`);
@@ -76,9 +83,15 @@ export function createSqliteCategoriesRepo(
     (id: string, oldName: string, newName: string) => {
       cascadeTxStmt.run(newName, oldName);
       cascadeRecurringStmt.run(newName, oldName);
+      cascadeRulesStmt.run(newName, oldName);
       deleteStmt.run(id);
     }
   );
+  // Plain delete of an unused category: its Category Rules go with it.
+  const plainDelete = db.transaction((id: string, name: string) => {
+    deleteRulesStmt.run(name);
+    deleteStmt.run(id);
+  });
 
   return {
     async findAll() {
@@ -160,7 +173,7 @@ export function createSqliteCategoriesRepo(
 
       const inUse = checkInUseStmt.get(row.name);
       if (inUse) return { ok: false, reason: "in_use" };
-      deleteStmt.run(id);
+      plainDelete(id, row.name);
       return { ok: true };
     },
   };
