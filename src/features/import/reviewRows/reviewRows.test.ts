@@ -4,6 +4,7 @@ import {
   blockersFor,
   buildReviewRows,
   canCommit,
+  categorySourceChip,
   dismissProposal,
   FALLBACK_CATEGORY,
   flagsFor,
@@ -624,5 +625,44 @@ describe("Category Proposal transforms", () => {
       const rows = [learned, changed];
       expect(dismissProposal(rows, "Dining")).toEqual(rows);
     });
+  });
+});
+
+describe("categorySourceChip", () => {
+  const withSource = (
+    categorySource: ParsedImportRow["categorySource"],
+    proposedCategory?: string
+  ): ParsedImportRow => ({
+    id: "s1",
+    date: "2026-03-05",
+    description: "Payee",
+    counterparty: "Payee",
+    amount: -999,
+    category: "Miscellaneous",
+    categorySource,
+    ...(proposedCategory === undefined ? {} : { proposedCategory }),
+  });
+
+  it("reads Learned on a learned row", () => {
+    expect(categorySourceChip(withSource("learned"))).toBe("Learned");
+  });
+
+  it("reads Suggested on a suggested row", () => {
+    expect(categorySourceChip(withSource("suggested"))).toBe("Suggested");
+  });
+
+  it("names the proposal on a proposed row", () => {
+    expect(categorySourceChip(withSource("proposed", "Dining"))).toBe(
+      "New: Dining"
+    );
+  });
+
+  it("gives no chip on a proposed row with no name", () => {
+    expect(categorySourceChip(withSource("proposed"))).toBeUndefined();
+  });
+
+  it("gives no chip on a chosen or an unmatched row", () => {
+    expect(categorySourceChip(withSource("chosen"))).toBeUndefined();
+    expect(categorySourceChip(withSource("unmatched"))).toBeUndefined();
   });
 });

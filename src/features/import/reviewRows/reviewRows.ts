@@ -14,7 +14,10 @@
  */
 
 import { counterpartyKey } from "../../../utils/counterpartyKey/counterpartyKey";
-import type { ParsedImportRow } from "../importTypes/importTypes";
+import type {
+  CategorySource,
+  ParsedImportRow,
+} from "../importTypes/importTypes";
 
 /**
  * The client's name for the server's Miscellaneous fallback: the category a
@@ -158,6 +161,24 @@ export function dismissProposal(rows: ReviewRow[], name: string): ReviewRow[] {
         }
       : r
   );
+}
+
+/** The chip text per Category Source; none for `chosen` or `unmatched`. */
+const SOURCE_CHIP: Partial<Record<CategorySource, string>> = {
+  learned: "Learned",
+  suggested: "Suggested",
+};
+
+/**
+ * The chip shown beside a row's picker, or `undefined` for none. A proposed
+ * row names its Category Proposal; a row the user chose, or one left on the
+ * fallback, carries no chip.
+ */
+export function categorySourceChip(row: ParsedImportRow): string | undefined {
+  if (row.categorySource === "proposed") {
+    return row.proposedCategory ? `New: ${row.proposedCategory}` : undefined;
+  }
+  return SOURCE_CHIP[row.categorySource];
 }
 
 /**
