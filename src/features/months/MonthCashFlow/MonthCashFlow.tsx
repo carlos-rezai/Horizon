@@ -109,7 +109,7 @@ export default function MonthCashFlow({
                   <div>
                     {group.flows.map((flow, i) => (
                       <FlowRow
-                        key={`${flow.recurringId ?? flow.kind}-${flow.date}-${i}`}
+                        key={`${flow.kind === "recurring" ? flow.recurringId : flow.kind}-${flow.date}-${i}`}
                         flow={flow}
                         last={i === group.flows.length - 1}
                         to={`/accounts/${linkedAccountId(group, flow)}`}

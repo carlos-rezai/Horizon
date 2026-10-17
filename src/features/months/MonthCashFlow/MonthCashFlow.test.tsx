@@ -6,8 +6,8 @@ import { MemoryRouter } from "react-router-dom";
 import { theme } from "../../../tokens";
 import type { AccountWithBalance } from "../../../types/account";
 import type {
-  FixedFlow,
   MonthCashFlowReport,
+  RecurringFixedFlow,
 } from "../../../types/monthCashFlow";
 import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
 import MonthCashFlow from "./MonthCashFlow";
@@ -50,7 +50,7 @@ const accounts: AccountWithBalance[] = [
   },
 ];
 
-function flow(overrides: Partial<FixedFlow>): FixedFlow {
+function flow(overrides: Partial<RecurringFixedFlow>): RecurringFixedFlow {
   return {
     kind: "recurring",
     recurringId: "rule",
