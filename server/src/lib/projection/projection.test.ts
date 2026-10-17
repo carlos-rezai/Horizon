@@ -2183,10 +2183,14 @@ describe("projectMonths", () => {
     run().find((m) => m.month === month)?.flows ?? [];
 
   it("keeps the /projection payload: its snapshots are projectBalances' snapshots", () => {
-    const withoutFlows = run().map((m) => {
-      const { flows: _flows, ...snapshot } = m;
-      return snapshot;
-    });
+    const withoutFlows = run().map(
+      ({ month, accounts, netCashflow, totalLiquid }) => ({
+        month,
+        accounts,
+        netCashflow,
+        totalLiquid,
+      })
+    );
 
     expect(withoutFlows).toEqual(
       projectBalances(accounts, [], recurring, "2026-03", "2026-03", 6)

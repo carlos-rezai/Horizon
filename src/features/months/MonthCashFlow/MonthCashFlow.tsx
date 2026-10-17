@@ -45,9 +45,14 @@ interface Props {
   balances: Record<string, MonthEndBalance>;
 }
 
-/** The account whose rule a row comes from: a destination leg's counterpart. */
-function sourceAccountId(group: AccountFixedFlows, flow: FixedFlow): string {
-  return flow.side === "destination" && flow.counterpartId
+/**
+ * The account page a row links to. A recurring row links to the account its
+ * rule lives on: a destination leg's counterpart. A settlement row links to
+ * the CreditCard: the funding account's (source) leg names it as counterpart.
+ */
+function linkedAccountId(group: AccountFixedFlows, flow: FixedFlow): string {
+  const counterpartSide = flow.kind === "settlement" ? "source" : "destination";
+  return flow.side === counterpartSide && flow.counterpartId
     ? flow.counterpartId
     : group.accountId;
 }
@@ -107,7 +112,7 @@ export default function MonthCashFlow({
                         key={`${flow.recurringId ?? flow.kind}-${flow.date}-${i}`}
                         flow={flow}
                         last={i === group.flows.length - 1}
-                        to={`/accounts/${sourceAccountId(group, flow)}`}
+                        to={`/accounts/${linkedAccountId(group, flow)}`}
                         counterpart={
                           flow.counterpartId
                             ? byId.get(flow.counterpartId)

@@ -95,7 +95,16 @@ router.get("/month-cash-flow", async (req, res) => {
       )
     : [];
 
-  res.json(deriveMonthCashFlow(month, projected, accounts, recurrings));
+  res.json(
+    deriveMonthCashFlow(
+      month,
+      projected,
+      accounts,
+      recurrings,
+      transactions,
+      current
+    )
+  );
 });
 
 export default router;

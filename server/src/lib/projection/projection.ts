@@ -119,9 +119,25 @@ export interface AppliedFlow {
   side?: "source" | "destination";
 }
 
-/** A monthly snapshot plus the recurring flows applied in that month. */
+/**
+ * One CreditCard settlement the engine applied in a month: the card, the
+ * funding account it pulled from, its Settlement Day's date and the positive
+ * amount in cents moved from the funding account to the card.
+ */
+export interface AppliedSettlement {
+  cardId: string;
+  fundingAccountId: string;
+  date: string;
+  amount: number;
+}
+
+/**
+ * A monthly snapshot plus the recurring flows and the CreditCard settlements
+ * applied in that month.
+ */
 export interface MonthlyProjection extends MonthlySnapshot {
   flows: AppliedFlow[];
+  settlements: AppliedSettlement[];
 }
 
 const DEFAULT_PROJECTION_MONTHS = 240;
@@ -356,7 +372,11 @@ export function projectMonths(
 
   // Pending CC settlement to apply at the start of the next month.
   // Key: CC account ID → { giroId, amount (positive cents to deduct from giro) }
-  type PendingSettlement = { giroId: string; amount: number };
+  type PendingSettlement = {
+    giroId: string;
+    amount: number;
+    settlementDay: number;
+  };
   const pendingSettlements = new Map<string, PendingSettlement>();
 
   for (let i = 0; i < months; i++) {
@@ -364,14 +384,24 @@ export function projectMonths(
 
     let netCashflow = 0;
     const flows: AppliedFlow[] = [];
+    const settlements: AppliedSettlement[] = [];
 
     // Apply settlements queued from the previous month BEFORE variable spending
     // for this month (month M+1 settlement depends on month M CC closing balance;
     // variable spending for month M must be applied before that check).
-    for (const [ccId, { giroId, amount }] of pendingSettlements) {
+    for (const [
+      ccId,
+      { giroId, amount, settlementDay },
+    ] of pendingSettlements) {
       runningBalances.set(giroId, (runningBalances.get(giroId) ?? 0) - amount);
       runningBalances.set(ccId, 0);
       netCashflow -= amount;
+      settlements.push({
+        cardId: ccId,
+        fundingAccountId: giroId,
+        date: occurrenceDate(month, settlementDay),
+        amount,
+      });
     }
     pendingSettlements.clear();
 
@@ -444,6 +474,7 @@ export function projectMonths(
         pendingSettlements.set(a.id, {
           giroId: a.linkedAccountId,
           amount: -ccBalance,
+          settlementDay: a.settlementDay,
         });
       }
     }
@@ -454,6 +485,7 @@ export function projectMonths(
       netCashflow,
       totalLiquid,
       flows,
+      settlements,
     });
   }
 
