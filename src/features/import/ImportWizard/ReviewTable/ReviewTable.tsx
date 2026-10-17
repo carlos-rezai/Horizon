@@ -35,6 +35,7 @@ export interface FlagSpec {
  *  user chose or one left on the Miscellaneous fallback. */
 const SOURCE_CHIP: Partial<Record<CategorySource, string>> = {
   learned: "Learned",
+  suggested: "Suggested",
 };
 
 interface Props {

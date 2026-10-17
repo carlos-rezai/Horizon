@@ -4,6 +4,7 @@ export { parseStatement, parseAmount, parseDate } from "./parse.js";
 export type { ParsedStatement } from "./parse.js";
 export { counterpartyKey, COUNTERPARTY_KEY_TOKENS } from "./counterpartyKey.js";
 export { deriveCategoryRules } from "./deriveCategoryRules.js";
+export { categorizeRow, KEYWORD_GROUPS } from "./categorizeRow.js";
 export { detectDuplicates, detectRecurring } from "./flagRows.js";
 export type { MappedRow, CategorySource } from "./types.js";
 export {

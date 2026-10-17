@@ -743,7 +743,7 @@ describe("the Import topic", () => {
     it("names the Suggested chip in the review row", () => {
       const row = rowOf("import", /review/i);
 
-      expect(row?.body).toMatch(/Suggested/);
+      expect(row?.body).toMatch(/\bSuggested\b/);
     });
 
     it("says a committed import is what teaches a category", () => {

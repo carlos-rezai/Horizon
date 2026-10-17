@@ -39,6 +39,13 @@ export interface BankPreset {
   pendingColumn?: string;
   /** Cell values in {@link pendingColumn} that mean the row is pending. */
   pendingValues?: string[];
+  /**
+   * Column holding the row's Counterparty (the merchant), when the bank gives
+   * one apart from the description. Preset-only, like {@link pendingColumn}:
+   * never part of the ColumnMapping or the stored preset. A blank cell falls
+   * back to the description.
+   */
+  counterpartyColumn?: string;
 }
 
 export const BANK_PRESETS: Record<string, BankPreset> = {
@@ -123,7 +130,9 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
    * counterparty, so a counterparty-based description would read empty while
    * `Buchungstext` keeps their label. The signature (`Bezeichnung
    * Auftragskonto`, `Saldo nach Buchung`) is distinctive to this Tagesgeld
-   * layout. No pending marker.
+   * layout. No pending marker. The Counterparty comes from `Name
+   * Zahlungsbeteiligter`, so learning keys on the merchant; the blank interest
+   * and tax rows fall back to `Buchungstext`.
    */
   Renault: {
     map: {
@@ -135,6 +144,7 @@ export const BANK_PRESETS: Record<string, BankPreset> = {
     dateFmt: "DD.MM.YYYY",
     delimiter: ";",
     headerSignature: ["Bezeichnung Auftragskonto", "Saldo nach Buchung"],
+    counterpartyColumn: "Name Zahlungsbeteiligter",
   },
 };
 

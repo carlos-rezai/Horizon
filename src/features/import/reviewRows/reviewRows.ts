@@ -14,9 +14,10 @@
  */
 
 /**
- * Why a row carries its category: `learned` from a Category Rule, `chosen` by
- * the user in review, `unmatched` on the Miscellaneous fallback. `suggested`
- * and `proposed` are reserved for later slices. Mirrors the server type.
+ * Why a row carries its category: `learned` from a Category Rule, `suggested`
+ * by a Keyword Group, `chosen` by the user in review, `unmatched` on the
+ * Miscellaneous fallback. `proposed` is reserved for a later slice. Mirrors
+ * the server type.
  */
 export type CategorySource =
   | "learned"

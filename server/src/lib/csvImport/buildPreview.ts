@@ -12,11 +12,8 @@ import {
   type RejectedSample,
 } from "./detectStatement.js";
 import { detectDuplicates, detectRecurring } from "./flagRows.js";
-import { counterpartyKey } from "./counterpartyKey.js";
+import { categorizeRow } from "./categorizeRow.js";
 import type { CategorySource, MappedRow } from "./types.js";
-
-/** The category every row without a Category Rule falls back to. */
-const FALLBACK_CATEGORY = "Miscellaneous";
 
 /** A stored Category Rule, as far as the preview needs it. */
 export interface PreviewCategoryRule {
@@ -29,7 +26,10 @@ export interface PreviewRow extends MappedRow {
   /** Stable id assigned for this preview so the wizard can track inclusion. */
   id: string;
   category: string;
-  /** Why the row carries its category — `learned` from a Category Rule. */
+  /**
+   * Why the row carries its category — `learned` from a Category Rule,
+   * `suggested` from a Keyword Group, else `unmatched`.
+   */
   categorySource: CategorySource;
   duplicate: boolean;
   recurring: boolean;
@@ -101,8 +101,8 @@ export interface BuildPreviewInput {
 /**
  * Orchestrate a stateless import preview: detect the statement, re-apply the
  * bank's remembered mapping if one was saved, map rows to normalized
- * (signed-cents / ISO) form, categorize each row by its Counterparty Key's
- * Category Rule (else Miscellaneous), flag duplicates and recurring matches, assign
+ * (signed-cents / ISO) form, categorize each row (Category Rule, then
+ * Keyword Group, else Miscellaneous), flag duplicates and recurring matches, assign
  * row ids, and summarise. Pure: all I/O is injected. Propagates
  * `StatementParseError` from {@link detectStatement} for the caller to map.
  */
@@ -142,14 +142,18 @@ export async function buildPreview(
   );
 
   const generateId = input.generateId ?? randomUUID;
+  const context = {
+    rules,
+    categories: input.categories ?? [],
+    declined: new Set<string>(),
+  };
   const rows: PreviewRow[] = mappedRows.map((row, index) => {
-    const key = counterpartyKey(row.counterparty);
-    const learned = key === "" ? undefined : rules.get(key);
+    const { category, categorySource } = categorizeRow(row, context);
     return {
       id: generateId(),
       ...row,
-      category: learned ?? FALLBACK_CATEGORY,
-      categorySource: learned ? "learned" : "unmatched",
+      category,
+      categorySource,
       duplicate: duplicateFlags[index],
       recurring: recurringFlags[index],
     };

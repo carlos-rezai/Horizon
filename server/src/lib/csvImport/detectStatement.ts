@@ -56,6 +56,8 @@ export interface DetectedStatement {
   pendingColumn?: string;
   /** Cell values in {@link pendingColumn} that mean the row is pending. */
   pendingValues?: string[];
+  /** Column holding the Counterparty (carried from the preset, if any). */
+  counterpartyColumn?: string;
 }
 
 /** Try each known bank preset; the first whose header signature is found wins. */
@@ -73,6 +75,7 @@ function locateKnownBank(text: string): DetectedStatement | null {
         dateFmt: preset.dateFmt,
         pendingColumn: preset.pendingColumn,
         pendingValues: preset.pendingValues,
+        counterpartyColumn: preset.counterpartyColumn,
       };
     }
   }
@@ -240,8 +243,8 @@ function isPending(
 
 /**
  * Turn detected records into normalized rows under the given mapping:
- * signed-cents amounts, ISO dates, the row's Counterparty (the description
- * cell, as parsed), and a pending flag. Records with an empty date cell are dropped silently (blank lines,
+ * signed-cents amounts, ISO dates, the row's Counterparty (the preset's
+ * counterparty column, else the description cell, as parsed), and a pending flag. Records with an empty date cell are dropped silently (blank lines,
  * balance-footer rows); a record with a non-empty date that fails date/amount
  * parsing is counted as `rejected`, sampled up to {@link MAX_REJECTED_SAMPLES},
  * and never emitted.
@@ -276,11 +279,14 @@ export function mapStatementRows(
     }
 
     const description = record[mapping.description] ?? "";
+    const counterpartyCell = detected.counterpartyColumn
+      ? (record[detected.counterpartyColumn] ?? "").trim()
+      : "";
     rows.push({
       date,
       description,
       amount,
-      counterparty: description,
+      counterparty: counterpartyCell === "" ? description : counterpartyCell,
       pending: isPending(record, detected),
     });
   }
