@@ -5,11 +5,6 @@ import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import type { Transaction, TransactionDraft } from "../../../types/transaction";
 import PageHeader from "../../../components/PageHeader/PageHeader";
 import { formatMonthLong } from "../../../utils/format/format";
-import { currentMonth } from "../../../utils/monthMath/monthMath";
-import {
-  monthEndBalance,
-  type MonthEndBalance,
-} from "../monthEndBalance/monthEndBalance";
 import type { TransactionChanges } from "../../../utils/optimisticTransactions/optimisticTransactions";
 import {
   deriveMonthStats,
@@ -31,8 +26,7 @@ import FadeSwap from "../../../components/FadeSwap/FadeSwap";
 import { useAllMonthTransactions } from "../useAllMonthTransactions/useAllMonthTransactions";
 import { useYearComparison } from "../useYearComparison/useYearComparison";
 import { useMonthCashFlow } from "../useMonthCashFlow/useMonthCashFlow";
-import { useProjection } from "../../projection/useProjection/useProjection";
-import { useHistoryPoints } from "../../history/useHistoryPoints/useHistoryPoints";
+import { useMonthEndBalances } from "../useMonthEndBalances/useMonthEndBalances";
 import { useImportStartDates } from "../useImportStartDates/useImportStartDates";
 import { useCategories } from "../../categories/useCategories/useCategories";
 import TransactionCreateModal from "../../transactions/TransactionCreateModal/TransactionCreateModal";
@@ -109,28 +103,16 @@ export default function MonthOverview({
     error: cashFlowError,
   } = useMonthCashFlow(monthStr);
   const {
-    snapshots,
-    isLoading: projectionLoading,
-    error: projectionError,
-  } = useProjection();
-  const {
-    points: historyPoints,
-    isLoading: historyLoading,
-    error: historyError,
-  } = useHistoryPoints();
+    balances,
+    isLoading: balancesLoading,
+    error: balancesError,
+  } = useMonthEndBalances(monthStr, accounts);
   const { startDates: importStartDates } = useImportStartDates();
   const { categories } = useCategories();
 
   const variableSpending = selectVariableSpending(transactions);
   const stats = deriveMonthStats(transactions, monthStr);
   const monthLabel = formatMonthLong(monthStr).split(" ")[0];
-  const thisMonth = currentMonth();
-  const balances: Record<string, MonthEndBalance> = Object.fromEntries(
-    accounts.map((a) => [
-      a.id,
-      monthEndBalance(monthStr, thisMonth, snapshots, historyPoints, a.id),
-    ])
-  );
 
   // The month's own sections cannot read anything until the accounts that own
   // the transactions are known, so they share one gate. The year comparison is
@@ -208,15 +190,8 @@ export default function MonthOverview({
               accounts and its own report, not the spending accounts' reads. */}
           <SectionState
             testId="month-section-cash-flow"
-            isLoading={
-              accountsLoading ||
-              cashFlowLoading ||
-              projectionLoading ||
-              historyLoading
-            }
-            error={
-              accountsError ?? cashFlowError ?? projectionError ?? historyError
-            }
+            isLoading={accountsLoading || cashFlowLoading || balancesLoading}
+            error={accountsError ?? cashFlowError ?? balancesError}
             skeleton={<MonthCashFlowSkeleton monthLabel={monthLabel} />}
           >
             {cashFlowReport && (
