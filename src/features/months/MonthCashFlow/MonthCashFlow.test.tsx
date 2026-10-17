@@ -564,3 +564,103 @@ describe("MonthCashFlow — honest around the anchor", () => {
     ).toHaveLength(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// CreditCard settlement rows
+// ---------------------------------------------------------------------------
+
+const settleAccounts: AccountWithBalance[] = [
+  accounts[0],
+  {
+    id: "visa",
+    kind: "CreditCard",
+    name: "Visa",
+    anchorBalance: 0,
+    anchorDate: "2026-01-01",
+    balance: 0,
+    color: "#D98F7F",
+  },
+];
+
+// Main pays Visa's August cycle on 15 September: €40.00 out of Main, €40.00
+// into Visa. Main also takes its €3,000.00 salary.
+const settleReport: MonthCashFlowReport = {
+  month: "2026-09",
+  accounts: [
+    {
+      accountId: "main",
+      flows: [
+        {
+          kind: "settlement",
+          date: "2026-09-15",
+          description: "Auto-settlement",
+          category: "Transfer",
+          amount: -4000,
+          counterpartId: "visa",
+          side: "source",
+          inAnchor: false,
+        },
+        flow({
+          recurringId: "salary",
+          date: "2026-09-25",
+          description: "Salary",
+          category: "Income",
+          amount: 300000,
+        }),
+      ],
+    },
+    {
+      accountId: "visa",
+      flows: [
+        {
+          kind: "settlement",
+          date: "2026-09-15",
+          description: "Auto-settlement",
+          category: "Transfer",
+          amount: 4000,
+          counterpartId: "main",
+          side: "destination",
+          inAnchor: false,
+        },
+      ],
+    },
+  ],
+};
+
+function renderSettleCard() {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <MonthCashFlow
+          accounts={settleAccounts}
+          report={settleReport}
+          monthLabel="September"
+          balances={{}}
+        />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+}
+
+describe("MonthCashFlow — CreditCard settlement rows", () => {
+  it("links a settlement row to the CreditCard on both accounts and counts it in Net fixed", () => {
+    renderSettleCard();
+
+    const mainRow = rowFor(groupFor("Main"), "Auto-settlement");
+    const visaRow = rowFor(groupFor("Visa"), "Auto-settlement");
+    expect(within(mainRow).getByRole("link")).toHaveAttribute(
+      "href",
+      "/accounts/visa"
+    );
+    expect(within(visaRow).getByRole("link")).toHaveAttribute(
+      "href",
+      "/accounts/visa"
+    );
+
+    // -40.00 + 3,000.00 = +2,960.00 on Main; +40.00 on Visa.
+    const mainNet = within(groupFor("Main")).getByTestId("fixed-flow-net");
+    expect(within(mainNet).getByText(/^\+2\.960,00/)).toBeInTheDocument();
+    const visaNet = within(groupFor("Visa")).getByTestId("fixed-flow-net");
+    expect(within(visaNet).getByText(/^\+40,00/)).toBeInTheDocument();
+  });
+});

@@ -388,3 +388,126 @@ describe("GET /reports/month-cash-flow", () => {
     ]);
   });
 });
+
+describe("GET /reports/month-cash-flow — CreditCard settlement rows", () => {
+  // The current month is July 2026; only `Date` is faked so supertest's real
+  // socket keeps working.
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"));
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
+  // A Girokonto funding a CreditCard that settles on the 15th, both anchored
+  // on 1 May.
+  async function seedCard() {
+    const giro = await createAccount({
+      anchorBalance: 500000,
+      anchorDate: "2026-05-01",
+    });
+    const card = await createAccount({
+      kind: "CreditCard",
+      name: "Visa",
+      anchorBalance: 0,
+      anchorDate: "2026-05-01",
+      linkedAccountId: giro.id,
+      settlementDay: 15,
+    });
+    return { giro, card };
+  }
+
+  function settlementsOf(body: MonthCashFlowBody, accountId: string) {
+    return (groupOf(body, accountId)?.flows ?? []).filter(
+      (f) => f.kind === "settlement"
+    );
+  }
+
+  it("lists a past month's stored settlement on the card and the funding account, with opposite signs", async () => {
+    const { giro, card } = await seedCard();
+    await addTransaction(card.id, -10000, "2026-05-20", "Food");
+    await request(app).post("/settlements/generate");
+
+    const res = await monthCashFlow("2026-06");
+
+    expect(res.status).toBe(200);
+    expect(groupOf(res.body, giro.id)?.flows).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-06-15",
+        description: "Auto-settlement",
+        amount: -10000,
+        counterpartId: card.id,
+      }),
+    ]);
+    expect(groupOf(res.body, card.id)?.flows).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-06-15",
+        description: "Auto-settlement",
+        amount: 10000,
+        counterpartId: giro.id,
+      }),
+    ]);
+  });
+
+  it("lists the current month's stored settlement on both accounts", async () => {
+    const { giro, card } = await seedCard();
+    await addTransaction(card.id, -7500, "2026-06-10", "Food");
+    await request(app).post("/settlements/generate");
+
+    const res = await monthCashFlow("2026-07");
+
+    expect(settlementsOf(res.body, giro.id)).toEqual([
+      expect.objectContaining({ date: "2026-07-15", amount: -7500 }),
+    ]);
+    expect(settlementsOf(res.body, card.id)).toEqual([
+      expect.objectContaining({ date: "2026-07-15", amount: 7500 }),
+    ]);
+  });
+
+  it("lists a future month's settlement as the engine projects it", async () => {
+    const { giro, card } = await seedCard();
+    await addTransaction(card.id, -4000, "2026-07-05", "Food");
+
+    const res = await monthCashFlow("2026-08");
+
+    expect(settlementsOf(res.body, giro.id)).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-08-15",
+        amount: -4000,
+        counterpartId: card.id,
+      }),
+    ]);
+    expect(settlementsOf(res.body, card.id)).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-08-15",
+        amount: 4000,
+        counterpartId: giro.id,
+      }),
+    ]);
+  });
+
+  it("moves a future month's projected settlement after a CreditCard expense, on the next request", async () => {
+    const { giro, card } = await seedCard();
+    await addTransaction(card.id, -4000, "2026-07-05", "Food");
+    const before = await monthCashFlow("2026-08");
+
+    await addTransaction(card.id, -1500, "2026-07-09", "Food");
+    const after = await monthCashFlow("2026-08");
+
+    expect(settlementsOf(before.body, giro.id)).toEqual([
+      expect.objectContaining({ amount: -4000 }),
+    ]);
+    expect(settlementsOf(after.body, giro.id)).toEqual([
+      expect.objectContaining({ amount: -5500 }),
+    ]);
+    expect(settlementsOf(after.body, card.id)).toEqual([
+      expect.objectContaining({ amount: 5500 }),
+    ]);
+  });
+});

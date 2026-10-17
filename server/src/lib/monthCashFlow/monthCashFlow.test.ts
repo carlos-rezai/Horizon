@@ -4,11 +4,13 @@ import {
   projectMonths,
   toProjectionAccountEntry,
   toProjectionRecurringEntry,
+  toProjectionTxEntry,
 } from "../projection/projection.js";
 import type {
   Account,
   AccountKind,
   RecurringTransaction,
+  Transaction,
 } from "../../storage/types.js";
 
 function account(id: string, kind: AccountKind, anchorBalance = 0): Account {
@@ -107,7 +109,14 @@ function report(month: string) {
     "2026-03",
     12
   );
-  return deriveMonthCashFlow(month, projected, accounts, recurrings);
+  return deriveMonthCashFlow(
+    month,
+    projected,
+    accounts,
+    recurrings,
+    [],
+    "2026-03"
+  );
 }
 
 function flowsOf(month: string, accountId: string) {
@@ -345,7 +354,9 @@ function anchorFlowsOf(month: string, accountId: string) {
       month,
       projected,
       anchorAccounts,
-      anchorRules
+      anchorRules,
+      [],
+      "2026-01"
     ).accounts.find((g) => g.accountId === accountId)?.flows ?? []
   );
 }
@@ -457,5 +468,163 @@ describe("deriveMonthCashFlow — honest around the anchor", () => {
         inAnchor: true,
       })
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CreditCard settlement rows
+// ---------------------------------------------------------------------------
+
+// The current month is April. Visa settles on the 17th from Giro. Its card
+// spending: €40.00 in February, €25.00 in March, €10.00 in April. The February
+// and March cycles are settled by stored auto-settlements on 17 March (€40.00)
+// and 17 April (€25.00); April's €10.00 is settled on 17 May only in the
+// projection, after which the card stands at zero.
+const settleAccounts: Account[] = [
+  { ...account("giro", "Girokonto", 500000) },
+  {
+    ...account("visa", "CreditCard"),
+    linkedAccountId: "giro",
+    settlementDay: 17,
+    linkedSince: "2026-02-15",
+  },
+];
+
+const settleRules: RecurringTransaction[] = [
+  rule("rent", {
+    amount: -50000,
+    description: "Rent",
+    category: "Housing",
+    dayOfMonth: 1,
+  }),
+];
+
+function tx(
+  id: string,
+  accountId: string,
+  date: string,
+  amount: number,
+  overrides: Partial<Transaction> = {}
+): Transaction {
+  return {
+    id,
+    accountId,
+    date,
+    amount,
+    description: "Card purchase",
+    category: "Food",
+    ...overrides,
+  };
+}
+
+function storedSettlement(id: string, date: string, amount: number) {
+  const settlement = {
+    description: "Auto-settlement",
+    category: "Transfer",
+    transferId: id,
+    isAutoSettlement: true,
+  };
+  return [
+    tx(`${id}-giro`, "giro", date, -amount, settlement),
+    tx(`${id}-visa`, "visa", date, amount, settlement),
+  ];
+}
+
+const settleTransactions: Transaction[] = [
+  tx("feb", "visa", "2026-02-20", -4000),
+  tx("mar", "visa", "2026-03-05", -2500),
+  tx("apr", "visa", "2026-04-08", -1000),
+  ...storedSettlement("s-mar", "2026-03-17", 4000),
+  ...storedSettlement("s-apr", "2026-04-17", 2500),
+];
+
+function settleFlowsOf(month: string, accountId: string) {
+  // A run from February, as History's run from the History Span's start.
+  const projected = projectMonths(
+    settleAccounts.map(toProjectionAccountEntry),
+    settleTransactions.map(toProjectionTxEntry),
+    settleRules.map(toProjectionRecurringEntry),
+    "2026-02",
+    "2026-04",
+    5
+  );
+  return (
+    deriveMonthCashFlow(
+      month,
+      projected,
+      settleAccounts,
+      settleRules,
+      settleTransactions,
+      "2026-04"
+    ).accounts.find((g) => g.accountId === accountId)?.flows ?? []
+  );
+}
+
+const settlementRows = (flows: ReturnType<typeof settleFlowsOf>) =>
+  flows.filter((f) => f.kind === "settlement");
+
+describe("deriveMonthCashFlow — CreditCard settlement rows", () => {
+  it("lists a past month's stored settlement once on the funding account and once on the card, with opposite signs", () => {
+    expect(settlementRows(settleFlowsOf("2026-03", "giro"))).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-03-17",
+        description: "Auto-settlement",
+        amount: -4000,
+        counterpartId: "visa",
+        inAnchor: false,
+      }),
+    ]);
+    expect(settlementRows(settleFlowsOf("2026-03", "visa"))).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-03-17",
+        description: "Auto-settlement",
+        amount: 4000,
+        counterpartId: "giro",
+        inAnchor: false,
+      }),
+    ]);
+  });
+
+  it("lists the current month's stored settlement, not the engine's", () => {
+    expect(settlementRows(settleFlowsOf("2026-04", "giro"))).toEqual([
+      expect.objectContaining({ date: "2026-04-17", amount: -2500 }),
+    ]);
+    expect(settlementRows(settleFlowsOf("2026-04", "visa"))).toEqual([
+      expect.objectContaining({ date: "2026-04-17", amount: 2500 }),
+    ]);
+  });
+
+  it("orders a settlement row by date among the account's recurring rows", () => {
+    expect(
+      settleFlowsOf("2026-04", "giro").map((f) => [f.kind, f.date])
+    ).toEqual([
+      ["recurring", "2026-04-01"],
+      ["settlement", "2026-04-17"],
+    ]);
+  });
+
+  it("lists a future month's settlement as the engine projects it, on its Settlement Day, and none once the card is at zero", () => {
+    expect(settlementRows(settleFlowsOf("2026-05", "giro"))).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-05-17",
+        description: "Auto-settlement",
+        amount: -1000,
+        counterpartId: "visa",
+        inAnchor: false,
+      }),
+    ]);
+    expect(settlementRows(settleFlowsOf("2026-05", "visa"))).toEqual([
+      expect.objectContaining({
+        kind: "settlement",
+        date: "2026-05-17",
+        amount: 1000,
+        counterpartId: "giro",
+      }),
+    ]);
+    expect(settlementRows(settleFlowsOf("2026-06", "giro"))).toEqual([]);
+    expect(settlementRows(settleFlowsOf("2026-06", "visa"))).toEqual([]);
   });
 });
