@@ -147,8 +147,13 @@ export interface CategorizeContext {
 /** A row's category and why it carries it. */
 export interface CategorizedRow {
   category: string;
+  /**
+   * Why the row carries its category — `learned` from a Category Rule,
+   * `suggested` from a Keyword Group, `proposed` when the group's category
+   * does not exist yet, else `unmatched`.
+   */
   categorySource: CategorySource;
-  /** A Category Proposal's canonical name, set only when the source is `proposed`. */
+  /** A Category Proposal's canonical name — present only when `proposed`. */
   proposedCategory?: string;
 }
 

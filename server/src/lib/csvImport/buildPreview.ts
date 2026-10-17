@@ -13,22 +13,13 @@ import {
   type RejectedSample,
 } from "./detectStatement.js";
 import { detectDuplicates, detectRecurring } from "./flagRows.js";
-import { categorizeRow } from "./categorizeRow.js";
-import type { CategorySource, MappedRow } from "./types.js";
+import { categorizeRow, type CategorizedRow } from "./categorizeRow.js";
+import type { MappedRow } from "./types.js";
 
 /** A previewed row: a normalized row plus its id and detection flags. */
-export interface PreviewRow extends MappedRow {
+export interface PreviewRow extends MappedRow, CategorizedRow {
   /** Stable id assigned for this preview so the wizard can track inclusion. */
   id: string;
-  category: string;
-  /**
-   * Why the row carries its category — `learned` from a Category Rule,
-   * `suggested` from a Keyword Group, `proposed` when the group's category
-   * does not exist yet, else `unmatched`.
-   */
-  categorySource: CategorySource;
-  /** A Category Proposal's canonical name — present only when `proposed`. */
-  proposedCategory?: string;
   duplicate: boolean;
   recurring: boolean;
 }
@@ -147,21 +138,13 @@ export async function buildPreview(
     categories: input.categories ?? [],
     declined: new Set(input.declinedProposals ?? []),
   };
-  const rows: PreviewRow[] = mappedRows.map((row, index) => {
-    const { category, categorySource, proposedCategory } = categorizeRow(
-      row,
-      context
-    );
-    return {
-      id: generateId(),
-      ...row,
-      category,
-      categorySource,
-      ...(proposedCategory === undefined ? {} : { proposedCategory }),
-      duplicate: duplicateFlags[index],
-      recurring: recurringFlags[index],
-    };
-  });
+  const rows: PreviewRow[] = mappedRows.map((row, index) => ({
+    id: generateId(),
+    ...row,
+    ...categorizeRow(row, context),
+    duplicate: duplicateFlags[index],
+    recurring: recurringFlags[index],
+  }));
 
   return {
     bank: detected.bank,
