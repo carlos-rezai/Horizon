@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useAccounts } from "../../accounts/useAccounts/useAccounts";
-import { useCategoriesWithInlineAdd } from "../../categories/useCategoriesWithInlineAdd/useCategoriesWithInlineAdd";
+import { useCategories } from "../../categories/useCategories/useCategories";
 import { useSnackbar } from "../../../components/SnackbarProvider/useSnackbar";
 import PageHeader from "../../../components/PageHeader/PageHeader";
 import Button from "../../../primitives/Button/Button";
@@ -28,7 +28,7 @@ interface WizardState {
 
 export default function ImportView() {
   const { accounts, isLoading, error } = useAccounts();
-  const { categories } = useCategoriesWithInlineAdd();
+  const { categories } = useCategories();
   const { notify } = useSnackbar();
   const { importAccounts, history, preview, commit, loadTransactions, remove } =
     useImport(accounts);
