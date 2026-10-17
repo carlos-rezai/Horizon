@@ -281,7 +281,7 @@ The generated installer will be signed with your local certificate and will inst
 | Live-Use Repair — Round 1                 | ✅ Complete |
 | Balance Anchor                            | ✅ Complete |
 | Financial History                         | ✅ Complete |
-| Month Cash Flow                           | 📋 Planned  |
+| Month Cash Flow                           | ✅ Complete |
 | Import Category Learning                  | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |

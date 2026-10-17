@@ -79,7 +79,7 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
       },
       {
         heading: "3. Add your recurring transactions",
-        body: "Outlook and the Trajectory Horizon chart are driven only by recurring transactions — nothing is projected from guesswork. From each account's detail page, add salary, rent, savings transfers, ETF contributions and Sondertilgung payments, each with an amount, a frequency and a day. Link a transfer to another account to model money moving between two of your own accounts, or link a Sondertilgung to your Mortgage account to model it paying down Restschuld.",
+        body: "Outlook and the Trajectory Horizon chart are driven only by recurring transactions — nothing is projected from guesswork. From each account's detail page, add salary, rent, savings transfers, ETF contributions and Sondertilgung payments, each with an amount, a frequency and a day. Link a transfer to another account to model money moving between two of your own accounts, or link a Sondertilgung to your Mortgage account to model it paying down Restschuld. Recurring transactions also count towards the present: an account's balance is its Balance plus every recurring flow that has fallen due since its As of date, alongside the transactions dated after it. Because of that, editing or adding a rule rewrites every month since the anchor, not just the months ahead — if a balance no longer matches your bank after such an edit, re-anchor the account with today's balance and date.",
       },
       {
         heading: "4. Set a savings goal",
@@ -238,11 +238,15 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
     icon: Calendar,
     title: "Month Overview",
     blurb:
-      "Variable (non-recurring) spending for a single month, with a category breakdown and account filters.",
+      "A single month in full: each account's fixed flows and month-end balance, then the month's variable (non-recurring) spending with a category breakdown and account filters.",
     details: [
       {
         heading: "Month navigation",
         body: "The arrows either side of the month label step one month back or forward and are not bounded — you can walk into next year if you want to. The label itself opens a month-and-year picker, and that grid is bounded: it runs from the earliest month you have imported a statement for up to the month currently on screen. A greyed-out cell means nothing was imported that far back, not a dead control, and with no imports at all the picker collapses to the single month you are on. Note that it never reaches past the month you are viewing — stepping forward is the arrows' job. The sidebar's Month entry always returns you to the current calendar month.",
+      },
+      {
+        heading: "Fixed flows",
+        body: "The “Fixed Flows” card lists, per account, the recurring income and transfers that fall in the month — salary in, rent out, transfers out in red and transfers in in green with the account they come from, a credit card's settlement, and annual items such as a Sondertilgung only in the month they are paid. Each row opens the account page its rule lives on, which is where it is edited. Rows marked “In balance anchor” are muted: they fell on or before the account's As of date, so they are already inside the balance you entered and are left out of the “Net fixed” total at the foot of the group. Each account's header shows its month-end balance, captioned “Actual” for a past month and “Projected” for the current month and the months still to come. A month before the account's known history reads “No data before …” rather than a figure, and before the As of date an account's history comes from its imported statements, not from its recurring rules.",
       },
       {
         heading: "The spending list",
@@ -376,7 +380,7 @@ export const MANUAL_TOPICS: ManualTopicRecord = {
       },
       {
         heading: "Recurring transactions",
-        body: "The card at the foot of the account page holds the only thing the projection runs on, so this is where salary, rent, savings transfers, ETF contributions and Sondertilgung are modelled. “Add recurring” asks for an amount — negative for money going out, positive for money coming in — a description, a frequency of Monthly, Quarterly or Annual, a day of the month between 1 and 31, a category, and optionally another of your accounts under “Transfer”. An annual rule also picks the month it falls in; a quarterly rule simply fires every third month rather than on a calendar quarter you choose. The day is recorded and shown on the row, but the projection settles month by month, so it describes the real payment rather than moving a balance. Click any row to change or delete it; if Horizon refuses a save — a transfer linking an account to itself, say — the dialog stays open with the reason. The list shows each rule's amount, day and frequency with the linked account named beneath it.",
+        body: "The card at the foot of the account page holds the only thing the projection runs on, so this is where salary, rent, savings transfers, ETF contributions and Sondertilgung are modelled. “Add recurring” asks for an amount — negative for money going out, positive for money coming in — a description, a frequency of Monthly, Quarterly or Annual, a day of the month between 1 and 31, a category, and optionally another of your accounts under “Transfer”. An annual rule also picks the month it falls in; a quarterly rule simply fires every third month rather than on a calendar quarter you choose. The day is recorded and shown on the row, but the projection settles month by month, so it describes the real payment rather than moving a balance. Click any row to change or delete it; if Horizon refuses a save — a transfer linking an account to itself, say — the dialog stays open with the reason. The list shows each rule's amount, day and frequency with the linked account named beneath it. These rules drive the present too, not only the projection: the Current Balance is the Balance anchor plus the transactions dated after it plus every recurring flow that has fallen due since the As of date. So editing, adding or deleting a rule rewrites every month since the anchor, and the balance moves with it. If the figure no longer matches your bank, re-anchor: enter the balance your bank shows today and today's date under Balance and As of, and the months before that date stop depending on the rule.",
       },
       {
         heading: "Transfers and Sondertilgung",

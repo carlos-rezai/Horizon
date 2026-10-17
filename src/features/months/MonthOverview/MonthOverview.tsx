@@ -165,7 +165,7 @@ export default function MonthOverview({
       <PageHeader
         overline={formatMonthLong(monthStr)}
         title="Month Overview"
-        subtitle="Variable spending · Recurring-Only Model"
+        subtitle="Fixed flows · Variable spending · Month-end balances"
         actions={
           <StyledStepper>
             <StyledStepButton
