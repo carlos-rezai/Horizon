@@ -6,7 +6,7 @@ import type {
 } from "../../storage/types.js";
 import type { Frequency } from "../../storage/types.js";
 import { balanceAt, knownSince } from "../balanceAnchor/balanceAnchor.js";
-import { endOfMonth, monthsBetween } from "../date/date.js";
+import { addMonths, endOfMonth, monthsBetween } from "../date/date.js";
 import {
   firesInMonth,
   occurrenceDate,
@@ -141,15 +141,6 @@ export interface MonthlyProjection extends MonthlySnapshot {
 }
 
 const DEFAULT_PROJECTION_MONTHS = 240;
-
-function addMonths(yyyyMM: string, n: number): string {
-  const [yearStr, monthStr] = yyyyMM.split("-");
-  const totalMonths =
-    parseInt(yearStr, 10) * 12 + (parseInt(monthStr, 10) - 1) + n;
-  const year = Math.floor(totalMonths / 12);
-  const month = (totalMonths % 12) + 1;
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
 
 // The account's Anchor Gate, looked up by id.
 function accountPassesAnchorGate(

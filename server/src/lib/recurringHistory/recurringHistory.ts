@@ -10,14 +10,7 @@ import {
   occurrenceDate,
   passesAnchorGate,
 } from "../recurringOccurrence/recurringOccurrence.js";
-import { monthsBetween } from "../date/date.js";
-
-function addMonths(yyyyMM: string, n: number): string {
-  const [year, month] = yyyyMM.split("-").map(Number);
-  const index = year * 12 + (month - 1) + n;
-  const m = String((index % 12) + 1).padStart(2, "0");
-  return `${Math.floor(index / 12)}-${m}`;
-}
+import { addMonths, monthsBetween } from "../date/date.js";
 
 interface Occurrence {
   rule: RecurringTransaction;
