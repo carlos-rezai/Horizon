@@ -362,7 +362,7 @@ describe("POST /imports/preview", () => {
     });
   });
 
-  it("converts amounts to signed cents, dates to ISO, and auto-categorizes", async () => {
+  it("converts amounts to signed cents, dates to ISO, and leaves unknown payees in Miscellaneous", async () => {
     const account = await createAccount();
 
     const res = await previewFixture("sparkasse-giro.csv", account.id);
@@ -374,7 +374,8 @@ describe("POST /imports/preview", () => {
     expect(supermarkt).toMatchObject({
       date: "2026-06-24",
       amount: -2041,
-      category: "Food",
+      category: "Miscellaneous",
+      categorySource: "unmatched",
       duplicate: false,
       recurring: false,
     });
@@ -382,7 +383,7 @@ describe("POST /imports/preview", () => {
     expect(typeof supermarkt?.id).toBe("string");
 
     const gehalt = rowByDescription(res.body.rows, "ARBEITGEBER MUSTER AG");
-    expect(gehalt).toMatchObject({ amount: 250000, category: "Income" });
+    expect(gehalt).toMatchObject({ amount: 250000 });
   });
 
   it("preserves the sign of a positive credit (a salary stays positive)", async () => {
@@ -392,7 +393,7 @@ describe("POST /imports/preview", () => {
 
     expect(res.body.bank).toBe("Sparkasse");
     const gehalt = rowByDescription(res.body.rows, "ARBEITGEBER MUSTER AG");
-    expect(gehalt).toMatchObject({ amount: 250000, category: "Income" });
+    expect(gehalt).toMatchObject({ amount: 250000 });
   });
 
   it("detects the bank and decodes Windows-1252 umlauts in the header", async () => {
@@ -618,5 +619,387 @@ describe("POST /imports/preview — Anchor Date", () => {
     );
     expect(rowByDescription(rows, "MUSTER DIENST GMBH")?.recurring).toBe(true);
     expect(res.body.summary.recurring).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #258 — Import Category Learning, Phase 1: learn and apply.
+//
+// Committing a row is the approval: POST /imports derives Category Rules from
+// the teaching rows (source learned / suggested / chosen) and stores them; the
+// next POST /imports/preview applies them as `learned`. What was learned is
+// observed only through a later preview of the Sparkasse fixture, never by
+// reaching into storage. Commits go in under a bank label other than the
+// detected "Sparkasse" so no remembered preset changes how the fixture parses —
+// Category Rules are global across banks, so the label does not matter.
+//
+// Each "teaches nothing" test carries a positive control — a row that does
+// teach — or asserts the `unmatched` source, so it proves the commit learned
+// selectively rather than passing on a server that learns nothing at all.
+// ---------------------------------------------------------------------------
+
+type CategorySourceName =
+  | "learned"
+  | "suggested"
+  | "proposed"
+  | "unmatched"
+  | "chosen";
+
+interface LearningPreviewRow extends PreviewRow {
+  counterparty: string;
+  categorySource: CategorySourceName;
+}
+
+/** One commit row for a Sparkasse payee, its counterparty as parsed. */
+function teachRow(
+  description: string,
+  category: string,
+  categorySource: CategorySourceName,
+  extra: Record<string, unknown> = {}
+) {
+  return {
+    date: "2026-06-24",
+    amount: -2041,
+    description,
+    counterparty: description,
+    category,
+    categorySource,
+    ...extra,
+  };
+}
+
+async function previewRows(accountId: string): Promise<LearningPreviewRow[]> {
+  const res = await previewFixture("sparkasse-giro.csv", accountId);
+  expect(res.status).toBe(200);
+  return res.body.rows as LearningPreviewRow[];
+}
+
+function payee(rows: LearningPreviewRow[], description: string) {
+  const row = rows.find((r) => r.description === description);
+  expect(row, description).toBeDefined();
+  return row as LearningPreviewRow;
+}
+
+const SUPERMARKT = "MUSTER SUPERMARKT GMBH";
+const ARBEITGEBER = "ARBEITGEBER MUSTER AG";
+const VERSAND = "MUSTER VERSAND GMBH";
+const DIENST = "MUSTER DIENST GMBH";
+
+describe("POST /imports/preview — Category Rules (#258)", () => {
+  it("gives every row its counterparty, and an unknown payee Miscellaneous / unmatched", async () => {
+    const account = await createAccount();
+
+    const rows = await previewRows(account.id);
+
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      expect(row.counterparty).toBe(row.description);
+      expect(row).toMatchObject({
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+      });
+    }
+  });
+
+  it("demo: a second import of the same statement arrives mostly categorized", async () => {
+    const account = await createAccount();
+    const first = await previewRows(account.id);
+
+    // The user corrects three of the four rows in review and commits them all.
+    const corrections: Record<string, string> = {
+      [SUPERMARKT]: "Food",
+      [ARBEITGEBER]: "Income",
+      [DIENST]: "Subscriptions",
+    };
+    const committed = await postImport(account.id, {
+      rows: first.map((r) => ({
+        date: r.date,
+        amount: r.amount,
+        description: r.description,
+        counterparty: r.counterparty,
+        category: corrections[r.description] ?? r.category,
+        categorySource:
+          r.description in corrections ? "chosen" : r.categorySource,
+      })),
+    });
+    expect(committed.status).toBe(201);
+
+    const second = await previewRows(account.id);
+
+    for (const [description, category] of Object.entries(corrections)) {
+      expect(payee(second, description)).toMatchObject({
+        category,
+        categorySource: "learned",
+      });
+    }
+    // The row left on the fallback taught nothing.
+    expect(payee(second, VERSAND)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("applies a learned Category Rule into a Hidden Category", async () => {
+    const account = await createAccount();
+    await postImport(account.id, {
+      rows: [teachRow(SUPERMARKT, "Food", "chosen")],
+    });
+
+    const categories = await request(app).get("/categories");
+    const food = (categories.body as Array<{ id: string; name: string }>).find(
+      (c) => c.name === "Food"
+    );
+    const hidden = await request(app)
+      .patch(`/categories/${food?.id}`)
+      .send({ hidden: true });
+    expect(hidden.status).toBe(200);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+  });
+
+  it("overwrites a Category Rule when a later commit teaches the payee differently", async () => {
+    const account = await createAccount();
+    await postImport(account.id, {
+      rows: [teachRow(SUPERMARKT, "Food", "chosen")],
+    });
+    await postImport(account.id, {
+      filename: "dkb-2026-04.csv",
+      rows: [teachRow(SUPERMARKT, "Housing", "chosen")],
+    });
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Housing",
+      categorySource: "learned",
+    });
+  });
+
+  it("keeps a learned Category Rule after the import that taught it is deleted", async () => {
+    const account = await createAccount();
+    const committed = await postImport(account.id, {
+      rows: [teachRow(SUPERMARKT, "Food", "chosen")],
+    });
+    const deleted = await request(app).delete(`/imports/${committed.body.id}`);
+    expect(deleted.status).toBe(204);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+  });
+});
+
+describe("POST /imports — learning from the commit (#258)", () => {
+  it("learns from learned, suggested and chosen rows, and not from unmatched or proposed ones", async () => {
+    const account = await createAccount();
+    const res = await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Food", "learned"),
+        teachRow(DIENST, "Subscriptions", "suggested"),
+        teachRow(ARBEITGEBER, "Income", "chosen"),
+        teachRow(VERSAND, "Miscellaneous", "proposed"),
+      ],
+    });
+    expect(res.status).toBe(201);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "learned",
+    });
+    expect(payee(rows, ARBEITGEBER)).toMatchObject({
+      category: "Income",
+      categorySource: "learned",
+    });
+    expect(payee(rows, VERSAND)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("learns a row deliberately set to Miscellaneous, but not a row left on the fallback", async () => {
+    const account = await createAccount();
+    await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Miscellaneous", "chosen"),
+        teachRow(DIENST, "Miscellaneous", "unmatched"),
+      ],
+    });
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "learned",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("never learns into a category that does not exist", async () => {
+    const account = await createAccount();
+    await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Ghost", "chosen"),
+        teachRow(DIENST, "Subscriptions", "chosen"),
+      ],
+    });
+    // Creating the category afterwards must not bring a rule to life: none was
+    // ever stored for it.
+    const created = await request(app)
+      .post("/categories")
+      .send({ name: "Ghost" });
+    expect(created.status).toBe(201);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Subscriptions",
+      categorySource: "learned",
+    });
+  });
+
+  it("re-derives every key itself and ignores a key sent by the client", async () => {
+    const account = await createAccount();
+    await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Food", "chosen", {
+          counterpartyKey: "muster dienst gmbh",
+        }),
+      ],
+    });
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("keys on the counterparty, not on a description edited in review", async () => {
+    const account = await createAccount();
+    await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Food", "chosen", {
+          description: "Weekly shop",
+        }),
+      ],
+    });
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+  });
+
+  it("commits an older payload without counterparty or source, and it teaches nothing", async () => {
+    const account = await createAccount();
+    const res = await postImport(account.id, {
+      rows: [
+        {
+          date: "2026-06-24",
+          amount: -2041,
+          description: SUPERMARKT,
+          category: "Food",
+        },
+      ],
+    });
+    expect(res.status).toBe(201);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("learns nothing from a commit that fails validation", async () => {
+    const account = await createAccount();
+    const res = await postImport(account.id, {
+      rows: [
+        teachRow(SUPERMARKT, "Food", "chosen"),
+        teachRow("", "Subscriptions", "chosen", { counterparty: DIENST }),
+      ],
+    });
+    expect(res.status).toBe(400);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+    expect(payee(rows, DIENST)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+
+  it("learns nothing from a commit to an unknown account", async () => {
+    const res = await postImport("00000000-0000-0000-0000-000000000000", {
+      rows: [teachRow(SUPERMARKT, "Food", "chosen")],
+    });
+    expect(res.status).toBe(404);
+    const account = await createAccount();
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
+  });
+});
+
+describe("Category Rules are never taught outside an import (#258)", () => {
+  it("hand-entered Variable Spending and a Month Overview edit create no Category Rule", async () => {
+    const account = await createAccount();
+    const created = await request(app)
+      .post(`/accounts/${account.id}/transactions`)
+      .send({
+        date: "2026-06-24",
+        amount: -2041,
+        description: SUPERMARKT,
+        category: "Food",
+      });
+    expect(created.status).toBe(201);
+    const edited = await request(app)
+      .patch(`/transactions/${created.body.id}`)
+      .send({ category: "Housing" });
+    expect(edited.status).toBe(200);
+
+    const rows = await previewRows(account.id);
+
+    expect(payee(rows, SUPERMARKT)).toMatchObject({
+      category: "Miscellaneous",
+      categorySource: "unmatched",
+    });
   });
 });

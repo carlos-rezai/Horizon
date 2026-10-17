@@ -727,6 +727,30 @@ describe("the Import topic", () => {
     expect(topicText("import")).not.toMatch(/\bDKB\b|\bING\b/);
   });
 
+  // Issue #258 — the review step's category comes from a Category Rule learned
+  // when an earlier import was committed, shown with a "Learned" chip; anything
+  // without one falls back to Miscellaneous. The keyword guess is retired, so a
+  // row that still promises it describes behaviour the app no longer has.
+  describe("Category Learning (#258)", () => {
+    it("names the Learned chip in the review row, and the Miscellaneous fallback", () => {
+      const row = rowOf("import", /review/i);
+
+      expect(row?.body).toMatch(/\bLearned\b/);
+      expect(row?.body).toMatch(/Miscellaneous/);
+    });
+
+    it("says a committed import is what teaches a category", () => {
+      const row = rowOf("import", /review/i);
+
+      expect(row?.body).toMatch(/commit|import/i);
+      expect(row?.body).toMatch(/remember|learn/i);
+    });
+
+    it("no longer says categories are guessed from the description by keyword", () => {
+      expect(topicText("import")).not.toMatch(/by keyword/i);
+    });
+  });
+
   it("promises no Import History action the app does not ship", () => {
     expect(topicText("import")).not.toMatch(
       /re-?download|re-?categoriz|re-?categoris/i

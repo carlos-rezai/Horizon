@@ -3047,6 +3047,183 @@ export function runStorageSpec(makeStorage: MakeStorage): void {
   });
 
   // -------------------------------------------------------------------------
+  // Import Category Learning (issue #258) — CategoryRulesRepo
+  //
+  // A Category Rule maps one Counterparty Key to one category by name. `learn`
+  // upserts a batch in one transaction and stamps `updated_at`; a second learn
+  // for the same key overwrites the first. Rules are only ever taught by an
+  // Import Commit: hand-entered Variable Spending and Month Overview edits
+  // never create one, and deleting an import never unlearns one. Like every
+  // other stored entity they survive backup and restore.
+  // -------------------------------------------------------------------------
+
+  describe("CategoryRulesRepo", () => {
+    const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+
+    const byKey = <T extends { counterpartyKey: string }>(rules: T[]): T[] =>
+      [...rules].sort((a, b) =>
+        a.counterpartyKey.localeCompare(b.counterpartyKey)
+      );
+
+    it("findAll returns no rules on a fresh database", async () => {
+      expect(await storage.categoryRules.findAll()).toEqual([]);
+    });
+
+    it("learn then findAll round-trips every rule in the batch", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+        { counterpartyKey: "arbeitgeber muster ag", category: "Income" },
+      ]);
+
+      const rules = byKey(await storage.categoryRules.findAll());
+      expect(
+        rules.map(({ counterpartyKey, category }) => ({
+          counterpartyKey,
+          category,
+        }))
+      ).toEqual([
+        { counterpartyKey: "arbeitgeber muster ag", category: "Income" },
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+    });
+
+    it("stamps every learned rule with an ISO updatedAt", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+
+      const [rule] = await storage.categoryRules.findAll();
+      expect(rule.updatedAt).toMatch(ISO_TIMESTAMP);
+    });
+
+    it("a second learn for the same key overwrites the category rather than adding a row", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+      const [first] = await storage.categoryRules.findAll();
+
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Housing" },
+      ]);
+
+      const rules = await storage.categoryRules.findAll();
+      expect(rules).toHaveLength(1);
+      expect(rules[0]).toMatchObject({
+        counterpartyKey: "muster supermarkt gmbh",
+        category: "Housing",
+      });
+      expect(rules[0].updatedAt).toMatch(ISO_TIMESTAMP);
+      expect(rules[0].updatedAt >= first.updatedAt).toBe(true);
+    });
+
+    it("learn leaves rules for other keys untouched", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster dienst gmbh", category: "Subscriptions" },
+      ]);
+
+      const rules = byKey(await storage.categoryRules.findAll());
+      expect(rules.map((r) => [r.counterpartyKey, r.category])).toEqual([
+        ["muster dienst gmbh", "Subscriptions"],
+        ["muster supermarkt gmbh", "Food"],
+      ]);
+    });
+
+    it("learn with an empty batch is a no-op", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+      await storage.categoryRules.learn([]);
+
+      expect(await storage.categoryRules.findAll()).toHaveLength(1);
+    });
+
+    it("hand-entered Variable Spending and its edits create no Category Rule", async () => {
+      const account = await makeAccount();
+      const created = await storage.transactions.create(account.id, {
+        date: "2026-03-02",
+        amount: -800,
+        description: "MUSTER SUPERMARKT GMBH",
+        category: "Food",
+      });
+      await storage.transactions.update(created!.id, { category: "Housing" });
+
+      expect(await storage.categoryRules.findAll()).toEqual([]);
+    });
+
+    it("deleting an import keeps the Category Rules learned alongside it", async () => {
+      const account = await makeAccount();
+      const created = await storage.imports.create(makeImportInput(account.id));
+      await storage.categoryRules.learn([
+        { counterpartyKey: "rewe", category: "Food" },
+      ]);
+
+      await storage.imports.delete(created!.id);
+
+      const rules = await storage.categoryRules.findAll();
+      expect(rules.map((r) => [r.counterpartyKey, r.category])).toEqual([
+        ["rewe", "Food"],
+      ]);
+    });
+
+    it("learned rules survive a backup and reopen", async () => {
+      await storage.categoryRules.learn([
+        { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+      ]);
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-rules-"));
+      const destPath = path.join(dir, "snapshot.db");
+      try {
+        await storage.backup(destPath);
+
+        const restored = await createStorage({ path: destPath });
+        try {
+          const rules = await restored.categoryRules.findAll();
+          expect(rules.map((r) => [r.counterpartyKey, r.category])).toEqual([
+            ["muster supermarkt gmbh", "Food"],
+          ]);
+        } finally {
+          await restored.close();
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("restore brings back the snapshot's rules and drops rules learned after it", async () => {
+      const liveDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-rl-"));
+      const snapDir = fs.mkdtempSync(path.join(os.tmpdir(), "horizon-rs-"));
+      const live = await createStorage({
+        path: path.join(liveDir, "horizon.db"),
+      });
+      const snapPath = path.join(snapDir, "snapshot.db");
+      try {
+        await live.categoryRules.learn([
+          { counterpartyKey: "muster supermarkt gmbh", category: "Food" },
+        ]);
+        await live.backup(snapPath);
+        await live.categoryRules.learn([
+          { counterpartyKey: "muster dienst gmbh", category: "Subscriptions" },
+          { counterpartyKey: "muster supermarkt gmbh", category: "Housing" },
+        ]);
+
+        await live.restore(snapPath);
+
+        const rules = await live.categoryRules.findAll();
+        expect(rules.map((r) => [r.counterpartyKey, r.category])).toEqual([
+          ["muster supermarkt gmbh", "Food"],
+        ]);
+      } finally {
+        await live.close();
+        fs.rmSync(liveDir, { recursive: true, force: true });
+        fs.rmSync(snapDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Storage.backup
   // -------------------------------------------------------------------------
 

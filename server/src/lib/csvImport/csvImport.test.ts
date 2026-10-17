@@ -7,7 +7,6 @@ import {
   parseStatement,
   parseAmount,
   parseDate,
-  categorize,
   detectDuplicates,
   detectRecurring,
 } from "./index.js";
@@ -64,7 +63,7 @@ function mapped(overrides: Partial<MappedRow>): MappedRow {
     date: "2026-11-02",
     description: "REWE SAGT DANKE",
     amount: -1250,
-    category: "Food",
+    counterparty: "REWE SAGT DANKE",
     ...overrides,
   };
 }
@@ -194,31 +193,6 @@ describe("parseDate", () => {
 });
 
 // ---------------------------------------------------------------------------
-// categorize
-// ---------------------------------------------------------------------------
-
-describe("categorize", () => {
-  it("maps representative descriptions onto the eight real categories", () => {
-    expect(categorize("REWE SAGT DANKE")).toBe("Food");
-    expect(categorize("Lebensmittel EDEKA")).toBe("Food");
-    expect(categorize("Miete Oktober")).toBe("Housing");
-    expect(categorize("Gehalt Oktober")).toBe("Income");
-    expect(categorize("Netflix Abo")).toBe("Subscriptions");
-    expect(categorize("Sparplan ETF MSCI World")).toBe("Investment");
-  });
-
-  it("is case-insensitive", () => {
-    expect(categorize("rewe sagt danke")).toBe("Food");
-  });
-
-  it("falls back to Miscellaneous when no keyword matches", () => {
-    expect(categorize("Zufaellige unbekannte Zahlung XYZ")).toBe(
-      "Miscellaneous"
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
 // detectDuplicates
 // ---------------------------------------------------------------------------
 
@@ -234,7 +208,6 @@ describe("detectDuplicates", () => {
         description: "Gehalt Oktober",
         amount: 250000,
         date: "2026-11-05",
-        category: "Income",
       }),
     ];
     const existing: Transaction[] = [
@@ -312,12 +285,10 @@ describe("detectRecurring", () => {
       mapped({
         description: "Miete Oktober Vermieter",
         amount: -85000,
-        category: "Housing",
       }),
       mapped({
         description: "Netflix",
         amount: -1299,
-        category: "Subscriptions",
       }),
       mapped({ description: "REWE SAGT DANKE", amount: -1250 }),
     ];
@@ -333,7 +304,6 @@ describe("detectRecurring", () => {
       mapped({
         description: "Miete Rueckzahlung",
         amount: 85000,
-        category: "Housing",
       }),
     ];
 

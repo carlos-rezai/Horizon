@@ -75,15 +75,19 @@ function makePreview(): ImportPreview {
         id: "r0",
         date: "2026-03-05",
         description: "REWE",
+        counterparty: "REWE",
         amount: -1299,
         category: "Food",
+        categorySource: "learned",
       },
       {
         id: "r1",
         date: "2026-03-12",
         description: "Gehalt",
+        counterparty: "Gehalt",
         amount: 250000,
         category: "Income",
+        categorySource: "unmatched",
         recurring: true,
       },
     ],
@@ -278,7 +282,10 @@ describe("ImportWizard — review-step category picker (#163)", () => {
         date: "2026-03-05",
         amount: -1299,
         description: "REWE",
+        counterparty: "REWE",
         category: "Transport",
+        // Picking a category in review is a choice the commit learns from.
+        categorySource: "chosen",
       },
     ]);
   });
@@ -1125,5 +1132,182 @@ describe("ImportWizard — flags array drives exclusion and badges (#194)", () =
     expect(await screen.findByText(/1 likely duplicate/i)).toBeInTheDocument();
     expect(screen.getByText(/1 recurring/i)).toBeInTheDocument();
     expect(screen.getByText(/1 pending/i)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Issue #258 — Import Category Learning, Phase 1. A row whose Counterparty Key
+ * has a Category Rule arrives in that category with the Category Source
+ * `learned`, and the review table says so with a muted "Learned" chip beside
+ * the picker. `chosen` and `unmatched` rows carry no chip. The chip is a third
+ * axis beside the soft flags and the hard blocker: it never pre-unchecks a
+ * row, never replaces a flag badge, and never gates the commit.
+ */
+
+/** Three included rows: learned, unmatched, and a learned likely duplicate. */
+function makeLearningPreview(): ImportPreview {
+  const base = makePreview();
+  return {
+    ...base,
+    rows: [
+      {
+        id: "r0",
+        date: "2026-03-05",
+        description: "REWE",
+        counterparty: "REWE",
+        amount: -1299,
+        category: "Food",
+        categorySource: "learned",
+      },
+      {
+        id: "r1",
+        date: "2026-03-12",
+        description: "Kiosk am Eck",
+        counterparty: "Kiosk am Eck",
+        amount: -450,
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+      },
+      {
+        id: "r2",
+        date: "2026-03-14",
+        description: "Gehalt",
+        counterparty: "Gehalt",
+        amount: 250000,
+        category: "Income",
+        categorySource: "learned",
+        duplicate: true,
+      },
+    ],
+    summary: {
+      total: 3,
+      duplicates: 1,
+      recurring: 0,
+      pending: 0,
+      rejected: { count: 0, samples: [] },
+    },
+  };
+}
+
+const learningCategories: Category[] = [
+  ...twoCategories,
+  {
+    id: "c-misc",
+    name: "Miscellaneous",
+    isDefault: true,
+    color: "#909AAE",
+    hidden: false,
+  },
+];
+
+/** The review row holding the nth description input. */
+const reviewRow = (n: number) =>
+  descriptionInputs()[n].parentElement as HTMLElement;
+
+/** Wait until every row's picker has loaded and reported its selection. */
+async function settlePickers() {
+  await screen.findAllByRole("option", { name: "Food" });
+  await waitFor(() =>
+    screen
+      .getAllByLabelText(/^category$/i)
+      .forEach((picker) => expect(picker).not.toBeDisabled())
+  );
+}
+
+describe("ImportWizard — Learned chip (#258)", () => {
+  it("shows Learned beside the picker on a learned row, and no chip on an unmatched row", async () => {
+    mockCategoryFetch(learningCategories);
+    renderWizard(
+      learningCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeLearningPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+
+    expect(within(reviewRow(0)).getByText(/^learned$/i)).toBeInTheDocument();
+    expect(within(reviewRow(1)).queryByText(/learned/i)).toBeNull();
+  });
+
+  it("drops the chip once the user picks a different category — a chosen row has none", async () => {
+    mockCategoryFetch(learningCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeLearningPreview());
+
+    await gotoReview();
+    await settlePickers();
+    expect(within(reviewRow(0)).getByText(/^learned$/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getAllByLabelText(/^category$/i)[0], {
+      target: { value: "c-income" },
+    });
+
+    await waitFor(() =>
+      expect(within(reviewRow(0)).queryByText(/learned/i)).toBeNull()
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 2 transactions/i })
+    );
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    expect(commit.mock.calls[0][0].rows[0]).toMatchObject({
+      category: "Income",
+      categorySource: "chosen",
+    });
+  });
+
+  it("keeps the chip apart from the flags: a learned duplicate shows both, and a learned row stays checked", async () => {
+    mockCategoryFetch(learningCategories);
+    renderWizard(
+      learningCategories,
+      vi.fn<CommitFn>().mockResolvedValue(undefined),
+      makeLearningPreview()
+    );
+
+    await gotoReview();
+    await settlePickers();
+
+    // The learned duplicate carries both pieces of evidence, side by side.
+    const dupe = reviewRow(2);
+    expect(within(dupe).getByText(/^learned$/i)).toBeInTheDocument();
+    expect(within(dupe).getByText(/dupe/i)).toBeInTheDocument();
+    // Learned is not a reason to set a row aside: only the duplicate arrives
+    // unchecked.
+    const toggles = screen.getAllByRole("button", { name: "toggle" });
+    expect(toggles[0]).toHaveAttribute("aria-pressed", "true");
+    expect(toggles[2]).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("commits each untouched row with the source it arrived with, so fallback rows teach nothing", async () => {
+    mockCategoryFetch(learningCategories);
+    const commit = vi.fn<CommitFn>().mockResolvedValue(undefined);
+    renderWizard(learningCategories, commit, makeLearningPreview());
+
+    await gotoReview();
+    await settlePickers();
+    fireEvent.click(
+      screen.getByRole("button", { name: /import 2 transactions/i })
+    );
+
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    expect(commit.mock.calls[0][0].rows).toEqual([
+      {
+        date: "2026-03-05",
+        amount: -1299,
+        description: "REWE",
+        counterparty: "REWE",
+        category: "Food",
+        categorySource: "learned",
+      },
+      {
+        date: "2026-03-12",
+        amount: -450,
+        description: "Kiosk am Eck",
+        counterparty: "Kiosk am Eck",
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+      },
+    ]);
   });
 });

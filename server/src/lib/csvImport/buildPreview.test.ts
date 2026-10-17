@@ -3,7 +3,12 @@ import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
 import { buildPreview } from "./buildPreview.js";
 import type { ColumnMapping, StoredImportPreset } from "../../storage/types.js";
-import type { Transaction, RecurringTransaction } from "../../storage/types.js";
+import type {
+  Category,
+  Transaction,
+  RecurringTransaction,
+} from "../../storage/types.js";
+import { counterpartyKey } from "./counterpartyKey.js";
 
 // buildPreview is the pure orchestration core behind POST /imports/preview:
 // detect → re-apply remembered mapping → map rows → flag dup/recurring →
@@ -83,7 +88,7 @@ describe("buildPreview", () => {
     });
   });
 
-  it("maps rows to signed cents and ISO dates, assigns ids, and auto-categorizes", async () => {
+  it("maps rows to signed cents and ISO dates, assigns ids, and leaves an unknown payee in Miscellaneous", async () => {
     const preview = await buildPreview({
       bytes: fixtureBytes("sparkasse-giro.csv"),
       existingTxns: [],
@@ -99,7 +104,9 @@ describe("buildPreview", () => {
       id: expect.any(String),
       date: "2026-06-24",
       amount: -2041,
-      category: "Food",
+      // No Category Rule and no keyword list: the cold start is Miscellaneous.
+      category: "Miscellaneous",
+      categorySource: "unmatched",
       duplicate: false,
       recurring: false,
     });
@@ -479,5 +486,215 @@ describe("buildPreview — recurring detection respects the Anchor Date", () => 
     expect(gehalt?.recurring).toBe(false);
     expect(dienst?.recurring).toBe(true);
     expect(preview.summary.recurring).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Issue #258 — Import Category Learning, Phase 1: learn and apply.
+// Statement mapping records each row's Counterparty (the description cell for
+// every preset and for generic CSVs); the preview derives its Counterparty Key
+// and applies a previously learned Category Rule as `learned`. Every other row
+// is Miscellaneous / `unmatched` — the hardcoded keyword list is retired.
+// The Category Rules and categories are injected as plain data, like
+// existingTxns and recurring.
+// ---------------------------------------------------------------------------
+
+function makeCategory(
+  overrides: Partial<Category> & { id: string; name: string }
+): Category {
+  return {
+    isDefault: true,
+    color: "#74C29B",
+    hidden: false,
+    ...overrides,
+  };
+}
+
+const defaultCategories: Category[] = [
+  makeCategory({ id: "c-food", name: "Food" }),
+  makeCategory({ id: "c-income", name: "Income" }),
+  makeCategory({ id: "c-housing", name: "Housing" }),
+  makeCategory({ id: "c-subs", name: "Subscriptions" }),
+  makeCategory({ id: "c-misc", name: "Miscellaneous" }),
+];
+
+describe("buildPreview — Counterparty and Category Rules (#258)", () => {
+  // Renault gains a preset-only Counterparty Column in a later slice, so its
+  // counterparty is deliberately left out of this description-cell contract.
+  it.each([
+    "sparkasse-giro.csv",
+    "postbank-giro.csv",
+    "postbank-cc.csv",
+    "windows1252-umlauts.csv",
+  ])(
+    "records each %s row's counterparty from its description cell",
+    async (name) => {
+      const preview = await buildPreview({
+        bytes: fixtureBytes(name),
+        existingTxns: [],
+        recurring: [],
+        categoryRules: [],
+        categories: defaultCategories,
+        getRememberedPreset: noPreset,
+      });
+
+      expect(preview.rows.length).toBeGreaterThan(0);
+      for (const row of preview.rows) {
+        expect(row.counterparty).toBe(row.description);
+      }
+    }
+  );
+
+  it("records the counterparty of a generic CSV from its description cell", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(
+        "Datum;Beschreibung;Betrag\n24.06.2026;REWE Markt 0815;-12,50\n"
+      ),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    expect(preview.rows).toHaveLength(1);
+    expect(preview.rows[0].counterparty).toBe(preview.rows[0].description);
+    expect(preview.rows[0].counterparty).toBe("REWE Markt 0815");
+  });
+
+  it("applies a learned Category Rule to the row whose key it names, as learned", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [
+        {
+          counterpartyKey: counterpartyKey("MUSTER SUPERMARKT GMBH"),
+          category: "Food",
+        },
+      ],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    const supermarkt = preview.rows.find(
+      (r) => r.description === "MUSTER SUPERMARKT GMBH"
+    );
+    expect(supermarkt).toMatchObject({
+      counterparty: "MUSTER SUPERMARKT GMBH",
+      category: "Food",
+      categorySource: "learned",
+    });
+  });
+
+  it("leaves every row without a Category Rule in Miscellaneous, unmatched", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [
+        {
+          counterpartyKey: counterpartyKey("MUSTER SUPERMARKT GMBH"),
+          category: "Food",
+        },
+      ],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    const others = preview.rows.filter(
+      (r) => r.description !== "MUSTER SUPERMARKT GMBH"
+    );
+    expect(others).toHaveLength(3);
+    for (const row of others) {
+      expect(row).toMatchObject({
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+      });
+    }
+  });
+
+  it("no longer categorizes by keyword: a salary with no Category Rule is unmatched", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("postbank-giro.csv"),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    for (const row of preview.rows) {
+      expect(row).toMatchObject({
+        category: "Miscellaneous",
+        categorySource: "unmatched",
+      });
+    }
+  });
+
+  it("honours a Category Rule into a Hidden Category", async () => {
+    const categories = [
+      ...defaultCategories.filter((c) => c.name !== "Housing"),
+      makeCategory({ id: "c-housing", name: "Housing", hidden: true }),
+    ];
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [
+        {
+          counterpartyKey: counterpartyKey("MUSTER DIENST GMBH"),
+          category: "Housing",
+        },
+      ],
+      categories,
+      getRememberedPreset: noPreset,
+    });
+
+    const dienst = preview.rows.find(
+      (r) => r.description === "MUSTER DIENST GMBH"
+    );
+    expect(dienst).toMatchObject({
+      category: "Housing",
+      categorySource: "learned",
+    });
+  });
+
+  it("matches a Category Rule by key, so a noisy spelling of the payee still finds it", async () => {
+    const preview = await buildPreview({
+      bytes: bytesOf(
+        "Datum;Beschreibung;Betrag\n24.06.2026;Muster Supermarkt GmbH 0815;-12,50\n"
+      ),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [
+        {
+          counterpartyKey: counterpartyKey("MUSTER SUPERMARKT GMBH"),
+          category: "Food",
+        },
+      ],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    expect(preview.rows[0]).toMatchObject({
+      category: "Food",
+      categorySource: "learned",
+    });
+  });
+
+  it("leaves the summary shape unchanged", async () => {
+    const preview = await buildPreview({
+      bytes: fixtureBytes("sparkasse-giro.csv"),
+      existingTxns: [],
+      recurring: [],
+      categoryRules: [],
+      categories: defaultCategories,
+      getRememberedPreset: noPreset,
+    });
+
+    expect(Object.keys(preview.summary).sort()).toEqual(
+      ["duplicates", "pending", "recurring", "rejected", "total"].sort()
+    );
   });
 });

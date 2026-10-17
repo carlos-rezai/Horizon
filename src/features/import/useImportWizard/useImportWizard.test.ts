@@ -70,15 +70,19 @@ function makePreview(): ImportPreview {
         id: "r0",
         date: "2026-03-05",
         description: "REWE",
+        counterparty: "REWE",
         amount: -1299,
         category: "Food",
+        categorySource: "learned",
       },
       {
         id: "r1",
         date: "2026-03-12",
         description: "Gehalt",
+        counterparty: "Gehalt",
         amount: 250000,
         category: "Income",
+        categorySource: "unmatched",
         recurring: true,
       },
     ],
@@ -182,6 +186,24 @@ describe("useImportWizard — row editing", () => {
     );
   });
 
+  it("setCategory marks the row chosen only when the category actually changes (#258)", async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // The picker reports its initial selection on mount; re-setting the row's
+    // current category is not a choice, so the learned row stays learned.
+    act(() => result.current.setCategory("r0", "Food"));
+    expect(result.current.rows.find((r) => r.id === "r0")?.categorySource).toBe(
+      "learned"
+    );
+
+    act(() => result.current.setCategory("r0", "Income"));
+    expect(result.current.rows.find((r) => r.id === "r0")).toMatchObject({
+      category: "Income",
+      categorySource: "chosen",
+    });
+  });
+
   it("categoryOptions merges configured categories with row-assigned ones", async () => {
     const { result } = setup();
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -211,13 +233,16 @@ describe("useImportWizard — commit", () => {
       decimal: ",",
       dateFmt: "DD.MM.YYYY",
     });
-    // Only the one included (non-recurring) row, mapped to description/category.
+    // Only the one included (non-recurring) row, mapped to description/category,
+    // with the counterparty and Category Source the server learns from.
     expect(payload.rows).toEqual([
       {
         date: "2026-03-05",
         amount: -1299,
         description: "REWE",
+        counterparty: "REWE",
         category: "Food",
+        categorySource: "learned",
       },
     ]);
     expect(onDone).toHaveBeenCalledWith({
@@ -226,6 +251,46 @@ describe("useImportWizard — commit", () => {
       skipped: 1,
     });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("commits a picked category as chosen, and never sends an excluded row (#258)", async () => {
+    const { result, commit } = setup();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.setCategory("r0", "Income"));
+    // r1 is the pre-unchecked recurring row; give it a category and leave it
+    // excluded — an excluded row must teach nothing, so it is not sent.
+    act(() => result.current.setCategory("r1", "Food"));
+    await act(async () => {
+      await result.current.confirm();
+    });
+
+    const payload = commit.mock.calls[0][0];
+    expect(payload.rows).toEqual([
+      {
+        date: "2026-03-05",
+        amount: -1299,
+        description: "REWE",
+        counterparty: "REWE",
+        category: "Income",
+        categorySource: "chosen",
+      },
+    ]);
+  });
+
+  it("commits the original counterparty even after the description is edited (#258)", async () => {
+    const { result, commit } = setup();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.setDescription("r0", "Weekly shop"));
+    await act(async () => {
+      await result.current.confirm();
+    });
+
+    expect(commit.mock.calls[0][0].rows[0]).toMatchObject({
+      description: "Weekly shop",
+      counterparty: "REWE",
+    });
   });
 
   it("surfaces a commit failure and does not close", async () => {

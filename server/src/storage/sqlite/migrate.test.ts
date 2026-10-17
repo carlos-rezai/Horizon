@@ -273,6 +273,8 @@ describe("migrate (SQLite)", () => {
       // COLUMN), none idempotent, so undo what they do before rewinding.
       db.exec(`ALTER TABLE categories DROP COLUMN hidden`);
       db.exec(`DROP TABLE savings_goal`);
+      // 018 (plain CREATE TABLE) re-runs on the replay too.
+      db.exec(`DROP TABLE IF EXISTS category_rules`);
       db.exec(
         `ALTER TABLE accounts RENAME COLUMN anchor_balance TO ${OLD_BALANCE}`
       );
@@ -286,7 +288,9 @@ describe("migrate (SQLite)", () => {
         }
       ).n;
       expect(count).toBe(0);
-      expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
+      expect(
+        db.pragma("user_version", { simple: true }) as number
+      ).toBeGreaterThanOrEqual(17);
 
       db.close();
     });
@@ -418,7 +422,9 @@ describe("migration 017 — Balance Anchor rename", () => {
     expect(cols).toContain("anchor_date");
     expect(cols).not.toContain(OLD_BALANCE);
     expect(cols).not.toContain(OLD_DATE);
-    expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
+    expect(
+      db.pragma("user_version", { simple: true }) as number
+    ).toBeGreaterThanOrEqual(17);
 
     db.close();
   });
@@ -446,7 +452,113 @@ describe("migration 017 — Balance Anchor rename", () => {
       { id: "giro", anchor_balance: 537685, anchor_date: "2024-03-01" },
       { id: "haus", anchor_balance: 20000000, anchor_date: "2023-10-16" },
     ]);
-    expect(db.pragma("user_version", { simple: true }) as number).toBe(17);
+    expect(
+      db.pragma("user_version", { simple: true }) as number
+    ).toBeGreaterThanOrEqual(17);
+
+    db.close();
+  });
+});
+
+describe("migration 018 — Category Rules (#258)", () => {
+  const MIGRATIONS_DIR = new URL("./migrations/", import.meta.url);
+
+  /** Apply migrations 001–017 only, leaving the DB as it was before 018. */
+  function migrateTo017(db: Database.Database): void {
+    const files = fs
+      .readdirSync(MIGRATIONS_DIR)
+      .filter((f) => /^\d+_.*\.sql$/.test(f))
+      .filter((f) => Number(f.match(/^(\d+)_/)?.[1]) <= 17)
+      .sort();
+    for (const f of files) {
+      db.exec(fs.readFileSync(new URL(f, MIGRATIONS_DIR), "utf8"));
+    }
+    db.pragma("user_version = 17");
+  }
+
+  it("creates category_rules keyed by counterparty_key, with a category and an updated_at", async () => {
+    const db = new Database(":memory:");
+
+    await migrate(db);
+
+    const cols = db
+      .prepare(`PRAGMA table_info(category_rules)`)
+      .all() as Array<{
+      name: string;
+      notnull: number;
+      pk: number;
+    }>;
+    const byName = new Map(cols.map((c) => [c.name, c]));
+    expect([...byName.keys()].sort()).toEqual(
+      ["category", "counterparty_key", "updated_at"].sort()
+    );
+    expect(byName.get("counterparty_key")?.pk).toBe(1);
+    expect(byName.get("category")?.notnull).toBe(1);
+    expect(byName.get("updated_at")?.notnull).toBe(1);
+    expect(
+      db.pragma("user_version", { simple: true }) as number
+    ).toBeGreaterThanOrEqual(18);
+
+    db.close();
+  });
+
+  it("keeps existing imports, categories and presets untouched on upgrade from 017", async () => {
+    const db = new Database(":memory:");
+    migrateTo017(db);
+
+    db.prepare(
+      `INSERT INTO accounts (id, kind, name, anchor_balance, anchor_date)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run("giro", "Girokonto", "Main", 537685, "2024-03-01");
+    db.prepare(
+      `INSERT INTO categories (id, name, is_default) VALUES (?, ?, ?)`
+    ).run("c-custom", "Groceries", 0);
+    db.prepare(
+      `INSERT INTO imports (id, account_id, bank, filename, size_bytes, row_count, start_date, end_date, imported_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      "imp1",
+      "giro",
+      "Sparkasse",
+      "juni.csv",
+      2048,
+      4,
+      "2026-06-05",
+      "2026-06-26",
+      "2026-07-01T10:00:00.000Z"
+    );
+    db.prepare(
+      `INSERT INTO import_presets (bank, mapping, delimiter, decimal, date_fmt)
+       VALUES (?, ?, ?, ?, ?)`
+    ).run(
+      "Sparkasse",
+      JSON.stringify({ date: "a", description: "b", amount: "c" }),
+      ";",
+      ",",
+      "DD.MM.YY"
+    );
+    const snapshot = (sql: string) => db.prepare(sql).all();
+    const before = {
+      categories: snapshot(`SELECT * FROM categories ORDER BY id`),
+      imports: snapshot(`SELECT * FROM imports ORDER BY id`),
+      presets: snapshot(`SELECT * FROM import_presets ORDER BY bank`),
+    };
+
+    await migrate(db);
+
+    expect(snapshot(`SELECT * FROM categories ORDER BY id`)).toEqual(
+      before.categories
+    );
+    expect(snapshot(`SELECT * FROM imports ORDER BY id`)).toEqual(
+      before.imports
+    );
+    expect(snapshot(`SELECT * FROM import_presets ORDER BY bank`)).toEqual(
+      before.presets
+    );
+    expect(snapshot(`SELECT * FROM category_rules`)).toEqual([]);
+    expect(
+      db.pragma("user_version", { simple: true }) as number
+    ).toBeGreaterThanOrEqual(18);
 
     db.close();
   });
