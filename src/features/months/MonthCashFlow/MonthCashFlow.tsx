@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import type { AccountWithBalance } from "../../../types/account";
 import type {
-  AccountFixedFlows,
   FixedFlow,
   MonthCashFlowReport,
 } from "../../../types/monthCashFlow";
@@ -13,6 +12,11 @@ import SectionHead from "../../../components/SectionHead/SectionHead";
 import DataRow from "../../../components/DataRow/DataRow";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { MONTHS, formatDate, formatMonth } from "../../../utils/format/format";
+import {
+  netFixed,
+  rowAccountId,
+  statementHistoryBefore,
+} from "../fixedFlows/fixedFlows";
 import type { MonthEndBalance } from "../../../utils/monthEndBalance/monthEndBalance";
 import {
   StyledDay,
@@ -46,27 +50,6 @@ interface Props {
 }
 
 /**
- * The account page a row links to. A recurring row links to the account its
- * rule lives on: a destination leg's counterpart. A settlement row links to
- * the CreditCard: the funding account's (source) leg names it as counterpart.
- */
-function linkedAccountId(group: AccountFixedFlows, flow: FixedFlow): string {
-  const counterpartSide = flow.kind === "settlement" ? "source" : "destination";
-  return flow.side === counterpartSide && flow.counterpartId
-    ? flow.counterpartId
-    : group.accountId;
-}
-
-/** The account's Anchor Date when `month` lies before its anchor month. */
-function beforeAnchorDate(
-  account: AccountWithBalance | undefined,
-  month: string
-): string | null {
-  const anchorDate = account?.anchorDate;
-  return anchorDate && month < anchorDate.slice(0, 7) ? anchorDate : null;
-}
-
-/**
  * The Month Overview Fixed Flows card: one group per account, in the report's
  * order, listing the month's recurring flows with a "Net fixed" footer.
  * Read-only — each row links to the account page its rule lives on.
@@ -85,10 +68,7 @@ export default function MonthCashFlow({
       <StyledGroups>
         {report.accounts.map((group) => {
           const account = byId.get(group.accountId);
-          const net = group.flows
-            .filter((f) => !f.inAnchor)
-            .reduce((sum, f) => sum + f.amount, 0);
-          const beforeAnchor = beforeAnchorDate(account, report.month);
+          const beforeAnchor = statementHistoryBefore(account, report.month);
           return (
             <section key={group.accountId} data-testid="fixed-flow-group">
               <StyledGroupHead data-testid="fixed-flow-group-head">
@@ -112,7 +92,7 @@ export default function MonthCashFlow({
                         key={`${flow.kind === "recurring" ? flow.recurringId : flow.kind}-${flow.date}-${i}`}
                         flow={flow}
                         last={i === group.flows.length - 1}
-                        to={`/accounts/${linkedAccountId(group, flow)}`}
+                        to={`/accounts/${rowAccountId(group, flow)}`}
                         counterpart={
                           flow.counterpartId
                             ? byId.get(flow.counterpartId)
@@ -123,7 +103,7 @@ export default function MonthCashFlow({
                   </div>
                   <StyledNet data-testid="fixed-flow-net">
                     <span>Net fixed</span>
-                    <Money cents={net} sign />
+                    <Money cents={netFixed(group.flows)} sign />
                   </StyledNet>
                 </>
               )}
