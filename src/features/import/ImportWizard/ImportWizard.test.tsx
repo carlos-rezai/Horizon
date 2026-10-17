@@ -18,6 +18,7 @@ import {
 } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import ImportWizard from "./ImportWizard";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
@@ -125,18 +126,20 @@ function renderWizard(
 ) {
   const preview = vi.fn<PreviewFn>().mockResolvedValue(data);
   render(
-    <ThemeProvider theme={theme}>
-      <ImportWizard
-        importAccounts={accounts}
-        categories={categories}
-        file={file}
-        presetAccountId={null}
-        preview={preview}
-        commit={commit}
-        onClose={vi.fn()}
-        onDone={vi.fn()}
-      />
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <ImportWizard
+          importAccounts={accounts}
+          categories={categories}
+          file={file}
+          presetAccountId={null}
+          preview={preview}
+          commit={commit}
+          onClose={vi.fn()}
+          onDone={vi.fn()}
+        />
+      </ThemeProvider>
+    </CacheProvider>
   );
   return { preview };
 }

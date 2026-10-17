@@ -10,6 +10,7 @@ import {
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import CategorySelect from "./CategorySelect";
 import type { Category } from "../../../types/category";
 
@@ -45,9 +46,11 @@ const newCategory: Category = {
 
 const renderSelect = (onChange = vi.fn()) => {
   render(
-    <ThemeProvider theme={theme}>
-      <CategorySelect onChange={onChange} />
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <CategorySelect onChange={onChange} />
+      </ThemeProvider>
+    </CacheProvider>
   );
   return { onChange };
 };
@@ -254,9 +257,11 @@ describe("CategorySelect — hidden categories (issue #162)", () => {
 
     const onChange = vi.fn();
     render(
-      <ThemeProvider theme={theme}>
-        <CategorySelect onChange={onChange} initialCategory="Archived" />
-      </ThemeProvider>
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <CategorySelect onChange={onChange} initialCategory="Archived" />
+        </ThemeProvider>
+      </CacheProvider>
     );
 
     // the hidden category the row already sits in is still offered + selected
@@ -288,11 +293,13 @@ describe("CategorySelect — many on one page", () => {
 
   function renderThree() {
     render(
-      <ThemeProvider theme={theme}>
-        <CategorySelect onChange={vi.fn()} initialCategory="Food" />
-        <CategorySelect onChange={vi.fn()} initialCategory="Income" />
-        <CategorySelect onChange={vi.fn()} initialCategory="Food" />
-      </ThemeProvider>
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <CategorySelect onChange={vi.fn()} initialCategory="Food" />
+          <CategorySelect onChange={vi.fn()} initialCategory="Income" />
+          <CategorySelect onChange={vi.fn()} initialCategory="Food" />
+        </ThemeProvider>
+      </CacheProvider>
     );
   }
 
@@ -344,5 +351,144 @@ describe("CategorySelect — many on one page", () => {
       .forEach((label, index) => {
         expect(label.control).toBe(inputs[index]);
       });
+  });
+});
+
+/**
+ * Issue #259 — Category Proposals and Same-Counterparty Propagation change a
+ * row's category from outside the row's picker, so the picker has to follow a
+ * controlled `value` rather than resolve `initialCategory` once on mount.
+ */
+describe("CategorySelect — controlled value (#259)", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => existingCategories,
+    } as Response);
+  });
+
+  it("selects the controlled value over initialCategory", async () => {
+    render(
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <CategorySelect
+            onChange={vi.fn()}
+            value="Income"
+            initialCategory="Food"
+          />
+        </ThemeProvider>
+      </CacheProvider>
+    );
+
+    await screen.findByRole("option", { name: "Income" });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^category$/i)).toHaveValue("cat-2");
+    });
+  });
+
+  it("follows the controlled value when it changes from outside", async () => {
+    const tree = (value: string) => (
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <CategorySelect onChange={vi.fn()} value={value} />
+        </ThemeProvider>
+      </CacheProvider>
+    );
+    const { rerender } = render(tree("Food"));
+
+    await screen.findByRole("option", { name: "Income" });
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^category$/i)).toHaveValue("cat-1");
+    });
+
+    rerender(tree("Income"));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^category$/i)).toHaveValue("cat-2");
+    });
+  });
+});
+
+/**
+ * Issue #259 — a long statement renders one picker per row. They read the
+ * Category list through the app cache, so N pickers make one request, and a
+ * category added inline in one picker shows up in every other.
+ */
+describe("CategorySelect — shared cached categories (#259)", () => {
+  const isCategoriesGet = ([url, init]: Parameters<typeof fetch>) =>
+    String(url).includes("/categories") &&
+    ((init as RequestInit | undefined)?.method ?? "GET") === "GET";
+
+  it("makes one categories read for many pickers", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => existingCategories,
+    } as Response);
+
+    render(
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          {Array.from({ length: 6 }, (_, i) => (
+            <CategorySelect key={i} onChange={vi.fn()} value="Food" />
+          ))}
+        </ThemeProvider>
+      </CacheProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("option", { name: "Income" })).toHaveLength(6);
+    });
+
+    const gets = vi
+      .mocked(fetch)
+      .mock.calls.filter((call) => isCategoriesGet(call));
+    expect(gets).toHaveLength(1);
+  });
+
+  it("shows a category added inline in one picker in the other pickers", async () => {
+    // A stateful fake server: GET answers the current list, POST appends.
+    let serverCategories: Category[] = [...existingCategories];
+    vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+      const method = (init as RequestInit | undefined)?.method ?? "GET";
+      if (method === "POST") {
+        serverCategories = [...serverCategories, newCategory];
+        return Promise.resolve({
+          ok: true,
+          json: async () => newCategory,
+        } as Response);
+      }
+      const snapshot = serverCategories;
+      return Promise.resolve({
+        ok: true,
+        json: async () => snapshot,
+      } as Response);
+    });
+
+    render(
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <CategorySelect onChange={vi.fn()} value="Food" />
+          <CategorySelect onChange={vi.fn()} value="Income" />
+        </ThemeProvider>
+      </CacheProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("option", { name: "Income" })).toHaveLength(2);
+    });
+
+    const [first] = screen.getAllByLabelText(/^category$/i);
+    fireEvent.change(first, { target: { value: "__add__" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /new category/i }), {
+      target: { value: "Transport" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add category/i }));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("option", { name: "Transport" })).toHaveLength(
+        2
+      );
+    });
   });
 });

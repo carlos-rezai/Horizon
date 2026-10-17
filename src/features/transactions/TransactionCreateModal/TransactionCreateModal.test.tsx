@@ -3,6 +3,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import TransactionCreateModal from "./TransactionCreateModal";
 import type { Category } from "../../../types/category";
 import type { AccountWithBalance } from "../../../types/account";
@@ -77,9 +78,11 @@ const renderModal = (
     ...overrides,
   };
   render(
-    <ThemeProvider theme={theme}>
-      <TransactionCreateModal {...props} />
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <TransactionCreateModal {...props} />
+      </ThemeProvider>
+    </CacheProvider>
   );
   return props;
 };
@@ -242,9 +245,11 @@ const renderModalWithAccounts = (
     ...overrides,
   };
   render(
-    <ThemeProvider theme={theme}>
-      <TransactionCreateModal {...props} />
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <TransactionCreateModal {...props} />
+      </ThemeProvider>
+    </CacheProvider>
   );
   return props;
 };
@@ -297,14 +302,16 @@ describe("TransactionCreateModal — destination account picker", () => {
 describe("TransactionCreateModal — month prop", () => {
   it("constrains the DatePicker to the first and last day of the given month", () => {
     render(
-      <ThemeProvider theme={theme}>
-        <TransactionCreateModal
-          accountId="acc-1"
-          month="2026-05"
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      </ThemeProvider>
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <TransactionCreateModal
+            accountId="acc-1"
+            month="2026-05"
+            onClose={vi.fn()}
+            onSubmit={vi.fn()}
+          />
+        </ThemeProvider>
+      </CacheProvider>
     );
 
     const datepicker = screen.getByTestId("datepicker");

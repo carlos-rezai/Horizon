@@ -2,6 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useCategoriesWithInlineAdd } from "./useCategoriesWithInlineAdd";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import type { Category } from "../../../types/category";
 
 const existingCategories: Category[] = [
@@ -42,7 +43,9 @@ afterEach(() => {
 
 describe("useCategoriesWithInlineAdd — initial fetch", () => {
   it("returns the list of categories after loading", async () => {
-    const { result } = renderHook(() => useCategoriesWithInlineAdd());
+    const { result } = renderHook(() => useCategoriesWithInlineAdd(), {
+      wrapper: CacheProvider,
+    });
 
     await act(async () => {});
 
@@ -50,7 +53,9 @@ describe("useCategoriesWithInlineAdd — initial fetch", () => {
   });
 
   it("resolves selectedCategoryId to the category matching initialCategoryName after loading", async () => {
-    const { result } = renderHook(() => useCategoriesWithInlineAdd("Income"));
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("Income"), {
+      wrapper: CacheProvider,
+    });
 
     await act(async () => {});
 
@@ -58,7 +63,9 @@ describe("useCategoriesWithInlineAdd — initial fetch", () => {
   });
 
   it("falls back to the first category when initialCategoryName matches none", async () => {
-    const { result } = renderHook(() => useCategoriesWithInlineAdd("Unknown"));
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("Unknown"), {
+      wrapper: CacheProvider,
+    });
 
     await act(async () => {});
 
@@ -78,7 +85,9 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
         json: async () => newCategory,
       } as Response);
 
-    const { result } = renderHook(() => useCategoriesWithInlineAdd());
+    const { result } = renderHook(() => useCategoriesWithInlineAdd(), {
+      wrapper: CacheProvider,
+    });
     await act(async () => {});
 
     await act(async () => {
@@ -109,7 +118,9 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
         json: async () => newCategory,
       } as Response);
 
-    const { result } = renderHook(() => useCategoriesWithInlineAdd());
+    const { result } = renderHook(() => useCategoriesWithInlineAdd(), {
+      wrapper: CacheProvider,
+    });
     await act(async () => {});
 
     await act(async () => {
@@ -130,7 +141,9 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
         json: async () => newCategory,
       } as Response);
 
-    const { result } = renderHook(() => useCategoriesWithInlineAdd());
+    const { result } = renderHook(() => useCategoriesWithInlineAdd(), {
+      wrapper: CacheProvider,
+    });
     await act(async () => {});
 
     await act(async () => {
@@ -157,7 +170,9 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
         : initialFetch;
     });
 
-    const { result } = renderHook(() => useCategoriesWithInlineAdd("Food"));
+    const { result } = renderHook(() => useCategoriesWithInlineAdd("Food"), {
+      wrapper: CacheProvider,
+    });
 
     // The user reaches inline-add before the category list has loaded.
     await act(async () => {
@@ -184,7 +199,9 @@ describe("useCategoriesWithInlineAdd — addCategory", () => {
         json: async () => ({ error: "Category already exists" }),
       } as Response);
 
-    const { result } = renderHook(() => useCategoriesWithInlineAdd());
+    const { result } = renderHook(() => useCategoriesWithInlineAdd(), {
+      wrapper: CacheProvider,
+    });
     await act(async () => {});
 
     await expect(

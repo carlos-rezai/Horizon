@@ -3,6 +3,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
+import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import RecurringTransactionModal from "./RecurringTransactionModal";
 import type { RecurringTransaction } from "../../../types/recurring";
 import type { AccountWithBalance } from "../../../types/account";
@@ -66,9 +67,11 @@ const renderCreateModal = (
     ...overrides,
   };
   render(
-    <ThemeProvider theme={theme}>
-      <RecurringTransactionModal {...props} />
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <RecurringTransactionModal {...props} />
+      </ThemeProvider>
+    </CacheProvider>
   );
   return props;
 };
@@ -88,9 +91,11 @@ const renderEditModal = (
     ...overrides,
   };
   render(
-    <ThemeProvider theme={theme}>
-      <RecurringTransactionModal {...props} />
-    </ThemeProvider>
+    <CacheProvider>
+      <ThemeProvider theme={theme}>
+        <RecurringTransactionModal {...props} />
+      </ThemeProvider>
+    </CacheProvider>
   );
   return props;
 };
