@@ -10,6 +10,11 @@ import {
   calcFreeCashflow,
 } from "../../lib/cashflow/cashflow.js";
 import type { Storage } from "../../storage/Storage.js";
+import {
+  findAllWithBalance,
+  findByIdWithBalance,
+  getTotalLiquid,
+} from "../../services/balanceService/balanceService.js";
 
 const router = Router();
 
@@ -28,12 +33,12 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/", async (req, res) => {
-  const accounts = await getStorage(req).accounts.findAllWithBalance();
+  const accounts = await findAllWithBalance(getStorage(req));
   res.json(accounts);
 });
 
 router.get("/liquid", async (req, res) => {
-  const totalLiquid = await getStorage(req).accounts.getTotalLiquid();
+  const totalLiquid = await getTotalLiquid(getStorage(req));
   res.json({ totalLiquid });
 });
 
@@ -63,9 +68,7 @@ router.get("/:id/cashflow", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const account = await getStorage(req).accounts.findByIdWithBalance(
-    req.params.id
-  );
+  const account = await findByIdWithBalance(getStorage(req), req.params.id);
   if (!account) {
     res.status(404).json({ error: "Account not found" });
     return;
@@ -108,7 +111,8 @@ router.patch("/:id/mortgage", async (req, res) => {
     return;
   }
 
-  const withBalance = await getStorage(req).accounts.findByIdWithBalance(
+  const withBalance = await findByIdWithBalance(
+    getStorage(req),
     result.account.id
   );
   res.json(withBalance ?? result.account);
@@ -130,9 +134,7 @@ router.patch("/:id", async (req, res) => {
     return;
   }
 
-  const withBalance = await getStorage(req).accounts.findByIdWithBalance(
-    updated.id
-  );
+  const withBalance = await findByIdWithBalance(getStorage(req), updated.id);
   res.json(withBalance ?? updated);
 });
 

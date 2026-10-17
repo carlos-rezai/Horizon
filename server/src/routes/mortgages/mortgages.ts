@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
 import { MortgageSetupSchema, PAID_FROM_KINDS } from "./mortgage.js";
 import type { Storage } from "../../storage/Storage.js";
+import { findByIdWithBalance } from "../../services/balanceService/balanceService.js";
 
 const router = Router();
 
@@ -33,7 +34,8 @@ router.post("/", async (req, res) => {
       return;
     }
   }
-  const account = await storage.mortgages.create(parsed.data);
+  const created = await storage.mortgages.create(parsed.data);
+  const account = await findByIdWithBalance(storage, created.id);
   res.status(201).json(account);
 });
 

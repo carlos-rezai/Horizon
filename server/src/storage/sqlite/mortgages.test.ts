@@ -57,7 +57,7 @@ describe("SQLite mortgages.create", () => {
 
     expect(created.kind).toBe("Mortgage");
     expect(created.name).toBe("Haus");
-    expect(created.balance).toBe(20000000);
+    expect(created.recordedBalance).toBe(20000000);
     expect(created.originalPrincipal).toBe(40000000);
     expect(created.startDate).toBe("2020-06-01");
     expect(created.termYears).toBe(25);

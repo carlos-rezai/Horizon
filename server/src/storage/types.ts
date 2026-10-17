@@ -27,6 +27,14 @@ export interface AccountWithBalance extends Account {
   balance: number;
 }
 
+/**
+ * An account with its Recorded Balance: the Anchor Balance moved by the
+ * recorded transactions, never by recurring rules.
+ */
+export interface AccountWithRecordedBalance extends Account {
+  recordedBalance: number;
+}
+
 export interface MortgageOriginationInput {
   originalPrincipal: number;
   startDate: string;

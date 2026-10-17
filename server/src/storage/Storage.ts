@@ -2,7 +2,7 @@ import type {
   Account,
   AccountCreateInput,
   AccountUpdateInput,
-  AccountWithBalance,
+  AccountWithRecordedBalance,
   Category,
   CategoryCreateInput,
   CategoryCreateResult,
@@ -36,9 +36,8 @@ export interface AccountsRepo {
     id: string,
     input: MortgageOriginationInput
   ): Promise<SetMortgageOriginationResult | null>;
-  findAllWithBalance(): Promise<AccountWithBalance[]>;
-  findByIdWithBalance(id: string): Promise<AccountWithBalance | null>;
-  getTotalLiquid(): Promise<number>;
+  findAllWithBalance(): Promise<AccountWithRecordedBalance[]>;
+  findByIdWithBalance(id: string): Promise<AccountWithRecordedBalance | null>;
 }
 
 export interface MortgagesRepo {
@@ -46,7 +45,7 @@ export interface MortgagesRepo {
    * Creates the Mortgage account, its origination and its Repayment
    * Transfers (when the setup has a repayment) in one transaction.
    */
-  create(setup: MortgageSetup): Promise<AccountWithBalance>;
+  create(setup: MortgageSetup): Promise<AccountWithRecordedBalance>;
 }
 
 export interface TransactionsRepo {

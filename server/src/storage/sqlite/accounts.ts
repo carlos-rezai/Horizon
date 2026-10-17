@@ -1,7 +1,11 @@
 import { randomUUID } from "crypto";
 import type Database from "better-sqlite3";
 import type { AccountsRepo, TransactionsRepo } from "../Storage.js";
-import type { Account, AccountKind, AccountWithBalance } from "../types.js";
+import type {
+  Account,
+  AccountKind,
+  AccountWithRecordedBalance,
+} from "../types.js";
 import { isValidUuid } from "./uuid.js";
 import { accountWriters } from "./accountWriters.js";
 
@@ -59,8 +63,8 @@ function toAccountDTO(row: AccountRow): Account {
 
 function toAccountWithBalanceDTO(
   row: AccountWithBalanceRow
-): AccountWithBalance {
-  return { ...toAccountDTO(row), balance: row.balance };
+): AccountWithRecordedBalance {
+  return { ...toAccountDTO(row), recordedBalance: row.balance };
 }
 
 export function createSqliteAccountsRepo(
@@ -119,16 +123,6 @@ export function createSqliteAccountsRepo(
          ON t.account_id = a.id AND t.date > a.anchor_date
       WHERE a.id = ?
       GROUP BY a.id`
-  );
-  const totalLiquidStmt = db.prepare(
-    `SELECT COALESCE(SUM(balance), 0) AS total FROM (
-       SELECT a.anchor_balance + COALESCE(SUM(t.amount), 0) AS balance
-         FROM accounts a
-         LEFT JOIN transactions t
-         ON t.account_id = a.id AND t.date > a.anchor_date
-        WHERE a.kind IN ('Girokonto', 'Tagesgeld')
-        GROUP BY a.id
-     )`
   );
 
   return {
@@ -292,11 +286,6 @@ export function createSqliteAccountsRepo(
         | AccountWithBalanceRow
         | undefined;
       return row ? toAccountWithBalanceDTO(row) : null;
-    },
-
-    async getTotalLiquid() {
-      const result = totalLiquidStmt.get() as { total: number };
-      return result.total;
     },
   };
 }
