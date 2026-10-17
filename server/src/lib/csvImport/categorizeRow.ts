@@ -136,7 +136,10 @@ export const KEYWORD_GROUPS: readonly KeywordGroup[] = [
 
 /** What categorizeRow needs beyond the row itself. */
 export interface CategorizeContext {
-  /** Category Rules: Counterparty Key → category name (existing categories only). */
+  /**
+   * Category Rules: Counterparty Key → category name. A Category Rule whose
+   * category no longer exists is skipped, never applied.
+   */
   rules: ReadonlyMap<string, string>;
   /** The user's categories, hidden ones included. */
   categories: readonly Category[];

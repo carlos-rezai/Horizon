@@ -125,11 +125,11 @@ export async function buildPreview(
     input.anchorDate
   );
 
-  const existing = new Set((input.categories ?? []).map((c) => c.name));
   const rules = new Map(
-    (input.categoryRules ?? [])
-      .filter((rule) => existing.has(rule.category))
-      .map((rule) => [rule.counterpartyKey, rule.category])
+    (input.categoryRules ?? []).map((rule) => [
+      rule.counterpartyKey,
+      rule.category,
+    ])
   );
 
   const generateId = input.generateId ?? randomUUID;
