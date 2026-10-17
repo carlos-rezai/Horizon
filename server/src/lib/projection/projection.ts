@@ -328,9 +328,7 @@ export function projectMonths(
     const replayMonth = addMonths(replayStart, j);
 
     for (const r of activeRecurring) {
-      const sourceOpened = sourceAnchorMonth(r);
-      if (replayMonth < sourceOpened) continue;
-      if (!firesInMonth(r, replayMonth, sourceOpened)) continue;
+      if (!firesInMonth(r, replayMonth, sourceAnchorMonth(r))) continue;
 
       accumulate(
         applyRecurringToBalances(r, replayMonth, accountMap, runningBalances)
