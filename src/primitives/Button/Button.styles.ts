@@ -1,6 +1,6 @@
 import styled, { css } from "styled-components";
 
-type Variant = "primary" | "secondary" | "danger" | "ghost";
+type Variant = "primary" | "secondary" | "danger" | "ghost" | "ghostDanger";
 import type { ControlSize } from "../../tokens";
 
 export const StyledButton = styled.button<{
@@ -64,6 +64,18 @@ export const StyledButton = styled.button<{
       background-color: transparent;
       color: ${theme.colors.onSurfaceVariant};
       border-color: transparent;
+    `}
+
+  ${({ $variant, theme }) =>
+    $variant === "ghostDanger" &&
+    css`
+      background-color: transparent;
+      color: ${theme.colors.onSurfaceVariant};
+      border-color: transparent;
+
+      &:hover:not(:disabled) {
+        color: ${theme.colors.error};
+      }
     `}
 
   &:focus-visible {

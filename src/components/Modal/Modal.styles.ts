@@ -45,20 +45,6 @@ export const StyledTitle = styled.h2`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
-export const StyledClose = styled.button`
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-`;
-
 export const StyledBody = styled.div`
   padding: 22px;
 `;

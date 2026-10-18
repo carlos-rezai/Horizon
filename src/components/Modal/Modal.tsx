@@ -1,11 +1,11 @@
 import React, { useRef } from "react";
 import { useDialogKeyboard } from "../../hooks/useDialogKeyboard";
+import Button from "../../primitives/Button/Button";
 import {
   StyledOverlay,
   StyledDialog,
   StyledHeader,
   StyledTitle,
-  StyledClose,
   StyledBody,
   StyledFooter,
 } from "./Modal.styles";
@@ -50,14 +50,15 @@ export default function Modal({
         {title && (
           <StyledHeader>
             <StyledTitle>{title}</StyledTitle>
-            <StyledClose
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              icon="X"
               data-testid="modal-close"
               aria-label="Close"
               onClick={onClose}
-            >
-              ×
-            </StyledClose>
+            />
           </StyledHeader>
         )}
         <StyledBody>{children}</StyledBody>

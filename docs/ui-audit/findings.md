@@ -295,7 +295,7 @@ Decisions).
 - **Expected:** both are the same `Button` ghost sm icon-only (`X`), labelled
   "Close" or "Close manual", in the same header position.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #271.
 
 ## Month switch and changing labels
 

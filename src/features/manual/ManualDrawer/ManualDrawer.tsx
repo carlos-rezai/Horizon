@@ -1,5 +1,6 @@
 import { useRef, type RefObject } from "react";
-import { BookOpen, X } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import Button from "../../../primitives/Button/Button";
 import { useDialogKeyboard } from "../../../hooks/useDialogKeyboard";
 import { useReducedMotion } from "../../../hooks/useReducedMotion";
 import ManualRail from "../ManualRail/ManualRail";
@@ -17,7 +18,6 @@ import {
   StyledHeaderIcon,
   StyledTitle,
   StyledSubtitle,
-  StyledClose,
   StyledColumns,
   StyledPane,
 } from "./ManualDrawer.styles";
@@ -95,13 +95,14 @@ export default function ManualDrawer({
               <StyledSubtitle>How to use Horizon</StyledSubtitle>
             </div>
           </StyledIdentity>
-          <StyledClose
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            icon="X"
             aria-label="Close manual"
             onClick={onClose}
-          >
-            <X size={19} />
-          </StyledClose>
+          />
         </StyledHeader>
 
         <StyledColumns>

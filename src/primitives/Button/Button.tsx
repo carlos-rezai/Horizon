@@ -4,7 +4,8 @@ import type { LucideProps } from "lucide-react";
 import { StyledButton } from "./Button.styles";
 import type { ControlSize } from "../../tokens";
 
-type Variant = "primary" | "secondary" | "danger" | "ghost";
+/** `ghostDanger`: ghost at rest, error colour on hover — for delete-style icon actions. */
+type Variant = "primary" | "secondary" | "danger" | "ghost" | "ghostDanger";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;

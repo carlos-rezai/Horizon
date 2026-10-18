@@ -97,23 +97,6 @@ export const StyledSubtitle = styled.p`
   color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;
 
-export const StyledClose = styled.button`
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  cursor: pointer;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
-    color: ${({ theme }) => theme.colors.onSurface};
-  }
-`;
-
 // Rail and pane scroll independently: a reader deep in Settings must still see
 // the whole table of contents, so the outer row hides its own overflow and
 // hands scrolling to the two columns.
