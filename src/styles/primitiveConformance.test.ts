@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   findConformanceViolations,
   findStaleAllowlistEntries,
+  findFocusRingViolations,
+  findStyledElements,
+  wearsFocusRing,
 } from "../testing/rawControls/rawControls";
 import { CONFORMANCE_ALLOWLIST } from "./conformanceAllowlist";
 
@@ -47,5 +50,42 @@ describe("Primitive Conformance", () => {
     expect(
       findStaleAllowlistEntries(styleModules, CONFORMANCE_ALLOWLIST)
     ).toEqual([]);
+  });
+});
+
+// The Focus Ring rule reaches into `primitives/` too: a primitive's own
+// buttons wear the fragment as much as a feature's do.
+const ringModules = import.meta.glob(
+  [
+    "../features/**/*.styles.ts",
+    "../components/**/*.styles.ts",
+    "../layouts/**/*.styles.ts",
+    "../primitives/**/*.styles.ts",
+  ],
+  { query: "?raw", import: "default", eager: true }
+) as Record<string, string>;
+
+/**
+ * **Primitive Conformance** — the **Focus Ring**: every styled button composes
+ * the `focusRing` fragment. A hand-written copy of the gold ring does not
+ * pass, so the ring keeps one owner.
+ */
+describe("Primitive Conformance — Focus Ring", () => {
+  it("reads the primitive style modules as well", () => {
+    expect(
+      Object.keys(ringModules).some((f) => f.startsWith("../primitives/"))
+    ).toBe(true);
+  });
+
+  it("finds no styled button without the Focus Ring", () => {
+    expect(findFocusRingViolations(ringModules)).toEqual([]);
+  });
+
+  it("a clickable DataRow, rendered as a div, wears the Focus Ring too", () => {
+    const dataRow = findStyledElements(
+      ringModules["../components/DataRow/DataRow.styles.ts"] ?? ""
+    ).find((element) => element.exportName === "StyledDataRow");
+    expect(dataRow).toBeDefined();
+    expect(wearsFocusRing(dataRow?.body ?? "")).toBe(true);
   });
 });

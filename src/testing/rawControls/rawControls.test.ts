@@ -4,6 +4,8 @@ import {
   findRawControls,
   findConformanceViolations,
   findStaleAllowlistEntries,
+  findFocusRingViolations,
+  wearsFocusRing,
 } from "./rawControls";
 import type { ConformanceAllowlistEntry } from "../../styles/conformanceAllowlist";
 
@@ -197,5 +199,69 @@ describe("findStaleAllowlistEntries", () => {
         "export const HiddenFileInput = styled.input`display: none;`;",
     };
     expect(findStaleAllowlistEntries(modules, [entry])).toEqual([]);
+  });
+});
+
+/**
+ * The Focus Ring rule behind **Primitive Conformance**: every styled button
+ * composes the `focusRing` fragment, and a literal copy of the ring is not
+ * accepted in its place.
+ */
+describe("findFocusRingViolations", () => {
+  it("passes a styled button that composes the Focus Ring", () => {
+    const modules = {
+      "features/foo/Foo/Foo.styles.ts":
+        "export const Go = styled.button`\n  color: red;\n  ${focusRing}\n`;",
+    };
+    expect(findFocusRingViolations(modules)).toEqual([]);
+  });
+
+  it("flags a styled button that copies the ring by hand", () => {
+    const modules = {
+      "features/foo/Foo/Foo.styles.ts": [
+        "export const Go = styled.button`",
+        "  &:focus-visible {",
+        "    outline: 2px solid ${({ theme }) => theme.colors.primary};",
+        "    outline-offset: 2px;",
+        "  }",
+        "`;",
+      ].join("\n"),
+    };
+    expect(findFocusRingViolations(modules)).toEqual([
+      { file: "features/foo/Foo/Foo.styles.ts", exportName: "Go" },
+    ]);
+  });
+
+  it("reads each button's own body, not its neighbour's", () => {
+    const modules = {
+      "components/Bar/Bar.styles.ts": [
+        "export const Bare = styled.button`color: red;`;",
+        "export const Ringed = styled.button`${focusRing}`;",
+      ].join("\n"),
+    };
+    expect(findFocusRingViolations(modules)).toEqual([
+      { file: "components/Bar/Bar.styles.ts", exportName: "Bare" },
+    ]);
+  });
+
+  it("ignores elements that are not buttons", () => {
+    const modules = {
+      "layouts/Shell/Shell.styles.ts": [
+        "export const Row = styled.div`color: red;`;",
+        "export const Wide = styled(Button)`width: 100%;`;",
+      ].join("\n"),
+    };
+    expect(findFocusRingViolations(modules)).toEqual([]);
+  });
+});
+
+describe("wearsFocusRing", () => {
+  it("is true only for a body that composes the fragment", () => {
+    expect(wearsFocusRing("export const Row = styled.div`${focusRing}`;")).toBe(
+      true
+    );
+    expect(wearsFocusRing("export const Row = styled.div`outline: 0;`;")).toBe(
+      false
+    );
   });
 });

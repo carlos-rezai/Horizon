@@ -92,3 +92,26 @@ export function findStaleAllowlistEntries(
     );
   });
 }
+
+export interface FocusRingViolation {
+  file: string;
+  exportName: string;
+}
+
+const FOCUS_RING = /\$\{\s*focusRing\s*\}/;
+
+/** Whether a styled element's body composes the **Focus Ring** fragment. */
+export function wearsFocusRing(body: string): boolean {
+  return FOCUS_RING.test(body);
+}
+
+/** Every `styled.button` whose body does not compose `${focusRing}`. */
+export function findFocusRingViolations(
+  modules: Record<string, string>
+): FocusRingViolation[] {
+  return Object.entries(modules).flatMap(([file, source]) =>
+    findStyledElements(source)
+      .filter(({ tag, body }) => tag === "button" && !wearsFocusRing(body))
+      .map(({ exportName }) => ({ file, exportName }))
+  );
+}
