@@ -21,10 +21,10 @@ export const StyledTrigger = styled.button`
   justify-content: center;
   min-width: ${LONGEST_MONTH_YEAR_CHARS + TRIGGER_CHROME_CHARS}ch;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  height: 32px;
+  height: ${({ theme }) => theme.sizing.control.sm}px;
   padding: 0 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: ${({ theme }) => theme.radius.sm}px;
   background: transparent;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 13px;
