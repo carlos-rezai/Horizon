@@ -123,40 +123,6 @@ export const StyledReviewDate = styled.span`
   color: ${({ theme }) => theme.colors.onSurfaceDim};
 `;
 
-/* Editable on every row, blocked or not: what the user can fix must not depend
-   on data they can't see. Reads as text until focused or in error. */
-export const StyledReviewDesc = styled.input<{ $error: boolean }>`
-  width: 100%;
-  min-width: 0;
-  padding: 4px 7px;
-  font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
-  font-size: 12.5px;
-  color: ${({ theme }) => theme.colors.onSurface};
-  background: ${({ theme, $error }) =>
-    $error ? theme.colors.errorContainer : "transparent"};
-  border: 1px solid
-    ${({ theme, $error }) => ($error ? theme.colors.error : "transparent")};
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-  text-overflow: ellipsis;
-  transition: all ${({ theme }) => theme.transitions.fast};
-
-  &::placeholder {
-    color: ${({ theme }) => theme.colors.error};
-  }
-
-  &:hover:not(:focus-visible) {
-    border-color: ${({ theme, $error }) =>
-      $error ? theme.colors.error : theme.colors.outlineVariant};
-  }
-
-  &:focus-visible {
-    outline: none;
-    background: ${({ theme }) => theme.colors.surfaceContainerLowest};
-    border-color: ${({ theme, $error }) =>
-      $error ? theme.colors.error : theme.colors.primary};
-  }
-`;
-
 export const StyledReviewAmount = styled.span`
   text-align: right;
 `;

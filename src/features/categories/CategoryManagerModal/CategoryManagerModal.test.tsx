@@ -787,9 +787,10 @@ describe("CategoryManagerModal — inline fields are the Input primitive", () =>
     const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
     fireEvent.click(within(row).getByRole("button", { name: "Rename" }));
 
-    expectSmallFieldChrome(
-      screen.getByRole("textbox", { name: "Rename category" })
-    );
+    // The field autofocuses; blur it so the rest border is what is read.
+    const field = screen.getByRole("textbox", { name: "Rename category" });
+    field.blur();
+    expectSmallFieldChrome(field);
   });
 
   it("renders the add field as the Input with Field Chrome at Control Height sm", async () => {
@@ -797,8 +798,8 @@ describe("CategoryManagerModal — inline fields are the Input primitive", () =>
 
     fireEvent.click(await screen.findByTestId("category-add-row"));
 
-    expectSmallFieldChrome(
-      screen.getByRole("textbox", { name: "New category name" })
-    );
+    const field = screen.getByRole("textbox", { name: "New category name" });
+    field.blur();
+    expectSmallFieldChrome(field);
   });
 });

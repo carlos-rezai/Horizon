@@ -4,6 +4,7 @@ import Modal from "../../../components/Modal/Modal";
 import Button from "../../../primitives/Button/Button";
 import Badge from "../../../primitives/Badge/Badge";
 import Select from "../../../primitives/Select/Select";
+import Input from "../../../primitives/Input/Input";
 import SwatchPicker from "../../../primitives/SwatchPicker/SwatchPicker";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import type { Category } from "../../../types/category";
@@ -25,7 +26,6 @@ import {
   DisplayWrap,
   RowName,
   EditWrap,
-  NameInput,
   Actions,
   SwatchAnchor,
   SwatchDot,
@@ -33,7 +33,7 @@ import {
   AddButton,
   AddForm,
   AddFormRow,
-  AddInput,
+  AddFieldSlot,
   ErrorText,
   WarnBanner,
   WarnIcon,
@@ -145,7 +145,8 @@ function CategoryRow({
       <RowMain>
         {editing ? (
           <EditWrap>
-            <NameInput
+            <Input
+              size="sm"
               type="text"
               autoFocus
               aria-label="Rename category"
@@ -333,23 +334,26 @@ function CategoryAddRow({
     <AddForm data-testid="category-add-row">
       <AddFormRow>
         <SwatchPopover value={color} onChange={setColor} />
-        <AddInput
-          type="text"
-          autoFocus
-          aria-label="New category name"
-          placeholder="New category name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void handleAdd();
-            if (e.key === "Escape") {
-              // As above: ESC collapses the add form, it does not close the
-              // manager behind it.
-              e.stopPropagation();
-              setOpen(false);
-            }
-          }}
-        />
+        <AddFieldSlot>
+          <Input
+            size="sm"
+            type="text"
+            autoFocus
+            aria-label="New category name"
+            placeholder="New category name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleAdd();
+              if (e.key === "Escape") {
+                // As above: ESC collapses the add form, it does not close the
+                // manager behind it.
+                e.stopPropagation();
+                setOpen(false);
+              }
+            }}
+          />
+        </AddFieldSlot>
         <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
           Cancel
         </Button>

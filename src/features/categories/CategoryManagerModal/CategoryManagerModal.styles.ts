@@ -103,19 +103,6 @@ export const EditWrap = styled.div`
   gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
-export const NameInput = styled.input`
-  min-width: 140px;
-  padding: 5px 9px;
-  background: ${({ theme }) => theme.colors.surfaceContainerLowest};
-  border: 1px solid ${({ theme }) => theme.colors.primary};
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-  color: ${({ theme }) => theme.colors.onSurface};
-  font-family: ${({ theme }) => theme.typography.fontFamily.ui};
-  font-size: 13.5px;
-  font-weight: ${({ theme }) => theme.typography.weights.medium};
-  outline: none;
-`;
-
 // ── Swatch popover ─────────────────────────────────────────────────────────
 
 export const SwatchAnchor = styled.div`
@@ -190,21 +177,10 @@ export const AddFormRow = styled.div`
   gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
-export const AddInput = styled.input`
+/* Lets the add field take the row's free width, so its placeholder fits. */
+export const AddFieldSlot = styled.div`
   flex: 1;
   min-width: 0;
-  padding: 8px 10px;
-  background: ${({ theme }) => theme.colors.surfaceContainerLowest};
-  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-  color: ${({ theme }) => theme.colors.onSurface};
-  font-family: ${({ theme }) => theme.typography.fontFamily.ui};
-  font-size: 13.5px;
-  outline: none;
-
-  &:focus-visible {
-    border-color: ${({ theme }) => theme.colors.primary};
-  }
 `;
 
 export const ErrorText = styled.p`

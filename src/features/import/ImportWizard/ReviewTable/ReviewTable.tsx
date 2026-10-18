@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import CategorySelect from "../../../categories/CategorySelect/CategorySelect";
 import Money from "../../../../primitives/Money/Money";
+import Input from "../../../../primitives/Input/Input";
 import { categorySourceChip } from "../../reviewRows/reviewRows";
 import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
 import { StyledFlagBadge } from "../ImportWizard.styles";
@@ -14,7 +15,6 @@ import {
   StyledReviewRow,
   StyledCheck,
   StyledReviewDate,
-  StyledReviewDesc,
   StyledReviewAmount,
 } from "./ReviewTable.styles";
 
@@ -86,13 +86,13 @@ export default function ReviewTable({
                 {r.included && <Check size={12} />}
               </StyledCheck>
               <StyledReviewDate>{r.date.slice(5)}</StyledReviewDate>
-              <StyledReviewDesc
+              <Input
+                size="sm"
                 ref={(el) => registerDescRef(r.id, el)}
                 value={r.description}
                 aria-label="Description"
                 aria-invalid={showsError}
                 placeholder={showsError ? "Add a description" : undefined}
-                $error={showsError}
                 onChange={(e) => setDescription(r.id, e.target.value)}
               />
               <StyledCategoryCell>

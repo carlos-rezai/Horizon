@@ -17,6 +17,10 @@ export const StyledInput = styled.input<{
   &::placeholder {
     color: ${({ theme }) => theme.colors.onSurfaceVariant};
   }
+
+  &[aria-invalid="true"]::placeholder {
+    color: ${({ theme }) => theme.colors.error};
+  }
 `;
 
 export const StyledInputWrapper = styled.div`

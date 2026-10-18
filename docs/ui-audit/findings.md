@@ -434,7 +434,7 @@ Decisions).
 - **Expected:** `Input` size sm (32px) for both, with Field Chrome. The add
   field fills the row so its placeholder fits.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #273.
 
 ### 27. Import review description field is a hand-built input
 
@@ -445,7 +445,7 @@ Decisions).
 - **Expected:** a compact `Input` at size sm with Field Chrome, so it reads
   as editable.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #273.
 
 ### 28. Categories rename Save/Cancel are bespoke 26px buttons
 
