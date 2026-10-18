@@ -1,5 +1,22 @@
 <!-- Draft notes for the next release. Pass to `gh release edit vX.Y.Z --notes-file` when publishing, then reset. -->
 
+Horizon v1.4.0 shows where your money has been, not only where it is going. Balances are now worked out backwards from a balance you know, so past months are real figures rather than guesses. The History page and the Dashboard trajectory draw that past next to the projection, Month Overview shows the whole month, and imports learn your categories. The release also fixes the first round of problems found while using Horizon day to day. Your database carries over; read the upgrade caveat under Month Cash Flow if you entered a balance with an As of date in the past.
+
+**Fixes from live use**
+
+- A recurring transfer now has a direction control (to or from an account), and you always type a positive amount. The source account shows the transfer as a red −amount. The destination account shows a read-only green +amount marked with where it came from.
+- The Mortgage Countdown has a proper empty state, and a single flow sets up the mortgage, its origination and its annual repayment.
+- The Outlook accordion is now called **Projection** and has one column per account.
+- A Sondertilgung is counted only from the annual repayment and only while Restschuld remains, never from the monthly rate.
+
+**Balance Anchor**
+
+Every account's balance now starts from one known balance on one known day: the account form's **Balance** and **As of** fields, such as today's figure from your bank app or a statement's closing Saldo. Horizon adds the transactions after that day and works backwards through the transactions before it. Importing older statements now extends the account's history without changing today's balance. Before the earliest known balance, months show as unknown ("No data before …", "—"), never as €0. A recurring flow no longer changes a balance before its account's As of date. To re-anchor an account, edit its balance and date.
+
+**Financial History**
+
+The mortgage's whole life is on one line: History starts at the mortgage's origination and draws a dotted Paydown Bridge up to your first recorded data. The bridge never shows invented monthly figures. The Dashboard's Trajectory Horizon draws up to ten years of real history to the left of the projection, under an "ACTUALS" label, and the TODAY marker now sits where today really is. A new History Trends card shows monthly **Saved** and **Spent** bars with a 12-month average line.
+
 **Month Cash Flow**
 
 Month Overview now shows the whole month, past or future, not only Variable Spending. A new Fixed Flows card lists each account's recurring income and transfers for the month — transfers out in red, transfers in in green, a credit card's settlement, annual items such as a Sondertilgung only in their month — with a "Net fixed" total and the account's Month-End Balance, marked Actual for a past month and Projected for the current and future ones. Future months no longer read €0 on every account.
