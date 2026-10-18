@@ -2,11 +2,11 @@
 import { render, screen, cleanup, act } from "@testing-library/react";
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
-import { theme } from "../tokens";
-import Input from "./Input/Input";
-import Select from "./Select/Select";
-import DatePicker from "./DatePicker/DatePicker";
-import { cascaded, computedColor } from "../testing/cascaded/cascaded";
+import { theme } from "../../tokens";
+import Input from "../Input/Input";
+import Select from "../Select/Select";
+import DatePicker from "../DatePicker/DatePicker";
+import { cascaded, computedColor } from "../../testing/cascaded/cascaded";
 
 // Issue #269 — Field Chrome. The text field, the dropdown and the date field
 // wear one chrome: the same background, border, radius and height at rest,
