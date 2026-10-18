@@ -1,15 +1,16 @@
 import styled from "styled-components";
+import type { ControlSize } from "../../tokens";
+import { fieldChrome } from "../fieldChrome/fieldChrome";
 import { focusRing } from "../focusRing/focusRing";
 
-/** The Stepper box wears the Field Chrome look at Control Height md. */
-export const Wrapper = styled.div`
+/** The Stepper box wears the Field Chrome at Control Height md, sized to its
+ *  two buttons and value rather than filling its row. */
+export const Wrapper = styled.div<{ $size: ControlSize }>`
+  ${fieldChrome}
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  height: ${({ theme }) => theme.sizing.control.md}px;
-  background-color: ${({ theme }) => theme.colors.surfaceContainerLowest};
-  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  border-radius: ${({ theme }) => theme.radius.md}px;
+  width: auto;
   padding: 0 ${({ theme }) => theme.spacing.space2}px;
 `;
 

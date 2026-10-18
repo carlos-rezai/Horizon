@@ -27,7 +27,7 @@ export default function Stepper({
   }
 
   return (
-    <Wrapper>
+    <Wrapper $size="md">
       <StepButton
         type="button"
         aria-label="Decrement"
