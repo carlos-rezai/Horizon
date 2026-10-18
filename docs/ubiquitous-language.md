@@ -1424,15 +1424,17 @@
 
 ## UI Consistency Audit (new)
 
-| Term                      | Definition                                                                                                                                                     | Aliases to avoid                        |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **UI Consistency Audit**  | The visual-only pass that measures every surface of the running app and brings each inconsistency back onto the shared primitives and tokens                   | UI cleanup, polish pass, restyle        |
-| **Audit Finding**         | One numbered entry in `docs/ui-audit/findings.md`: screen, element, measured values, expected value with its owning primitive or token, cause and status       | Bug, UI defect, issue                   |
-| **Control Height**        | The `sizing.control` token (`sm 32 / md 40 / lg 44`) that every pressable or typeable primitive declares as its height, selected by its `size` prop            | Button height, input height, row height |
-| **Field Chrome**          | The `fieldChrome` css fragment (`src/primitives/fieldChrome/`) giving `Input`, `Select` and `DatePicker` one background, border, radius, focus ring and height | Input style, field style, form styling  |
-| **Stable Label Width**    | The rule that a control whose label changes when pressed reserves the width of its longest label, so nothing beside it moves                                   | Fixed width, min-width hack             |
-| **Primitive Conformance** | The `primitiveConformance.test.ts` guard that fails on a raw `styled.button`/`input`/`select`/`textarea` outside `primitives/` that is not on its allowlist    | Style lint, UI lint                     |
-| **Conformance Allowlist** | The ratchet list of local controls **Primitive Conformance** tolerates, each with its reason; it may only shrink                                               | Exceptions list, ignore list            |
+| Term                      | Definition                                                                                                                                                                                                                  | Aliases to avoid                        |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **UI Consistency Audit**  | The visual-only pass that measures every surface of the running app and brings each inconsistency back onto the shared primitives and tokens                                                                                | UI cleanup, polish pass, restyle        |
+| **Audit Finding**         | One numbered entry in `docs/ui-audit/findings.md`: screen, element, measured values, expected value with its owning primitive or token, cause and status                                                                    | Bug, UI defect, issue                   |
+| **Control Height**        | The `sizing.control` token (`sm 32 / md 40 / lg 44`) that every pressable or typeable primitive declares as its height, selected by its `size` prop                                                                         | Button height, input height, row height |
+| **Field Chrome**          | The `fieldChrome` css fragment (`src/primitives/fieldChrome/`) giving `Input`, `Select`, `DatePicker` and the `Stepper` box one background, border, radius, focus ring and height                                           | Input style, field style, form styling  |
+| **Stable Label Width**    | The rule that a control whose label changes when pressed reserves the width of its longest label, so nothing beside it moves                                                                                                | Fixed width, min-width hack             |
+| **Primitive Conformance** | The `primitiveConformance.test.ts` guard that fails on a raw `styled.button`/`input`/`select`/`textarea` outside `primitives/` that is not on its allowlist, and on any styled button that does not wear the **Focus Ring** | Style lint, UI lint                     |
+| **Conformance Allowlist** | The ratchet list of local controls **Primitive Conformance** tolerates, each with its reason; it may only shrink                                                                                                            | Exceptions list, ignore list            |
+| **Focus Ring**            | The `focusRing` css fragment (`src/primitives/focusRing/`): the gold 2px outline, offset 2px, that every button-like control wears on keyboard focus. Not **Field Chrome**'s 3px gold-wash ring                             | Focus outline, focus style              |
+| **Table Column**          | The `TableColumn` definition (`width`, optional `label`, `align`) that `TableHeader` and `DataRow` both read; the alignment owner, so a heading and its figures cannot disagree                                             | Column config, grid template            |
 
 ## Relationships (UI Consistency Audit additions)
 
@@ -1441,6 +1443,9 @@
 - Every **Audit Finding** names exactly one owner, a primitive, component or token, and is fixed there, never in a feature-local override
 - A pattern earns a new primitive or component when it appears in 2+ features; a one-off stays a local container composed of primitives
 - The **Conformance Allowlist** is written from what remains after the fixes; an entry is removed when its control moves onto a primitive
+- **Button** has a `ghostDanger` variant: ghost at rest and the error colour on hover, for delete-style icon actions. An icon button is the **Button** in its ghost, small, icon-only form; there is no IconButton
+- The **Button** wears the **Focus Ring** it defines; every other button-like control, in a primitive or a feature, composes the same fragment rather than copying the ring
+- `TableHeader` and `DataRow` read one **Table Column** list, so a column's width and alignment are declared once
 
 ## Example dialogue (UI Consistency Audit)
 
@@ -1462,3 +1467,5 @@
 - **"size"** (new): on a control primitive, `size` selects a **Control Height** (`sm`/`md`/`lg`). It never means width or font size.
 - **"Stepper"** (new): the `Stepper` primitive is the numeric −/+ control. The Month Overview prev/next group is a local container of ghost **Button**s, not a `Stepper`.
 - **"Tabs (component)"** (updated): `Tabs` lives in `src/primitives/Tabs/`, not `components/`; the Claude Design Handover entry above calls it a component. Say **Tabs** primitive.
+- **"import a primitive"** (new): features, pages, layouts and components import a primitive or component by its deep module path (`primitives/Toggle/Toggle`), never through the layer barrel. The layer `index.ts` still lists every member, and the index's own test proves each one is exported there.
+- **"focus ring"** (new): the **Focus Ring** is the gold 2px outline buttons wear. A field's focus is **Field Chrome**'s gold border plus 3px wash. Say which control; never call the field's focus "the focus ring".
