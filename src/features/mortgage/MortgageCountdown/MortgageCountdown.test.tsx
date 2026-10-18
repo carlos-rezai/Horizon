@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import MortgageCountdown from "./MortgageCountdown";
+import Button from "../../../primitives/Button/Button";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -279,5 +280,54 @@ describe("MortgageCountdown", () => {
     );
 
     expect(screen.getByText(NO_REPAYMENT_FOOTER)).toBeInTheDocument();
+  });
+});
+
+/**
+ * A reference Button in the given ghost variant, small, icon-only. Matching
+ * its generated classes proves a control is that Button — one Control Height
+ * sm, one hover, one focus ring — rather than a hand-sized look-alike.
+ */
+function referenceIconButtonClass(
+  variant: "ghost" | "ghostDanger" = "ghost"
+): string {
+  const { getByRole, unmount } = render(
+    <ThemeProvider theme={theme}>
+      <Button
+        variant={variant}
+        size="sm"
+        icon="Pencil"
+        aria-label="Reference"
+      />
+    </ThemeProvider>
+  );
+  const className = getByRole("button", { name: "Reference" }).className;
+  unmount();
+  return className;
+}
+
+/** An icon-only control: an svg glyph and no visible text. */
+function expectIconOnly(el: HTMLElement) {
+  expect(el.querySelector("svg")).toBeInTheDocument();
+  expect(el.textContent).toBe("");
+}
+
+// Issue #272 — feature icon buttons onto Button.
+describe("MortgageCountdown — edit is the shared icon button", () => {
+  it("renders the edit pencil as the ghost, small, icon-only Button, keeping its handler", () => {
+    renderWithTheme(
+      <MortgageCountdown
+        accounts={[mortgageAccount]}
+        snapshots={makeSnapshots("mortgage-1", 100000)}
+        recurringTransactions={[repayment]}
+      />
+    );
+    const edit = screen.getByRole("button", { name: "Edit mortgage details" });
+
+    expect(edit.className).toBe(referenceIconButtonClass());
+    expectIconOnly(edit);
+
+    fireEvent.click(edit);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

@@ -13,6 +13,7 @@ import { theme } from "../../../tokens";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";
 import type { Category } from "../../../types/category";
 import CategoryManagerModal from "./CategoryManagerModal";
+import Button from "../../../primitives/Button/Button";
 
 const NEW_COLOR = "#6FBFBF"; // cyan — a palette member, distinct from Vet's colour
 
@@ -660,5 +661,79 @@ describe("CategoryManagerModal — ESC inside an inline editor", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * A reference Button in the given ghost variant, small, icon-only. Matching
+ * its generated classes proves a control is that Button — one Control Height
+ * sm, one hover, one focus ring — rather than a hand-sized look-alike.
+ */
+function referenceIconButtonClass(
+  variant: "ghost" | "ghostDanger" = "ghost"
+): string {
+  const { getByRole, unmount } = render(
+    <ThemeProvider theme={theme}>
+      <Button
+        variant={variant}
+        size="sm"
+        icon="Pencil"
+        aria-label="Reference"
+      />
+    </ThemeProvider>
+  );
+  const className = getByRole("button", { name: "Reference" }).className;
+  unmount();
+  return className;
+}
+
+/** An icon-only control: an svg glyph and no visible text. */
+function expectIconOnly(el: HTMLElement) {
+  expect(el.querySelector("svg")).toBeInTheDocument();
+  expect(el.textContent).toBe("");
+}
+
+// Issue #272 — feature icon buttons onto Button.
+describe("CategoryManagerModal — row actions are the shared icon button", () => {
+  it("renders Rename and Hide as the ghost, small, icon-only Button", async () => {
+    renderModal([foodDefault, vetCustom]);
+
+    const customRow = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    const rename = within(customRow).getByRole("button", { name: "Rename" });
+    expect(rename.className).toBe(referenceIconButtonClass());
+    expectIconOnly(rename);
+
+    const defaultRow = screen.getByTestId(`category-row-${foodDefault.id}`);
+    const hide = within(defaultRow).getByRole("button", { name: "Hide" });
+    expect(hide.className).toBe(referenceIconButtonClass());
+    expectIconOnly(hide);
+  });
+
+  it("renders Delete as the ghostDanger Button, which turns the error colour on hover", async () => {
+    renderModal([foodDefault, vetCustom]);
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    const del = within(row).getByRole("button", { name: "Delete" });
+    expect(del.className).toBe(referenceIconButtonClass("ghostDanger"));
+    expectIconOnly(del);
+  });
+
+  it("renders the rename Cancel as the ghost icon Button and Save as a Button at Control Height sm", async () => {
+    renderModal([foodDefault, vetCustom]);
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: "Rename" }));
+    const editing = screen.getByTestId(`category-row-${vetCustom.id}`);
+
+    const cancel = within(editing).getByRole("button", { name: "Cancel" });
+    expect(cancel.className).toBe(referenceIconButtonClass());
+    expectIconOnly(cancel);
+
+    const save = within(editing).getByRole("button", { name: "Save" });
+    // The Button primitive's stable component class is the first class.
+    const buttonComponentClass = referenceIconButtonClass().split(" ")[0];
+    expect(save.classList).toContain(buttonComponentClass);
+    expect(getComputedStyle(save).height).toBe(`${theme.sizing.control.sm}px`);
+    expectIconOnly(save);
   });
 });

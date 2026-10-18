@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import Snackbar from "./Snackbar";
+import Button from "../../primitives/Button/Button";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -49,5 +50,39 @@ describe("Snackbar", () => {
       <Snackbar message="Info message" variant="info" onClose={vi.fn()} />
     );
     expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+});
+
+/**
+ * A reference Button in ghost, small, icon-only form. Matching its generated
+ * classes proves a control is that Button — one Control Height sm, one hover,
+ * one focus ring — rather than a hand-sized look-alike.
+ */
+function referenceIconButtonClass(): string {
+  const { getByRole, unmount } = render(
+    <ThemeProvider theme={theme}>
+      <Button variant="ghost" size="sm" icon="X" aria-label="Reference" />
+    </ThemeProvider>
+  );
+  const className = getByRole("button", { name: "Reference" }).className;
+  unmount();
+  return className;
+}
+
+// Issue #272 — feature icon buttons onto Button.
+describe("Snackbar — close is the shared icon button", () => {
+  it("is the ghost, small, icon-only Button, keeping its name and handler", () => {
+    const onClose = vi.fn();
+    renderWithTheme(
+      <Snackbar message="Update ready" variant="success" onClose={onClose} />
+    );
+    const close = screen.getByRole("button", { name: "close" });
+
+    expect(close.className).toBe(referenceIconButtonClass());
+    expect(close.querySelector("svg")).toBeInTheDocument();
+    expect(close.textContent).toBe("");
+
+    fireEvent.click(close);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

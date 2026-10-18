@@ -11,6 +11,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import SnackbarProvider from "../../../components/SnackbarProvider/SnackbarProvider";
 import SavingsStreakCard from "./SavingsStreakCard";
+import Button from "../../../primitives/Button/Button";
 import type { SavingsGoal, YearTick } from "../savingsTypes/savingsTypes";
 import type { AccountWithBalance } from "../../../types/account";
 
@@ -285,5 +286,63 @@ describe("SavingsStreakCard — milestone caption", () => {
 
     expect(screen.getByText(/recent savings pace/i)).toBeTruthy();
     expect(screen.queryByText(/by balance/i)).toBeNull();
+  });
+});
+
+/**
+ * A reference Button in the given ghost variant, small, icon-only. Matching
+ * its generated classes proves a control is that Button — one Control Height
+ * sm, one hover, one focus ring — rather than a hand-sized look-alike.
+ */
+function referenceIconButtonClass(
+  variant: "ghost" | "ghostDanger" = "ghost"
+): string {
+  const { getByRole, unmount } = render(
+    <ThemeProvider theme={theme}>
+      <Button
+        variant={variant}
+        size="sm"
+        icon="Pencil"
+        aria-label="Reference"
+      />
+    </ThemeProvider>
+  );
+  const className = getByRole("button", { name: "Reference" }).className;
+  unmount();
+  return className;
+}
+
+/** An icon-only control: an svg glyph and no visible text. */
+function expectIconOnly(el: HTMLElement) {
+  expect(el.querySelector("svg")).toBeInTheDocument();
+  expect(el.textContent).toBe("");
+}
+
+// Issue #272 — feature icon buttons onto Button.
+describe("SavingsStreakCard — icon buttons are the shared Button", () => {
+  it("renders the goal edit pencil as the ghost, small, icon-only Button, keeping its handler", () => {
+    renderWithTheme(
+      <SavingsStreakCard goal={GOAL} accounts={ACCOUNTS} onSave={vi.fn()} />
+    );
+    const edit = screen.getByRole("button", { name: "Edit savings goal" });
+
+    expect(edit.className).toBe(referenceIconButtonClass());
+    expectIconOnly(edit);
+
+    fireEvent.click(edit);
+    expect(screen.getByText(/edit savings goal/i)).toBeTruthy();
+  });
+
+  it("renders the expand/collapse toggle as the same Button in both states", () => {
+    renderWithTheme(<SavingsStreakCard goal={GOAL} accounts={ACCOUNTS} />);
+    const expand = screen.getByRole("button", { name: "Expand" });
+
+    expect(expand.className).toBe(referenceIconButtonClass());
+    expectIconOnly(expand);
+
+    fireEvent.click(expand);
+    const collapse = screen.getByRole("button", { name: "Collapse" });
+    expect(collapse.className).toBe(referenceIconButtonClass());
+    expectIconOnly(collapse);
   });
 });
