@@ -1,30 +1,24 @@
 import styled, { css } from "styled-components";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
-type Size = "sm" | "md" | "lg";
-
-const sizeHeights: Record<Size, number> = {
-  sm: 32,
-  md: 40,
-  lg: 44,
-};
+import type { ControlSize } from "../../tokens";
 
 export const StyledButton = styled.button<{
   $variant: Variant;
-  $size: Size;
+  $size: ControlSize;
   $iconOnly: boolean;
 }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  height: ${({ $size }) => sizeHeights[$size]}px;
+  height: ${({ $size, theme }) => theme.sizing.control[$size]}px;
   padding: ${({ $iconOnly, theme }) =>
     $iconOnly ? "0" : `0 ${theme.spacing.space4}px`};
-  ${({ $iconOnly, $size }) =>
+  ${({ $iconOnly, $size, theme }) =>
     $iconOnly &&
     css`
-      width: ${sizeHeights[$size]}px;
+      width: ${theme.sizing.control[$size]}px;
     `}
   border-radius: ${({ theme }) => theme.radius.button}px;
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;

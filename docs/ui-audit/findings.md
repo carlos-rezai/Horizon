@@ -69,7 +69,7 @@ Decisions).
 - **Cause:** token gap. The height lives only in a local `sizeHeights` map in
   `Button.styles.ts`. The fields have no height and fall out of padding plus
   line-height.
-- **Status:** Open.
+- **Status:** Closed — issue #268.
 
 ### 2. Button holds its height table locally
 
@@ -79,7 +79,7 @@ Decisions).
   primitive. No token exists.
 - **Expected:** Button reads **Control Height** from the theme.
 - **Cause:** token gap.
-- **Status:** Open.
+- **Status:** Closed — issue #268.
 
 ### 3. Stepper is a 30px box with 20px buttons
 

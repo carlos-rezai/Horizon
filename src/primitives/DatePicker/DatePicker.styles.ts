@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import type { ControlSize } from "../../tokens";
 
 export const Wrapper = styled.div`
   position: relative;
@@ -67,7 +68,8 @@ export const StyledCalendarIcon = styled.span`
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
 `;
 
-export const StyledDateInput = styled.input`
+export const StyledDateInput = styled.input<{ $size: ControlSize }>`
+  height: ${({ $size, theme }) => theme.sizing.control[$size]}px;
   width: 100%;
   padding: ${({ theme }) => theme.spacing.space2}px 32px
     ${({ theme }) => theme.spacing.space2}px

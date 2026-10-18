@@ -2,13 +2,13 @@ import React from "react";
 import * as LucideIcons from "lucide-react";
 import type { LucideProps } from "lucide-react";
 import { StyledButton } from "./Button.styles";
+import type { ControlSize } from "../../tokens";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
-type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
-  size?: Size;
+  size?: ControlSize;
   /** Lucide icon name rendered before the label. */
   icon?: string;
   /** Lucide icon name rendered after the label. */

@@ -5,6 +5,9 @@ import { breakpoints } from "./breakpoints";
 import { radius } from "./radius";
 import { layout } from "./layout";
 import { transitions } from "./transitions";
+import { sizing } from "./sizing";
+
+export type { ControlSize } from "./sizing";
 
 export const accountIconSet: string[] = [
   "Wallet",
@@ -26,6 +29,7 @@ export const theme = {
   typography,
   breakpoints,
   radius,
+  sizing,
   layout,
   transitions,
   space,
@@ -39,6 +43,7 @@ export {
   typography,
   breakpoints,
   radius,
+  sizing,
   layout,
   transitions,
 };

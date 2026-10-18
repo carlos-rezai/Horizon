@@ -1,6 +1,8 @@
 import styled from "styled-components";
+import type { ControlSize } from "../../tokens";
 
-export const StyledInput = styled.input`
+export const StyledInput = styled.input<{ $size: ControlSize }>`
+  height: ${({ $size, theme }) => theme.sizing.control[$size]}px;
   width: 100%;
   padding: ${({ theme }) => theme.spacing.space2}px
     ${({ theme }) => theme.spacing.space3}px;

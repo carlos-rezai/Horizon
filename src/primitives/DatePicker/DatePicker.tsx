@@ -8,6 +8,7 @@ import {
   StyledDateInput,
   StyledCalendarIcon,
 } from "./DatePicker.styles";
+import type { ControlSize } from "../../tokens";
 
 interface DatePickerProps {
   value: string;
@@ -16,12 +17,17 @@ interface DatePickerProps {
   maxDate?: string;
   disabled?: boolean;
   "aria-label"?: string;
+  /** Control Height of the field; matches the Button of the same size. */
+  size?: ControlSize;
 }
 
-const DateInput = forwardRef<
-  HTMLInputElement,
-  InputHTMLAttributes<HTMLInputElement>
->((props, ref) => <StyledDateInput {...props} ref={ref} />);
+type DateInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
+  $size: ControlSize;
+};
+
+const DateInput = forwardRef<HTMLInputElement, DateInputProps>((props, ref) => (
+  <StyledDateInput {...props} ref={ref} />
+));
 
 function isoToDate(iso: string): Date {
   // Accepts both `YYYY-MM-DD` and month-only `YYYY-MM` values (the latter
@@ -45,6 +51,7 @@ export default function DatePicker({
   maxDate,
   disabled,
   "aria-label": ariaLabel,
+  size = "md",
 }: DatePickerProps) {
   return (
     <Wrapper>
@@ -57,7 +64,7 @@ export default function DatePicker({
         minDate={minDate ? isoToDate(minDate) : undefined}
         maxDate={maxDate ? isoToDate(maxDate) : undefined}
         disabled={disabled}
-        customInput={<DateInput aria-label={ariaLabel} />}
+        customInput={<DateInput aria-label={ariaLabel} $size={size} />}
         placeholderText="DD.MM.YYYY"
         popperPlacement="bottom-start"
         // Position the calendar with a fixed strategy so it's anchored to the
