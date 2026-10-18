@@ -684,3 +684,11 @@ Brave over CDP at 1440×900. Evidence is in `after-2026-10-18/`.
 - **Month picker right edge.** The pop-up's right edge is 10px left of the
   trigger's, because `window.innerWidth` includes the page scrollbar.
   Cosmetic; logged in `docs/live-use-defects.md` under Round 2.
+
+**After refactor 36 (issue #278):** refactor 36 kept finding 35's export
+half, so the primitives index still lists every primitive, now pinned by
+`src/primitives/index.test.ts`. It reversed the import half: the three
+imports finding 35 switched to `../../../primitives` (in
+`AccountCreateModal`, `CategoryManagerModal` and `AutoUpdateToggle`) are deep
+imports again, like every other primitive import in the app. The entries
+above are unchanged.
