@@ -283,6 +283,7 @@ The generated installer will be signed with your local certificate and will inst
 | Financial History                         | ✅ Complete |
 | Month Cash Flow                           | ✅ Complete |
 | Import Category Learning                  | ✅ Complete |
+| UI Consistency Audit                      | 📋 Planned  |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
