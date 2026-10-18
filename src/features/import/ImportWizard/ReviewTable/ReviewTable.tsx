@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import CategorySelect from "../../../categories/CategorySelect/CategorySelect";
 import Money from "../../../../primitives/Money/Money";
-import type { CategorySource } from "../../importTypes/importTypes";
+import { categorySourceChip } from "../../reviewRows/reviewRows";
 import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
 import { StyledFlagBadge } from "../ImportWizard.styles";
 import {
@@ -26,21 +26,6 @@ export interface FlagSpec {
   tone: "warn" | "neutral";
   Icon: LucideIcon;
   summaryLabel: (count: number) => string;
-}
-
-/** The chip shown beside the picker per Category Source; none for a row the
- *  user chose or one left on the Miscellaneous fallback. */
-const SOURCE_CHIP: Partial<Record<CategorySource, string>> = {
-  learned: "Learned",
-  suggested: "Suggested",
-};
-
-/** A proposed row names its Category Proposal; other rows read off SOURCE_CHIP. */
-function sourceChip(row: ReviewRow): string | undefined {
-  if (row.categorySource === "proposed") {
-    return row.proposedCategory ? `New: ${row.proposedCategory}` : undefined;
-  }
-  return SOURCE_CHIP[row.categorySource];
 }
 
 interface Props {
@@ -83,6 +68,7 @@ export default function ReviewTable({
           // A blocker only surfaces on a row that will actually commit;
           // unchecking is the other way to resolve it.
           const showsError = r.included && r.blockers.length > 0;
+          const chip = categorySourceChip(r);
           return (
             <StyledReviewRow
               key={r.id}
@@ -114,9 +100,9 @@ export default function ReviewTable({
                   value={r.category}
                   onChange={(name) => setCategory(r.id, name)}
                 />
-                {sourceChip(r) && (
+                {chip && (
                   <StyledSourceChip $proposed={r.categorySource === "proposed"}>
-                    {sourceChip(r)}
+                    {chip}
                   </StyledSourceChip>
                 )}
               </StyledCategoryCell>
