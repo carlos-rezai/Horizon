@@ -65,6 +65,6 @@ export const StyledFooter = styled.div`
   justify-content: flex-end;
   flex-shrink: 0;
   gap: ${({ theme }) => theme.spacing.space3}px;
-  padding: 16px 22px;
+  padding: ${({ theme }) => theme.spacing.space4}px 22px;
   border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
