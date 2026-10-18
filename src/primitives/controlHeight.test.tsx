@@ -49,27 +49,37 @@ describe("Control Height — parity across control primitives", () => {
 });
 
 // The styles source of each control primitive, read raw (as the font-faces
-// test reads main.tsx), so the guard sees what the author wrote.
+// test reads main.tsx), so the guard sees what the author wrote. Since #269
+// the three fields take their height from the shared Field Chrome fragment,
+// so the token is declared once there and once in the Button.
 const controlStyles = import.meta.glob(
   [
     "./Button/Button.styles.ts",
     "./Input/Input.styles.ts",
     "./Select/Select.styles.ts",
     "./DatePicker/DatePicker.styles.ts",
+    "./fieldChrome/fieldChrome.ts",
   ],
   { query: "?raw", import: "default", eager: true }
 ) as Record<string, string>;
 
+const heightOwners = [
+  "./Button/Button.styles.ts",
+  "./fieldChrome/fieldChrome.ts",
+];
+
 describe("Control Height — no local height in control primitives", () => {
-  it("reads all four control primitive style modules", () => {
-    expect(Object.keys(controlStyles)).toHaveLength(4);
+  it("reads the four control primitive style modules and the Field Chrome", () => {
+    expect(Object.keys(controlStyles)).toHaveLength(5);
+  });
+
+  heightOwners.forEach((path) => {
+    it(`${path} declares its height from the sizing.control token`, () => {
+      expect(controlStyles[path] ?? "").toMatch(/sizing\.control/);
+    });
   });
 
   Object.entries(controlStyles).forEach(([path, source]) => {
-    it(`${path} declares its height from the sizing.control token`, () => {
-      expect(source).toMatch(/sizing\.control/);
-    });
-
     it(`${path} keeps no literal height`, () => {
       expect(source).not.toMatch(/(?<![-\w])(min-|max-)?height:\s*\d/);
     });

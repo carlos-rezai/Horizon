@@ -95,3 +95,53 @@ describe("DatePicker — Control Height", () => {
     );
   });
 });
+
+// Issue #269 — the DatePicker composes the Input primitive (its calendar
+// icon in Input's trailing-icon slot) instead of keeping a copy of the input
+// styles, and its calendar pop-up reads in the UI font.
+const datePickerSources = import.meta.glob(
+  ["./DatePicker.tsx", "./DatePicker.styles.ts"],
+  { query: "?raw", import: "default", eager: true }
+) as Record<string, string>;
+
+describe("DatePicker — composes Input", () => {
+  it("renders its field through the Input primitive", () => {
+    expect(datePickerSources["./DatePicker.tsx"]).toMatch(
+      /import\s+Input\s+from\s+["']\.\.\/Input\/Input["']/
+    );
+  });
+
+  it("keeps no copied input styles of its own", () => {
+    expect(datePickerSources["./DatePicker.styles.ts"]).not.toMatch(
+      /styled\.input/
+    );
+  });
+
+  it("shows the calendar icon beside the field", () => {
+    const { container } = renderDatePicker("2024-01-15");
+    expect(screen.getByLabelText("Date")).toBeInTheDocument();
+    expect(container.querySelector("[aria-hidden='true'] svg")).not.toBeNull();
+  });
+});
+
+describe("DatePicker — calendar pop-up", () => {
+  it("renders the calendar in the UI font", () => {
+    const { container } = renderDatePicker("2024-01-15");
+    fireEvent.click(screen.getByLabelText("Date"));
+    const calendar = container.querySelector(".react-datepicker");
+    expect(calendar).not.toBeNull();
+    expect(getComputedStyle(calendar as HTMLElement).fontFamily).toContain(
+      "Space Grotesk"
+    );
+  });
+
+  it("still calls onChange with an ISO string when a day is clicked", () => {
+    const onChange = vi.fn();
+    renderDatePicker("2024-01-15", onChange);
+    fireEvent.click(screen.getByLabelText("Date"));
+    fireEvent.click(
+      screen.getByRole("gridcell", { name: /January 20th, 2024/ })
+    );
+    expect(onChange).toHaveBeenCalledWith("2024-01-20");
+  });
+});

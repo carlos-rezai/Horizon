@@ -75,9 +75,9 @@ describe("Input — styles", () => {
     expect(getInjectedCSS()).toContain(theme.colors.surfaceContainerLowest);
   });
 
-  it("focus state includes a 2px ring box-shadow", () => {
+  it("focus state includes a 3px ring box-shadow (#269 Field Chrome)", () => {
     renderForCSS(<Input aria-label="Amount" />);
-    expect(getInjectedCSS()).toContain("0 0 0 2px");
+    expect(getInjectedCSS()).toContain("0 0 0 3px");
   });
 });
 
@@ -119,5 +119,49 @@ describe("Input — Control Height", () => {
     expect(
       getComputedStyle(screen.getByRole("textbox", { name: "Amount" })).height
     ).toBe(`${theme.sizing.control.sm}px`);
+  });
+});
+
+// Issue #269 — Input gains a trailing-icon slot (the DatePicker's calendar
+// icon sits in it), and the icon never changes the field's height.
+describe("Input — trailing icon", () => {
+  it("renders the trailing icon alongside the field", () => {
+    renderWithTheme(
+      <Input
+        aria-label="Date"
+        trailingIcon={<svg data-testid="calendar-icon" />}
+      />
+    );
+    expect(screen.getByRole("textbox", { name: "Date" })).toBeInTheDocument();
+    expect(screen.getByTestId("calendar-icon")).toBeInTheDocument();
+  });
+
+  it("keeps the trailing icon out of the accessibility tree", () => {
+    renderWithTheme(
+      <Input
+        aria-label="Date"
+        trailingIcon={<svg data-testid="calendar-icon" />}
+      />
+    );
+    expect(
+      screen.getByTestId("calendar-icon").closest("[aria-hidden='true']")
+    ).not.toBeNull();
+  });
+
+  const sizes = ["sm", "md", "lg"] as const;
+
+  sizes.forEach((size) => {
+    it(`renders size "${size}" at the ${size} Control Height with a trailing icon`, () => {
+      renderWithTheme(
+        <Input
+          aria-label="Date"
+          size={size}
+          trailingIcon={<svg data-testid="calendar-icon" />}
+        />
+      );
+      expect(
+        getComputedStyle(screen.getByRole("textbox", { name: "Date" })).height
+      ).toBe(`${theme.sizing.control[size]}px`);
+    });
   });
 });
