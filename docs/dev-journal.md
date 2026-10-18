@@ -1584,3 +1584,84 @@ SettlementFixedFlow` union. A new `fixedFlows` module takes the card's
 - The glossary's older **AccountWithBalance** row still names the repo
   methods as they were before the Current Balance; it sits in the storage
   section's historical snapshot beside the Mongo Driver and was left alone.
+
+## 2026-10-18 — #265 Import Category Learning refactor: one create path
+
+Refactor plan 35, worked commit by commit, with the epic's last slice (#264:
+manual, release notes, Build Status) folded in so the epic closes from one
+issue. Built slice by slice, Import Category Learning left one defect,
+several copies of the same fact and domain rules in components. This pass
+gives each its one home.
+
+- **Server: one Category Rule shape.** The csvImport lib reads the storage
+  layer's `CategoryRuleInput`; `DerivedCategoryRule` and
+  `PreviewCategoryRule` are gone. `PreviewRow` extends `CategorizedRow`, and
+  `buildPreview` spreads `categorizeRow`'s result instead of rebuilding it.
+  `categorizeRow` alone skips a Category Rule whose category no longer
+  exists. Import code says "Category Rule", never "rule" alone, down to the
+  context field (`categoryRules`).
+- **Client: one create path.** `useCreateCategory` POSTs, reads the error
+  through `readErrorMessage`, publishes the new category to every
+  `CATEGORIES` reader and only then bumps. Inline-add and proposal approval
+  both read it; `approve` never rejects, its failure is the error on the
+  proposal. ImportView reads `useCategories`.
+- **Client: `reviewRows` is the review model.** `ParsedImportRow` and
+  `CategorySource` moved to `importTypes`, which now imports nothing from
+  the review model. `FALLBACK_CATEGORY`, `withoutProposal`, `proposalsFor`,
+  `approveProposal`, `dismissProposal` and `categorySourceChip` live in
+  `reviewRows`; `useCategoryProposals` keeps only the I/O and wizard state,
+  and ReviewTable computes the chip once per row. The proposal strip is its
+  own `CategoryProposalStrip` sub-component beside ReviewTable.
+- **Docs.** The User Manual's Import review row describes Same-Counterparty
+  Propagation and the majority rule; the release notes, glossary and Build
+  Status are brought up to date.
+
+### One behaviour change
+
+- **Approving a Category Proposal could teach the wrong category.** Found
+  while reading the code for the plan, not in live use, and never released.
+  Approval bumped `CATEGORIES` without publishing the new category, so until
+  the refetch landed each moved row's controlled `CategorySelect` held a
+  value its list did not contain; the picker fell back to its first category
+  and reported it through `onChange`, and propagation marked the row
+  `chosen`. A probe with the GET after the POST held in flight committed the
+  proposed Dining row as `{ category: "Food", categorySource: "chosen" }`
+  instead of `{ category: "Dining", categorySource: "suggested" }` — a Food
+  Category Rule for the merchant, dragging every untouched same-key row with
+  it. B1 pinned that window as a RED test; it went green with B4, once
+  approval created through `useCreateCategory`. The existing tests missed it
+  because their fetch doubles answered the refetch at once.
+
+### Where the plan met the code
+
+- **A2 moved a doc comment.** `PreviewRow`'s `categorySource` comment was
+  the only one of the three that `CategorizedRow` lacked; it moved onto
+  `CategorizedRow` rather than being dropped.
+- **A4's re-wrap lives in `detectStatement.ts`.** `mapStatementRows` is
+  declared there, not in its own module, so the rename commit touched it
+  for the comment alone.
+- **C6 moved the four `StyledProposal…` components at once.** The plan
+  listed the move under C6 but the consumer change under C7; to keep one
+  definition, ImportWizard imported them from the strip's stylesheet for
+  one commit, and C7 dropped that import with the inline JSX.
+- **C7 fires approval with `void`.** With `approve` no longer rejecting,
+  the strip's `onCreate` reads `() => void approveProposal(name)`, the idiom
+  CategoryManagerModal already uses.
+
+### Follow-ups
+
+- Still open from the plan's Out of Scope: `CategorySelect`'s selection
+  effect reporting the first category when its value is missing (it closes
+  the class of defect, not just this instance); the Category Manager on the
+  `CATEGORIES` cache; CategoryManagerModal's `MISCELLANEOUS` literal; the
+  zod `categorySource` enum; atomicity of the Import Commit's writes; tuning
+  `KEYWORD_GROUPS` and `COUNTERPARTY_KEY_TOKENS` in live use; cross-feature
+  deep imports; and everything log 33 deferred.
+- Still open from refactors 32–34: `linkedSince`'s UTC "today", the
+  `isoDaysFromToday` midnight flake, the reports route's run-start choice,
+  the client's month arithmetic and the rest of refactor 34's follow-ups.
+- The glossary's Categories section still says a rename runs Category
+  Reassignment across `categories` + `transactions` +
+  `recurring_transactions`; the Import Category Learning relationships and
+  the updated definition carry the Category Rules, and the historical
+  section was left alone.
