@@ -1,0 +1,66 @@
+{
+  "url": "#/months/2026-10",
+  "scope": "dialog",
+  "viewport": "1440x900",
+  "count": 2,
+  "elements": [
+    {
+      "tag": "button",
+      "type": "button",
+      "label": "Close",
+      "cls": "becGXE",
+      "x": 860,
+      "y": 347,
+      "w": 32,
+      "h": 32,
+      "font": "500 14px/14px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgba(0, 0, 0, 0)",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "padding": "0px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "center",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": null,
+      "focus": {
+        "outline": "rgb(155, 163, 176) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgba(0, 0, 0, 0)"
+      }
+    },
+    {
+      "tag": "button",
+      "label": "OK",
+      "cls": "lcomA",
+      "x": 840,
+      "y": 516,
+      "w": 52.2,
+      "h": 40,
+      "font": "600 14px/14px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgb(230, 181, 89)",
+      "border": "1px solid rgb(230, 181, 89)",
+      "padding": "0px 16px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "center",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 17,
+        "rightGap": 17,
+        "topGap": 11,
+        "bottomGap": 11
+      },
+      "focus": {
+        "outline": "rgb(26, 19, 6) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgb(230, 181, 89)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "url": "#/import",
+  "scope": "dialog",
+  "viewport": "1440x900",
+  "count": 6,
+  "elements": [
+    {
+      "tag": "button",
+      "type": "button",
+      "label": "Close",
+      "cls": "becGXE",
+      "x": 941,
+      "y": 266,
+      "w": 32,
+      "h": 32,
+      "font": "500 14px/14px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgba(0, 0, 0, 0)",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "padding": "0px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "center",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": null,
+      "focus": {
+        "outline": "rgb(155, 163, 176) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgba(0, 0, 0, 0)"
+      }
+    },
+    {
+      "tag": "button",
+      "type": "button",
+      "label": "Main Giro",
+      "cls": "eesMWQ",
+      "x": 457,
+      "y": 497,
+      "w": 100.2,
+      "h": 32,
+      "font": "500 13px/19.5px \"Space Grotesk\"",
+      "radius": "999px",
+      "bg": "rgba(230, 181, 89, 0.16)",
+      "border": "1px solid rgb(230, 181, 89)",
+      "padding": "0px 12px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "normal",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 29,
+        "rightGap": 13,
+        "topGap": 7.3,
+        "bottomGap": 7.8
+      },
+      "focus": {
+        "outline": "rgb(236, 238, 242) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgb(230, 181, 89)"
+      }
+    },
+    {
+      "tag": "button",
+      "type": "button",
+      "label": "Rainy Day Fund",
+      "cls": "ilWnbW",
+      "x": 565,
+      "y": 497,
+      "w": 138.8,
+      "h": 32,
+      "font": "500 13px/19.5px \"Space Grotesk\"",
+      "radius": "999px",
+      "bg": "rgb(12, 14, 18)",
+      "border": "1px solid rgba(255, 255, 255, 0.07)",
+      "padding": "0px 12px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "normal",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 29,
+        "rightGap": 13,
+        "topGap": 7.3,
+        "bottomGap": 7.8
+      },
+      "focus": {
+        "outline": "rgb(155, 163, 176) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgba(255, 255, 255, 0.07)"
+      }
+    },
+    {
+      "tag": "button",
+      "type": "button",
+      "label": "Everyday Card",
+      "cls": "ilWnbW",
+      "x": 712,
+      "y": 497,
+      "w": 132.7,
+      "h": 32,
+      "font": "500 13px/19.5px \"Space Grotesk\"",
+      "radius": "999px",
+      "bg": "rgb(12, 14, 18)",
+      "border": "1px solid rgba(255, 255, 255, 0.07)",
+      "padding": "0px 12px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "normal",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 29,
+        "rightGap": 13,
+        "topGap": 7.3,
+        "bottomGap": 7.8
+      },
+      "focus": {
+        "outline": "rgb(155, 163, 176) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgba(255, 255, 255, 0.07)"
+      }
+    },
+    {
+      "tag": "button",
+      "label": "Cancel",
+      "cls": "kWMXbL",
+      "x": 733,
+      "y": 596,
+      "w": 79.8,
+      "h": 40,
+      "font": "500 14px/14px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgba(0, 0, 0, 0)",
+      "border": "1px solid rgba(255, 255, 255, 0.07)",
+      "padding": "0px 16px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "center",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 17,
+        "rightGap": 17,
+        "topGap": 11,
+        "bottomGap": 11
+      },
+      "focus": {
+        "outline": "rgb(236, 238, 242) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgba(255, 255, 255, 0.07)"
+      }
+    },
+    {
+      "tag": "button",
+      "label": "Map columns",
+      "cls": "lcomA",
+      "x": 825,
+      "y": 596,
+      "w": 147.9,
+      "h": 40,
+      "font": "600 14px/14px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgb(230, 181, 89)",
+      "border": "1px solid rgb(230, 181, 89)",
+      "padding": "0px 16px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "center",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 17,
+        "rightGap": 41,
+        "topGap": 11,
+        "bottomGap": 11
+      },
+      "focus": {
+        "outline": "rgb(26, 19, 6) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgb(230, 181, 89)"
+      }
+    }
+  ]
+}

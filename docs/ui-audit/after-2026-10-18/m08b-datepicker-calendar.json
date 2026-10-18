@@ -1,0 +1,14 @@
+{
+  "font": "\"Space Grotesk\" 12.8px",
+  "dayFont": "\"Space Grotesk\" 12.8px",
+  "headerFont": "\"Space Grotesk\" 15.104px",
+  "day": { "w": 27.1875, "h": 27.203125, "radius": "8px" },
+  "today": {
+    "bg": "rgba(230, 181, 89, 0.16)",
+    "color": "rgb(236, 238, 242)",
+    "boxShadow": "rgb(230, 181, 89) 0px 0px 0px 1px inset",
+    "classes": "react-datepicker__day react-datepicker__day--018 react-datepicker__day--keyboard-selected react-datepicker__day--today react-datepicker__day--weekend"
+  },
+  "navigationButtons": 0,
+  "note": "react-datepicker 9.1.0 renders no .react-datepicker__navigation buttons in this configuration; finding 10's arrows are absent from the DOM, not merely unstyled"
+}

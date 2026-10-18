@@ -1,0 +1,143 @@
+{
+  "headers": [
+    {
+      "text": "Period",
+      "left": 289,
+      "right": 361,
+      "textLeft": 289,
+      "textRight": 333,
+      "font": "\"Space Grotesk\" 12px",
+      "textAlign": "start",
+      "justifySelf": "auto"
+    },
+    {
+      "text": "Total Liquid",
+      "left": 580.1,
+      "right": 661.7,
+      "textLeft": 580.1,
+      "textRight": 661.7,
+      "font": "\"Space Grotesk\" 12px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "Restschuld",
+      "left": 882.7,
+      "right": 962.3,
+      "textLeft": 882.7,
+      "textRight": 962.3,
+      "font": "\"Space Grotesk\" 12px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "Net Cashflow",
+      "left": 1169.6,
+      "right": 1263,
+      "textLeft": 1169.6,
+      "textRight": 1263,
+      "font": "\"Space Grotesk\" 12px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "Statements",
+      "left": 1319.8,
+      "right": 1399,
+      "textLeft": 1319.8,
+      "textRight": 1399,
+      "font": "\"Space Grotesk\" 12px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    }
+  ],
+  "yearRow2026": [
+    {
+      "text": "2026",
+      "left": 289,
+      "right": 361,
+      "textLeft": 289,
+      "textRight": 325,
+      "font": "\"IBM Plex Mono\" 15px",
+      "textAlign": "left",
+      "justifySelf": "auto"
+    },
+    {
+      "text": "19.945,60 €",
+      "left": 556,
+      "right": 661.7,
+      "textLeft": 556,
+      "textRight": 661.7,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "186.500,00 €",
+      "left": 847.1,
+      "right": 962.3,
+      "textLeft": 847.1,
+      "textRight": 962.3,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "-1.891,84 €",
+      "left": 1157.4,
+      "right": 1263,
+      "textLeft": 1157.4,
+      "textRight": 1263,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    }
+  ],
+  "monthRowOct": [
+    {
+      "text": "Oct",
+      "left": 289,
+      "right": 361,
+      "textLeft": 289,
+      "textRight": 311.5,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "textAlign": "start",
+      "justifySelf": "auto"
+    },
+    {
+      "text": "19.945,60 €",
+      "left": 556,
+      "right": 661.7,
+      "textLeft": 556,
+      "textRight": 661.7,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "186.500,00 €",
+      "left": 847.1,
+      "right": 962.3,
+      "textLeft": 847.1,
+      "textRight": 962.3,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    },
+    {
+      "text": "-298,24 €",
+      "left": 1176.6,
+      "right": 1263,
+      "textLeft": 1176.6,
+      "textRight": 1263,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right",
+      "justifySelf": "end"
+    }
+  ],
+  "gridTemplates": {
+    "header": "22px 72px 284.656px 284.672px 284.656px 120px",
+    "year": "22px 72px 284.656px 284.672px 284.656px 120px",
+    "month": "22px 72px 284.656px 284.672px 284.656px 120px"
+  }
+}

@@ -15,6 +15,9 @@ found later goes to `docs/live-use-defects.md` under Round 2, not here.
   The `b`/`c` files are extra states: the month switch sweep, the open month
   picker, the expanded import history, the History archive column edges, the
   calendar pop-up and the Categories inline fields.
+- `after-2026-10-18/` — the same surfaces and states, measured with the same
+  harness on the same throwaway database after issues #268–#276 (issue
+  #277). See **After audit** at the end of this register.
 - `harness/` — how to repeat the runtime pass for the after audit (Phase 8):
   - `seed.mjs` seeds a throwaway database through the REST API.
   - `init.js` stubs the Electron bridge (`window.horizon`), so the menu-only
@@ -638,3 +641,45 @@ These were measured and need no finding:
 - **Dashboard → Backup.** It writes a file through the Electron dialog, which
   is unavailable in the browser harness.
 - **Snackbar close button.** Seen in 07c. Covered by the static pass.
+
+## After audit
+
+Issue #277, 2026-10-18. The same 29 surfaces and extra states as
+`before-2026-10-18/`, measured with `harness/measure.js` on the same
+throwaway database (`/storage/status` reported the scratchpad `audit.db`),
+Brave over CDP at 1440×900. Evidence is in `after-2026-10-18/`.
+
+**What the measurements show:**
+
+- **Control Height.** Every text field, select and date field is 40px (md)
+  or 32px (sm). Before, fields were 39px beside 40px buttons, and the inline
+  fields were 28.8, 32.3 and 38.3px. Icon and ghost buttons that were 30,
+  31, 33.5, 35.5 or 37.5px are now 32px (sm).
+- **Month switch.** Across January–December 2026, Previous stays at x=1182,
+  the trigger at x=1218 and 156px wide, and Next at x=1378 (02b). Before,
+  Previous moved by up to 46.8px.
+- **Columns.** The History Year Archive header, year row and month row share
+  one grid template, and their figures share right edges to the pixel (04b).
+- **Month picker.** The pop-up no longer overflows the window: 0px, against
+  42.4px before (02c).
+- **No copy change.** Every surface has the same controls with the same
+  labels as before. The only difference is the review step (08c), where the
+  after fixture has a row without a description, so the "Needs attention"
+  toggle and the "1 row needs a description" pill appear.
+
+**Found in the after pass, not yet fixed:**
+
+- **Select text clips at sm.** The review step's category select (08c) is
+  32px with Field Chrome's 8px vertical padding and a 21px line, which leaves
+  14px of content box, so the text sits low and its descenders are cut.
+  `input` centres its text whatever the padding; a select with
+  `appearance: none` does not. Zero vertical padding in `fieldChrome` fixes
+  it (checked in the running app). A regression from this epic (#275).
+- **Finding 10's arrows are not in the DOM.** react-datepicker 9.1.0 renders
+  no `.react-datepicker__navigation` buttons in this configuration, so the
+  calendar still has no previous/next month arrows (m08b). #275's style rule
+  for them has nothing to style. Today and the keyboard-selected day are gold,
+  as finding 10 expects. The arrows were missing before the epic too.
+- **Month picker right edge.** The pop-up's right edge is 10px left of the
+  trigger's, because `window.innerWidth` includes the page scrollbar.
+  Cosmetic.

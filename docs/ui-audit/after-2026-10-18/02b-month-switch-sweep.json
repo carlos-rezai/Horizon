@@ -1,0 +1,89 @@
+{
+  "what": "Month Overview month switch across Jan-Dec 2026 (x = left edge, px)",
+  "rows": [
+    {
+      "month": 1,
+      "label": "January 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 2,
+      "label": "February 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 3,
+      "label": "March 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 4,
+      "label": "April 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 5,
+      "label": "May 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 6,
+      "label": "June 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 7,
+      "label": "July 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 8,
+      "label": "August 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 9,
+      "label": "September 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 10,
+      "label": "October 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 11,
+      "label": "November 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    },
+    {
+      "month": 12,
+      "label": "December 2026",
+      "prev": { "x": 1182, "w": 32 },
+      "trigger": { "x": 1218, "w": 156 },
+      "next": { "x": 1378, "w": 32 }
+    }
+  ]
+}
