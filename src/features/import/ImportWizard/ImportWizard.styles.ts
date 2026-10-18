@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 export const StyledWizard = styled.div<{ $wide: boolean }>`
   width: ${({ $wide }) => ($wide ? "min(774px, 86vw)" : "min(516px, 86vw)")};
@@ -139,36 +140,6 @@ export const StyledChips = styled.div`
   gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
-export const StyledChip = styled.button<{ $active: boolean; $color: string }>`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.space2}px;
-  padding: 8px 13px;
-  border-radius: ${({ theme }) => theme.radius.pill}px;
-  font-family: ${({ theme }) => theme.typography.fontFamily.ui};
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  background: ${({ theme, $active }) =>
-    $active
-      ? theme.colors.primaryContainer
-      : theme.colors.surfaceContainerLowest};
-  color: ${({ theme, $active }) =>
-    $active ? theme.colors.onSurface : theme.colors.onSurfaceVariant};
-  border: 1px solid
-    ${({ theme, $active }) =>
-      $active ? theme.colors.primary : theme.colors.outlineVariant};
-  transition: all ${({ theme }) => theme.transitions.fast};
-
-  &::before {
-    content: "";
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: ${({ $color }) => $color};
-  }
-`;
-
 export const StyledNote = styled.div`
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: 12px;
@@ -293,6 +264,8 @@ export const StyledBlockedPill = styled.button`
   background: ${({ theme }) => theme.colors.errorContainer};
   border: 1px solid ${({ theme }) => theme.colors.error};
   transition: all ${({ theme }) => theme.transitions.fast};
+
+  ${focusRing}
 `;
 
 /* View-only table filter. Off is the resting state and looks it; on is clearly
@@ -316,6 +289,8 @@ export const StyledAttentionToggle = styled.button<{ $on: boolean }>`
     ${({ theme, $on }) =>
       $on ? theme.colors.error : theme.colors.outlineVariant};
   transition: all ${({ theme }) => theme.transitions.fast};
+
+  ${focusRing}
 `;
 
 export const StyledFlagBadge = styled.span<{ $tone: "warn" | "neutral" }>`

@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../focusRing/focusRing";
 
 export const SwatchGrid = styled.div<{ $columns?: number }>`
   gap: ${({ theme }) => theme.spacing.space2}px;
@@ -19,4 +20,6 @@ export const Swatch = styled.button<{ $color: string; $selected: boolean }>`
       $selected ? theme.colors.onSurface : "transparent"};
   outline: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   cursor: pointer;
+
+  ${focusRing}
 `;

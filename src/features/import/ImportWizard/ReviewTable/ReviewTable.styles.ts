@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../../primitives/focusRing/focusRing";
 
 /* Holds every applicable flag badge. Wraps rather than truncating so a row that
    is both duplicate and recurring never hides one behind the other. */
@@ -115,6 +116,8 @@ export const StyledCheck = styled.button<{ $on: boolean }>`
     ${({ theme, $on }) => ($on ? theme.colors.primary : theme.colors.outline)};
   color: ${({ theme }) => theme.colors.onPrimary};
   transition: all ${({ theme }) => theme.transitions.fast};
+
+  ${focusRing}
 `;
 
 export const StyledReviewDate = styled.span`

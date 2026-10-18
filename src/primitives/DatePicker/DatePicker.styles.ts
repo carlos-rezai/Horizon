@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../focusRing/focusRing";
 
 export const Wrapper = styled.div`
   position: relative;
@@ -46,12 +47,57 @@ export const Wrapper = styled.div`
     }
   }
 
+  /* Today and the keyboard-selected day read in the gold tokens, not the
+     library's pale blue. Each rule names its colour first, written with the
+     plain prop accessor. */
+  .react-datepicker__day--today {
+    color: ${(p) => p.theme.colors.primary};
+    font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  }
+
+  .react-datepicker__day--keyboard-selected {
+    background: ${(p) => p.theme.colors.primaryContainer};
+    box-shadow: inset 0 0 0 1px ${(p) => p.theme.colors.primary};
+    color: ${({ theme }) => theme.colors.onSurface};
+
+    &:hover {
+      background: ${({ theme }) => theme.colors.primaryContainer};
+    }
+  }
+
+  .react-datepicker__day--selected.react-datepicker__day--keyboard-selected,
+  .react-datepicker__day--selected.react-datepicker__day--today {
+    background: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.onPrimary};
+  }
+
   .react-datepicker__day--disabled {
     opacity: 0.3;
     cursor: not-allowed;
   }
 
+  /* The month navigation buttons themselves, so the arrows show above the
+     header and take the shared focus ring. */
+  .react-datepicker__navigation {
+    top: ${(p) => p.theme.spacing.space1}px;
+    z-index: 2;
+    width: ${({ theme }) => theme.sizing.control.sm}px;
+    height: ${({ theme }) => theme.sizing.control.sm}px;
+    border-radius: ${({ theme }) => theme.radius.button}px;
+
+    &:hover {
+      background: ${({ theme }) => theme.colors.surfaceContainerLow};
+    }
+
+    ${focusRing}
+  }
+
   .react-datepicker__navigation-icon::before {
     border-color: ${({ theme }) => theme.colors.onSurfaceVariant};
+  }
+
+  .react-datepicker__navigation:hover
+    .react-datepicker__navigation-icon::before {
+    border-color: ${({ theme }) => theme.colors.onSurface};
   }
 `;

@@ -97,6 +97,8 @@ export default function ReviewTable({
               />
               <StyledCategoryCell>
                 <CategorySelect
+                  hideLabel
+                  size="sm"
                   value={r.category}
                   onChange={(name) => setCategory(r.id, name)}
                 />

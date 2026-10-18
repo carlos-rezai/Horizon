@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../focusRing/focusRing";
 
 export const StyledToggle = styled.input`
   appearance: none;
@@ -33,4 +34,6 @@ export const StyledToggle = styled.input`
     transform: translateX(20px);
     background-color: ${({ theme }) => theme.colors.onPrimary};
   }
+
+  ${focusRing}
 `;

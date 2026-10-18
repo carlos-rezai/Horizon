@@ -6,12 +6,6 @@ export const StyledWrapper = styled.div`
   gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 
-export const StyledLabel = styled.label`
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-  font-weight: ${({ theme }) => theme.typography.weights.medium};
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-`;
-
 export const StyledInlineAddRow = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.space2}px;

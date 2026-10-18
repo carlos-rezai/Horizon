@@ -12,6 +12,7 @@ import type { Category } from "../../../types/category";
 import { resolveAccountColor } from "../../../utils/color/color";
 import Modal from "../../../components/Modal/Modal";
 import Button from "../../../primitives/Button/Button";
+import ChoiceChip from "../../../primitives/ChoiceChip/ChoiceChip";
 import Select from "../../../primitives/Select/Select";
 import Spinner from "../../../primitives/Spinner/Spinner";
 import Money from "../../../primitives/Money/Money";
@@ -40,7 +41,6 @@ import {
   StyledFormatBadge,
   StyledFieldLabel,
   StyledChips,
-  StyledChip,
   StyledNote,
   StyledMapHint,
   StyledMapCard,
@@ -324,15 +324,13 @@ export default function ImportWizard({
               <StyledFieldLabel>Import into account</StyledFieldLabel>
               <StyledChips>
                 {importAccounts.map((a) => (
-                  <StyledChip
+                  <ChoiceChip
                     key={a.id}
-                    type="button"
-                    $active={a.id === accountId}
-                    $color={resolveAccountColor(a)}
+                    label={a.name}
+                    active={a.id === accountId}
+                    color={resolveAccountColor(a)}
                     onClick={() => selectAccount(a.id)}
-                  >
-                    {a.name}
-                  </StyledChip>
+                  />
                 ))}
               </StyledChips>
               <StyledNote>

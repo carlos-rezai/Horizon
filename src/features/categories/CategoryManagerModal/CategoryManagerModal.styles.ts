@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 // ── Manage-categories layout ──────────────────────────────────────────────
 // Restyle of the manager per docs/handoff/categories-redesign: scannable rows
@@ -122,6 +123,8 @@ export const SwatchDot = styled.button<{ $color: string; $open: boolean }>`
       $open ? theme.colors.primary : theme.colors.outlineVariant};
   cursor: pointer;
   transition: box-shadow 0.12s ease;
+
+  ${focusRing}
 `;
 
 export const Popover = styled.div`
@@ -161,6 +164,8 @@ export const AddButton = styled.button`
     background: ${({ theme }) => theme.colors.primaryContainer};
     border-color: ${({ theme }) => theme.colors.primary};
   }
+
+  ${focusRing}
 `;
 
 export const AddForm = styled.div`

@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 export const StyledRow = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.lineFaint};
@@ -14,6 +15,8 @@ export const StyledToggle = styled.button`
   background: transparent;
   text-align: left;
   cursor: pointer;
+
+  ${focusRing}
 `;
 
 // The year-accordion chevron, to the degree: right when shut, a quarter turn

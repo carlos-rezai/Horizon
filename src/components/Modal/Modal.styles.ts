@@ -23,14 +23,22 @@ export const StyledDialog = styled.div<{ $width?: number }>`
       : `min-width: ${theme.layout.modalWidth}px;`}
   max-width: 90vw;
   max-height: 90vh;
-  overflow: auto;
+  /* The body scrolls, never the dialog, so header and footer stay in view. */
+  overflow: hidden;
   box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.6);
+
+  /* Focused for containment only: rings belong to the controls inside. */
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
 `;
 
 export const StyledHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   padding: 18px 22px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
@@ -46,12 +54,16 @@ export const StyledTitle = styled.h2`
 `;
 
 export const StyledBody = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 22px;
 `;
 
 export const StyledFooter = styled.div`
   display: flex;
   justify-content: flex-end;
+  flex-shrink: 0;
   gap: ${({ theme }) => theme.spacing.space3}px;
   padding: 16px 22px;
   border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};

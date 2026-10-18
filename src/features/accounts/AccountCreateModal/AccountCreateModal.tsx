@@ -12,7 +12,7 @@ import Input from "../../../primitives/Input/Input";
 import DatePicker from "../../../primitives/DatePicker/DatePicker";
 import Select from "../../../primitives/Select/Select";
 import Button from "../../../primitives/Button/Button";
-import Toggle from "../../../primitives/Toggle/Toggle";
+import { SwatchPicker, Toggle } from "../../../primitives";
 import { TrendingUp } from "lucide-react";
 import StackedSnackbar from "../../../components/SnackbarProvider/StackedSnackbar";
 import CreditCardSettlementFields from "../../settlements/CreditCardSettlementFields/CreditCardSettlementFields";
@@ -22,8 +22,6 @@ import {
   StyledErrorText,
   StyledIconGrid,
   StyledIconButton,
-  StyledColorRow,
-  StyledColorSwatch,
   StyledToggleRow,
   StyledToggleIcon,
   StyledToggleText,
@@ -241,18 +239,11 @@ export default function AccountCreateModal({
           })}
         </StyledIconGrid>
 
-        <StyledColorRow>
-          {COLOR_PALETTE.map((color) => (
-            <StyledColorSwatch
-              key={color}
-              type="button"
-              aria-label={color}
-              $color={color}
-              $selected={selectedColor === color}
-              onClick={() => setSelectedColor(color)}
-            />
-          ))}
-        </StyledColorRow>
+        <SwatchPicker
+          palette={COLOR_PALETTE}
+          value={selectedColor}
+          onChange={setSelectedColor}
+        />
 
         {kind !== "Mortgage" && (
           <StyledToggleRow>

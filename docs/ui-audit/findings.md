@@ -91,7 +91,7 @@ Decisions).
 - **Expected:** the wrapper at Control Height md (40px), with the field look
   (**Field Chrome**).
 - **Cause:** token gap.
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 4. Segmented and toggle chips come in four heights
 
@@ -115,7 +115,7 @@ Decisions).
   Spent and Mode. The History range is one segmented control sized at Control
   Height sm (32px). The legend chip stays its own component, at sm height.
 - **Cause:** re-implemented (wizard chip, range chip) and re-styled (legend).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 5. "View history" is a bare text button with no control height
 
@@ -124,7 +124,7 @@ Decisions).
 - **Measured:** 111×18.8px, 12.5px text, radius 0, browser-default focus.
 - **Expected:** `Button` ghost sm, with `iconRight`.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ## Field chrome
 
@@ -192,7 +192,7 @@ Decisions).
   keyboard-selected use the gold tokens; the header reads in the UI font
   (see 9).
 - **Cause:** re-styled (partial override of a third-party theme).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 11. Input prefix sits outside the field box
 
@@ -205,7 +205,7 @@ Decisions).
   counterpart of the trailing-icon slot, so field boxes in one grid share
   edges.
 - **Cause:** re-implemented (inside the primitive).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 12. CategorySelect draws its own label, unlike every other field
 
@@ -218,7 +218,7 @@ Decisions).
 - **Expected:** the `FormField` label, or no visible label where a table
   column header already names it (see 13).
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 13. Import review repeats a visible "Category" label in every table row
 
@@ -232,7 +232,7 @@ Decisions).
   `aria-label="Category"`) without a visible label. It renders at sm height
   and is vertically centred with the row.
 - **Cause:** re-implemented (inherits finding 12).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ## Icon buttons and modal close
 
@@ -327,7 +327,7 @@ Decisions).
   edge (the trigger is at the right of the page header), staying inside the
   viewport.
 - **Cause:** re-implemented (local popover placement).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 20. Month picker cells and year buttons use off-scale radii
 
@@ -478,7 +478,7 @@ Decisions).
 - **Expected:** every modal passes `title` and gets the one Modal header,
   with the shared close (17) and one footer order (Cancel, then primary).
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Rejected — fixing it adds headings to Add recurring and Add expense and moves their submit buttons out of their forms into the Modal footer: new copy and changed submit behaviour, which this visual-only epic forbids.
 
 ### 30. Modal panel shows a white outline when it opens
 
@@ -491,7 +491,7 @@ Decisions).
   containment, shows no ring (`outline: none` on the surface). Rings belong
   to controls.
 - **Cause:** re-styled (missing rule).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 31. Manage categories footer is clipped at a 900px window
 
@@ -501,7 +501,7 @@ Decisions).
   the footer inside it instead of above a fixed footer.
 - **Expected:** the Modal body scrolls and the footer stays visible.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ## Focus and disabled states
 
@@ -526,7 +526,7 @@ Decisions).
   Fields use the Field Chrome ring (7). A control that stays local after the
   fixes still carries the same gold ring.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ### 33. Toggle has no focus ring
 
@@ -536,7 +536,7 @@ Decisions).
 - **Measured:** no `:focus-visible` rule. Browser default `auto 1px`.
 - **Expected:** the gold 2px ring, offset 2px.
 - **Cause:** re-styled (missing rule in the primitive).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ## Swatches
 
@@ -549,7 +549,7 @@ Decisions).
   border. Category dots are 22×22px with a 2px surface border.
 - **Expected:** both features use `SwatchPicker`, at one swatch size.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ## Primitives index
 
@@ -564,7 +564,7 @@ Decisions).
 - **Expected:** every primitive is exported from the index, and features
   import through it.
 - **Cause:** re-styled (filing gap).
-- **Status:** Open.
+- **Status:** Closed — issue #275.
 
 ---
 

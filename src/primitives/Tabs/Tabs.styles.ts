@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../focusRing/focusRing";
 
 export const StyledTabsRoot = styled.div`
   position: relative;
@@ -48,10 +49,7 @@ export const StyledScrollButton = styled.button<{ $side: "left" | "right" }>`
     color: ${({ theme }) => theme.colors.onSurface};
   }
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: -2px;
-  }
+  ${focusRing}
 `;
 
 export const StyledTab = styled.button<{ $active: boolean; $color?: string }>`

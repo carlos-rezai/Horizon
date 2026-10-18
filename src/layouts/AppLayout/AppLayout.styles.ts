@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../primitives/focusRing/focusRing";
 
 export const StyledWrapper = styled.div`
   display: flex;
@@ -110,6 +111,8 @@ export const StyledManualTrigger = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.onSurfaceVariant};
   }
+
+  ${focusRing}
 `;
 
 export const StyledMain = styled.main`

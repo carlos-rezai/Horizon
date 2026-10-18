@@ -1,10 +1,12 @@
 import styled from "styled-components";
+import { focusRing } from "../focusRing/focusRing";
 
 export const StyledChoiceChip = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 12px;
+  height: ${({ theme }) => theme.sizing.control.sm}px;
+  padding: 0 12px;
   border-radius: ${({ theme }) => theme.radius.pill}px;
   font-family: ${({ theme }) => theme.typography.fontFamily.ui};
   font-size: 13px;
@@ -24,6 +26,8 @@ export const StyledChoiceChip = styled.button<{ $active: boolean }>`
   &:disabled {
     cursor: default;
   }
+
+  ${focusRing}
 `;
 
 export const StyledDot = styled.span<{ $color: string }>`

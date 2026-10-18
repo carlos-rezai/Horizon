@@ -5,6 +5,7 @@ import { fieldChrome } from "../fieldChrome/fieldChrome";
 export const StyledInput = styled.input<{
   $size: ControlSize;
   $hasTrailingIcon?: boolean;
+  $hasPrefix?: boolean;
 }>`
   ${fieldChrome}
 
@@ -14,6 +15,12 @@ export const StyledInput = styled.input<{
       padding-right: ${theme.spacing.space8}px;
     `}
 
+  ${({ $hasPrefix, theme }) =>
+    $hasPrefix &&
+    css`
+      padding-left: ${theme.spacing.space8}px;
+    `}
+
   &::placeholder {
     color: ${({ theme }) => theme.colors.onSurfaceVariant};
   }
@@ -21,12 +28,6 @@ export const StyledInput = styled.input<{
   &[aria-invalid="true"]::placeholder {
     color: ${({ theme }) => theme.colors.error};
   }
-`;
-
-export const StyledInputWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.space2}px;
 `;
 
 export const StyledFieldBox = styled.div`
@@ -47,6 +48,11 @@ export const StyledTrailingIcon = styled.span`
 `;
 
 export const StyledPrefix = styled.span`
+  position: absolute;
+  top: 50%;
+  left: ${({ theme }) => theme.spacing.space3}px;
+  transform: translateY(-50%);
+  pointer-events: none;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-variant-numeric: tabular-nums;
   color: ${({ theme }) => theme.colors.onSurfaceVariant};

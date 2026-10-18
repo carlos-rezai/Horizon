@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 export const StyledForm = styled.form`
   display: flex;
@@ -50,6 +51,8 @@ export const StyledIconButton = styled.button<StyledIconButtonProps>`
   &:hover {
     background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
+
+  ${focusRing}
 `;
 
 export const StyledToggleRow = styled.label`
@@ -95,33 +98,4 @@ export const StyledToggleDesc = styled.div`
   line-height: ${({ theme }) => theme.typography.scale.body.lineHeight};
   color: ${({ theme }) => theme.colors.onSurfaceDim};
   margin-top: 2px;
-`;
-
-export const StyledColorRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.space2}px;
-`;
-
-interface StyledColorSwatchProps {
-  $color: string;
-  $selected: boolean;
-}
-
-export const StyledColorSwatch = styled.button<StyledColorSwatchProps>`
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid
-    ${({ $selected, theme }) =>
-      $selected ? theme.colors.primary : "transparent"};
-  background-color: ${({ $color }) => $color};
-  cursor: pointer;
-  padding: 0;
-  outline: none;
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
 `;

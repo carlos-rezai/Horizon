@@ -41,15 +41,14 @@ import { useSeriesVisibility } from "../../../hooks/useSeriesVisibility";
 import SeriesLegend from "../../../components/SeriesLegend/SeriesLegend";
 import SeriesToggleIndicator from "../../../components/SeriesToggleIndicator/SeriesToggleIndicator";
 import ChartFrame from "../../../components/ChartFrame/ChartFrame";
+import Button from "../../../primitives/Button/Button";
 import ChartTooltip from "../../../components/ChartTooltip/ChartTooltip";
 import { formatBalance, formatMonth } from "../../../utils/format/format";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { currentMonth } from "../../../utils/monthMath/monthMath";
-import { Clock, ArrowRight } from "lucide-react";
 import {
   StyledHeaderControls,
   StyledHeaderDivider,
-  StyledViewHistoryLink,
   StyledChartWrapper,
   StyledEmptyState,
   StyledPayoffMarker,
@@ -302,11 +301,16 @@ export default function TrajectoryHorizon({
               <StyledHeaderDivider aria-hidden="true" />
             )}
             {onViewHistory && (
-              <StyledViewHistoryLink type="button" onClick={onViewHistory}>
-                <Clock size={13} />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                icon="Clock"
+                iconRight="ArrowRight"
+                onClick={onViewHistory}
+              >
                 View history
-                <ArrowRight size={12} />
-              </StyledViewHistoryLink>
+              </Button>
             )}
           </StyledHeaderControls>
         ) : null

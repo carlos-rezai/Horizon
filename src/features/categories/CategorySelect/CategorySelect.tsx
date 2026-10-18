@@ -3,9 +3,10 @@ import { useCategoriesWithInlineAdd } from "../useCategoriesWithInlineAdd/useCat
 import Select from "../../../primitives/Select/Select";
 import Input from "../../../primitives/Input/Input";
 import Button from "../../../primitives/Button/Button";
+import FormField from "../../../components/FormField/FormField";
+import type { ControlSize } from "../../../tokens";
 import {
   StyledWrapper,
-  StyledLabel,
   StyledInlineAddRow,
   StyledErrorText,
 } from "./CategorySelect.styles";
@@ -25,12 +26,21 @@ interface Props {
    * outside moves the picker (e.g. the Import review table's row category).
    */
   value?: string;
+  /**
+   * Drops the visible label where something else already names the picker
+   * (e.g. a table column header); the select keeps its accessible name.
+   */
+  hideLabel?: boolean;
+  /** Control Height of the select and the inline-add field. */
+  size?: ControlSize;
 }
 
 export default function CategorySelect({
   onChange,
   initialCategory,
   value,
+  hideLabel = false,
+  size = "md",
 }: Props) {
   const {
     categories,
@@ -83,19 +93,26 @@ export default function CategorySelect({
   };
 
   if (showInlineAdd) {
+    const nameInput = (
+      <Input
+        id={newCategoryInputId}
+        type="text"
+        size={size}
+        aria-label="New category name"
+        value={newCategoryName}
+        onChange={(e) => setNewCategoryName(e.target.value)}
+        disabled={isAdding}
+      />
+    );
     return (
       <StyledWrapper>
-        <StyledLabel htmlFor={newCategoryInputId}>
-          New category name
-          <Input
-            id={newCategoryInputId}
-            type="text"
-            aria-label="New category name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            disabled={isAdding}
-          />
-        </StyledLabel>
+        {hideLabel ? (
+          nameInput
+        ) : (
+          <FormField label="New category name" htmlFor={newCategoryInputId}>
+            {nameInput}
+          </FormField>
+        )}
         <StyledInlineAddRow>
           <Button type="button" onClick={handleAddCategory} disabled={isAdding}>
             Add category
@@ -106,27 +123,35 @@ export default function CategorySelect({
     );
   }
 
+  const select = (
+    <Select
+      id={selectId}
+      size={size}
+      aria-label="Category"
+      value={selectedCategoryId}
+      onChange={(e) => handleCategoryChange(e.target.value)}
+      disabled={isAdding || isLoading}
+    >
+      {categories
+        .filter((cat) => !cat.hidden || cat.id === selectedCategoryId)
+        .map((cat) => (
+          <option key={cat.id} value={cat.id}>
+            {cat.name}
+          </option>
+        ))}
+      <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
+    </Select>
+  );
+
   return (
     <StyledWrapper>
-      <StyledLabel htmlFor={selectId}>
-        Category
-        <Select
-          id={selectId}
-          aria-label="Category"
-          value={selectedCategoryId}
-          onChange={(e) => handleCategoryChange(e.target.value)}
-          disabled={isAdding || isLoading}
-        >
-          {categories
-            .filter((cat) => !cat.hidden || cat.id === selectedCategoryId)
-            .map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
-        </Select>
-      </StyledLabel>
+      {hideLabel ? (
+        select
+      ) : (
+        <FormField label="Category" htmlFor={selectId}>
+          {select}
+        </FormField>
+      )}
       {addError && <StyledErrorText>{addError}</StyledErrorText>}
     </StyledWrapper>
   );

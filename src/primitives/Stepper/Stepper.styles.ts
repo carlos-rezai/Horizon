@@ -1,14 +1,15 @@
 import styled from "styled-components";
 
+/** The Stepper box wears the Field Chrome look at Control Height md. */
 export const Wrapper = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  background-color: ${({ theme }) => theme.colors.surfaceContainerLow};
+  height: ${({ theme }) => theme.sizing.control.md}px;
+  background-color: ${({ theme }) => theme.colors.surfaceContainerLowest};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  border-radius: ${({ theme }) => theme.radius.button}px;
-  padding: ${({ theme }) => theme.spacing.space1}px
-    ${({ theme }) => theme.spacing.space2}px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  padding: 0 ${({ theme }) => theme.spacing.space2}px;
 `;
 
 export const Value = styled.span`

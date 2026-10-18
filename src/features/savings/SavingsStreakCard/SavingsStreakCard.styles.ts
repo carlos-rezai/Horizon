@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import type { YearTickStatus } from "../savingsTypes/savingsTypes";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 export const StyledHeader = styled.div`
   display: flex;
@@ -19,6 +20,8 @@ export const StyledTitleGroup = styled.button`
   text-align: left;
   cursor: pointer;
   color: inherit;
+
+  ${focusRing}
 `;
 
 export const StyledActions = styled.div`

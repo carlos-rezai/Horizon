@@ -5,6 +5,7 @@ import {
   TABLE_INLINE_PADDING,
   type TableColumn,
 } from "../TableColumn/TableColumn";
+import { focusRing } from "../../primitives/focusRing/focusRing";
 
 interface StyledDataRowProps {
   $columns: TableColumn[];
@@ -30,4 +31,6 @@ export const StyledDataRow = styled.div<StyledDataRowProps>`
     background: ${({ $clickable, theme }) =>
       $clickable ? theme.colors.surfaceContainerHigh : "transparent"};
   }
+
+  ${focusRing}
 `;

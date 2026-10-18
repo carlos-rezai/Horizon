@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 export const StyledRail = styled.nav`
   width: 216px;
@@ -53,4 +54,6 @@ export const StyledRailEntry = styled.button<{ $active: boolean }>`
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
+
+  ${focusRing}
 `;

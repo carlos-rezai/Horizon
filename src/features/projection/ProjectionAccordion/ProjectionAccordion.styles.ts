@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 // chevron · period · one per account · total liquid · restschuld. Figure
 // columns never shrink below a readable width; past that the body scrolls
@@ -111,6 +112,8 @@ export const StyledYearHeader = styled.button<ColumnProps & { $open: boolean }>`
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
+
+  ${focusRing}
 `;
 
 export const StyledChevron = styled.span<{ $open: boolean }>`

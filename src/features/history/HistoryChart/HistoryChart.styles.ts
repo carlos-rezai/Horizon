@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 
 export const StyledRangeChips = styled.div`
   display: inline-flex;
@@ -11,7 +12,8 @@ export const StyledRangeChips = styled.div`
 `;
 
 export const StyledRangeChip = styled.button<{ $active: boolean }>`
-  padding: 7px 14px;
+  height: ${({ theme }) => theme.sizing.control.sm}px;
+  padding: 0 14px;
   border: none;
   border-radius: 7px;
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
@@ -23,6 +25,8 @@ export const StyledRangeChip = styled.button<{ $active: boolean }>`
     $active ? theme.colors.primary : "transparent"};
   cursor: pointer;
   transition: all 0.14s ease;
+
+  ${focusRing}
 `;
 
 export const StyledChartWrapper = styled.div`

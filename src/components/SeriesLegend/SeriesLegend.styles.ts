@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../primitives/focusRing/focusRing";
 
 export const StyledLegend = styled.div`
   display: flex;
@@ -14,8 +15,8 @@ export const StyledChip = styled.button<{ $on: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  padding: ${({ theme }) => theme.spacing.space1}px
-    ${({ theme }) => theme.spacing.space3}px;
+  height: ${({ theme }) => theme.sizing.control.sm}px;
+  padding: 0 ${({ theme }) => theme.spacing.space3}px;
   border-radius: ${({ theme }) => theme.radius.pill}px;
   background: ${({ $on, theme }) =>
     $on ? theme.colors.surfaceContainerHigh : "transparent"};
@@ -29,6 +30,8 @@ export const StyledChip = styled.button<{ $on: boolean }>`
   cursor: pointer;
   opacity: ${({ $on }) => ($on ? 1 : 0.6)};
   transition: all 0.14s ease;
+
+  ${focusRing}
 `;
 
 export const StyledChipSwatch = styled.span<{
@@ -59,8 +62,8 @@ export const StyledShowAllButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space1}px;
-  padding: ${({ theme }) => theme.spacing.space1}px
-    ${({ theme }) => theme.spacing.space3}px;
+  height: ${({ theme }) => theme.sizing.control.sm}px;
+  padding: 0 ${({ theme }) => theme.spacing.space3}px;
   border-radius: ${({ theme }) => theme.radius.pill}px;
   background: transparent;
   border: 1px dashed ${({ theme }) => theme.colors.accentLine};
@@ -68,4 +71,6 @@ export const StyledShowAllButton = styled.button`
   font-size: ${({ theme }) => theme.typography.sizes.sm}px;
   font-weight: 600;
   cursor: pointer;
+
+  ${focusRing}
 `;

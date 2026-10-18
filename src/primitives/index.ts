@@ -14,5 +14,7 @@ export { default as Skeleton } from "./Skeleton/Skeleton";
 export { default as Sparkline } from "./Sparkline/Sparkline";
 export { default as Spinner } from "./Spinner/Spinner";
 export { default as Stepper } from "./Stepper/Stepper";
+export { default as SwatchPicker } from "./SwatchPicker/SwatchPicker";
 export { default as Tabs } from "./Tabs/Tabs";
 export { default as Text } from "./Text/Text";
+export { default as Toggle } from "./Toggle/Toggle";

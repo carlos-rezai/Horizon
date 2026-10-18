@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Toggle from "../../../primitives/Toggle/Toggle";
+import { Toggle } from "../../../primitives";
 
 export default function AutoUpdateToggle() {
   const [enabled, setEnabled] = useState<boolean | null>(null);

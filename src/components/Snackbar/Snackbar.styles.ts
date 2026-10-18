@@ -1,4 +1,5 @@
 import styled, { css } from "styled-components";
+import { focusRing } from "../../primitives/focusRing/focusRing";
 
 type Variant = "info" | "success" | "warning" | "error";
 
@@ -76,8 +77,5 @@ export const StyledActionButton = styled.button`
   color: inherit;
   border-radius: ${({ theme }) => theme.radius.sm}px;
 
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
+  ${focusRing}
 `;

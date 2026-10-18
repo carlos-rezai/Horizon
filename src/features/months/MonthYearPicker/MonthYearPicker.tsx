@@ -29,7 +29,7 @@ interface Props {
 
 interface Position {
   top: number;
-  left: number;
+  right: number;
 }
 
 export default function MonthYearPicker({
@@ -63,7 +63,10 @@ export default function MonthYearPicker({
       const trigger = triggerRef.current;
       if (!trigger) return;
       const rect = trigger.getBoundingClientRect();
-      setPosition({ top: rect.bottom + 8, left: rect.left });
+      setPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
     };
 
     reposition();
@@ -124,7 +127,7 @@ export default function MonthYearPicker({
         createPortal(
           <StyledPopover
             ref={popoverRef}
-            style={{ top: position.top, left: position.left }}
+            style={{ top: position.top, right: position.right }}
           >
             <StyledYearHeader>
               <Button
