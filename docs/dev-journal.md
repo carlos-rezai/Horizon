@@ -1665,3 +1665,100 @@ gives each its one home.
   `recurring_transactions`; the Import Category Learning relationships and
   the updated definition carry the Category Rules, and the historical
   section was left alone.
+
+## 2026-10-18 — #278 UI Consistency Audit refactor: one Focus Ring
+
+Refactor plan 36, worked commit by commit, with the epic's close-out folded
+in so PRD #266 closes from one issue. The epic's rule was one owner per
+visual fact; built slice by slice, it broke that rule in a few small places
+and let its tests drift from how this codebase writes tests. No commit
+changes a rendered value: every move either swaps a literal for a token of
+the same value or touches tests and docs only.
+
+- **One Focus Ring.** #275 added the `focusRing` fragment, described as "the
+  Button's gold 2px outline", and moved 21 controls onto it. The Button
+  itself, a Tabs tab, the Stepper's step buttons and the MonthYearPicker's
+  trigger and month cells still wrote the ring by hand. The finding-32 guard
+  allowed it because it accepted either the literal ring or `${focusRing}`,
+  so two owners were allowed by the test. A1 pinned the ring on all five by
+  rendering them, A2–A3 moved them onto the fragment, and C5 made Primitive
+  Conformance accept the fragment only, across `primitives/` as well. A
+  mutation check (dropping the Stepper's `${focusRing}`) fails the guard on
+  `StepButton`.
+- **Deep imports are the convention.** Before the epic, every import of a
+  primitive or component from a feature, page, layout or component was a
+  deep import (158 of primitives, 194 of components, 0 barrel imports).
+  Finding 35 switched three imports of `Toggle` and `SwatchPicker` to the
+  barrel and added a guard forbidding the deep form for those two only. C3
+  put the three back, kept both index exports and deleted the guard.
+- **Tests that test behaviour.** `remainingFindings.test.ts` and
+  `alignmentOwner.test.ts` were named after issues and held three kinds of
+  assertion:
+  - The register status lines were dropped: they tested a frozen document.
+  - Source-text checks became rendered tests beside their unit: History range
+    chips, legend chips, Import account chips, account colour swatches, and
+    the calendar's today, keyboard-selected and navigation buttons.
+  - The `Empty`-named centring guard and the two-file `text-align` ban were
+    dropped with their reasons (EmptyState's suite, the `columnOf` cases).
+
+  `controlHeight.test.tsx` went too: each control primitive already pins
+  `sizing.control` for every size. `fieldParity` became the Field Chrome
+  fragment's own test. `rawControls` moved to `src/testing/` as the one
+  source scanner (`findStyledElements`, `findFocusRingViolations`), and the
+  four local `computedColor`/`cascaded` copies now import `src/testing/cascaded`.
+
+- **Literals.** The MonthYearPicker trigger reads Control Height sm and
+  `radius.sm`. The Stepper box composes Field Chrome with `width: auto` and
+  its own padding. In the epic-touched style modules, a spacing literal on
+  the scale (multiples of 4) and a radius literal on the prototype scale
+  (6/8/10/14/999) became its token: ChoiceChip's padding and dot radius, the
+  Tabs underline inset, the Modal footer and 36 declarations across 13
+  feature modules.
+
+### Where the plan met the code
+
+- **Finding 35's index rule had no other home.** The plan said each
+  primitive's own suite proves it is importable from the index, so the
+  `remainingFindings` case "exports every primitive folder" could go. Only 9
+  of the 20 primitives have that case, so this was the only check covering
+  the other 11. It is a rule over every module, which is the kind the plan
+  keeps, so C6 moved it into `src/primitives/index.test.ts` instead of
+  dropping it. It now compares the index's exports with each folder's
+  component, not the index's source text. The glossary's ambiguity entry
+  names the index test as the proof.
+- **jsdom's `:focus-visible` needs a connected previous focus.** Five
+  separate Button cases failed after the first: when the last focused node
+  had been unmounted by `cleanup`, the selector engine stopped matching
+  `:focus-visible`. The Button case renders every variant in one tree, as
+  ChoiceChip's ring case already did.
+- **The keyboard-selected day needs a key on the day.** react-datepicker 9
+  moves its preselection from a focused day cell, not from the input.
+- **D3–D5 were read by meaning, not by value alone.** A 20px swatch, a 44px
+  toggle or a 44px scroll button is a size, not spacing, so those stayed even
+  where a spacing or Control Height token has the same number. A 12px toggle
+  radius stayed too, because only the `card` alias holds 12. DataRow's
+  padding (13px and 14px) is off the scale, so the plan's example had nothing
+  to change.
+- **Two regexes lost their `\b` on the way in.** B2's first draft went
+  through a shell heredoc, which stripped the `\b` from `STYLED_ELEMENT`
+  and `EXPORT_START`. The stale-allowlist guard caught it, and the regexes
+  were then written with the editor.
+
+### Follow-ups
+
+- From the plan's Out of Scope:
+  - Appearance changes: off-scale literals, the hand-sized icon tiles, and
+    `HistoryChart`'s 7px chip radius.
+  - `HistoryPage`'s hand-styled call-to-action `Link`, which belongs in
+    `docs/live-use-defects.md` Round 2.
+  - Finding 29's three modal patterns, still rejected.
+  - The Snackbar close's lowercase `aria-label`.
+  - The duplicated `type Variant` in `Button.tsx` and `Button.styles.ts`.
+  - The month picker's 10px right-edge gap and live-use defect #6, both
+    already in Round 2.
+- 11 primitives have no `is importable from src/primitives/index.ts` case of
+  their own. The index test covers them, so adding the cases is optional.
+- Still open from refactors 32–35: `linkedSince`'s UTC "today", the
+  `isoDaysFromToday` midnight flake, the reports route's run-start choice,
+  the client's month arithmetic, `CategorySelect`'s selection effect and the
+  Category Manager on the cache.
