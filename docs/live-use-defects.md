@@ -302,3 +302,62 @@ rewritten to match.
 # Round 2
 
 _Open — append new live-use findings here, numbered from 6._
+
+## 6. Deleting an import from Import History happens at once, with no confirmation
+
+**Did:** Expanded a year in Import History and clicked a statement's trash
+icon ("Delete import").
+**Expected:** A confirmation (the in-app `ConfirmModal`) or an Undo before
+the statement and its transactions are removed.
+**Actual:** The import and its 3 transactions were deleted immediately. Only
+a snackbar ("Import … deleted · 3 transactions removed") followed.
+
+**Found:** 2026-10-18, during the UI Consistency Audit runtime pass (issue
+#267), on the throwaway audit database. Logged here because it is behaviour,
+not appearance.
+
+---
+
+## 7. Month spending rows and Account Detail recurring rows can't be reached by keyboard
+
+**Did:** Tabbed through Month Overview → Variable Spending, and through a
+Girokonto's Recurring transactions on Account Detail.
+**Expected:** Each row that opens an edit modal on click is focusable and
+opens on Enter, like the Fixed Flows rows and the Mortgage's incoming
+recurring rows, which are links.
+**Actual:** The rows are `div`s with a click handler and no role or
+`tabindex`, so the keyboard skips them and the edit modal is mouse-only.
+
+**Found:** 2026-10-18, UI Consistency Audit runtime pass (#267).
+
+---
+
+## 8. Import review row checkboxes are all named "toggle"
+
+**Did:** Inspected the accessible names on the Import wizard's Review step.
+**Expected:** Each row's include checkbox is named for its row (for example
+"Include MUSTER STROM AG").
+**Actual:** Every row's checkbox button has the accessible name "toggle".
+Screen readers hear "toggle" four times, with no row context.
+
+**Found:** 2026-10-18, UI Consistency Audit runtime pass (#267).
+
+---
+
+## 9. Money inputs show numbers in English format
+
+**Did:** Opened Edit savings goal, Edit transaction and Mortgage details on
+existing data.
+**Expected:** Prefilled amounts in the German format the app displays
+everywhere else (`200,00`, `8,60`, `260.000,00`).
+**Actual:**
+
+- Savings goal targets read `200.00`, `500.00` and `300.00`.
+- The transaction amount reads `8.6`.
+- The mortgage principal reads `260000,00` (a comma decimal, but no
+  thousands separator).
+
+So three money inputs follow three different conventions.
+
+**Found:** 2026-10-18, UI Consistency Audit runtime pass (#267). Copy and
+format are out of scope for the audit.

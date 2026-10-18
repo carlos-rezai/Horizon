@@ -1,0 +1,137 @@
+{
+  "viewportWidth": 1440,
+  "popover": {
+    "left": 1238.390625,
+    "right": 1482.390625,
+    "width": 244,
+    "overflowRight": 42.4
+  },
+  "cells": [
+    {
+      "label": "Previous year",
+      "w": 28,
+      "h": 28,
+      "x": 1251,
+      "font": "\"Space Grotesk\" 16px",
+      "radius": "6px",
+      "disabled": true
+    },
+    {
+      "label": "Next year",
+      "w": 28,
+      "h": 28,
+      "x": 1441,
+      "font": "\"Space Grotesk\" 16px",
+      "radius": "6px",
+      "disabled": true
+    },
+    {
+      "label": "Jan",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1251,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": true
+    },
+    {
+      "label": "Feb",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1327,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": true
+    },
+    {
+      "label": "Mar",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1402,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": true
+    },
+    {
+      "label": "Apr",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1251,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "May",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1327,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "Jun",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1402,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "Jul",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1251,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "Aug",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1327,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "Sep",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1402,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "Oct",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1251,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": false
+    },
+    {
+      "label": "Nov",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1327,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": true
+    },
+    {
+      "label": "Dec",
+      "w": 67.3,
+      "h": 34.8,
+      "x": 1402,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "radius": "7px",
+      "disabled": true
+    }
+  ]
+}

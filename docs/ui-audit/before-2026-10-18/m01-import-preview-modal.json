@@ -1,0 +1,71 @@
+{
+  "url": "#/import",
+  "scope": "dialog",
+  "viewport": "1440x900",
+  "count": 2,
+  "elements": [
+    {
+      "tag": "button",
+      "type": "button",
+      "label": "Close",
+      "cls": "eYuHqE",
+      "x": 1003,
+      "y": 290,
+      "w": 30,
+      "h": 30,
+      "font": "400 20px/20px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(155, 163, 176)",
+      "padding": "0px",
+      "textAlign": "center",
+      "display": "grid",
+      "justify": "normal",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 8.8,
+        "rightGap": 8.8,
+        "topGap": 2,
+        "bottomGap": 2
+      },
+      "focus": {
+        "outline": "rgb(16, 16, 16) auto 1px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgb(155, 163, 176)"
+      }
+    },
+    {
+      "tag": "button",
+      "label": "Close",
+      "cls": "fIXZzS",
+      "x": 962,
+      "y": 572,
+      "w": 70.7,
+      "h": 40,
+      "font": "500 14px/14px \"Space Grotesk\"",
+      "radius": "8px",
+      "bg": "rgba(0, 0, 0, 0)",
+      "border": "1px solid rgba(255, 255, 255, 0.07)",
+      "padding": "0px 16px",
+      "textAlign": "center",
+      "display": "flex",
+      "justify": "center",
+      "align": "center",
+      "boxSizing": "border-box",
+      "textOffset": {
+        "leftGap": 17,
+        "rightGap": 17,
+        "topGap": 11,
+        "bottomGap": 11
+      },
+      "focus": {
+        "outline": "rgb(236, 238, 242) solid 3px",
+        "outlineOffset": "0px",
+        "boxShadow": "none",
+        "borderColor": "rgba(255, 255, 255, 0.07)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "font": "\"Helvetica Neue\", helvetica, arial, sans-serif",
+  "dayFont": "\"Helvetica Neue\", helvetica, arial, sans-serif 12.8px",
+  "headerFont": "\"Helvetica Neue\", helvetica, arial, sans-serif",
+  "day": { "w": 27.1875, "h": 27.203125, "radius": "8px" }
+}

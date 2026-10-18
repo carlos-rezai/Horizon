@@ -1,0 +1,99 @@
+{
+  "headers": [
+    {
+      "text": "Period",
+      "left": 293,
+      "right": 365,
+      "font": "\"Space Grotesk\" 11px",
+      "textAlign": "start"
+    },
+    {
+      "text": "Total Liquid",
+      "left": 381,
+      "right": 663,
+      "font": "\"Space Grotesk\" 11px",
+      "textAlign": "right"
+    },
+    {
+      "text": "Restschuld",
+      "left": 679,
+      "right": 961,
+      "font": "\"Space Grotesk\" 11px",
+      "textAlign": "right"
+    },
+    {
+      "text": "Net Cashflow",
+      "left": 977,
+      "right": 1259,
+      "font": "\"Space Grotesk\" 11px",
+      "textAlign": "right"
+    },
+    {
+      "text": "Statements",
+      "left": 1275,
+      "right": 1395,
+      "font": "\"Space Grotesk\" 11px",
+      "textAlign": "right"
+    }
+  ],
+  "yearRow2026": [
+    {
+      "text": "2026",
+      "left": 293,
+      "right": 365,
+      "font": "\"IBM Plex Mono\" 15px",
+      "textAlign": "left"
+    },
+    {
+      "text": "19.945,60 €",
+      "left": 381,
+      "right": 657,
+      "font": "\"Space Grotesk\" 16px",
+      "textAlign": "right"
+    },
+    {
+      "text": "186.500,00 €",
+      "left": 673,
+      "right": 949,
+      "font": "\"Space Grotesk\" 16px",
+      "textAlign": "right"
+    },
+    {
+      "text": "-1.891,84 €",
+      "left": 965,
+      "right": 1241,
+      "font": "\"Space Grotesk\" 16px",
+      "textAlign": "right"
+    }
+  ],
+  "monthRowOct": [
+    {
+      "text": "Oct",
+      "left": 293,
+      "right": 365,
+      "font": "\"IBM Plex Mono\" 12.5px",
+      "textAlign": "start"
+    },
+    {
+      "text": "19.945,60 €",
+      "left": 602.7,
+      "right": 708.3,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right"
+    },
+    {
+      "text": "186.500,00 €",
+      "left": 936.5,
+      "right": 1051.7,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right"
+    },
+    {
+      "text": "-298,24 €",
+      "left": 1308.6,
+      "right": 1395,
+      "font": "\"IBM Plex Mono\" 16px",
+      "textAlign": "right"
+    }
+  ]
+}
