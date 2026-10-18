@@ -80,8 +80,8 @@ export const StyledTab = styled.button<{ $active: boolean; $color?: string }>`
   &::after {
     content: "";
     position: absolute;
-    left: 8px;
-    right: 8px;
+    left: ${({ theme }) => theme.spacing.space2}px;
+    right: ${({ theme }) => theme.spacing.space2}px;
     bottom: -1px;
     height: 2px;
     border-radius: 2px;
