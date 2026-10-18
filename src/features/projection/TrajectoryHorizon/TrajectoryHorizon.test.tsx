@@ -6,6 +6,7 @@ import { Line, ReferenceArea, ReferenceLine } from "recharts";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import TrajectoryHorizon from "./TrajectoryHorizon";
+import Button from "../../../primitives/Button/Button";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { AccountWithBalance } from "../../../types/account";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -795,5 +796,34 @@ describe("TrajectoryHorizon — Past Lead-in", () => {
       (el) => el.type === ReferenceLine && el.props.x === 4
     );
     expect(payoffLine).toBeDefined();
+  });
+});
+
+// Issue #275, Audit Finding 5 — "View history" is the Button in ghost, small
+// form with its trailing arrow, not a bare text button. Matching the classes
+// of a reference ghost sm Button proves it is that Button, not a look-alike.
+describe("TrajectoryHorizon — View history is the ghost sm Button", () => {
+  it("renders View history as the ghost sm Button at Control Height sm", () => {
+    renderWithTheme(
+      <>
+        <TrajectoryHorizon
+          snapshots={snapshots}
+          accounts={[giroAccount]}
+          recurringTransactions={noRecurring}
+          isLoading={false}
+          onViewHistory={() => {}}
+        />
+        <Button variant="ghost" size="sm" iconRight="ArrowRight">
+          Reference
+        </Button>
+      </>
+    );
+
+    const viewHistory = screen.getByRole("button", { name: /view history/i });
+    const reference = screen.getByRole("button", { name: "Reference" });
+    expect(viewHistory.className).toBe(reference.className);
+    expect(getComputedStyle(viewHistory).height).toBe(
+      `${theme.sizing.control.sm}px`
+    );
   });
 });

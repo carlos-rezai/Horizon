@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import Stepper from "./Stepper";
+import { cascaded, computedColor } from "../../testing/cascaded/cascaded";
 
 afterEach(() => cleanup());
 
@@ -66,5 +67,32 @@ describe("Stepper — decrement", () => {
     renderStepper({ value: 1, onChange, min: 1 });
     fireEvent.click(screen.getByRole("button", { name: /decrement/i }));
     expect(onChange).toHaveBeenCalledWith(1);
+  });
+});
+
+// Issue #275, Audit Finding 3 — the Stepper sits at Control Height md and
+// wears the field look (Field Chrome), so it lines up with the fields
+// stacked above and below it.
+describe("Stepper — Control Height and Field Chrome", () => {
+  function box(): HTMLElement {
+    renderStepper();
+    return screen.getByRole("button", { name: /decrement/i })
+      .parentElement as HTMLElement;
+  }
+
+  it("renders its box at the md Control Height", () => {
+    expect(getComputedStyle(box()).height).toBe(`${theme.sizing.control.md}px`);
+  });
+
+  it("renders its box with the Field Chrome background, border and radius", () => {
+    const el = box();
+    const style = getComputedStyle(el);
+    expect(style.backgroundColor).toBe(
+      computedColor(theme.colors.surfaceContainerLowest)
+    );
+    expect(
+      `${style.borderTopWidth} ${style.borderTopStyle} ${style.borderTopColor}`
+    ).toBe(`1px solid ${computedColor(theme.colors.outlineVariant)}`);
+    expect(cascaded(el, "border-radius")).toBe(`${theme.radius.md}px`);
   });
 });

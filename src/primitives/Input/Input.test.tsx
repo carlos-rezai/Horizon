@@ -165,3 +165,16 @@ describe("Input — trailing icon", () => {
     });
   });
 });
+
+// Issue #275, Audit Finding 11 — the prefix sits inside the field chrome, as
+// the leading counterpart of the trailing-icon slot, so a prefixed field's box
+// spans the same width as an unprefixed one in the same grid.
+describe("Input — prefix inside the field", () => {
+  it("renders the prefix in the same box as the input, not beside it", () => {
+    renderWithTheme(<Input prefix="€" aria-label="Amount" />);
+    const input = screen.getByRole("textbox", { name: "Amount" });
+    const prefix = screen.getByText("€");
+    expect(prefix.parentElement).toBe(input.parentElement);
+    expect(getComputedStyle(prefix).position).toBe("absolute");
+  });
+});

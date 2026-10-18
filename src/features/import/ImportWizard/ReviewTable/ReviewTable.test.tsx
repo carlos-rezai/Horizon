@@ -190,3 +190,29 @@ describe("ReviewTable — description field is the small Input", () => {
     expect(setDescription).toHaveBeenCalledWith("r0", "Rent");
   });
 });
+
+// Issue #275, Audit Finding 13 — the CATEGORY column header already names the
+// picker, so a row repeats no visible "Category" label: the select keeps its
+// accessible name and sits at Control Height sm, centred with the row.
+describe("ReviewTable — category picker without a repeated label", () => {
+  it("shows no visible Category label in a row", async () => {
+    render(tree(buildReviewRows([parsed("r0", "Food"), parsed("r1", "Food")])));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("combobox", { name: "Category" })
+      ).toHaveLength(2)
+    );
+    const labels = Array.from(document.querySelectorAll("label")).filter((l) =>
+      l.textContent?.trim().startsWith("Category")
+    );
+    expect(labels).toEqual([]);
+  });
+
+  it("renders each row's picker at the sm Control Height", async () => {
+    render(tree(buildReviewRows([parsed("r0", "Food")])));
+    const picker = await screen.findByRole("combobox", { name: "Category" });
+    expect(getComputedStyle(picker).height).toBe(
+      `${theme.sizing.control.sm}px`
+    );
+  });
+});

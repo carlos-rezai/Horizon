@@ -287,3 +287,49 @@ describe("MonthYearPicker — Stable Label Width", () => {
     expect(centred).toBe(true);
   });
 });
+
+// Issue #275, Audit Finding 19 — the trigger sits at the right of the page
+// header, so the popover aligns its right edge to the trigger's right edge
+// and stays inside the window instead of overflowing it.
+describe("MonthYearPicker — popover placement", () => {
+  it("anchors the popover's right edge to the trigger's right edge", () => {
+    const innerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1440,
+    });
+    try {
+      renderPicker({
+        month: "2023-06",
+        importStartDates: ["2023-03-15"],
+        onJump: vi.fn(),
+      });
+      const trigger = screen.getByRole("button", { name: /June 2023/i });
+      vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+        x: 1238.4,
+        y: 60,
+        left: 1238.4,
+        right: 1392,
+        top: 60,
+        bottom: 92,
+        width: 153.6,
+        height: 32,
+        toJSON: () => ({}),
+      });
+
+      openPicker();
+
+      const popover = screen
+        .getByRole("button", { name: "Mar" })
+        .closest("[style]") as HTMLElement;
+      expect(popover.style.top).toBe("100px");
+      expect(popover.style.right).toBe("48px");
+      expect(popover.style.left).toBe("");
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: innerWidth,
+      });
+    }
+  });
+});

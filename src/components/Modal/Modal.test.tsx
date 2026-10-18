@@ -10,6 +10,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Modal from "./Modal";
+import { cascaded } from "../../testing/cascaded/cascaded";
 import Button from "../../primitives/Button/Button";
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -256,5 +257,56 @@ describe("Modal — shared close button", () => {
     expect(close.querySelector("svg")).toBeInTheDocument();
     expect(close.textContent).toBe("");
     expect(close.parentElement?.lastElementChild).toBe(close);
+  });
+});
+
+// Issue #275, Audit Finding 30 — the dialog surface is focused for
+// containment, never for the user: it shows no ring. Rings belong to controls.
+describe("Modal — dialog surface shows no focus ring", () => {
+  it("draws no outline on the focused dialog surface", () => {
+    renderWithTheme(
+      <Modal onClose={vi.fn()}>
+        <p>Content</p>
+      </Modal>
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(document.activeElement).toBe(dialog);
+    const marker = document.createElement("i");
+    document.body.appendChild(marker);
+    marker.remove();
+    expect(cascaded(dialog, "outline")).toMatch(/^(none|0(px)?)\b/);
+  });
+});
+
+// Issue #275, Audit Finding 31 — the body scrolls and the footer stays
+// visible: the dialog itself does not scroll its footer away.
+describe("Modal — body scrolls above a fixed footer", () => {
+  function renderLong() {
+    renderWithTheme(
+      <Modal
+        onClose={vi.fn()}
+        title="Manage categories"
+        footer={<Button>Done</Button>}
+      >
+        <p>Content</p>
+      </Modal>
+    );
+    const dialog = screen.getByRole("dialog");
+    const body = screen.getByText("Content").parentElement as HTMLElement;
+    const footer = screen.getByRole("button", { name: "Done" })
+      .parentElement as HTMLElement;
+    return { dialog, body, footer };
+  }
+
+  it("scrolls the body", () => {
+    const { body } = renderLong();
+    const style = getComputedStyle(body);
+    expect([style.overflowY, style.overflow]).toContain("auto");
+  });
+
+  it("does not scroll the dialog, so the footer stays in view", () => {
+    const { dialog, footer } = renderLong();
+    expect(getComputedStyle(dialog).overflow).toBe("hidden");
+    expect(footer.parentElement).toBe(dialog);
   });
 });

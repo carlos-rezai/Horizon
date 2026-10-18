@@ -12,6 +12,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import CacheProvider from "../../../components/CacheProvider/CacheProvider";
 import CategorySelect from "./CategorySelect";
+import FormField from "../../../components/FormField/FormField";
 import type { Category } from "../../../types/category";
 
 afterEach(() => {
@@ -490,5 +491,87 @@ describe("CategorySelect — shared cached categories (#259)", () => {
         2
       );
     });
+  });
+});
+
+// Issue #275, Audit Finding 12 — the picker's visible label is the FormField
+// label (the 11px uppercase overline every other field wears), not a label of
+// its own wrapped round the select. Matching the generated classes of a
+// reference FormField label proves it is that label, not a look-alike.
+describe("CategorySelect — FormField label", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => existingCategories,
+    } as Response);
+  });
+
+  function labelOf(select: HTMLElement): HTMLLabelElement | null {
+    return document.querySelector(`label[for="${select.id}"]`);
+  }
+
+  it("labels the picker with the FormField label", async () => {
+    renderSelect();
+    render(
+      <ThemeProvider theme={theme}>
+        <FormField label="Reference" htmlFor="reference">
+          <input id="reference" />
+        </FormField>
+      </ThemeProvider>
+    );
+    await screen.findByRole("option", { name: "Food" });
+
+    const select = screen.getByRole("combobox", { name: "Category" });
+    const label = labelOf(select);
+    expect(label).not.toBeNull();
+    expect(label?.textContent).toBe("Category");
+    expect(label?.className).toBe(screen.getByText("Reference").className);
+  });
+
+  it("does not wrap the select inside its label", async () => {
+    renderSelect();
+    await screen.findByRole("option", { name: "Food" });
+    const select = screen.getByRole("combobox", { name: "Category" });
+    expect(labelOf(select)?.contains(select)).toBe(false);
+  });
+});
+
+// Issue #275, Audit Finding 13 — where a table column header already names
+// it, the picker drops its visible label but keeps its accessible name, and
+// renders at Control Height sm.
+describe("CategorySelect — in a table", () => {
+  beforeEach(() => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => existingCategories,
+    } as Response);
+  });
+
+  function renderInTable() {
+    render(
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <CategorySelect onChange={vi.fn()} hideLabel size="sm" />
+        </ThemeProvider>
+      </CacheProvider>
+    );
+  }
+
+  it("shows no visible label but keeps the accessible name", async () => {
+    renderInTable();
+    await screen.findByRole("option", { name: "Food" });
+    expect(
+      screen.getByRole("combobox", { name: "Category" })
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll("label")).toHaveLength(0);
+  });
+
+  it("renders the select at the sm Control Height", async () => {
+    renderInTable();
+    await screen.findByRole("option", { name: "Food" });
+    expect(
+      getComputedStyle(screen.getByRole("combobox", { name: "Category" }))
+        .height
+    ).toBe(`${theme.sizing.control.sm}px`);
   });
 });

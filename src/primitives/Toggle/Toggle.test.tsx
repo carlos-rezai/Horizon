@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import Toggle from "./Toggle";
+import { focusOutline, outlineValue } from "../../testing/cascaded/cascaded";
 
 afterEach(() => cleanup());
 
@@ -39,5 +40,18 @@ describe("Toggle", () => {
     renderToggle({ checked: true, onChange });
     fireEvent.click(screen.getByRole("switch"));
     expect(onChange).toHaveBeenCalledWith(false);
+  });
+});
+
+// Issue #275, Audit Finding 33 — the Toggle carries the Button's focus ring:
+// gold 2px, offset 2px.
+describe("Toggle — focus ring", () => {
+  it("shows the gold 2px ring, offset 2px, when focused", () => {
+    renderToggle();
+    const ring = focusOutline(screen.getByRole("switch"));
+    expect(outlineValue(ring.outline)).toBe(
+      outlineValue(`2px solid ${theme.colors.primary}`)
+    );
+    expect(ring.offset).toBe("2px");
   });
 });
