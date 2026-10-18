@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Button from "./Button";
+import { focusOutline, outlineValue } from "../../testing/cascaded/cascaded";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -231,5 +232,37 @@ describe("Button — ghostDanger variant", () => {
       ":hover[^{]*"
     );
     expect(hover).toContain(`color:${theme.colors.error}`);
+  });
+});
+
+// Refactor #278 — every variant wears the Focus Ring: gold 2px, offset 2px.
+// One render holds every variant, as ChoiceChip's ring case does: jsdom only
+// reports :focus-visible reliably when focus moves between connected nodes.
+describe("Button — Focus Ring", () => {
+  const variants = [
+    "primary",
+    "secondary",
+    "danger",
+    "ghost",
+    "ghostDanger",
+  ] as const;
+
+  it("shows the gold 2px ring, offset 2px, on every variant", () => {
+    renderWithTheme(
+      <>
+        {variants.map((variant) => (
+          <Button key={variant} variant={variant}>
+            {variant}
+          </Button>
+        ))}
+      </>
+    );
+    variants.forEach((variant) => {
+      const ring = focusOutline(screen.getByRole("button", { name: variant }));
+      expect(outlineValue(ring.outline), variant).toBe(
+        outlineValue(`2px solid ${theme.colors.primary}`)
+      );
+      expect(ring.offset, variant).toBe("2px");
+    });
   });
 });

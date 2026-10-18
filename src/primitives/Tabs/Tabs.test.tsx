@@ -10,6 +10,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Tabs, { type TabItem } from "./Tabs";
+import { focusOutline, outlineValue } from "../../testing/cascaded/cascaded";
 
 const TABS = [
   { id: "a", label: "Giro", color: "#7FA7D9", count: 3 },
@@ -187,5 +188,30 @@ describe("Tabs — export", () => {
         <TabsFromIndex tabs={TABS} activeId="a" onChange={() => {}} />
       )
     ).not.toThrow();
+  });
+});
+
+// Refactor #278 — a tab and the scroll button wear the Focus Ring.
+describe("Tabs — Focus Ring", () => {
+  it("shows the gold 2px ring, offset 2px, on a tab", () => {
+    stubStripMetrics(200, 200);
+    renderTabs(TABS);
+    const ring = focusOutline(screen.getByRole("tab", { name: /Tagesgeld/ }));
+    expect(outlineValue(ring.outline)).toBe(
+      outlineValue(`2px solid ${theme.colors.primary}`)
+    );
+    expect(ring.offset).toBe("2px");
+  });
+
+  it("shows the gold 2px ring, offset 2px, on the scroll button", () => {
+    stubStripMetrics(500, 200);
+    renderTabs(TABS);
+    const ring = focusOutline(
+      screen.getByRole("button", { name: "Scroll tabs right" })
+    );
+    expect(outlineValue(ring.outline)).toBe(
+      outlineValue(`2px solid ${theme.colors.primary}`)
+    );
+    expect(ring.offset).toBe("2px");
   });
 });

@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import MonthYearPicker from "./MonthYearPicker";
+import { focusOutline, outlineValue } from "../../../testing/cascaded/cascaded";
 
 afterEach(cleanup);
 
@@ -331,5 +332,37 @@ describe("MonthYearPicker — popover placement", () => {
         value: innerWidth,
       });
     }
+  });
+});
+
+// Refactor #278 — the trigger and the month cells wear the Focus Ring.
+describe("MonthYearPicker — Focus Ring", () => {
+  it("shows the gold 2px ring, offset 2px, on the trigger", () => {
+    renderPicker({
+      month: "2023-06",
+      importStartDates: ["2023-03-15"],
+      onJump: vi.fn(),
+    });
+    const ring = focusOutline(
+      screen.getByRole("button", { name: /June 2023/i })
+    );
+    expect(outlineValue(ring.outline)).toBe(
+      outlineValue(`2px solid ${theme.colors.primary}`)
+    );
+    expect(ring.offset).toBe("2px");
+  });
+
+  it("shows the gold 2px ring, offset 2px, on a month cell", () => {
+    renderPicker({
+      month: "2023-06",
+      importStartDates: ["2023-03-15"],
+      onJump: vi.fn(),
+    });
+    openPicker();
+    const ring = focusOutline(screen.getByRole("button", { name: "Apr" }));
+    expect(outlineValue(ring.outline)).toBe(
+      outlineValue(`2px solid ${theme.colors.primary}`)
+    );
+    expect(ring.offset).toBe("2px");
   });
 });

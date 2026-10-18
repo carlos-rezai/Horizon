@@ -4,7 +4,12 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import Stepper from "./Stepper";
-import { cascaded, computedColor } from "../../testing/cascaded/cascaded";
+import {
+  cascaded,
+  computedColor,
+  focusOutline,
+  outlineValue,
+} from "../../testing/cascaded/cascaded";
 
 afterEach(() => cleanup());
 
@@ -94,5 +99,19 @@ describe("Stepper — Control Height and Field Chrome", () => {
       `${style.borderTopWidth} ${style.borderTopStyle} ${style.borderTopColor}`
     ).toBe(`1px solid ${computedColor(theme.colors.outlineVariant)}`);
     expect(cascaded(el, "border-radius")).toBe(`${theme.radius.md}px`);
+  });
+});
+
+// Refactor #278 — the step buttons wear the Focus Ring.
+describe("Stepper — Focus Ring", () => {
+  it("shows the gold 2px ring, offset 2px, on a step button", () => {
+    renderStepper();
+    const ring = focusOutline(
+      screen.getByRole("button", { name: /increment/i })
+    );
+    expect(outlineValue(ring.outline)).toBe(
+      outlineValue(`2px solid ${theme.colors.primary}`)
+    );
+    expect(ring.offset).toBe("2px");
   });
 });
