@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../../../primitives/focusRing/focusRing";
 import { MONTHS_LONG } from "../../../utils/format/format";
 
 /** The longest month-year label the trigger can show ("September 2026"):
@@ -34,10 +35,7 @@ export const StyledTrigger = styled.button`
     background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
   }
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
+  ${focusRing}
 `;
 
 export const StyledChevron = styled.span`
@@ -102,8 +100,5 @@ export const StyledMonthCell = styled.button<{ $active: boolean }>`
     cursor: not-allowed;
   }
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
+  ${focusRing}
 `;

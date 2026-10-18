@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { focusRing } from "../focusRing/focusRing";
 
 /** The Stepper box wears the Field Chrome look at Control Height md. */
 export const Wrapper = styled.div`
@@ -40,8 +41,5 @@ export const StepButton = styled.button`
     color: ${({ theme }) => theme.colors.onSurface};
   }
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
+  ${focusRing}
 `;

@@ -90,10 +90,7 @@ export const StyledTab = styled.button<{ $active: boolean; $color?: string }>`
     transition: background-color 0.15s ease;
   }
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
+  ${focusRing}
 `;
 
 export const StyledDot = styled.span<{ $color: string }>`
