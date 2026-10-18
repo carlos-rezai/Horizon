@@ -64,3 +64,34 @@ describe("DatePicker — minDate / maxDate", () => {
     expect(() => renderDatePicker("2024-06-15")).not.toThrow();
   });
 });
+
+// Issue #268 — DatePicker takes the Button's `size` prop and renders its
+// field at that Control Height.
+describe("DatePicker — Control Height", () => {
+  const sizes = ["sm", "md", "lg"] as const;
+
+  sizes.forEach((size) => {
+    it(`renders size "${size}" at the ${size} Control Height`, () => {
+      render(
+        <ThemeProvider theme={theme}>
+          <DatePicker
+            value="2024-01-15"
+            onChange={vi.fn()}
+            aria-label="Date"
+            size={size}
+          />
+        </ThemeProvider>
+      );
+      expect(getComputedStyle(screen.getByLabelText("Date")).height).toBe(
+        `${theme.sizing.control[size]}px`
+      );
+    });
+  });
+
+  it("renders at the md Control Height when no size is given", () => {
+    renderDatePicker("2024-01-15");
+    expect(getComputedStyle(screen.getByLabelText("Date")).height).toBe(
+      `${theme.sizing.control.md}px`
+    );
+  });
+});

@@ -92,3 +92,32 @@ describe("Input — prefix (Phase 2)", () => {
     expect(getInjectedCSS()).toContain("IBM Plex Mono");
   });
 });
+
+// Issue #268 — Input takes the Button's `size` prop and renders at its
+// Control Height.
+describe("Input — Control Height", () => {
+  const sizes = ["sm", "md", "lg"] as const;
+
+  sizes.forEach((size) => {
+    it(`renders size "${size}" at the ${size} Control Height`, () => {
+      renderWithTheme(<Input aria-label="Amount" size={size} />);
+      expect(
+        getComputedStyle(screen.getByRole("textbox", { name: "Amount" })).height
+      ).toBe(`${theme.sizing.control[size]}px`);
+    });
+  });
+
+  it("renders at the md Control Height when no size is given", () => {
+    renderWithTheme(<Input aria-label="Amount" />);
+    expect(
+      getComputedStyle(screen.getByRole("textbox", { name: "Amount" })).height
+    ).toBe(`${theme.sizing.control.md}px`);
+  });
+
+  it("renders at its Control Height with a prefix too", () => {
+    renderWithTheme(<Input aria-label="Amount" prefix="€" size="sm" />);
+    expect(
+      getComputedStyle(screen.getByRole("textbox", { name: "Amount" })).height
+    ).toBe(`${theme.sizing.control.sm}px`);
+  });
+});

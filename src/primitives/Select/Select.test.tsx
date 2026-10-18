@@ -72,3 +72,35 @@ describe("Select — interaction", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
+
+// Issue #268 — Select takes the Button's `size` prop and renders at its
+// Control Height.
+describe("Select — Control Height", () => {
+  const sizes = ["sm", "md", "lg"] as const;
+
+  sizes.forEach((size) => {
+    it(`renders size "${size}" at the ${size} Control Height`, () => {
+      renderWithTheme(
+        <Select aria-label="Account kind" size={size}>
+          <option value="Girokonto">Girokonto</option>
+        </Select>
+      );
+      expect(
+        getComputedStyle(screen.getByRole("combobox", { name: "Account kind" }))
+          .height
+      ).toBe(`${theme.sizing.control[size]}px`);
+    });
+  });
+
+  it("renders at the md Control Height when no size is given", () => {
+    renderWithTheme(
+      <Select aria-label="Account kind">
+        <option value="Girokonto">Girokonto</option>
+      </Select>
+    );
+    expect(
+      getComputedStyle(screen.getByRole("combobox", { name: "Account kind" }))
+        .height
+    ).toBe(`${theme.sizing.control.md}px`);
+  });
+});

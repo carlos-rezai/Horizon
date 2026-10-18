@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { theme, accountIconSet } from "./index";
+import { theme, accountIconSet, sizing } from "./index";
 import type { AccountKind } from "../types/account";
 
 // Token layer tests verify the shape and rules of the Meridian design
@@ -452,5 +452,35 @@ describe("theme.typography.scale — prototype role scale", () => {
 
   it("the label role is an uppercase overline", () => {
     expect(theme.typography.scale.label.textTransform).toBe("uppercase");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Issue #268 — Control Height token
+// Every pressable or typeable primitive declares its height from one
+// sizing token selected by its `size` prop, so a field and a button of
+// the same size line up. Button md stays at 40px (recorded deviation
+// from the Prototype's 38px).
+// ─────────────────────────────────────────────────────────────
+
+describe("theme.sizing.control — Control Height", () => {
+  it("sizing is defined on the theme", () => {
+    expect(theme).toHaveProperty("sizing");
+  });
+
+  it("is exported through the tokens index as the same object the theme carries", () => {
+    expect(sizing.control).toBe(theme.sizing.control);
+  });
+
+  it("control.sm is 32", () => {
+    expect(theme.sizing.control.sm).toBe(32);
+  });
+
+  it("control.md is 40", () => {
+    expect(theme.sizing.control.md).toBe(40);
+  });
+
+  it("control.lg is 44", () => {
+    expect(theme.sizing.control.lg).toBe(44);
   });
 });

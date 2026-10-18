@@ -161,3 +161,24 @@ describe("Button — variants, sizes & icons (Phase 2)", () => {
     expect(getInjectedCSS()).toContain("padding:0");
   });
 });
+
+// Issue #268 — every size renders at its Control Height.
+describe("Button — Control Height", () => {
+  const sizes = ["sm", "md", "lg"] as const;
+
+  sizes.forEach((size) => {
+    it(`renders size "${size}" at the ${size} Control Height`, () => {
+      renderWithTheme(<Button size={size}>Save</Button>);
+      expect(
+        getComputedStyle(screen.getByRole("button", { name: "Save" })).height
+      ).toBe(`${theme.sizing.control[size]}px`);
+    });
+  });
+
+  it("renders at the md Control Height when no size is given", () => {
+    renderWithTheme(<Button>Save</Button>);
+    expect(
+      getComputedStyle(screen.getByRole("button", { name: "Save" })).height
+    ).toBe(`${theme.sizing.control.md}px`);
+  });
+});
