@@ -1,10 +1,56 @@
 import { describe, it, expect } from "vitest";
 import {
+  findStyledElements,
   findRawControls,
   findConformanceViolations,
   findStaleAllowlistEntries,
 } from "./rawControls";
 import type { ConformanceAllowlistEntry } from "../../styles/conformanceAllowlist";
+
+/**
+ * The one source scanner: every exported styled element, its tag, and its
+ * body up to where the next export starts.
+ */
+describe("findStyledElements", () => {
+  it("names a member element and its tag", () => {
+    const source = "export const Row = styled.div`\n  display: flex;\n`;";
+    expect(findStyledElements(source)).toEqual([
+      { exportName: "Row", tag: "div", body: source },
+    ]);
+  });
+
+  it("sees through a generic props parameter and attrs", () => {
+    const source = [
+      "export const Chip = styled.button<{ $on: boolean }>`color: red;`;",
+      'export const File = styled.input.attrs({ type: "file" })`display: none;`;',
+    ].join("\n");
+    expect(
+      findStyledElements(source).map(({ exportName, tag }) => ({
+        exportName,
+        tag,
+      }))
+    ).toEqual([
+      { exportName: "Chip", tag: "button" },
+      { exportName: "File", tag: "input" },
+    ]);
+  });
+
+  it("gives styled(Button) an empty tag", () => {
+    const source = "export const Wide = styled(Button)`width: 100%;`;";
+    expect(findStyledElements(source)).toEqual([
+      { exportName: "Wide", tag: "", body: source },
+    ]);
+  });
+
+  it("ends each body where the next export starts", () => {
+    const first = "export const A = styled.button`\n  color: red;\n`;\n\n";
+    const between = "export const ring = css`outline: none;`;\n";
+    const last = "export const B = styled.span`color: blue;`;\n";
+    const [a, b] = findStyledElements(first + between + last);
+    expect(a.body).toBe(first);
+    expect(b.body).toBe(last);
+  });
+});
 
 /**
  * The detector behind **Primitive Conformance**: it reads a style module's
