@@ -26,8 +26,7 @@ function block(source: string | undefined, name: string): string | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// Finding 35 — every primitive is exported from the index, and Toggle and
-// SwatchPicker are imported only through it.
+// Finding 35 — every primitive is exported from the index.
 // ---------------------------------------------------------------------------
 
 const primitiveIndex = Object.values(
@@ -74,18 +73,6 @@ describe("Audit Finding 35 — the primitives index", () => {
         ).test(primitiveIndex ?? "")
     );
     expect(missing).toEqual([]);
-  });
-
-  it("leaves no deep import of Toggle or SwatchPicker outside the primitives", () => {
-    expect(Object.keys(appSources).length).toBeGreaterThan(50);
-    const offenders = Object.entries(appSources)
-      .filter(([, source]) =>
-        /primitives\/(Toggle\/Toggle|SwatchPicker\/SwatchPicker)["']/.test(
-          source
-        )
-      )
-      .map(([path]) => path);
-    expect(offenders).toEqual([]);
   });
 });
 

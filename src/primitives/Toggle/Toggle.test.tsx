@@ -55,3 +55,16 @@ describe("Toggle — focus ring", () => {
     expect(ring.offset).toBe("2px");
   });
 });
+
+describe("Toggle — export", () => {
+  it("is importable from src/primitives/index.ts", async () => {
+    const { Toggle: ToggleFromIndex } = await import("../index");
+    expect(() =>
+      render(
+        <ThemeProvider theme={theme}>
+          <ToggleFromIndex checked={false} onChange={vi.fn()} />
+        </ThemeProvider>
+      )
+    ).not.toThrow();
+  });
+});

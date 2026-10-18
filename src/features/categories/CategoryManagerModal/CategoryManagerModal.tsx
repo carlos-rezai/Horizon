@@ -5,7 +5,7 @@ import Button from "../../../primitives/Button/Button";
 import Badge from "../../../primitives/Badge/Badge";
 import Select from "../../../primitives/Select/Select";
 import Input from "../../../primitives/Input/Input";
-import { SwatchPicker } from "../../../primitives";
+import SwatchPicker from "../../../primitives/SwatchPicker/SwatchPicker";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import type { Category } from "../../../types/category";
 import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor";

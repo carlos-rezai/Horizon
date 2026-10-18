@@ -46,3 +46,18 @@ describe("SwatchPicker", () => {
     expect(onChange).toHaveBeenCalledWith("#0000CC");
   });
 });
+
+describe("SwatchPicker — export", () => {
+  it("is importable from src/primitives/index.ts", async () => {
+    const { SwatchPicker: SwatchPickerFromIndex } = await import("../index");
+    expect(() =>
+      renderWithTheme(
+        <SwatchPickerFromIndex
+          palette={PALETTE}
+          value={PALETTE[0]}
+          onChange={vi.fn()}
+        />
+      )
+    ).not.toThrow();
+  });
+});
