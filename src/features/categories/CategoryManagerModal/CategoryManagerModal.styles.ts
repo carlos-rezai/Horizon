@@ -116,56 +116,6 @@ export const NameInput = styled.input`
   outline: none;
 `;
 
-export const EditActionButton = styled.button<{ $tone: "pos" | "neutral" }>`
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-  color: ${({ $tone, theme }) =>
-    $tone === "pos" ? theme.colors.secondary : theme.colors.onSurfaceDim};
-  background: ${({ $tone, theme }) =>
-    $tone === "pos" ? theme.colors.secondaryContainer : "transparent"};
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
-`;
-
-export const ActionButton = styled.button<{ $danger?: boolean }>`
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.onSurfaceDim};
-  cursor: pointer;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-
-  &:hover {
-    background: ${({ $danger, theme }) =>
-      $danger
-        ? theme.colors.errorContainer
-        : theme.colors.surfaceContainerHighest};
-    color: ${({ $danger, theme }) =>
-      $danger ? theme.colors.error : theme.colors.onSurface};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
-`;
-
 // ── Swatch popover ─────────────────────────────────────────────────────────
 
 export const SwatchAnchor = styled.div`

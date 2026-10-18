@@ -1,8 +1,8 @@
+import Button from "../../primitives/Button/Button";
 import {
   StyledSnackbar,
   StyledMessage,
   StyledActionButton,
-  StyledCloseButton,
 } from "./Snackbar.styles";
 
 type Variant = "info" | "success" | "warning" | "error";
@@ -45,9 +45,14 @@ export default function Snackbar({
           {action.label}
         </StyledActionButton>
       )}
-      <StyledCloseButton onClick={onClose} aria-label="close">
-        ✕
-      </StyledCloseButton>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        icon="X"
+        onClick={onClose}
+        aria-label="close"
+      />
     </StyledSnackbar>
   );
 }

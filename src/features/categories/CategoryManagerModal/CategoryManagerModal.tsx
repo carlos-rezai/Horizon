@@ -1,14 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Check,
-  Eye,
-  EyeOff,
-  Info,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Info, Plus } from "lucide-react";
 import Modal from "../../../components/Modal/Modal";
 import Button from "../../../primitives/Button/Button";
 import Badge from "../../../primitives/Badge/Badge";
@@ -35,8 +26,6 @@ import {
   RowName,
   EditWrap,
   NameInput,
-  EditActionButton,
-  ActionButton,
   Actions,
   SwatchAnchor,
   SwatchDot,
@@ -173,22 +162,22 @@ function CategoryRow({
                 }
               }}
             />
-            <EditActionButton
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
+              icon="Check"
               aria-label="Save"
-              $tone="pos"
               onClick={() => void handleSave()}
-            >
-              <Check size={14} />
-            </EditActionButton>
-            <EditActionButton
+            />
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              icon="X"
               aria-label="Cancel"
-              $tone="neutral"
               onClick={cancelEdit}
-            >
-              <X size={14} />
-            </EditActionButton>
+            />
           </EditWrap>
         ) : (
           <DisplayWrap>
@@ -207,36 +196,38 @@ function CategoryRow({
 
       <Actions>
         {onRename && !editing && (
-          <ActionButton
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            icon="Pencil"
             aria-label="Rename"
             onClick={() => {
               setDraft(category.name);
               setError(null);
               setEditing(true);
             }}
-          >
-            <Pencil size={15} />
-          </ActionButton>
+          />
         )}
         {onToggleHidden && (
-          <ActionButton
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            icon={category.hidden ? "EyeOff" : "Eye"}
             aria-label={category.hidden ? "Un-hide" : "Hide"}
             onClick={() => onToggleHidden(category)}
-          >
-            {category.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
-          </ActionButton>
+          />
         )}
         {onDelete && (
-          <ActionButton
+          <Button
             type="button"
+            variant="ghostDanger"
+            size="sm"
+            icon="Trash2"
             aria-label="Delete"
-            $danger
             onClick={() => onDelete(category)}
-          >
-            <Trash2 size={15} />
-          </ActionButton>
+          />
         )}
       </Actions>
     </Row>

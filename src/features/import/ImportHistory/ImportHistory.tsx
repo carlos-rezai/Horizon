@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Banknote, ChevronRight, Search, Trash2, Upload } from "lucide-react";
+import { Banknote, ChevronRight, Upload } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import { resolveAccountColor } from "../../../utils/color/color";
 import { pluralize } from "../../../utils/format/format";
@@ -30,7 +30,6 @@ import {
   StyledFileRange,
   StyledFileCount,
   StyledActions,
-  StyledActionBtn,
 } from "./ImportHistory.styles";
 
 const MONTHS = [
@@ -180,23 +179,24 @@ export default function ImportHistory({
                           <small> tx</small>
                         </StyledFileCount>
                         <StyledActions>
-                          <StyledActionBtn
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
+                            icon="Search"
                             title="Preview"
                             aria-label="Preview"
                             onClick={() => onPreview(file)}
-                          >
-                            <Search size={16} />
-                          </StyledActionBtn>
-                          <StyledActionBtn
+                          />
+                          <Button
                             type="button"
-                            $danger
+                            variant="ghostDanger"
+                            size="sm"
+                            icon="Trash2"
                             title="Delete import"
                             aria-label="Delete import"
                             onClick={() => onDelete(file)}
-                          >
-                            <Trash2 size={16} />
-                          </StyledActionBtn>
+                          />
                         </StyledActions>
                       </StyledFileRow>
                     );

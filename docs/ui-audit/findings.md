@@ -255,7 +255,7 @@ Decisions).
   icon-only, with an `aria-label`. Delete-style actions use the new
   `ghostDanger` variant.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #272.
 
 ### 15. Most icon buttons have no keyboard focus ring
 
@@ -269,7 +269,7 @@ Decisions).
   dark surface), effectively invisible.
 - **Expected:** the Button ring: gold 2px outline, offset 2px.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #272.
 
 ### 16. Delete-style icons turn red on hover in some places only
 
@@ -282,7 +282,7 @@ Decisions).
 - **Expected:** `Button` variant `ghostDanger`: ghost at rest, error colour
   on hover.
 - **Cause:** missing primitive (a variant).
-- **Status:** Open.
+- **Status:** Closed — issue #272.
 
 ### 17. Modal close is a "×" text glyph; the drawer close is a lucide icon
 
@@ -455,7 +455,7 @@ Decisions).
 - **Expected:** `Button` ghost sm icon-only (Cancel). Save keeps its
   confirming tone through a Button variant, not a local box.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #272.
 
 ## Modal chrome
 

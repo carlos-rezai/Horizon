@@ -162,23 +162,3 @@ export const StyledActions = styled.div`
     opacity: 1;
   }
 `;
-
-export const StyledActionBtn = styled.button<{ $danger?: boolean }>`
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  color: ${({ theme }) => theme.colors.onSurfaceDim};
-  cursor: pointer;
-  transition: all ${({ theme }) => theme.transitions.fast};
-
-  &:hover {
-    background: ${({ theme, $danger }) =>
-      $danger
-        ? theme.colors.errorContainer
-        : theme.colors.surfaceContainerHigh};
-    color: ${({ theme, $danger }) =>
-      $danger ? theme.colors.error : theme.colors.onSurface};
-  }
-`;

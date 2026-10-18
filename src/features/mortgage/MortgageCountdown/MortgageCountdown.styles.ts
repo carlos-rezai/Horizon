@@ -6,25 +6,6 @@ export const StyledSection = styled.section`
   gap: ${({ theme }) => theme.spacing.space5}px;
 `;
 
-export const StyledEditButton = styled.button`
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  border: 1px solid transparent;
-  background-color: transparent;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  cursor: pointer;
-  transition: all 0.14s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.onSurface};
-    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
-    border-color: ${({ theme }) => theme.colors.outlineVariant};
-  }
-`;
-
 export const StyledHeroAmount = styled.p`
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 30px;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTheme } from "styled-components";
-import { Pencil, Flag, Landmark } from "lucide-react";
+import { Flag, Landmark } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { MonthlySnapshot } from "../../../types/projection";
 import type { RecurringTransaction } from "../../../types/recurring";
@@ -23,7 +23,6 @@ import MortgageModal from "../MortgageModal/MortgageModal";
 import MortgageSetupModal from "../MortgageSetupModal/MortgageSetupModal";
 import {
   StyledSection,
-  StyledEditButton,
   StyledHeroAmount,
   StyledSubtext,
   StyledRow,
@@ -131,13 +130,14 @@ export default function MortgageCountdown({
               label="Mortgage Countdown"
               title={account.name}
               right={
-                <StyledEditButton
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  icon="Pencil"
                   aria-label="Edit mortgage details"
                   onClick={() => setEditing(account)}
-                >
-                  <Pencil size={16} />
-                </StyledEditButton>
+                />
               }
             />
 

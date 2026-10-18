@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Flame, ChevronDown, Pencil } from "lucide-react";
+import { Flame } from "lucide-react";
 import Card from "../../../components/Card/Card";
 import Avatar from "../../../primitives/Avatar/Avatar";
 import Badge from "../../../primitives/Badge/Badge";
+import Button from "../../../primitives/Button/Button";
 import ProgressBar from "../../../primitives/ProgressBar/ProgressBar";
 import {
   formatBalance,
@@ -24,8 +25,6 @@ import {
   StyledHeader,
   StyledTitleGroup,
   StyledActions,
-  StyledEditButton,
-  StyledToggle,
   StyledFlameBadge,
   StyledOverline,
   StyledTitleRow,
@@ -124,22 +123,23 @@ export default function SavingsStreakCard({
         </StyledTitleGroup>
         <StyledActions>
           {onSave && (
-            <StyledEditButton
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              icon="Pencil"
               aria-label="Edit savings goal"
               onClick={() => setEditing(true)}
-            >
-              <Pencil size={16} />
-            </StyledEditButton>
+            />
           )}
-          <StyledToggle
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            icon={open ? "ChevronUp" : "ChevronDown"}
             onClick={toggle}
-            $open={open}
             aria-label={open ? "Collapse" : "Expand"}
-          >
-            <ChevronDown size={17} />
-          </StyledToggle>
+          />
         </StyledActions>
       </StyledHeader>
 

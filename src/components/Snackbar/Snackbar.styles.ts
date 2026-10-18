@@ -81,21 +81,3 @@ export const StyledActionButton = styled.button`
     outline-offset: 2px;
   }
 `;
-
-export const StyledCloseButton = styled.button`
-  background: none;
-  border: none;
-  padding: ${({ theme }) => theme.spacing.space1}px;
-  cursor: pointer;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.radius.sm}px;
-  line-height: 1;
-
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
-`;
