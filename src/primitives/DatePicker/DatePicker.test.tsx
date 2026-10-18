@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import DatePicker from "./DatePicker";
+import { cascaded, computedColor } from "../../testing/cascaded/cascaded";
 
 afterEach(() => cleanup());
 
@@ -143,5 +144,64 @@ describe("DatePicker — calendar pop-up", () => {
       screen.getByRole("gridcell", { name: /January 20th, 2024/ })
     );
     expect(onChange).toHaveBeenCalledWith("2024-01-20");
+  });
+});
+
+/** Today as an ISO date in local time, and a different day in its month. */
+function todayAndAnotherDay(): { today: string; other: string } {
+  const now = new Date();
+  const iso = (day: number) =>
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return {
+    today: iso(now.getDate()),
+    other: iso(now.getDate() === 1 ? 2 : 1),
+  };
+}
+
+// Refactor #278 (Audit Finding 10) — the calendar reads in the gold tokens,
+// not react-datepicker blue, and shows its month navigation.
+describe("DatePicker — calendar navigation and today", () => {
+  it("draws today's cell in the gold token", () => {
+    renderDatePicker(todayAndAnotherDay().other);
+    fireEvent.click(screen.getByLabelText("Date"));
+    const today = screen
+      .getAllByRole("gridcell")
+      .find((cell) => cell.getAttribute("aria-current") === "date");
+    expect(today).toBeDefined();
+    expect(getComputedStyle(today as HTMLElement).color).toBe(
+      computedColor(theme.colors.primary)
+    );
+  });
+
+  it("draws the keyboard-selected cell in the gold tokens", () => {
+    renderDatePicker("2024-01-15");
+    const input = screen.getByLabelText("Date");
+    fireEvent.click(input);
+    fireEvent.keyDown(
+      screen.getByRole("gridcell", { name: /January 15th, 2024/ }),
+      { key: "ArrowRight" }
+    );
+    const cell = screen.getByRole("gridcell", { name: /January 16th, 2024/ });
+    expect(cell.className).toContain(
+      "react-datepicker__day--keyboard-selected"
+    );
+    expect(getComputedStyle(cell).backgroundColor).toBe(
+      computedColor(theme.colors.primaryContainer)
+    );
+    expect(cascaded(cell, "box-shadow")).toBe(
+      `inset 0 0 0 1px ${theme.colors.primary}`
+    );
+  });
+
+  it("shows the Previous and Next month buttons when no bounds are set", () => {
+    renderDatePicker("2024-01-15");
+    fireEvent.click(screen.getByLabelText("Date"));
+    ["Previous Month", "Next Month"].forEach((name) => {
+      const button = screen.getByRole("button", { name });
+      expect(getComputedStyle(button).display, name).not.toBe("none");
+      expect(getComputedStyle(button).height, name).toBe(
+        `${theme.sizing.control.sm}px`
+      );
+    });
   });
 });

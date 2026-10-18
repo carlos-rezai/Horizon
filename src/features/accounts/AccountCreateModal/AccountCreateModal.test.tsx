@@ -11,6 +11,7 @@ import { ThemeProvider } from "styled-components";
 import { theme, accountIconSet } from "../../../tokens";
 import type { AccountWithBalance } from "../../../types/account";
 import AccountCreateModal from "./AccountCreateModal";
+import SwatchPicker from "../../../primitives/SwatchPicker/SwatchPicker";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -824,6 +825,34 @@ describe("AccountCreateModal — Balance Anchor fields", () => {
     expect(lastRequestBody()).toMatchObject({
       anchorBalance: 254321,
       anchorDate: "2026-03-31",
+    });
+  });
+});
+
+// Refactor #278 (Audit Finding 34) — the account colour row is the
+// SwatchPicker: its swatches render at the SwatchPicker's swatch size.
+describe("AccountCreateModal — colour swatches are SwatchPicker swatches", () => {
+  it("renders its colour swatches at the same size as a SwatchPicker swatch", () => {
+    renderWithTheme(
+      <>
+        <AccountCreateModal onClose={vi.fn()} onSuccess={vi.fn()} />
+        <SwatchPicker
+          palette={["#123456"]}
+          value="#123456"
+          onChange={vi.fn()}
+        />
+      </>
+    );
+    const reference = getComputedStyle(
+      screen.getByRole("button", { name: "#123456" })
+    );
+
+    theme.colors.accountColorPalette.forEach((color) => {
+      const swatch = getComputedStyle(
+        screen.getByRole("button", { name: color })
+      );
+      expect(swatch.width, color).toBe(reference.width);
+      expect(swatch.height, color).toBe(reference.height);
     });
   });
 });

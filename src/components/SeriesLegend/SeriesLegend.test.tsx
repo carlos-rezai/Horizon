@@ -111,3 +111,18 @@ describe("SeriesLegend", () => {
     expect(screen.getByTestId("trajectory-legend")).toBeInTheDocument();
   });
 });
+
+// Refactor #278 (Audit Finding 4) — the legend chips sit at Control Height sm.
+describe("SeriesLegend — Control Height sm", () => {
+  it("renders a series chip and the show-all chip at the sm Control Height", () => {
+    renderLegend();
+    const series = screen.getByRole("button", { name: /Everyday/ });
+    const showAll = screen.getByRole("button", { name: /Show all/ });
+    expect(getComputedStyle(series).height).toBe(
+      `${theme.sizing.control.sm}px`
+    );
+    expect(getComputedStyle(showAll).height).toBe(
+      `${theme.sizing.control.sm}px`
+    );
+  });
+});

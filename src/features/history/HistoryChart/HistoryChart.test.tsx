@@ -811,3 +811,23 @@ describe("HistoryChart — Paydown Bridge", () => {
     expect(bridgeLine()?.hide).toBe(true);
   });
 });
+
+// Refactor #278 (Audit Finding 4) — the range chips sit at Control Height sm.
+describe("HistoryChart — range chips at Control Height sm", () => {
+  it("renders each range chip at the sm Control Height", () => {
+    renderWithTheme(
+      <HistoryChart
+        points={makePoints(40)}
+        accounts={[giro]}
+        isLoading={false}
+      />
+    );
+
+    ["1 Year", "3 Years", "All history"].forEach((name) => {
+      expect(
+        getComputedStyle(screen.getByRole("button", { name })).height,
+        name
+      ).toBe(`${theme.sizing.control.sm}px`);
+    });
+  });
+});

@@ -1873,3 +1873,15 @@ describe("ImportWizard — Map columns hint reads as one sentence (#274)", () =>
     );
   });
 });
+
+// Refactor #278 (Audit Finding 4) — the step-one account chips keep the
+// ChoiceChip's contract: an aria-pressed button at Control Height sm.
+describe("ImportWizard — account chips are ChoiceChips", () => {
+  it("renders each account as an aria-pressed button at the sm Control Height", async () => {
+    mockCategoryFetch([]);
+    renderWizard([], vi.fn<CommitFn>());
+    const chip = await screen.findByRole("button", { name: "Main" });
+    expect(chip).toHaveAttribute("aria-pressed");
+    expect(getComputedStyle(chip).height).toBe(`${theme.sizing.control.sm}px`);
+  });
+});
