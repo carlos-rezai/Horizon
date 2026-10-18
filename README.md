@@ -282,7 +282,7 @@ The generated installer will be signed with your local certificate and will inst
 | Balance Anchor                            | ✅ Complete |
 | Financial History                         | ✅ Complete |
 | Month Cash Flow                           | ✅ Complete |
-| Import Category Learning                  | 📋 Planned  |
+| Import Category Learning                  | ✅ Complete |
 | Monthly digest (AI)                       | ⏸ Deferred  |
 | Anomaly detection + Q&A (AI)              | ⏸ Deferred  |
 | Sondertilgung advisor (AI)                | ⏸ Deferred  |
