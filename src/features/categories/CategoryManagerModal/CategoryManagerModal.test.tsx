@@ -14,6 +14,7 @@ import { categoryColorPalette } from "../../../utils/categoryColor/categoryColor
 import type { Category } from "../../../types/category";
 import CategoryManagerModal from "./CategoryManagerModal";
 import Button from "../../../primitives/Button/Button";
+import Input from "../../../primitives/Input/Input";
 
 const NEW_COLOR = "#6FBFBF"; // cyan — a palette member, distinct from Vet's colour
 
@@ -735,5 +736,69 @@ describe("CategoryManagerModal — row actions are the shared icon button", () =
     expect(save.classList).toContain(buttonComponentClass);
     expect(getComputedStyle(save).height).toBe(`${theme.sizing.control.sm}px`);
     expectIconOnly(save);
+  });
+});
+
+/**
+ * The Input primitive's stable component class, read from a reference Input.
+ * A field carrying it is the Input — Field Chrome, Control Height — rather
+ * than a hand-built look-alike.
+ */
+function inputComponentClass(): string {
+  const { getByRole, unmount } = render(
+    <ThemeProvider theme={theme}>
+      <Input size="sm" aria-label="Reference field" />
+    </ThemeProvider>
+  );
+  const className = getByRole("textbox", {
+    name: "Reference field",
+  }).className.split(" ")[0];
+  unmount();
+  return className;
+}
+
+/** A colour as jsdom serialises it, so token hex and rgba compare equal. */
+function computedColor(value: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = value;
+  document.body.appendChild(probe);
+  const color = getComputedStyle(probe).color;
+  probe.remove();
+  return color;
+}
+
+function expectSmallFieldChrome(field: HTMLElement) {
+  expect(field.classList).toContain(inputComponentClass());
+  const style = getComputedStyle(field);
+  expect(style.height).toBe(`${theme.sizing.control.sm}px`);
+  expect(style.backgroundColor).toBe(
+    computedColor(theme.colors.surfaceContainerLowest)
+  );
+  expect(
+    `${style.borderTopWidth} ${style.borderTopStyle} ${style.borderTopColor}`
+  ).toBe(`1px solid ${computedColor(theme.colors.outlineVariant)}`);
+}
+
+// Issue #273 — local text fields onto Input.
+describe("CategoryManagerModal — inline fields are the Input primitive", () => {
+  it("renders the rename field as the Input with Field Chrome at Control Height sm", async () => {
+    renderModal([foodDefault, vetCustom]);
+
+    const row = await screen.findByTestId(`category-row-${vetCustom.id}`);
+    fireEvent.click(within(row).getByRole("button", { name: "Rename" }));
+
+    expectSmallFieldChrome(
+      screen.getByRole("textbox", { name: "Rename category" })
+    );
+  });
+
+  it("renders the add field as the Input with Field Chrome at Control Height sm", async () => {
+    renderModal([foodDefault]);
+
+    fireEvent.click(await screen.findByTestId("category-add-row"));
+
+    expectSmallFieldChrome(
+      screen.getByRole("textbox", { name: "New category name" })
+    );
   });
 });

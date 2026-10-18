@@ -1,11 +1,18 @@
 // @vitest-environment jsdom
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  fireEvent,
+} from "@testing-library/react";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { Check } from "lucide-react";
 import { theme } from "../../../../tokens";
 import CacheProvider from "../../../../components/CacheProvider/CacheProvider";
 import ReviewTable, { type FlagSpec } from "./ReviewTable";
+import Input from "../../../../primitives/Input/Input";
 import { buildReviewRows } from "../../reviewRows/reviewRows";
 import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
 import type { ParsedImportRow } from "../../importTypes/importTypes";
@@ -116,5 +123,70 @@ describe("ReviewTable — row-driven category picker (#259)", () => {
         "c-income",
       ]);
     });
+  });
+});
+
+/** The Input primitive's stable component class, read from a reference Input. */
+function inputComponentClass(): string {
+  const { getByRole, unmount } = render(
+    <ThemeProvider theme={theme}>
+      <Input size="sm" aria-label="Reference field" />
+    </ThemeProvider>
+  );
+  const className = getByRole("textbox", {
+    name: "Reference field",
+  }).className.split(" ")[0];
+  unmount();
+  return className;
+}
+
+/** A colour as jsdom serialises it, so token hex and rgba compare equal. */
+function computedColor(value: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = value;
+  document.body.appendChild(probe);
+  const color = getComputedStyle(probe).color;
+  probe.remove();
+  return color;
+}
+
+// Issue #273 — local text fields onto Input.
+describe("ReviewTable — description field is the small Input", () => {
+  it("renders the description as the Input at Control Height sm with Field Chrome", () => {
+    render(tree(buildReviewRows([parsed("r0", "Food")])));
+
+    const field = screen.getByRole("textbox", { name: "Description" });
+    expect(field.classList).toContain(inputComponentClass());
+    const style = getComputedStyle(field);
+    expect(style.height).toBe(`${theme.sizing.control.sm}px`);
+    expect(style.backgroundColor).toBe(
+      computedColor(theme.colors.surfaceContainerLowest)
+    );
+    expect(
+      `${style.borderTopWidth} ${style.borderTopStyle} ${style.borderTopColor}`
+    ).toBe(`1px solid ${computedColor(theme.colors.outlineVariant)}`);
+  });
+
+  it("keeps the description editable through the Input", () => {
+    const setDescription = vi.fn();
+    render(
+      <CacheProvider>
+        <ThemeProvider theme={theme}>
+          <ReviewTable
+            rows={buildReviewRows([parsed("r0", "Food")])}
+            flagSpecs={flagSpecs}
+            toggle={vi.fn()}
+            setCategory={vi.fn()}
+            setDescription={setDescription}
+            registerDescRef={vi.fn()}
+          />
+        </ThemeProvider>
+      </CacheProvider>
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Description" }), {
+      target: { value: "Rent" },
+    });
+    expect(setDescription).toHaveBeenCalledWith("r0", "Rent");
   });
 });
