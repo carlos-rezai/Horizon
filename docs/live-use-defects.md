@@ -361,3 +361,31 @@ So three money inputs follow three different conventions.
 
 **Found:** 2026-10-18, UI Consistency Audit runtime pass (#267). Copy and
 format are out of scope for the audit.
+
+---
+
+## 10. Import History year rows don't say whether they are open
+
+**Did:** Inspected the Import History year header ("2026 · 1 statement ·
+3 tx") before and after expanding it.
+**Expected:** The year toggle carries `aria-expanded`, like the History Year
+Archive and the Projection accordion, so a screen reader hears "collapsed"
+or "expanded".
+**Actual:** The button has no `aria-expanded` in either state. It predates
+the UI Consistency Audit (it is absent at `81cce49` too).
+
+**Found:** 2026-10-18, UI Consistency Audit after pass (#277).
+
+---
+
+## 11. Month picker pop-up sits 10px left of the trigger
+
+**Did:** Opened the Month Overview month picker at 1440×900.
+**Expected:** The pop-up's right edge lines up with the trigger's right edge
+(1374px).
+**Actual:** It ends at 1364px. The position is computed as
+`window.innerWidth - rect.right`, and `innerWidth` includes the page's
+vertical scrollbar, so the offset is the scrollbar's width. It no longer
+overflows the window, which was the original problem (finding 19).
+
+**Found:** 2026-10-18, UI Consistency Audit after pass (#277). Cosmetic.

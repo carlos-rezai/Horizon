@@ -10,8 +10,10 @@ import type { ControlSize } from "../../tokens";
 export const fieldChrome = css<{ $size: ControlSize }>`
   height: ${({ $size, theme }) => theme.sizing.control[$size]}px;
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.space2}px
-    ${({ theme }) => theme.spacing.space3}px;
+  /* No vertical padding: the height centres the line. An input centres its
+     text anyway, but a select with appearance: none does not, and at sm the
+     padding would leave less than one line and clip it. */
+  padding: 0 ${({ theme }) => theme.spacing.space3}px;
   background-color: ${({ theme }) => theme.colors.surfaceContainerLowest};
   color: ${({ theme }) => theme.colors.onSurface};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};

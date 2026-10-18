@@ -667,19 +667,20 @@ Brave over CDP at 1440×900. Evidence is in `after-2026-10-18/`.
   after fixture has a row without a description, so the "Needs attention"
   toggle and the "1 row needs a description" pill appear.
 
-**Found in the after pass, not yet fixed:**
+**Found in the after pass:**
 
-- **Select text clips at sm.** The review step's category select (08c) is
-  32px with Field Chrome's 8px vertical padding and a 21px line, which leaves
-  14px of content box, so the text sits low and its descenders are cut.
-  `input` centres its text whatever the padding; a select with
-  `appearance: none` does not. Zero vertical padding in `fieldChrome` fixes
-  it (checked in the running app). A regression from this epic (#275).
-- **Finding 10's arrows are not in the DOM.** react-datepicker 9.1.0 renders
-  no `.react-datepicker__navigation` buttons in this configuration, so the
-  calendar still has no previous/next month arrows (m08b). #275's style rule
-  for them has nothing to style. Today and the keyboard-selected day are gold,
-  as finding 10 expects. The arrows were missing before the epic too.
+- **Select text clipped at sm — fixed in issue #277.** The review step's
+  category select (08c) was 32px with Field Chrome's 8px vertical padding and
+  a 21px line, which left 14px of content box, so the text sat low and its
+  descenders were cut. An `input` centres its text whatever the padding; a
+  select with `appearance: none` does not. Field Chrome now has no vertical
+  padding, and 08c was re-captured after the fix. A regression from #275.
+- **Finding 10 was partly misread.** The calendar measured for m08b belongs
+  to Add expense, which limits the date to the month on view (`minDate` and
+  `maxDate`), so react-datepicker leaves out the month arrows on purpose. On
+  a picker without that limit (Edit account → As of) the Previous arrow
+  renders at 32×32 in `onSurfaceVariant`, as finding 10 expects. Today and
+  the keyboard-selected day are gold. Finding 10 stands as closed.
 - **Month picker right edge.** The pop-up's right edge is 10px left of the
   trigger's, because `window.innerWidth` includes the page scrollbar.
-  Cosmetic.
+  Cosmetic; logged in `docs/live-use-defects.md` under Round 2.
