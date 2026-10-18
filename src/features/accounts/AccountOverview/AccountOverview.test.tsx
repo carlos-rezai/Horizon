@@ -5,6 +5,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import AccountOverview from "./AccountOverview";
+import { columnOf } from "../../../testing/columnOf/columnOf";
 
 afterEach(() => {
   cleanup();
@@ -144,5 +145,23 @@ describe("AccountOverview — avatar rendering", () => {
 
     expect(screen.getByTestId("avatar")).toBeInTheDocument();
     expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+});
+
+// Issue #274 — figures right-align through Money inside a DataRow column that
+// the shared column definition marks end-aligned, in the Dashboard accounts list as in every list.
+describe("AccountOverview — figures right-align (#274)", () => {
+  it("right-aligns every money figure in its row", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AccountOverview accounts={mockAccounts} />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+
+    const figures = screen.getAllByTestId("money");
+    expect(figures.length).toBeGreaterThan(0);
+    figures.forEach((figure) => expect(columnOf(figure)?.align).toBe("end"));
   });
 });

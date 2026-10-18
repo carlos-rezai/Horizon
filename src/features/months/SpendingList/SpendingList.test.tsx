@@ -13,6 +13,7 @@ import type { AccountWithBalance } from "../../../types/account";
 import type { Transaction } from "../../../types/transaction";
 import type { Category } from "../../../types/category";
 import SpendingList from "./SpendingList";
+import { columnOf } from "../../../testing/columnOf/columnOf";
 
 const accounts: AccountWithBalance[] = [
   {
@@ -277,5 +278,17 @@ describe("SpendingList — account cross-fade", () => {
       "data-motion",
       "none"
     );
+  });
+});
+
+// Issue #274 — figures right-align through Money inside a DataRow column that
+// the shared column definition marks end-aligned, in the Month spending list as in every list.
+describe("SpendingList — figures right-align (#274)", () => {
+  it("right-aligns every money figure in its row", () => {
+    renderList();
+
+    const figures = screen.getAllByTestId("money");
+    expect(figures.length).toBeGreaterThan(0);
+    figures.forEach((figure) => expect(columnOf(figure)?.align).toBe("end"));
   });
 });

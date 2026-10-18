@@ -12,6 +12,7 @@ import { ThemeProvider } from "styled-components";
 import { theme } from "../../../tokens";
 import YearArchive from "./YearArchive";
 import type { HistoryPoint } from "../../../types/history";
+import { columnOf, deepestWithText } from "../../../testing/columnOf/columnOf";
 
 afterEach(cleanup);
 
@@ -388,5 +389,52 @@ describe("YearArchive — Paydown Bridge", () => {
 
     expect(screen.queryByRole("button", { name: /2025/ })).toBeNull();
     expect(screen.getByRole("button", { name: /2026/ })).toBeInTheDocument();
+  });
+});
+
+// Issue #274 (Audit Finding 21) — the column header, the year rows and the
+// month rows read one shared column definition, so every figure sits under its
+// heading, right-aligned, in Money's one face. 2023 is expanded by default:
+// its year row sums Net Cashflow to 150 € and snapshots March for the
+// balances, and March is the last month row.
+describe("YearArchive — one column definition (#274)", () => {
+  const columns: [string, string, string][] = [
+    ["Total Liquid", euro(355000), euro(355000)],
+    ["Restschuld", euro(27000000), euro(27000000)],
+    ["Net Cashflow", euroSigned(15000), euroSigned(9000)],
+  ];
+
+  columns.forEach(([heading, yearFigure, monthFigure]) => {
+    it(`puts the year and month ${heading} figures under the ${heading} heading`, () => {
+      const { container } = renderArchive();
+
+      const head = columnOf(screen.getByText(heading));
+      // The year row's figure renders first, then the month rows'. For the
+      // balances, March's month figure repeats the year snapshot.
+      const year = columnOf(deepestWithText(container, yearFigure, 0));
+      const month = columnOf(
+        deepestWithText(
+          container,
+          monthFigure,
+          yearFigure === monthFigure ? 1 : 0
+        )
+      );
+
+      expect(head?.align).toBe("end");
+      expect(year).toEqual(head);
+      expect(month).toEqual(head);
+    });
+  });
+
+  it("renders year and month figures in one face", () => {
+    const { container } = renderArchive();
+
+    const year = deepestWithText(container, euroSigned(15000));
+    const month = deepestWithText(container, euroSigned(9000));
+
+    expect(getComputedStyle(year).fontFamily).toMatch(/IBM Plex Mono/);
+    expect(getComputedStyle(month).fontFamily).toBe(
+      getComputedStyle(year).fontFamily
+    );
   });
 });

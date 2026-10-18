@@ -7,6 +7,7 @@ import ImportHistory from "./ImportHistory";
 import Button from "../../../primitives/Button/Button";
 import type { ImportedStatement } from "../importTypes/importTypes";
 import type { AccountWithBalance } from "../../../types/account";
+import { columnOf, deepestWithText } from "../../../testing/columnOf/columnOf";
 
 afterEach(() => {
   cleanup();
@@ -107,5 +108,21 @@ describe("ImportHistory — row actions are the shared icon button", () => {
 
     fireEvent.click(del);
     expect(onDelete).toHaveBeenCalledWith(STATEMENT);
+  });
+});
+
+// Issue #274 (Audit Finding 22) — the year header and its statement rows share
+// one column definition, so the year's tx count stacks over each statement's.
+// With one 42-row statement both read "42 tx": the year header's first, then
+// the statement row's.
+describe("ImportHistory — year and statement counts share a column (#274)", () => {
+  it("stacks the year's tx count over the statement's tx count", () => {
+    const { container } = renderHistory();
+
+    const yearCount = columnOf(deepestWithText(container, "42 tx", 0));
+    const rowCount = columnOf(deepestWithText(container, "42 tx", 1));
+
+    expect(yearCount).not.toBeNull();
+    expect(rowCount).toEqual(yearCount);
   });
 });

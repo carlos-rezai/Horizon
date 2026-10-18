@@ -4,6 +4,8 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import DataRow from "./DataRow";
+import Money from "../../primitives/Money/Money";
+import { columnOf } from "../../testing/columnOf/columnOf";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -30,7 +32,7 @@ afterEach(() => {
 describe("DataRow", () => {
   it("renders its children", () => {
     renderWithTheme(
-      <DataRow columns={["1fr", "auto"]}>
+      <DataRow columns={[{ width: "1fr" }, { width: "auto" }]}>
         <span>Salary</span>
         <span>1.234,56 €</span>
       </DataRow>
@@ -41,7 +43,7 @@ describe("DataRow", () => {
 
   it("clamps every column track with minmax(0, …) so long values never blow out", () => {
     renderForCSS(
-      <DataRow columns={["2fr", "auto"]}>
+      <DataRow columns={[{ width: "2fr" }, { width: "auto" }]}>
         <span>x</span>
         <span>y</span>
       </DataRow>
@@ -54,7 +56,7 @@ describe("DataRow", () => {
   it("calls onClick when the row is clicked", () => {
     const onClick = vi.fn();
     renderWithTheme(
-      <DataRow columns={["1fr"]} onClick={onClick}>
+      <DataRow columns={[{ width: "1fr" }]} onClick={onClick}>
         <span>Row</span>
       </DataRow>
     );
@@ -64,7 +66,7 @@ describe("DataRow", () => {
 
   it("is clickable (pointer cursor) when it navigates as a link", () => {
     renderForCSS(
-      <DataRow columns={["1fr"]} as="a" href="/accounts/1">
+      <DataRow columns={[{ width: "1fr" }]} as="a" href="/accounts/1">
         <span>Row</span>
       </DataRow>
     );
@@ -73,7 +75,7 @@ describe("DataRow", () => {
 
   it("is not clickable (default cursor) when it is a plain row", () => {
     renderForCSS(
-      <DataRow columns={["1fr"]}>
+      <DataRow columns={[{ width: "1fr" }]}>
         <span>Row</span>
       </DataRow>
     );
@@ -82,7 +84,7 @@ describe("DataRow", () => {
 
   it("renders a hairline divider by default", () => {
     renderForCSS(
-      <DataRow columns={["1fr"]}>
+      <DataRow columns={[{ width: "1fr" }]}>
         <span>Row</span>
       </DataRow>
     );
@@ -93,11 +95,44 @@ describe("DataRow", () => {
 
   it("omits the divider on the last row", () => {
     renderForCSS(
-      <DataRow columns={["1fr"]} last>
+      <DataRow columns={[{ width: "1fr" }]} last>
         <span>Row</span>
       </DataRow>
     );
     expect(getInjectedCSS()).toContain("border-bottom:none");
+  });
+});
+
+// Issue #274 — DataRow reads each column's alignment from the shared column
+// definition, so a figure in an end-aligned column right-aligns without the
+// feature styling its cell.
+describe("DataRow — column alignment", () => {
+  it("right-aligns a figure in an end-aligned column", () => {
+    renderWithTheme(
+      <DataRow columns={[{ width: "1fr" }, { width: "120px", align: "end" }]}>
+        <span>Salary</span>
+        <Money cents={250000} />
+      </DataRow>
+    );
+    expect(columnOf(screen.getByTestId("money"))?.align).toBe("end");
+  });
+
+  it("right-aligns whatever cell sits in an end-aligned column", () => {
+    renderWithTheme(
+      <DataRow
+        columns={[
+          { width: "1fr" },
+          { width: "120px", align: "end" },
+          { width: "80px" },
+        ]}
+      >
+        <span>Salary</span>
+        <span>Monthly</span>
+        <span>Edit</span>
+      </DataRow>
+    );
+    expect(columnOf(screen.getByText("Monthly"))?.align).toBe("end");
+    expect(columnOf(screen.getByText("Edit"))?.align).toBe("start");
   });
 });
 
@@ -106,7 +141,7 @@ describe("DataRow — export", () => {
     const { DataRow: DataRowFromIndex } = await import("../index");
     expect(() =>
       renderWithTheme(
-        <DataRowFromIndex columns={["1fr"]}>
+        <DataRowFromIndex columns={[{ width: "1fr" }]}>
           <span>x</span>
         </DataRowFromIndex>
       )

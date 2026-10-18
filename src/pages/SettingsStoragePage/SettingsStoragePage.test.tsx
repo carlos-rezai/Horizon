@@ -199,3 +199,22 @@ describe("SettingsStoragePage — snackbar-preview demo card removed", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// Issue #274 (Audit Finding 25) — page gutters come from AppLayout only. The
+// Settings page composes its cards and adds no padding of its own, so its
+// title lines up with every other page's.
+describe("SettingsStoragePage — gutters (#274)", () => {
+  it("adds no padding of its own around the page", () => {
+    mockStatus();
+    const { container } = renderPage();
+
+    const page = container.firstElementChild as Element;
+    const style = getComputedStyle(page);
+    [
+      style.paddingTop,
+      style.paddingRight,
+      style.paddingBottom,
+      style.paddingLeft,
+    ].forEach((padding) => expect(["", "0px"]).toContain(padding));
+  });
+});

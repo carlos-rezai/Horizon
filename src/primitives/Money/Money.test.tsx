@@ -92,3 +92,28 @@ describe("Money — export", () => {
     expect(() => renderWithTheme(<MoneyFromIndex cents={0} />)).not.toThrow();
   });
 });
+
+// Issue #274 (Audit Finding 23) — Money owns its figure face. The same amount
+// rendered inside a UI-font parent and inside a mono parent reads in one face,
+// IBM Plex Mono, because the face comes from Money, not from what wraps it.
+describe("Money — owns its figure face", () => {
+  it("renders in IBM Plex Mono whatever face its parent sets", () => {
+    renderWithTheme(
+      <>
+        <div style={{ fontFamily: theme.typography.fontFamily.ui }}>
+          <Money cents={123456} />
+        </div>
+        <div style={{ fontFamily: theme.typography.fontFamily.mono }}>
+          <Money cents={123456} />
+        </div>
+      </>
+    );
+
+    const faces = screen
+      .getAllByTestId("money")
+      .map((el) => getComputedStyle(el).fontFamily);
+
+    expect(faces[0]).toMatch(/IBM Plex Mono/);
+    expect(faces[1]).toBe(faces[0]);
+  });
+});

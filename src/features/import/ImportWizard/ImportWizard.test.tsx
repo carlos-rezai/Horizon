@@ -1845,3 +1845,31 @@ describe("ImportWizard — Same-Counterparty Propagation (#263)", () => {
     );
   });
 });
+
+// Issue #274 (Audit Finding 24) — the Map columns hint is an icon beside one
+// sentence. The sentence wraps as a paragraph, so its words and the bank name
+// sit in one inline text run rather than three flex columns.
+describe("ImportWizard — Map columns hint reads as one sentence (#274)", () => {
+  it("renders the remembered-mapping sentence as one text run beside its icon", async () => {
+    mockCategoryFetch([]);
+    renderWizard([], vi.fn<CommitFn>());
+    const mapBtn = await screen.findByRole("button", { name: /map columns/i });
+    await waitFor(() => expect(mapBtn).not.toBeDisabled());
+    fireEvent.click(mapBtn);
+
+    const sentence =
+      "Mapping remembered from your last DKB import — adjust if the columns changed.";
+    const run = screen.getByText(
+      (_, el) =>
+        el?.textContent?.replace(/\s+/g, " ").trim() === sentence &&
+        !Array.from(el.children).some(
+          (c) => c.textContent?.replace(/\s+/g, " ").trim() === sentence
+        )
+    );
+
+    expect(getComputedStyle(run).display).not.toMatch(/flex|grid/);
+    expect(getComputedStyle(run.parentElement as Element).display).toMatch(
+      /flex/
+    );
+  });
+});
