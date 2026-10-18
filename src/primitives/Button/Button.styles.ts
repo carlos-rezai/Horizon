@@ -1,7 +1,8 @@
 import styled, { css } from "styled-components";
+import type { ControlSize } from "../../tokens";
+import { focusRing } from "../focusRing/focusRing";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost" | "ghostDanger";
-import type { ControlSize } from "../../tokens";
 
 export const StyledButton = styled.button<{
   $variant: Variant;
@@ -78,10 +79,7 @@ export const StyledButton = styled.button<{
       }
     `}
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
+  ${focusRing}
 
   &:disabled {
     opacity: 0.4;
