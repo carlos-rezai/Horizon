@@ -4,6 +4,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider } from "styled-components";
 import { theme } from "../../tokens";
 import ConfirmModal from "./ConfirmModal";
+import Button from "../../primitives/Button/Button";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -147,5 +148,38 @@ describe("ConfirmModal — callbacks", () => {
     fireEvent.click(screen.getByTestId("modal-overlay"));
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+});
+
+/** A reference Button in the shared close form: matching its generated
+ *  classes proves the close is that Button, not a hand-built look-alike. */
+function referenceCloseButton(): HTMLElement {
+  const { getByRole } = render(
+    <ThemeProvider theme={theme}>
+      <Button variant="ghost" size="sm" icon="X" aria-label="Reference close" />
+    </ThemeProvider>
+  );
+  return getByRole("button", { name: "Reference close" });
+}
+
+// Issue #271 — the ConfirmModal closes with the same Button as every Modal.
+describe("ConfirmModal — shared close button", () => {
+  it("closes with the ghost, small, icon-only Button at the end of the header", () => {
+    renderWithTheme(
+      <ConfirmModal
+        title="Start fresh?"
+        message="This erases every account."
+        tone="danger"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+    const close = screen.getByRole("button", { name: "Close" });
+
+    expect(close.className).toBe(referenceCloseButton().className);
+    expect(getComputedStyle(close).height).toBe(`${theme.sizing.control.sm}px`);
+    expect(close.querySelector("svg")).toBeInTheDocument();
+    expect(close.textContent).toBe("");
+    expect(close.parentElement?.lastElementChild).toBe(close);
   });
 });

@@ -10,6 +10,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ThemeProvider, StyleSheetManager } from "styled-components";
 import { theme } from "../../tokens";
 import Modal from "./Modal";
+import Button from "../../primitives/Button/Button";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -221,5 +222,39 @@ describe("Modal — styles", () => {
       </Modal>
     );
     expect(getInjectedCSS()).toContain("box-shadow");
+  });
+});
+
+/**
+ * The one close control every modal and the manual drawer share: the Button
+ * primitive in ghost, small, icon-only form. A reference Button rendered with
+ * those props carries the same generated classes, so matching them proves the
+ * close is that Button rather than a hand-built look-alike.
+ */
+function referenceCloseButton(): HTMLElement {
+  const { getByRole } = render(
+    <ThemeProvider theme={theme}>
+      <Button variant="ghost" size="sm" icon="X" aria-label="Reference close" />
+    </ThemeProvider>
+  );
+  return getByRole("button", { name: "Reference close" });
+}
+
+// Issue #271 — one shared close button.
+describe("Modal — shared close button", () => {
+  it("is the ghost, small, icon-only Button at the end of the header", () => {
+    renderWithTheme(
+      <Modal onClose={vi.fn()} title="Edit account">
+        <p>Content</p>
+      </Modal>
+    );
+    const close = screen.getByRole("button", { name: "Close" });
+    const reference = referenceCloseButton();
+
+    expect(close.className).toBe(reference.className);
+    expect(getComputedStyle(close).height).toBe(`${theme.sizing.control.sm}px`);
+    expect(close.querySelector("svg")).toBeInTheDocument();
+    expect(close.textContent).toBe("");
+    expect(close.parentElement?.lastElementChild).toBe(close);
   });
 });

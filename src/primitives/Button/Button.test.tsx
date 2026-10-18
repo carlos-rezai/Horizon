@@ -182,3 +182,54 @@ describe("Button — Control Height", () => {
     ).toBe(`${theme.sizing.control.md}px`);
   });
 });
+
+/** Injected CSS rules for one element's own classes, whitespace removed —
+ *  scoped so an earlier render's variant cannot leak into the assertion. */
+function getOwnRules(el: HTMLElement, selectorPattern: string): string {
+  const allCSS = getInjectedCSS().replace(/\s/g, "");
+  return Array.from(el.classList)
+    .flatMap(
+      (cls) =>
+        allCSS.match(
+          new RegExp(`\\.${cls}${selectorPattern}\\{[^}]*\\}`, "g")
+        ) ?? []
+    )
+    .join("");
+}
+
+// Issue #271 — delete-style icon actions: ghost at rest, error colour on hover.
+describe("Button — ghostDanger variant", () => {
+  it("renders reachable by role and name, ghost at rest: transparent in the muted tone", () => {
+    renderForCSS(
+      <Button
+        variant="ghostDanger"
+        size="sm"
+        icon="Trash2"
+        aria-label="Delete row"
+      />
+    );
+    const rest = getOwnRules(
+      screen.getByRole("button", { name: "Delete row" }),
+      ""
+    );
+    expect(rest).toContain("background-color:transparent");
+    expect(rest).toContain(`color:${theme.colors.onSurfaceVariant}`);
+    expect(rest).not.toContain(`color:${theme.colors.error}`);
+  });
+
+  it("turns the error colour on hover", () => {
+    renderForCSS(
+      <Button
+        variant="ghostDanger"
+        size="sm"
+        icon="Trash2"
+        aria-label="Delete row"
+      />
+    );
+    const hover = getOwnRules(
+      screen.getByRole("button", { name: "Delete row" }),
+      ":hover[^{]*"
+    );
+    expect(hover).toContain(`color:${theme.colors.error}`);
+  });
+});

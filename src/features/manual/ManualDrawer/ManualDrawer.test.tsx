@@ -14,6 +14,7 @@ import { theme } from "../../../tokens";
 import { MANUAL_TOPICS } from "../manualContent/manualContent";
 import { MANUAL_TOPICS_IN_ORDER } from "../manualIndex/manualIndex";
 import ManualDrawer from "./ManualDrawer";
+import Button from "../../../primitives/Button/Button";
 
 const REDUCE_QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -501,5 +502,31 @@ describe("ManualDrawer — styles", () => {
     renderForCSS(<ManualDrawer open onClose={vi.fn()} />);
 
     expect(getElementCSS("manual-pane")).toContain("overflow-y:auto");
+  });
+});
+
+/** A reference Button in the shared close form every Modal uses: matching its
+ *  generated classes proves the drawer close is that Button. */
+function referenceCloseButton(): HTMLElement {
+  const { getByRole } = render(
+    <ThemeProvider theme={theme}>
+      <Button variant="ghost" size="sm" icon="X" aria-label="Reference close" />
+    </ThemeProvider>
+  );
+  return getByRole("button", { name: "Reference close" });
+}
+
+// Issue #271 — the drawer closes with the same Button as every Modal.
+describe("ManualDrawer — shared close button", () => {
+  it("closes with the ghost, small, icon-only Button at the end of the header", () => {
+    stubReducedMotion(false);
+    renderDrawer(<ManualDrawer open onClose={vi.fn()} />);
+    const close = screen.getByRole("button", { name: "Close manual" });
+
+    expect(close.className).toBe(referenceCloseButton().className);
+    expect(getComputedStyle(close).height).toBe(`${theme.sizing.control.sm}px`);
+    expect(close.querySelector("svg")).toBeInTheDocument();
+    expect(close.textContent).toBe("");
+    expect(close.parentElement?.lastElementChild).toBe(close);
   });
 });
