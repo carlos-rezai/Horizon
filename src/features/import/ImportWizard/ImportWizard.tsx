@@ -58,11 +58,13 @@ import {
   StyledAttentionToggle,
   StyledFlagBadge,
   StyledFootnote,
+} from "./ImportWizard.styles";
+import {
   StyledProposalStrip,
   StyledProposalText,
   StyledProposalActions,
   StyledProposalError,
-} from "./ImportWizard.styles";
+} from "./CategoryProposalStrip/CategoryProposalStrip.styles";
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
 
