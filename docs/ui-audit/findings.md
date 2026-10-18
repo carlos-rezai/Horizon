@@ -314,7 +314,7 @@ Decisions).
   with the label centred, so all three controls hold their position. The step
   buttons become `Button` ghost sm icon-only.
 - **Cause:** missing primitive (no stable-width rule).
-- **Status:** Open.
+- **Status:** Closed — issue #270.
 
 ### 19. Month picker pop-up overflows the window's right edge
 
@@ -339,7 +339,7 @@ Decisions).
 - **Expected:** the radius token (`radius.md` 8px) where a finding already
   touches the file; the year and step buttons become `Button` (14).
 - **Cause:** re-styled.
-- **Status:** Open.
+- **Status:** Closed — issue #270.
 
 ## Alignment
 

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { AccountKind, AccountWithBalance } from "../../../types/account";
 import type { Transaction, TransactionDraft } from "../../../types/transaction";
 import PageHeader from "../../../components/PageHeader/PageHeader";
+import Button from "../../../primitives/Button/Button";
 import { formatMonthLong } from "../../../utils/format/format";
 import type { TransactionChanges } from "../../../utils/optimisticTransactions/optimisticTransactions";
 import {
@@ -37,7 +37,6 @@ import {
   StyledColumns,
   StyledRightColumn,
   StyledStepper,
-  StyledStepButton,
 } from "./MonthOverview.styles";
 
 // Variable Spending lives only on liquid spending accounts — Mortgage and
@@ -150,23 +149,25 @@ export default function MonthOverview({
         subtitle="Fixed flows · Variable spending · Month-end balances"
         actions={
           <StyledStepper>
-            <StyledStepButton
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="ArrowLeft"
               aria-label="Previous month"
               onClick={() => navigate(`/months/${shiftMonth(monthStr, -1)}`)}
-            >
-              <ArrowLeft size={16} />
-            </StyledStepButton>
+            />
             <MonthYearPicker
               month={monthStr}
               importStartDates={importStartDates}
               onJump={(target) => navigate(`/months/${target}`)}
             />
-            <StyledStepButton
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="ArrowRight"
               aria-label="Next month"
               onClick={() => navigate(`/months/${shiftMonth(monthStr, 1)}`)}
-            >
-              <ArrowRight size={16} />
-            </StyledStepButton>
+            />
           </StyledStepper>
         }
       />

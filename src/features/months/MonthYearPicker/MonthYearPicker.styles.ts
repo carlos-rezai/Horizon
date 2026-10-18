@@ -1,4 +1,14 @@
 import styled from "styled-components";
+import { MONTHS_LONG } from "../../../utils/format/format";
+
+/** The longest month-year label the trigger can show ("September 2026"):
+ *  the longest month name plus a space and a four-digit year. */
+const LONGEST_MONTH_YEAR_CHARS =
+  Math.max(...MONTHS_LONG.map((name) => name.length)) + " YYYY".length;
+
+/** Room for the trigger's chevron, gap and horizontal padding, in ch of the
+ *  same mono face, so the reserved width holds the whole longest label. */
+const TRIGGER_CHROME_CHARS = 6;
 
 export const StyledAnchor = styled.div`
   position: relative;
@@ -7,6 +17,8 @@ export const StyledAnchor = styled.div`
 export const StyledTrigger = styled.button`
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: ${LONGEST_MONTH_YEAR_CHARS + TRIGGER_CHROME_CHARS}ch;
   gap: ${({ theme }) => theme.spacing.space2}px;
   height: 32px;
   padding: 0 10px;
@@ -51,34 +63,6 @@ export const StyledYearHeader = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.space3}px;
 `;
 
-export const StyledYearButton = styled.button`
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background-color: ${({ theme }) => theme.colors.surfaceContainerHigh};
-    color: ${({ theme }) => theme.colors.onSurface};
-  }
-
-  &:disabled {
-    color: ${({ theme }) => theme.colors.onSurfaceVariant};
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary};
-    outline-offset: 2px;
-  }
-`;
-
 export const StyledYearLabel = styled.span`
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 14px;
@@ -95,7 +79,7 @@ export const StyledGrid = styled.div`
 export const StyledMonthCell = styled.button<{ $active: boolean }>`
   padding: ${({ theme }) => theme.spacing.space2}px 0;
   border: none;
-  border-radius: 7px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 12.5px;
   font-weight: ${({ $active }) => ($active ? 600 : 500)};

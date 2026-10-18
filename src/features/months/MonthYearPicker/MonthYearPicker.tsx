@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import Button from "../../../primitives/Button/Button";
 import { formatMonthLong, MONTHS } from "../../../utils/format/format";
 import {
   deriveMonthPickerBounds,
@@ -12,7 +13,6 @@ import {
   StyledChevron,
   StyledPopover,
   StyledYearHeader,
-  StyledYearButton,
   StyledYearLabel,
   StyledGrid,
   StyledMonthCell,
@@ -127,23 +127,25 @@ export default function MonthYearPicker({
             style={{ top: position.top, left: position.left }}
           >
             <StyledYearHeader>
-              <StyledYearButton
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
+                icon="ArrowLeft"
                 aria-label="Previous year"
                 disabled={!canPrevYear}
                 onClick={() => setViewYear((year) => year - 1)}
-              >
-                <ArrowLeft size={15} aria-hidden="true" />
-              </StyledYearButton>
+              />
               <StyledYearLabel>{viewYear}</StyledYearLabel>
-              <StyledYearButton
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
+                icon="ArrowRight"
                 aria-label="Next year"
                 disabled={!canNextYear}
                 onClick={() => setViewYear((year) => year + 1)}
-              >
-                <ArrowRight size={15} aria-hidden="true" />
-              </StyledYearButton>
+              />
             </StyledYearHeader>
 
             <StyledGrid>
