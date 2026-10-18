@@ -1,13 +1,8 @@
-import { forwardRef } from "react";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import type { InputHTMLAttributes } from "react";
 import { Calendar } from "lucide-react";
-import {
-  Wrapper,
-  StyledDateInput,
-  StyledCalendarIcon,
-} from "./DatePicker.styles";
+import Input from "../Input/Input";
+import { Wrapper } from "./DatePicker.styles";
 import type { ControlSize } from "../../tokens";
 
 interface DatePickerProps {
@@ -20,14 +15,6 @@ interface DatePickerProps {
   /** Control Height of the field; matches the Button of the same size. */
   size?: ControlSize;
 }
-
-type DateInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size"> & {
-  $size: ControlSize;
-};
-
-const DateInput = forwardRef<HTMLInputElement, DateInputProps>((props, ref) => (
-  <StyledDateInput {...props} ref={ref} />
-));
 
 function isoToDate(iso: string): Date {
   // Accepts both `YYYY-MM-DD` and month-only `YYYY-MM` values (the latter
@@ -64,7 +51,13 @@ export default function DatePicker({
         minDate={minDate ? isoToDate(minDate) : undefined}
         maxDate={maxDate ? isoToDate(maxDate) : undefined}
         disabled={disabled}
-        customInput={<DateInput aria-label={ariaLabel} $size={size} />}
+        customInput={
+          <Input
+            aria-label={ariaLabel}
+            size={size}
+            trailingIcon={<Calendar size={15} />}
+          />
+        }
         placeholderText="DD.MM.YYYY"
         popperPlacement="bottom-start"
         // Position the calendar with a fixed strategy so it's anchored to the
@@ -73,9 +66,6 @@ export default function DatePicker({
         // scroll instead of opening over the modal.
         popperProps={{ strategy: "fixed" }}
       />
-      <StyledCalendarIcon aria-hidden="true">
-        <Calendar size={15} />
-      </StyledCalendarIcon>
     </Wrapper>
   );
 }

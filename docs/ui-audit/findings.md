@@ -138,7 +138,7 @@ Decisions).
 - **Expected:** one **Field Chrome**: lowest-ink background,
   outline-variant border, radius md (8px), Control Height.
 - **Cause:** re-styled.
-- **Status:** Open.
+- **Status:** Closed — issue #269.
 
 ### 7. Three different focus rings on the three field primitives
 
@@ -151,7 +151,7 @@ Decisions).
 - **Expected:** gold border + a 3px gold-wash ring from **Field Chrome**, on
   all three.
 - **Cause:** re-styled.
-- **Status:** Open.
+- **Status:** Closed — issue #269.
 
 ### 8. DatePicker copies the Input styles instead of composing Input
 
@@ -164,7 +164,7 @@ Decisions).
 - **Expected:** the DatePicker's custom input is `Input`, with a
   trailing-icon slot.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #269.
 
 ### 9. Calendar pop-up renders in Helvetica Neue
 
@@ -176,7 +176,7 @@ Decisions).
   default wins.
 - **Expected:** `theme.typography.fontFamily.ui` (Space Grotesk).
 - **Cause:** token gap (the wrong token path).
-- **Status:** Open.
+- **Status:** Closed — issue #269.
 
 ### 10. Calendar shows no month navigation, and today in pale blue
 
