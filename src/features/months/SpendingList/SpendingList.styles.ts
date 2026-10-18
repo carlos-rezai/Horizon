@@ -1,8 +1,14 @@
 import styled from "styled-components";
+import type { TableColumn } from "../../../components/TableColumn/TableColumn";
 
 // day · description · category · amount. Lives here so the list and its
 // skeleton share one definition.
-export const ROW_COLUMNS = ["44px", "1fr", "auto", "auto"];
+export const ROW_COLUMNS: TableColumn[] = [
+  { width: "44px" },
+  { width: "1fr" },
+  { width: "auto" },
+  { width: "auto", align: "end" },
+];
 
 export const StyledTabsWrap = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.space3}px;

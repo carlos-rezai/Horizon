@@ -1,4 +1,17 @@
 import styled from "styled-components";
+import DataRow from "../../../components/DataRow/DataRow";
+import type { TableColumn } from "../../../components/TableColumn/TableColumn";
+
+// icon · file · range · tx count · actions. One definition read by the year
+// header and its statement rows, so the year's tx count stacks over each
+// statement's.
+export const HISTORY_COLUMNS: TableColumn[] = [
+  { width: "32px" },
+  { width: "1fr" },
+  { width: "150px" },
+  { width: "90px", align: "end" },
+  { width: "140px", align: "end" },
+];
 
 export const StyledHead = styled.div`
   padding: 16px 20px 0;
@@ -28,21 +41,15 @@ export const StyledYearGroup = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
 
-export const StyledYearHeader = styled.button<{ $open: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.space4}px;
+/* A DataRow rendered as the year's toggle button: the button resets only. */
+export const StyledYearHeader = styled(DataRow)<{ $open: boolean }>`
   width: 100%;
+  border: none;
+  font: inherit;
+  color: inherit;
   text-align: left;
-  padding: 15px 18px;
-  cursor: pointer;
   background: ${({ theme, $open }) =>
     $open ? theme.colors.surfaceContainerLow : "transparent"};
-  transition: background ${({ theme }) => theme.transitions.fast};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceContainer};
-  }
 `;
 
 export const StyledChevron = styled.span<{ $open: boolean }>`
@@ -61,10 +68,6 @@ export const StyledYear = styled.span`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
-export const StyledSpacer = styled.span`
-  flex: 1;
-`;
-
 export const StyledYearCount = styled.span`
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: 12.5px;
@@ -75,27 +78,13 @@ export const StyledYearTotal = styled.span`
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 12.5px;
   color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  min-width: 80px;
-  text-align: right;
 `;
 
 export const StyledYearBody = styled.div`
-  padding: 4px 12px 14px 40px;
+  padding: 4px 0 14px;
 `;
 
-export const StyledFileRow = styled.div`
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 150px 90px 140px;
-  gap: ${({ theme }) => theme.spacing.space4}px;
-  align-items: center;
-  padding: 12px 16px 12px 8px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  transition: background ${({ theme }) => theme.transitions.fast};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceContainer};
-  }
-`;
+export const StyledFileRow = styled(DataRow)``;
 
 export const StyledFileIcon = styled.div<{ $color: string }>`
   display: grid;
@@ -142,7 +131,6 @@ export const StyledFileRange = styled.span`
 
 export const StyledFileCount = styled.span`
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
-  text-align: right;
   font-size: 13px;
   color: ${({ theme }) => theme.colors.onSurface};
 

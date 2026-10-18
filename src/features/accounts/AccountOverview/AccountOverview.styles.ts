@@ -1,8 +1,13 @@
 import styled from "styled-components";
+import type { TableColumn } from "../../../components/TableColumn/TableColumn";
 
 /** Avatar, name, balance — shared with `AccountOverviewSkeleton` so the
  *  placeholder rows cannot drift from the real ones. */
-export const ROW_COLUMNS = ["38px", "1fr", "auto"];
+export const ROW_COLUMNS: TableColumn[] = [
+  { width: "38px" },
+  { width: "1fr" },
+  { width: "auto", align: "end" },
+];
 
 export const StyledList = styled.ul`
   list-style: none;

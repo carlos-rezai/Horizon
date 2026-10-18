@@ -35,8 +35,8 @@ import {
   StyledNum,
   StyledPayoffFlag,
   StyledDash,
-  StyledEmptyState,
 } from "./ProjectionAccordion.styles";
+import EmptyState from "../../../components/EmptyState/EmptyState";
 
 interface Props {
   snapshots: MonthlySnapshot[];
@@ -69,9 +69,7 @@ export default function ProjectionAccordion({
 
   if (snapshots.length === 0 || accounts.length === 0) {
     return (
-      <StyledEmptyState>
-        Add accounts on the dashboard to see your financial plan.
-      </StyledEmptyState>
+      <EmptyState title="Add accounts on the dashboard to see your financial plan." />
     );
   }
 

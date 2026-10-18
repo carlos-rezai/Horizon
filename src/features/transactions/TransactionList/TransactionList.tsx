@@ -8,8 +8,8 @@ import {
   StyledDescription,
   StyledTransferBadge,
   StyledAutoSettlementBadge,
-  StyledEmptyState,
 } from "./TransactionList.styles";
+import EmptyState from "../../../components/EmptyState/EmptyState";
 
 interface Props {
   transactions: Transaction[];
@@ -21,7 +21,7 @@ export default function TransactionList({
   onTransactionClick,
 }: Props) {
   if (transactions.length === 0) {
-    return <StyledEmptyState>No transactions</StyledEmptyState>;
+    return <EmptyState title="No transactions" />;
   }
 
   return (

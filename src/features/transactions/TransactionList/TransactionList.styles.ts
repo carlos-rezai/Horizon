@@ -56,9 +56,3 @@ export const StyledAutoSettlementBadge = styled.span`
   border-radius: 4px;
   padding: 2px 6px;
 `;
-
-export const StyledEmptyState = styled.p`
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  text-align: center;
-  padding: ${({ theme }) => theme.spacing.space6}px;
-`;

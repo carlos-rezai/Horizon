@@ -1,8 +1,22 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import DataRow from "../../../components/DataRow/DataRow";
+import {
+  TABLE_INLINE_PADDING,
+  type TableColumn,
+} from "../../../components/TableColumn/TableColumn";
 
-// chevron · period · total liquid · restschuld · net cashflow
-export const ARCHIVE_COLS = "22px 72px 1fr 1fr 1fr";
+// chevron · period · total liquid · restschuld · net cashflow · statements.
+// One definition read by the column header, the year rows and the month rows,
+// so every figure sits under its heading.
+export const ARCHIVE_COLUMNS: TableColumn[] = [
+  { width: "22px" },
+  { label: "Period", width: "72px" },
+  { label: "Total Liquid", width: "1fr", align: "end" },
+  { label: "Restschuld", width: "1fr", align: "end" },
+  { label: "Net Cashflow", width: "1fr", align: "end" },
+  { label: "Statements", width: "120px", align: "end" },
+];
 
 export const StyledArchive = styled.section`
   margin-top: ${({ theme }) => theme.spacing.space5}px;
@@ -28,29 +42,6 @@ export const StyledSectionTitle = styled.div`
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
-export const StyledColumnHeader = styled.div`
-  display: grid;
-  grid-template-columns: ${ARCHIVE_COLS} 120px;
-  gap: 16px;
-  padding: 11px 18px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  background: ${({ theme }) => theme.colors.surfaceContainerLow};
-  font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
-  font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
-  font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
-  letter-spacing: ${({ theme }) => theme.typography.scale.label.letterSpacing};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.onSurfaceFaint};
-
-  & > span:nth-child(n + 3):nth-child(-n + 5) {
-    text-align: right;
-  }
-
-  & > span:last-child {
-    text-align: right;
-  }
-`;
-
 export const StyledYearSection = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 
@@ -59,46 +50,34 @@ export const StyledYearSection = styled.div`
   }
 `;
 
+/* The year row stacks its toggle and its statements badge in one grid cell:
+   the toggle is the full-width DataRow, the badge sits over its last column. */
 export const StyledYearRow = styled.div<{ $open: boolean }>`
   display: grid;
-  grid-template-columns: 1fr 120px;
   align-items: center;
-  gap: 16px;
-  padding-right: 18px;
   background: ${({ theme, $open }) =>
     $open ? theme.colors.surfaceContainerLow : "transparent"};
-  transition: background 0.12s ${({ theme }) => theme.transitions.easing};
 
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceContainerHigh};
+  & > * {
+    grid-area: 1 / 1;
   }
 `;
 
-export const StyledYearHeader = styled.button`
+/* A DataRow rendered as the year's toggle button: the button resets only. */
+export const StyledYearHeader = styled(DataRow)`
   width: 100%;
-  display: grid;
-  grid-template-columns: ${ARCHIVE_COLS};
-  gap: 16px;
-  align-items: center;
-  padding: 15px 18px;
   border: none;
-  cursor: pointer;
+  font: inherit;
+  color: inherit;
   text-align: left;
-  background: transparent;
 
-  /* Total Liquid · Restschuld · Net Cashflow are rendered as bare Money spans
-     so each cell's textContent stays unique (nested wrappers would duplicate
-     it). Alignment and tone therefore live on the grid cells themselves. */
-  & > span:nth-child(n + 3) {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  & > span:nth-child(3) {
+  /* Total Liquid · Restschuld are rendered as bare Money spans so each cell's
+     textContent stays unique; their tone lives on the grid cells. */
+  & > :nth-child(3) {
     color: ${({ theme }) => theme.colors.secondary};
   }
 
-  & > span:nth-child(4) {
+  & > :nth-child(4) {
     color: ${({ theme }) => theme.colors.error};
   }
 `;
@@ -121,6 +100,7 @@ export const StyledYearLabel = styled.span`
 
 export const StyledCountBadge = styled(Link)`
   justify-self: end;
+  margin-right: ${TABLE_INLINE_PADDING}px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -141,21 +121,6 @@ export const StyledCountBadge = styled(Link)`
   }
 `;
 
-export const StyledMonthRow = styled(Link)`
-  display: grid;
-  grid-template-columns: ${ARCHIVE_COLS};
-  gap: 16px;
-  align-items: center;
-  padding: 9px 18px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.12s ${({ theme }) => theme.transitions.easing};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceContainerHigh};
-  }
-`;
-
 export const StyledMonthName = styled.span`
   display: inline-flex;
   align-items: center;
@@ -168,7 +133,6 @@ export const StyledMonthName = styled.span`
 type NumTone = "pos" | "debt" | "text";
 
 export const StyledNum = styled.span<{ $tone?: NumTone }>`
-  text-align: right;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-variant-numeric: tabular-nums;
   color: ${({ theme, $tone }) =>
@@ -177,11 +141,4 @@ export const StyledNum = styled.span<{ $tone?: NumTone }>`
       : $tone === "debt"
         ? theme.colors.error
         : theme.colors.onSurface};
-`;
-
-export const StyledEmptyState = styled.div`
-  padding: ${({ theme }) => theme.spacing.space8}px;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
 `;

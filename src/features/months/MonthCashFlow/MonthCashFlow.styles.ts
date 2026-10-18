@@ -1,8 +1,14 @@
 import styled from "styled-components";
+import type { TableColumn } from "../../../components/TableColumn/TableColumn";
 
 // day · description · category · amount — SpendingList's row rhythm, so the
 // two cards read as one page.
-export const ROW_COLUMNS = ["44px", "1fr", "auto", "auto"];
+export const ROW_COLUMNS: TableColumn[] = [
+  { width: "44px" },
+  { width: "1fr" },
+  { width: "auto" },
+  { width: "auto", align: "end" },
+];
 
 export const StyledGroups = styled.div`
   display: flex;

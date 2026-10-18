@@ -9,6 +9,7 @@ import Badge from "../../../primitives/Badge/Badge";
 import EmptyState from "../../../components/EmptyState/EmptyState";
 import type { ImportedStatement } from "../importTypes/importTypes";
 import {
+  HISTORY_COLUMNS,
   StyledHead,
   StyledHeadRow,
   StyledHeadTitle,
@@ -17,7 +18,6 @@ import {
   StyledYearHeader,
   StyledChevron,
   StyledYear,
-  StyledSpacer,
   StyledYearCount,
   StyledYearTotal,
   StyledYearBody,
@@ -132,7 +132,10 @@ export default function ImportHistory({
           return (
             <StyledYearGroup key={year}>
               <StyledYearHeader
+                forwardedAs="button"
                 type="button"
+                columns={HISTORY_COLUMNS}
+                last
                 $open={open}
                 onClick={() => setOpenYear(open ? null : year)}
               >
@@ -140,7 +143,6 @@ export default function ImportHistory({
                   <ChevronRight size={17} />
                 </StyledChevron>
                 <StyledYear>{year}</StyledYear>
-                <StyledSpacer />
                 <StyledYearCount>
                   {pluralize(files.length, "statement")}
                 </StyledYearCount>
@@ -150,13 +152,17 @@ export default function ImportHistory({
               </StyledYearHeader>
               {open && (
                 <StyledYearBody>
-                  {files.map((file) => {
+                  {files.map((file, i) => {
                     const account = accountById(file.accountId);
                     const color = account
                       ? resolveAccountColor(account)
                       : "#909AAE";
                     return (
-                      <StyledFileRow key={file.id}>
+                      <StyledFileRow
+                        key={file.id}
+                        columns={HISTORY_COLUMNS}
+                        last={i === files.length - 1}
+                      >
                         <StyledFileIcon $color={color}>
                           <Banknote size={16} />
                         </StyledFileIcon>

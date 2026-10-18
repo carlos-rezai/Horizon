@@ -4,7 +4,8 @@ export const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.space6}px;
-  padding: ${({ theme }) => theme.spacing.space8}px;
+  /* Page gutters come from AppLayout only; the page adds none of its own. */
+  padding: 0;
   max-width: ${({ theme }) => theme.layout.contentMaxWidth}px;
 `;
 

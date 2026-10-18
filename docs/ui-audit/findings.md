@@ -361,7 +361,7 @@ Decisions).
   definition (the `TableHeader`/`DataRow` alignment owner). Figures
   right-align through `Money` in one face.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #274.
 
 ### 22. Import History: year header counts and statement-row counts misalign
 
@@ -374,7 +374,7 @@ Decisions).
 - **Expected:** the year header and statement rows share one column
   definition, so the tx counts stack.
 - **Cause:** re-implemented.
-- **Status:** Open.
+- **Status:** Closed — issue #274.
 
 ### 23. Money's typeface depends on whatever wraps it
 
@@ -390,7 +390,7 @@ Decisions).
 - **Expected:** Money owns its figure face, so all money figures in lists
   read the same. Context sets size and tone, not the font.
 - **Cause:** re-styled (the face is set per feature).
-- **Status:** Open.
+- **Status:** Closed — issue #274.
 
 ### 24. Import step 2 hint wraps as three flex columns
 
@@ -403,7 +403,7 @@ Decisions).
 - **Expected:** the icon is a flex item and the sentence is one inline text
   run (wrap the text in one span), wrapping as a paragraph.
 - **Cause:** re-styled.
-- **Status:** Open.
+- **Status:** Closed — issue #274.
 
 ### 25. Settings page is inset 32px more than every other page
 
@@ -416,7 +416,7 @@ Decisions).
 - **Expected:** page gutters come from `AppLayout` only. Pages compose and do
   not style.
 - **Cause:** re-styled.
-- **Status:** Open.
+- **Status:** Closed — issue #274.
 
 ## Inputs built locally
 

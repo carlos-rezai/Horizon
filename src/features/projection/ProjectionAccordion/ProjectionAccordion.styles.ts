@@ -200,10 +200,3 @@ export const StyledDash = styled.span`
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   color: ${({ theme }) => theme.colors.onSurfaceFaint};
 `;
-
-export const StyledEmptyState = styled.div`
-  padding: ${({ theme }) => theme.spacing.space8}px;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.onSurfaceVariant};
-  font-size: ${({ theme }) => theme.typography.sizes.sm}px;
-`;

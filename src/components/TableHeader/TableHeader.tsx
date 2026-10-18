@@ -1,15 +1,15 @@
 import { StyledHeaderRow, StyledHeaderCell } from "./TableHeader.styles";
+import type { TableColumn } from "../TableColumn/TableColumn";
 
 interface Props {
-  columns: string[];
-  gridTemplate: string;
+  columns: TableColumn[];
 }
 
-export default function TableHeader({ columns, gridTemplate }: Props) {
+export default function TableHeader({ columns }: Props) {
   return (
-    <StyledHeaderRow $gridTemplate={gridTemplate}>
-      {columns.map((col) => (
-        <StyledHeaderCell key={col}>{col}</StyledHeaderCell>
+    <StyledHeaderRow $columns={columns}>
+      {columns.map((col, i) => (
+        <StyledHeaderCell key={col.label ?? i}>{col.label}</StyledHeaderCell>
       ))}
     </StyledHeaderRow>
   );

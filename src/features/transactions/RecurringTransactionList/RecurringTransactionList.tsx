@@ -9,6 +9,7 @@ import {
   transferSideFor,
 } from "../../../utils/recurring/recurring";
 import DataRow from "../../../components/DataRow/DataRow";
+import type { TableColumn } from "../../../components/TableColumn/TableColumn";
 import Badge from "../../../primitives/Badge/Badge";
 import Money from "../../../primitives/Money/Money";
 import Chip from "../../../primitives/Chip/Chip";
@@ -24,7 +25,12 @@ import {
   StyledEmptyState,
 } from "./RecurringTransactionList.styles";
 
-const ROW_COLUMNS = ["1fr", "150px", "120px", "110px"];
+const ROW_COLUMNS: TableColumn[] = [
+  { width: "1fr" },
+  { width: "150px", align: "end" },
+  { width: "120px", align: "end" },
+  { width: "110px", align: "end" },
+];
 
 interface Props {
   recurringTransactions: RecurringTransaction[];

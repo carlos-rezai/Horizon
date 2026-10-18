@@ -347,8 +347,10 @@ export default function ImportWizard({
           <StyledStack>
             <StyledMapHint>
               <RefreshCw size={14} />
-              Mapping remembered from your last <strong>{bank}</strong> import —
-              adjust if the columns changed.
+              <span>
+                Mapping remembered from your last <strong>{bank}</strong> import
+                — adjust if the columns changed.
+              </span>
             </StyledMapHint>
             <StyledMapCard>
               <MapField

@@ -27,3 +27,5 @@ export { default as SnackbarProvider } from "./SnackbarProvider/SnackbarProvider
 export { useSnackbar } from "./SnackbarProvider/useSnackbar";
 export { useUndoableDelete } from "./SnackbarProvider/useUndoableDelete";
 export { default as StatBlock } from "./StatBlock/StatBlock";
+export type { TableColumn } from "./TableColumn/TableColumn";
+export { default as TableHeader } from "./TableHeader/TableHeader";

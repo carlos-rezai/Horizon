@@ -1,22 +1,24 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import Money from "../../../primitives/Money/Money";
+import DataRow from "../../../components/DataRow/DataRow";
+import TableHeader from "../../../components/TableHeader/TableHeader";
 import { formatMonth } from "../../../utils/format/format";
 import { aggregateYearSummaries } from "../../../utils/yearSummaries/yearSummaries";
 import type { HistoryPoint } from "../../../types/history";
 import { isUnknownMonth, knownYears } from "../knownSince/knownSince";
 import {
+  ARCHIVE_COLUMNS,
   StyledArchive,
   StyledSectionHead,
   StyledSectionTitle,
-  StyledColumnHeader,
   StyledYearSection,
   StyledYearRow,
   StyledYearHeader,
   StyledChevron,
   StyledYearLabel,
   StyledCountBadge,
-  StyledMonthRow,
   StyledMonthName,
   StyledNum,
 } from "./YearArchive.styles";
@@ -75,14 +77,7 @@ export default function YearArchive({ points, statementCounts }: Props) {
         <StyledSectionTitle>Year Archive</StyledSectionTitle>
       </StyledSectionHead>
 
-      <StyledColumnHeader>
-        <span />
-        <span>Period</span>
-        <span>Total Liquid</span>
-        <span>Restschuld</span>
-        <span>Net Cashflow</span>
-        <span>Statements</span>
-      </StyledColumnHeader>
+      <TableHeader columns={ARCHIVE_COLUMNS} />
 
       {orderedYears.map((year) => {
         const isOpen = expanded === year;
@@ -96,7 +91,10 @@ export default function YearArchive({ points, statementCounts }: Props) {
           <StyledYearSection key={year}>
             <StyledYearRow $open={isOpen}>
               <StyledYearHeader
+                forwardedAs="button"
                 type="button"
+                columns={ARCHIVE_COLUMNS}
+                last
                 aria-expanded={isOpen}
                 onClick={() => toggleYear(year)}
               >
@@ -117,7 +115,13 @@ export default function YearArchive({ points, statementCounts }: Props) {
 
             {isOpen &&
               months.map((point) => (
-                <StyledMonthRow key={point.month} to={`/months/${point.month}`}>
+                <DataRow
+                  key={point.month}
+                  as={Link}
+                  to={`/months/${point.month}`}
+                  columns={ARCHIVE_COLUMNS}
+                  last
+                >
                   <span />
                   <StyledMonthName>
                     {formatMonth(point.month).slice(0, 3)}
@@ -134,7 +138,7 @@ export default function YearArchive({ points, statementCounts }: Props) {
                       known={!isUnknownMonth(point)}
                     />
                   </StyledNum>
-                </StyledMonthRow>
+                </DataRow>
               ))}
           </StyledYearSection>
         );

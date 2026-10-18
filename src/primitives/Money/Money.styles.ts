@@ -3,6 +3,7 @@ import styled, { css } from "styled-components";
 type Tone = "gain" | "loss" | "neutral";
 
 export const StyledMoney = styled.span<{ $tone: Tone }>`
+  font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-variant-numeric: tabular-nums;
 
   ${({ $tone, theme }) =>

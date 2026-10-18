@@ -1,8 +1,9 @@
 import React from "react";
 import { StyledDataRow } from "./DataRow.styles";
+import type { TableColumn } from "../TableColumn/TableColumn";
 
 interface DataRowOwnProps {
-  columns: string[];
+  columns: TableColumn[];
   last?: boolean;
   children: React.ReactNode;
 }
@@ -24,7 +25,6 @@ export default function DataRow<C extends React.ElementType = "div">({
   children,
   ...rest
 }: DataRowProps<C>) {
-  const template = columns.map((col) => `minmax(0, ${col})`).join(" ");
   // A row is clickable when it has a click handler *or* navigates as a link
   // (`as={Link} to=…` / `as="a" href=…`), so link rows get the pointer cursor
   // and hover affordance too.
@@ -32,7 +32,7 @@ export default function DataRow<C extends React.ElementType = "div">({
   return (
     <StyledDataRow
       data-testid="data-row"
-      $columns={template}
+      $columns={columns}
       $last={last}
       $clickable={clickable}
       onClick={onClick}
