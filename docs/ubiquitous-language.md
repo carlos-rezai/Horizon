@@ -1421,3 +1421,44 @@
 - **"rule"** (new): a **Category Rule** is learned, one key to one category. A **Keyword Group** is shipped code, not a rule. A **RecurringTransaction** is a "recurring rule" elsewhere in this glossary. Always qualify it: say **Category Rule**, never "rule" alone, in import code and docs.
 - **"suggested"** (new): it names exactly one **Category Source**, a **Keyword Group** hit on an existing category. A **Category Proposal** is not a suggestion: it offers a category that does not exist yet.
 - **"counterparty" vs "description"** (new): the description is what the user sees and may edit in review. The **Counterparty** is the immutable source cell that learning keys on. For Sparkasse and Postbank giro the two start out as the same text, but they are still different fields.
+
+## UI Consistency Audit (new)
+
+| Term                      | Definition                                                                                                                                                     | Aliases to avoid                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **UI Consistency Audit**  | The visual-only pass that measures every surface of the running app and brings each inconsistency back onto the shared primitives and tokens                   | UI cleanup, polish pass, restyle        |
+| **Audit Finding**         | One numbered entry in `docs/ui-audit/findings.md`: screen, element, measured values, expected value with its owning primitive or token, cause and status       | Bug, UI defect, issue                   |
+| **Control Height**        | The `sizing.control` token (`sm 32 / md 40 / lg 44`) that every pressable or typeable primitive declares as its height, selected by its `size` prop            | Button height, input height, row height |
+| **Field Chrome**          | The `fieldChrome` css fragment (`src/primitives/fieldChrome/`) giving `Input`, `Select` and `DatePicker` one background, border, radius, focus ring and height | Input style, field style, form styling  |
+| **Stable Label Width**    | The rule that a control whose label changes when pressed reserves the width of its longest label, so nothing beside it moves                                   | Fixed width, min-width hack             |
+| **Primitive Conformance** | The `primitiveConformance.test.ts` guard that fails on a raw `styled.button`/`input`/`select`/`textarea` outside `primitives/` that is not on its allowlist    | Style lint, UI lint                     |
+| **Conformance Allowlist** | The ratchet list of local controls **Primitive Conformance** tolerates, each with its reason; it may only shrink                                               | Exceptions list, ignore list            |
+
+## Relationships (UI Consistency Audit additions)
+
+- **Button**, **Input**, **Select** and **DatePicker** each render at the **Control Height** of their `size`; one size means one height
+- **Input**, **Select** and **DatePicker** share one **Field Chrome**; **DatePicker** renders the **Input** primitive rather than a copy
+- Every **Audit Finding** names exactly one owner, a primitive, component or token, and is fixed there, never in a feature-local override
+- A pattern earns a new primitive or component when it appears in 2+ features; a one-off stays a local container composed of primitives
+- The **Conformance Allowlist** is written from what remains after the fixes; an entry is removed when its control moves onto a primitive
+
+## Example dialogue (UI Consistency Audit)
+
+> **Dev:** "The amount Input and the Save Button sit in one row and don't line up. Do I add `height: 40px` to the Input in the modal?"
+>
+> **Domain expert:** "No, that's the drift itself. Both take the **Control Height** for `md`. If they still disagree, the primitive is wrong, and that's an **Audit Finding** owned by the primitive."
+>
+> **Dev:** "The month switch jumps when I go from May to September. Is that a Month Overview finding?"
+>
+> **Domain expert:** "It's a **Stable Label Width** finding. The trigger reserves the width of its longest label, so the arrows stay under your cursor."
+>
+> **Dev:** "I need a tiny accordion header button in my feature. The test fails."
+>
+> **Domain expert:** "That's **Primitive Conformance** doing its job. Use the primitive, or add a **Conformance Allowlist** entry with the reason it isn't one. Review decides."
+
+## Flagged ambiguities (UI Consistency Audit)
+
+- **"audit"** (new): the **UI Consistency Audit** is visual only. The **Projection Engine Audit** (log 07) checked calculations. Always name which one; a behaviour, data or copy problem seen during the UI audit is a live-use defect, not an **Audit Finding**.
+- **"size"** (new): on a control primitive, `size` selects a **Control Height** (`sm`/`md`/`lg`). It never means width or font size.
+- **"Stepper"** (new): the `Stepper` primitive is the numeric −/+ control. The Month Overview prev/next group is a local container of ghost **Button**s, not a `Stepper`.
+- **"Tabs (component)"** (updated): `Tabs` lives in `src/primitives/Tabs/`, not `components/`; the Claude Design Handover entry above calls it a component. Say **Tabs** primitive.
