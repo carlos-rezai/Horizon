@@ -1,4 +1,4 @@
-import type { ConformanceAllowlistEntry } from "./conformanceAllowlist";
+import type { ConformanceAllowlistEntry } from "../../styles/conformanceAllowlist";
 
 export type RawControlTag = "button" | "input" | "select" | "textarea";
 

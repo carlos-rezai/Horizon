@@ -4,7 +4,7 @@ import {
   findConformanceViolations,
   findStaleAllowlistEntries,
 } from "./rawControls";
-import type { ConformanceAllowlistEntry } from "./conformanceAllowlist";
+import type { ConformanceAllowlistEntry } from "../../styles/conformanceAllowlist";
 
 /**
  * The detector behind **Primitive Conformance**: it reads a style module's

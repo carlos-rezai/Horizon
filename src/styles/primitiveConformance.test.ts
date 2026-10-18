@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   findConformanceViolations,
   findStaleAllowlistEntries,
-} from "./rawControls";
+} from "../testing/rawControls/rawControls";
 import { CONFORMANCE_ALLOWLIST } from "./conformanceAllowlist";
 
 // Read through Vite rather than the filesystem, as the font-faces test does,
