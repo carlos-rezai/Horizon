@@ -13,6 +13,7 @@ import { theme } from "../../../../tokens";
 import CacheProvider from "../../../../components/CacheProvider/CacheProvider";
 import ReviewTable, { type FlagSpec } from "./ReviewTable";
 import Input from "../../../../primitives/Input/Input";
+import { computedColor } from "../../../../testing/cascaded/cascaded";
 import { buildReviewRows } from "../../reviewRows/reviewRows";
 import type { ReviewRow, RowFlag } from "../../reviewRows/reviewRows";
 import type { ParsedImportRow } from "../../importTypes/importTypes";
@@ -138,16 +139,6 @@ function inputComponentClass(): string {
   }).className.split(" ")[0];
   unmount();
   return className;
-}
-
-/** A colour as jsdom serialises it, so token hex and rgba compare equal. */
-function computedColor(value: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = value;
-  document.body.appendChild(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
 }
 
 // Issue #273 — local text fields onto Input.

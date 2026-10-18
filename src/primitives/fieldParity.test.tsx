@@ -6,6 +6,7 @@ import { theme } from "../tokens";
 import Input from "./Input/Input";
 import Select from "./Select/Select";
 import DatePicker from "./DatePicker/DatePicker";
+import { cascaded, computedColor } from "../testing/cascaded/cascaded";
 
 // Issue #269 — Field Chrome. The text field, the dropdown and the date field
 // wear one chrome: the same background, border, radius and height at rest,
@@ -38,16 +39,6 @@ function renderFields({ disabled = false }: { disabled?: boolean } = {}) {
   ];
 }
 
-/** A colour as jsdom serialises it, so token hex and rgba compare equal. */
-function computedColor(value: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = value;
-  document.body.appendChild(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
-}
-
 /**
  * jsdom caches computed styles and only drops the cache on a DOM mutation,
  * not on a focus change, so a harmless mutation makes the next read see the
@@ -58,24 +49,6 @@ function freshStyle(el: HTMLElement): CSSStyleDeclaration {
   document.body.appendChild(marker);
   marker.remove();
   return getComputedStyle(el);
-}
-
-/**
- * jsdom does not compute `border-radius` or `outline`, so those are read as
- * the cascade would resolve them: the last declaration among the style rules
- * that match the element in its current state.
- */
-function cascaded(el: HTMLElement, property: string): string {
-  let declared = "";
-  Array.from(document.styleSheets).forEach((sheet) => {
-    Array.from(sheet.cssRules).forEach((rule) => {
-      if (!(rule instanceof CSSStyleRule)) return;
-      if (!el.matches(rule.selectorText)) return;
-      const value = rule.style.getPropertyValue(property);
-      if (value) declared = value;
-    });
-  });
-  return declared;
 }
 
 function focusRing(el: HTMLElement) {

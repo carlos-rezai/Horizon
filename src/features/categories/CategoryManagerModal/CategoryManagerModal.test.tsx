@@ -15,6 +15,7 @@ import type { Category } from "../../../types/category";
 import CategoryManagerModal from "./CategoryManagerModal";
 import Button from "../../../primitives/Button/Button";
 import Input from "../../../primitives/Input/Input";
+import { computedColor } from "../../../testing/cascaded/cascaded";
 
 const NEW_COLOR = "#6FBFBF"; // cyan — a palette member, distinct from Vet's colour
 
@@ -755,16 +756,6 @@ function inputComponentClass(): string {
   }).className.split(" ")[0];
   unmount();
   return className;
-}
-
-/** A colour as jsdom serialises it, so token hex and rgba compare equal. */
-function computedColor(value: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = value;
-  document.body.appendChild(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
 }
 
 function expectSmallFieldChrome(field: HTMLElement) {
