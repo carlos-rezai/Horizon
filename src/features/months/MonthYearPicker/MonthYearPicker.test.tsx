@@ -212,3 +212,78 @@ describe("MonthYearPicker", () => {
     expect(screen.getByRole("button", { name: /next year/i })).toBeDisabled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Issue #270 — Stable Label Width. The trigger reserves the width of the
+// longest month-year label it can show, so the arrows beside it hold still
+// while the user clicks from "May" to "September".
+// ---------------------------------------------------------------------------
+
+/** "September 2026" — the longest month name plus a space and a 4-digit year. */
+const LONGEST_LABEL_CHARS = "September".length + " 2026".length;
+
+function triggerFor(label: RegExp): HTMLElement {
+  return screen.getByRole("button", { name: label });
+}
+
+describe("MonthYearPicker — Stable Label Width", () => {
+  it("renders the trigger at the same width for May and September", () => {
+    const { rerender } = renderPicker({
+      month: "2026-05",
+      importStartDates: ["2025-01-15"],
+      onJump: vi.fn(),
+    });
+    const mayWidth = getComputedStyle(triggerFor(/May 2026/i)).minWidth;
+
+    rerender(
+      <ThemeProvider theme={theme}>
+        <MonthYearPicker
+          month="2026-09"
+          importStartDates={["2025-01-15"]}
+          onJump={vi.fn()}
+        />
+      </ThemeProvider>
+    );
+    const septemberWidth = getComputedStyle(
+      triggerFor(/September 2026/i)
+    ).minWidth;
+
+    // An unset min-width would "match" too, so the reserved width must be set in ch.
+    expect(mayWidth).toMatch(/ch$/);
+    expect(septemberWidth).toBe(mayWidth);
+  });
+
+  it("reserves at least the longest month-year label, measured in ch of the mono face", () => {
+    renderPicker({
+      month: "2026-05",
+      importStartDates: ["2025-01-15"],
+      onJump: vi.fn(),
+    });
+    const trigger = triggerFor(/May 2026/i);
+    const style = getComputedStyle(trigger);
+
+    const unquote = (family: string) => family.replace(/["']/g, "");
+    expect(unquote(style.fontFamily)).toBe(
+      unquote(theme.typography.fontFamily.mono)
+    );
+    expect(style.minWidth).toMatch(/^\d+(\.\d+)?ch$/);
+    expect(parseFloat(style.minWidth)).toBeGreaterThanOrEqual(
+      LONGEST_LABEL_CHARS
+    );
+  });
+
+  it("centres the label in the trigger", () => {
+    renderPicker({
+      month: "2026-05",
+      importStartDates: ["2025-01-15"],
+      onJump: vi.fn(),
+    });
+    const trigger = triggerFor(/May 2026/i);
+    const label = screen.getByText("May 2026");
+
+    const centred =
+      getComputedStyle(trigger).justifyContent === "center" ||
+      getComputedStyle(label).textAlign === "center";
+    expect(centred).toBe(true);
+  });
+});

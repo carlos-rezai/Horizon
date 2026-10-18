@@ -116,6 +116,7 @@ vi.mock("../../transactions/TransactionEditModal/TransactionEditModal", () => ({
 }));
 
 import MonthOverview from "./MonthOverview";
+import Button from "../../../primitives/Button/Button";
 
 const accounts: AccountWithBalance[] = [
   {
@@ -395,6 +396,59 @@ describe("MonthOverview — month stepper", () => {
     fireEvent.click(screen.getByRole("button", { name: /next month/i }));
     expect(mockNavigate).toHaveBeenCalledWith("/months/2027-01");
   });
+});
+
+// Issue #270 — Stable Label Width. The previous and next step controls are
+// the Button primitive in its ghost, small, icon-only form, so they look
+// exactly like one rendered on its own — same size, border, radius and
+// colour — while keeping their names and handlers (the tests above).
+describe("MonthOverview — step controls are ghost small Buttons", () => {
+  const PROPS = [
+    "height",
+    "width",
+    "padding",
+    "border",
+    "border-radius",
+    "background-color",
+    "color",
+  ] as const;
+
+  function referenceStyle(): Record<string, string> {
+    const { unmount } = render(
+      <ThemeProvider theme={theme}>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="ArrowLeft"
+          aria-label="Reference"
+        />
+      </ThemeProvider>
+    );
+    const style = getComputedStyle(
+      screen.getByRole("button", { name: "Reference" })
+    );
+    const values = Object.fromEntries(
+      PROPS.map((prop) => [prop, style.getPropertyValue(prop)])
+    );
+    unmount();
+    return values;
+  }
+
+  function styleOf(element: HTMLElement): Record<string, string> {
+    const style = getComputedStyle(element);
+    return Object.fromEntries(
+      PROPS.map((prop) => [prop, style.getPropertyValue(prop)])
+    );
+  }
+
+  it.each([/previous month/i, /next month/i])(
+    "the %s control renders as a ghost sm icon-only Button",
+    (name) => {
+      const expected = referenceStyle();
+      renderOverview("2026-06");
+      expect(styleOf(screen.getByRole("button", { name }))).toEqual(expected);
+    }
+  );
 });
 
 describe("MonthOverview — composition", () => {
