@@ -774,6 +774,17 @@ describe("the Import topic", () => {
       expect(row?.body).toMatch(/remember|learn/i);
     });
 
+    // Issue #263 — Same-Counterparty Propagation: one correction moves every
+    // untouched row from the same payee, a row the user already set is never
+    // overwritten, and the whole group teaches the Category Rule on commit.
+    it("describes Same-Counterparty Propagation in the review row", () => {
+      const row = rowOf("import", /review/i);
+
+      expect(row?.body).toMatch(/same payee/i);
+      expect(row?.body).toMatch(/never overwritten/i);
+      expect(row?.body).toMatch(/teaches the whole group/i);
+    });
+
     it("no longer says categories are guessed from the description by keyword", () => {
       expect(topicText("import")).not.toMatch(/by keyword/i);
     });
