@@ -19,7 +19,7 @@ export const StyledHeroAmount = styled.p`
 export const StyledSubtext = styled.p`
   font-size: ${({ theme }) => theme.typography.sizes.xs}px;
   color: ${({ theme }) => theme.colors.onSurfaceDim};
-  margin: 4px 0 0;
+  margin: ${({ theme }) => theme.spacing.space1}px 0 0;
 `;
 
 export const StyledRow = styled.div`
@@ -78,7 +78,7 @@ export const StyledToPayoffLabel = styled.div`
 export const StyledToPayoff = styled.div`
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 
 export const StyledToPayoffNum = styled.span`

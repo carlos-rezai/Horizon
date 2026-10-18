@@ -59,7 +59,7 @@ export const Row = styled.div<{ $hidden: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space3}px;
-  padding: 10px 12px;
+  padding: 10px ${({ theme }) => theme.spacing.space3}px;
   border-radius: ${({ theme }) => theme.radius.md}px;
   background: transparent;
   opacity: ${({ $hidden }) => ($hidden ? 0.55 : 1)};
@@ -147,7 +147,7 @@ export const AddButton = styled.button`
   gap: 9px;
   width: 100%;
   margin-top: ${({ theme }) => theme.spacing.space1}px;
-  padding: 11px 12px;
+  padding: 11px ${({ theme }) => theme.spacing.space3}px;
   border: 1px dashed ${({ theme }) => theme.colors.outline};
   border-radius: ${({ theme }) => theme.radius.md}px;
   background: transparent;
@@ -200,7 +200,7 @@ export const ErrorText = styled.p`
 export const WarnBanner = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  padding: 12px 14px;
+  padding: ${({ theme }) => theme.spacing.space3}px 14px;
   margin-bottom: ${({ theme }) => theme.spacing.space4}px;
   background: ${({ theme }) => theme.colors.errorContainer};
   border: 1px solid ${({ theme }) => `${theme.colors.error}4d`};

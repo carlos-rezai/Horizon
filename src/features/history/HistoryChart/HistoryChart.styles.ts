@@ -52,7 +52,7 @@ export const StyledTooltipRowLabel = styled.span`
 export const StyledTooltipSwatch = styled.span<{ $color: string }>`
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: ${({ theme }) => theme.radius.pill}px;
   flex-shrink: 0;
   background: ${({ $color }) => $color};
 `;

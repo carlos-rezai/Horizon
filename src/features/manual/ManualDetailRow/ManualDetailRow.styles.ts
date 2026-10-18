@@ -10,7 +10,7 @@ export const StyledToggle = styled.button`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
   width: 100%;
-  padding: 13px 4px;
+  padding: 13px ${({ theme }) => theme.spacing.space1}px;
   border: none;
   background: transparent;
   text-align: left;
@@ -42,7 +42,8 @@ export const StyledHeading = styled.span`
 // Indented to clear the chevron, so an expanded body reads as belonging to its
 // heading rather than as a new top-level paragraph.
 export const StyledBody = styled.div`
-  padding: 0 4px 16px 29px;
+  padding: 0 ${({ theme }) => theme.spacing.space1}px
+    ${({ theme }) => theme.spacing.space4}px 29px;
 `;
 
 export const StyledProse = styled.p`

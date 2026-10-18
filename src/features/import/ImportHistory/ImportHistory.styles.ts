@@ -14,14 +14,15 @@ export const HISTORY_COLUMNS: TableColumn[] = [
 ];
 
 export const StyledHead = styled.div`
-  padding: 16px 20px 0;
+  padding: ${({ theme }) => theme.spacing.space4}px
+    ${({ theme }) => theme.spacing.space5}px 0;
 `;
 
 export const StyledHeadRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: ${({ theme }) => theme.spacing.space1}px;
 `;
 
 export const StyledHeadTitle = styled.div`
@@ -81,7 +82,7 @@ export const StyledYearTotal = styled.span`
 `;
 
 export const StyledYearBody = styled.div`
-  padding: 4px 0 14px;
+  padding: ${({ theme }) => theme.spacing.space1}px 0 14px;
 `;
 
 export const StyledFileRow = styled(DataRow)``;
@@ -114,7 +115,7 @@ export const StyledFileSub = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space2}px;
-  margin-top: 4px;
+  margin-top: ${({ theme }) => theme.spacing.space1}px;
 `;
 
 export const StyledFileMeta = styled.span`

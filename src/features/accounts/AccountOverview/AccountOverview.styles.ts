@@ -41,7 +41,7 @@ export const StyledRight = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 
 interface StyledBalanceProps {

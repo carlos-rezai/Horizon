@@ -15,7 +15,7 @@ export const StyledGroup = styled.div`
 `;
 
 export const StyledGroupLabel = styled.div`
-  padding: 0 10px 8px;
+  padding: 0 10px ${({ theme }) => theme.spacing.space2}px;
   font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
   font-size: ${({ theme }) => theme.typography.scale.label.fontSize};
   font-weight: ${({ theme }) => theme.typography.scale.label.fontWeight};
@@ -31,7 +31,7 @@ export const StyledRailEntry = styled.button<{ $active: boolean }>`
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  padding: ${({ theme }) => theme.spacing.space2}px 10px;
   border: none;
   border-radius: ${({ theme }) => theme.radius.md}px;
   background: ${({ theme, $active }) =>

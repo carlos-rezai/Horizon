@@ -155,7 +155,7 @@ export const StyledRow = styled.div<{ $tracked: boolean; $last: boolean }>`
   grid-template-columns: 38px 1fr auto;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space3}px;
-  padding: 12px 10px;
+  padding: ${({ theme }) => theme.spacing.space3}px 10px;
   opacity: ${({ $tracked }) => ($tracked ? 1 : 0.5)};
   border-bottom: ${({ $last, theme }) =>
     $last ? "none" : `1px solid ${theme.colors.lineFaint}`};

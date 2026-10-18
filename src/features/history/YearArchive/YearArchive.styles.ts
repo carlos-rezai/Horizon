@@ -30,7 +30,7 @@ export const StyledSectionHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 18px ${({ theme }) => theme.spacing.space5}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
 

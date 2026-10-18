@@ -24,7 +24,7 @@ export const StyledStepDot = styled.span<{ $active: boolean; $done: boolean }>`
   place-items: center;
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: ${({ theme }) => theme.radius.pill}px;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 11px;
   font-weight: 600;
@@ -71,7 +71,7 @@ export const StyledFileCard = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
-  padding: 14px 16px;
+  padding: 14px ${({ theme }) => theme.spacing.space4}px;
   background: ${({ theme }) => theme.colors.surfaceContainerLow};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.lg}px;
@@ -115,7 +115,7 @@ export const StyledFormatBadge = styled.span`
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  padding: 4px 10px;
+  padding: ${({ theme }) => theme.spacing.space1}px 10px;
   border-radius: ${({ theme }) => theme.radius.pill}px;
   font-family: ${({ theme }) => theme.typography.scale.body.fontFamily};
   font-size: 11.5px;
@@ -170,8 +170,8 @@ export const StyledMapHint = styled.div`
 export const StyledMapCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: ${({ theme }) => theme.spacing.space3}px;
+  padding: ${({ theme }) => theme.spacing.space4}px;
   background: ${({ theme }) => theme.colors.surfaceContainerLow};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.lg}px;
@@ -202,7 +202,7 @@ export const StyledRawPreview = styled.div`
 export const StyledRawRow = styled.div<{ $alt: boolean }>`
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr) 110px;
-  gap: 12px;
+  gap: ${({ theme }) => theme.spacing.space3}px;
   padding: 9px 14px;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 12px;
@@ -314,7 +314,7 @@ export const StyledFlagBadge = styled.span<{ $tone: "warn" | "neutral" }>`
    gates the commit, so it reads as information rather than as an error. */
 export const StyledRejectedNote = styled.div`
   margin-bottom: 14px;
-  padding: 10px 12px;
+  padding: 10px ${({ theme }) => theme.spacing.space3}px;
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.md}px;
   background: ${({ theme }) => theme.colors.surfaceContainerLow};
@@ -333,7 +333,7 @@ export const StyledRejectedSamples = styled.div`
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-top: 8px;
+  margin-top: ${({ theme }) => theme.spacing.space2}px;
   font-family: ${({ theme }) => theme.typography.fontFamily.mono};
   font-size: 11.5px;
   color: ${({ theme }) => theme.colors.onSurfaceFaint};
@@ -342,7 +342,7 @@ export const StyledRejectedSamples = styled.div`
 export const StyledRejectedSample = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) 110px;
-  gap: 12px;
+  gap: ${({ theme }) => theme.spacing.space3}px;
 
   span:last-child {
     text-align: right;

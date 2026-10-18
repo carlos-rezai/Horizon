@@ -36,7 +36,7 @@ export const StyledIconButton = styled.button<StyledIconButtonProps>`
   align-items: center;
   justify-content: center;
   padding: ${({ theme }) => theme.spacing.space2}px;
-  border-radius: 8px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
   border: 2px solid
     ${({ $selected, theme }) =>
       $selected ? theme.colors.primary : "transparent"};
@@ -59,7 +59,7 @@ export const StyledToggleRow = styled.label`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.space4}px;
-  padding: 14px 16px;
+  padding: 14px ${({ theme }) => theme.spacing.space4}px;
   background: ${({ theme }) => theme.colors.surfaceContainerLow};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.radius.lg}px;

@@ -38,7 +38,7 @@ export const StyledSectionHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 18px ${({ theme }) => theme.spacing.space5}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
 `;
 
@@ -62,7 +62,7 @@ export const StyledLegend = styled.div`
 export const StyledLegendDot = styled.span`
   width: 9px;
   height: 9px;
-  border-radius: 999px;
+  border-radius: ${({ theme }) => theme.radius.pill}px;
   background: ${({ theme }) => theme.colors.primary};
 `;
 
@@ -70,7 +70,7 @@ export const StyledColumnHeader = styled.div<ColumnProps>`
   display: grid;
   grid-template-columns: ${({ $accountCount }) =>
     accordionColumns($accountCount)};
-  gap: 16px;
+  gap: ${({ theme }) => theme.spacing.space4}px;
   padding: 11px 18px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   background: ${({ theme }) => theme.colors.surfaceContainerLow};
@@ -99,7 +99,7 @@ export const StyledYearHeader = styled.button<ColumnProps & { $open: boolean }>`
   display: grid;
   grid-template-columns: ${({ $accountCount }) =>
     accordionColumns($accountCount)};
-  gap: 16px;
+  gap: ${({ theme }) => theme.spacing.space4}px;
   align-items: center;
   padding: 15px 18px;
   border: none;
@@ -142,7 +142,7 @@ export const StyledMonthRow = styled.div<
   display: grid;
   grid-template-columns: ${({ $accountCount }) =>
     accordionColumns($accountCount)};
-  gap: 16px;
+  gap: ${({ theme }) => theme.spacing.space4}px;
   align-items: center;
   padding: 9px 18px;
   cursor: pointer;

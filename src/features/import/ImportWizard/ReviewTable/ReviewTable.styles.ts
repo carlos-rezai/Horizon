@@ -7,7 +7,7 @@ export const StyledFlagCell = styled.span`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: ${({ theme }) => theme.spacing.space1}px;
 `;
 
 const REVIEW_GRID = "34px 78px minmax(0, 1fr) 190px 110px 96px";
@@ -47,7 +47,8 @@ export const StyledReviewHead = styled.div`
   display: grid;
   grid-template-columns: ${REVIEW_GRID};
   gap: 10px;
-  padding: 0 12px 8px;
+  padding: 0 ${({ theme }) => theme.spacing.space3}px
+    ${({ theme }) => theme.spacing.space2}px;
   font-family: ${({ theme }) => theme.typography.scale.label.fontFamily};
   font-size: 9.5px;
   font-weight: 600;
@@ -83,7 +84,7 @@ export const StyledReviewRow = styled.div<{
   grid-template-columns: ${REVIEW_GRID};
   gap: 10px;
   align-items: center;
-  padding: 9px 12px;
+  padding: 9px ${({ theme }) => theme.spacing.space3}px;
   opacity: ${({ $included }) => ($included ? 1 : 0.55)};
   background: ${({ theme, $included, $alt }) =>
     !$included
