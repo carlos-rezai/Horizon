@@ -92,6 +92,29 @@ describe("Select — Control Height", () => {
     });
   });
 
+  // A select with `appearance: none` does not centre its text the way an
+  // input does: vertical padding eats the content box and clips the line.
+  sizes.forEach((size) => {
+    it(`fits one line of text inside the content box at size "${size}"`, () => {
+      renderWithTheme(
+        <Select aria-label="Account kind" size={size}>
+          <option value="Girokonto">Girokonto</option>
+        </Select>
+      );
+      const cs = getComputedStyle(
+        screen.getByRole("combobox", { name: "Account kind" })
+      );
+      const contentBox =
+        theme.sizing.control[size] -
+        2 -
+        (parseFloat(cs.paddingTop) || 0) -
+        (parseFloat(cs.paddingBottom) || 0);
+      const lineHeight =
+        theme.typography.sizes.sm * Number(theme.typography.lineHeights.normal);
+      expect(contentBox).toBeGreaterThanOrEqual(lineHeight);
+    });
+  });
+
   it("renders at the md Control Height when no size is given", () => {
     renderWithTheme(
       <Select aria-label="Account kind">
