@@ -6,7 +6,6 @@ import {
   Banknote,
   AlertCircle,
   Clock,
-  Sparkles,
 } from "lucide-react";
 import type { AccountWithBalance } from "../../../types/account";
 import type { Category } from "../../../types/category";
@@ -24,6 +23,7 @@ import type {
 import { useImportWizard } from "../useImportWizard/useImportWizard";
 import type { RowFlag } from "../reviewRows/reviewRows";
 import ReviewTable, { type FlagSpec } from "./ReviewTable/ReviewTable";
+import CategoryProposalStrip from "./CategoryProposalStrip/CategoryProposalStrip";
 import {
   StyledWizard,
   StyledSteps,
@@ -59,12 +59,6 @@ import {
   StyledFlagBadge,
   StyledFootnote,
 } from "./ImportWizard.styles";
-import {
-  StyledProposalStrip,
-  StyledProposalText,
-  StyledProposalActions,
-  StyledProposalError,
-} from "./CategoryProposalStrip/CategoryProposalStrip.styles";
 
 const STEP_LABELS = ["Account", "Map columns", "Review"];
 
@@ -439,38 +433,12 @@ export default function ImportWizard({
             )}
 
             {proposals.map((proposal) => (
-              <StyledProposalStrip key={proposal.name}>
-                <StyledProposalText>
-                  <Sparkles size={13} />
-                  <span>
-                    New category: <strong>{proposal.name}</strong>
-                    {` · ${pluralize(proposal.count, "row")}`}
-                  </span>
-                </StyledProposalText>
-                <StyledProposalActions>
-                  <Button
-                    variant="secondary"
-                    onClick={() => dismissProposal(proposal.name)}
-                  >
-                    Dismiss
-                  </Button>
-                  <Button
-                    variant="primary"
-                    icon="Plus"
-                    onClick={() => {
-                      // A failure is surfaced on the strip itself.
-                      approveProposal(proposal.name).catch(() => undefined);
-                    }}
-                  >
-                    Create category
-                  </Button>
-                </StyledProposalActions>
-                {proposal.error && (
-                  <StyledProposalError role="alert">
-                    {proposal.error}
-                  </StyledProposalError>
-                )}
-              </StyledProposalStrip>
+              <CategoryProposalStrip
+                key={proposal.name}
+                proposal={proposal}
+                onCreate={() => void approveProposal(proposal.name)}
+                onDismiss={() => dismissProposal(proposal.name)}
+              />
             ))}
 
             <ReviewTable
