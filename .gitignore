@@ -55,6 +55,10 @@ release/
 horizon.db
 horizon.db-shm
 horizon.db-wal
+# ad-hoc dev databases (e.g. HORIZON_DB_PATH=horizon-dev.db)
+horizon-*.db
+horizon-*.db-shm
+horizon-*.db-wal
 
 # Understand-Anything — keep only the committed demo snapshot (knowledge-graph.json,
 # meta.json, .understandignore); ignore scratch + regenerable fingerprints
